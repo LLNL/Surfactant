@@ -90,7 +90,7 @@ def extract_pe_info(filename):
             com_desc_dir = opt_hdr_data_dir[com_desc_dir_num]
             file_hdr_details["peIsClr"] = (com_desc_dir.VirtualAddress > 0) and (com_desc_dir.Size > 0)
 
-    file_details = {}
+    file_details = {"OS": "Windows"}
     if pe_fi := getattr(pe, "FileInfo", None):
         if len(pe_fi) > 0:
             for fi_entry in pe_fi[0]:
@@ -105,7 +105,7 @@ def get_software_entry(filename, container_uuid=None, root_path=None):
     return {
        "UUID": str(uuid.uuid4()),
        **calc_file_hashes(filename),
-       "name": ("Part of " + file_info_details["ProductName"]) if "ProductName" in file_info_details else "",
+       "name": (file_info_details["ProductName"]) if "ProductName" in file_info_details else "",
        "fileName": [
            filename
        ],
@@ -119,11 +119,12 @@ def get_software_entry(filename, container_uuid=None, root_path=None):
        "relationshipAssertion": "Unknown",
        "comments": file_info_details["Comments"] if "Comments" in file_info_details else "",
        "metadata": [
-           file_hdr_details
+           file_hdr_details,
+           file_info_details
        ],
        "supplementaryFiles": [],
        "provenance": None,
-       "recordedInstitution": "[TODO] institution",
+       "recordedInstitution": "LLNL",
        "components": [] # or null
     }
 
@@ -137,20 +138,22 @@ with open("test-config.json", "r") as f:
 sbom = {"software": [], "relationships": []}
 
 for entry in config:
+    print("Processing parent container " + str(entry["archive"]))
     parent_entry = get_software_entry(entry["archive"])
     sbom["software"].append(parent_entry)
     for epath in entry["extractPaths"]:
+        print("Extracted Path: " + str(epath))
         for cdir, _, files in os.walk(epath):
+            print("Processing " + str(cdir))
             entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_entry["UUID"]) for f in files if check_is_pe_file(os.path.join(cdir, f))]
             if entries:
-                sbom["software"].append(entries)
+                sbom["software"].extend(entries)
                 for e in entries:
                     xUUID = parent_entry["UUID"]
                     yUUID = e["UUID"]
                     sbom["relationships"].append({"xUUID": xUUID, "yUUID": yUUID, "relationship": "Contains"})
                 
-print(sbom)
 with open("sbom.json", "w") as f:
-    json.dump(sbom, f)
+    json.dump(sbom, f, indent=4)
 
 
