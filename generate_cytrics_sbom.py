@@ -11,6 +11,9 @@ import uuid
 import json
 
 import pefile
+from elftools.elf.elffile import ELFFile
+import pathlib
+import sys
 
 
 def check_is_pe_file(filename):
@@ -18,6 +21,16 @@ def check_is_pe_file(filename):
         with open(filename, 'rb') as f:
             first_two_magic = f.read(2)
             return first_two_magic == b"MZ"
+    except FileNotFoundError:
+        return False
+    else:
+        return False
+
+def check_is_elf_file(filename):
+    try:
+        with open(filename, 'rb') as f:
+            first_two_magic = f.read(2)
+            return first_two_magic == b"\x7fE"
     except FileNotFoundError:
         return False
     else:
@@ -47,6 +60,61 @@ def calc_file_hashes(filename):
     except FileNotFoundError:
         return None
     return {"sha256": sha256_hash.hexdigest(), "sha1": sha1_hash.hexdigest(), "md5": md5_hash.hexdigest()}
+
+def extract_elf_info(filename):
+    try:
+        with open(filename, 'rb') as f:
+            elf = ELFFile(f)
+            sys.path.insert(0, '/Users/gallegos31/Desktop/projects/pyelftools/')
+            from scripts.readelf import ReadElf
+            with open("/Users/gallegos31/Desktop/projects/rtac_sbom_scripts/output.txt",'w') as output:
+                readelf = ReadElf(f, output)
+                readelf.display_dynamic_tags()
+            output.close()
+        f.close()
+
+    except:
+        return {}, {}
+
+    file_hdr_details = {}
+
+    if import_dir := getattr(elf, "e_ident", None):
+        file_hdr_details["e_ident"] = []
+        for entry in import_dir:
+            file_hdr_details["e_ident"].append({entry : import_dir[entry]})
+        
+        # print(file_hdr_details["e_ident"])
+    
+    file_hdr_details["elfDependencies"] = []
+    with open("/Users/gallegos31/Desktop/projects/rtac_sbom_scripts/output.txt",'r') as f:
+        lines = [line.rstrip() for line in f]
+        for item in lines:
+            if 'Shared library' in item:
+                print(item)
+                shared_lib_string = re.split(r'[)]',item)
+                shared_lib = shared_lib_string[1].strip()
+                file_hdr_details["elfDependencies"].append(shared_lib)
+    f.close()
+
+    file_details = {"OS": "Linux"}
+
+    if elf["e_type"] == 'ET_EXEC':
+        file_hdr_details["elfIsExe"] = True
+    else:
+        file_hdr_details["elfIsExe"] = False
+
+    if elf["e_type"] == 'ET_DYN':
+        file_hdr_details["elfIsLib"] = True
+    else:
+        file_hdr_details['elfIsLib'] = False
+
+    if elf["e_type"] == 'ET_REL':
+        file_hdr_details['elfIsRel'] = True
+    else:
+        file_hdr_details['elfIsRel'] = False
+
+
+    return file_hdr_details, file_details
 
 def extract_pe_info(filename):
     pefile.fast_load = False
@@ -100,16 +168,17 @@ def extract_pe_info(filename):
                             file_details[st_entry[0].decode()] = st_entry[1].decode()
     return file_hdr_details, file_details
 
-def get_software_entry(filename, container_uuid=None, root_path=None):
-    file_hdr_details, file_info_details = extract_pe_info(filename)
+def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None):
+    file_hdr_details, file_info_details = extract_elf_info(filename)
+    print(f'{filename} \n {file_hdr_details} \n {file_info_details}')
     return {
        "UUID": str(uuid.uuid4()),
        **calc_file_hashes(filename),
        "name": (file_info_details["ProductName"]) if "ProductName" in file_info_details else "",
        "fileName": [
-           filename
+           pathlib.Path(filename).name
        ],
-       "installPath": None, # or array of paths ["C:/Program Files/program/test.dll"]
+       "installPath": [re.sub("^"+root_path + "/", install_path, filename)] if root_path and install_path else None,
        "containerPath": [re.sub("^"+root_path, container_uuid, filename)] if root_path and container_uuid else None,
        "size": get_file_info(filename)["size"],
        "captureTime": int(time.time()),
@@ -128,32 +197,59 @@ def get_software_entry(filename, container_uuid=None, root_path=None):
        "components": [] # or null
     }
 
+def parse_relationships():
+    with open('/Users/gallegos31/Desktop/projects/sbom-surfactant/sbom.json') as json_file:
+        data = json.load(json_file)
+    
+    sbom = {'relationships': []}
+
+    for item in data['software']:
+        for i in item['metadata'][0]['elfDependencies']:
+            a = re.split(':', i)
+            b = re.split('\[+(.*?)\]', a[1])
+            depends_uuid = item.get('UUID')
+            fname = b[1]
+            sbom['relationships'].append([str(depends_uuid) + " Uses " + str(item.get('UUID')) for item in data['software'] if item.get('fileName')[0] == fname])
+
        
 
 #### Main part of code ####
 
-with open("test-config.json", "r") as f:
+with open("examples/rtac_extracted_config.json", "r") as f:
     config = json.load(f)
 
 sbom = {"software": [], "relationships": []}
 
 for entry in config:
-    print("Processing parent container " + str(entry["archive"]))
-    parent_entry = get_software_entry(entry["archive"])
-    sbom["software"].append(parent_entry)
+    if "archive" in entry:
+        print("Processing parent container " + str(entry["archive"]))
+        parent_entry = get_software_entry(entry["archive"])
+        sbom["software"].append(parent_entry)
+    else:
+        parent_entry = None
+    if "installPrefix" in entry:
+        install_prefix = entry["installPrefix"]
+    else:
+        install_prefix = None 
     for epath in entry["extractPaths"]:
         print("Extracted Path: " + str(epath))
         for cdir, _, files in os.walk(epath):
             print("Processing " + str(cdir))
-            entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_entry["UUID"]) for f in files if check_is_pe_file(os.path.join(cdir, f))]
+            if parent_entry:
+                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_entry["UUID"]) for f in files if check_is_elf_file(os.path.join(cdir, f))]
+            else:
+                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, install_path=install_prefix) for f in files if check_is_elf_file(os.path.join(cdir, f))]
             if entries:
                 sbom["software"].extend(entries)
-                for e in entries:
-                    xUUID = parent_entry["UUID"]
-                    yUUID = e["UUID"]
-                    sbom["relationships"].append({"xUUID": xUUID, "yUUID": yUUID, "relationship": "Contains"})
+                if parent_entry:
+                    for e in entries:
+                        xUUID = parent_entry["UUID"]
+                        yUUID = e["UUID"]
+                        sbom["relationships"].append({"xUUID": xUUID, "yUUID": yUUID, "relationship": "Contains"})
                 
 with open("sbom.json", "w") as f:
     json.dump(sbom, f, indent=4)
+
+
 
 
