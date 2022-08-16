@@ -16,24 +16,28 @@ import pathlib
 import sys
 
 
-def check_is_pe_file(filename):
+def check_exe_type(filename):
     try:
         with open(filename, 'rb') as f:
             first_two_magic = f.read(2)
-            return first_two_magic == b"MZ"
+            if first_two_magic == b"\x7fE":
+                return 'ELF'
+            elif first_two_magic == b"MZ":
+                return 'PE'
+            else:
+                return None
     except FileNotFoundError:
-        return False
-    else:
         return False
 
-def check_is_elf_file(filename):
+def check_is_exe_file(filename):
     try:
         with open(filename, 'rb') as f:
             first_two_magic = f.read(2)
-            return first_two_magic == b"\x7fE"
+            if first_two_magic == b"\x7fE" or first_two_magic == b"MZ" :
+                return True
+            else:
+                return False
     except FileNotFoundError:
-        return False
-    else:
         return False
 
 def get_file_info(filename):
@@ -65,9 +69,9 @@ def extract_elf_info(filename):
     try:
         with open(filename, 'rb') as f:
             elf = ELFFile(f)
-            sys.path.insert(0, '/Users/gallegos31/Desktop/projects/pyelftools/')
+            sys.path.insert(0, '/Path/to/pyelftools')
             from scripts.readelf import ReadElf
-            with open("/Users/gallegos31/Desktop/projects/rtac_sbom_scripts/output.txt",'w') as output:
+            with open("output.txt",'w') as output:
                 readelf = ReadElf(f, output)
                 readelf.display_dynamic_tags()
             output.close()
@@ -82,11 +86,9 @@ def extract_elf_info(filename):
         file_hdr_details["e_ident"] = []
         for entry in import_dir:
             file_hdr_details["e_ident"].append({entry : import_dir[entry]})
-        
-        # print(file_hdr_details["e_ident"])
     
     file_hdr_details["elfDependencies"] = []
-    with open("/Users/gallegos31/Desktop/projects/rtac_sbom_scripts/output.txt",'r') as f:
+    with open("output.txt",'r') as f:
         lines = [line.rstrip() for line in f]
         for item in lines:
             if 'Shared library' in item:
@@ -169,8 +171,14 @@ def extract_pe_info(filename):
     return file_hdr_details, file_details
 
 def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None):
-    file_hdr_details, file_info_details = extract_elf_info(filename)
-    print(f'{filename} \n {file_hdr_details} \n {file_info_details}')
+    file_type = check_exe_type(filename)
+    if file_type == 'ELF':
+        file_hdr_details, file_info_details = extract_elf_info(filename)
+    elif file_type == 'PE':
+       file_hdr_details, file_info_details = extract_pe_info(filename)
+    else:
+        pass
+    # print(f'{filename} \n {file_hdr_details} \n {file_info_details}')
     return {
        "UUID": str(uuid.uuid4()),
        **calc_file_hashes(filename),
@@ -197,25 +205,22 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
        "components": [] # or null
     }
 
-def parse_relationships():
-    with open('/Users/gallegos31/Desktop/projects/sbom-surfactant/sbom.json') as json_file:
-        data = json.load(json_file)
-    
-    sbom = {'relationships': []}
-
-    for item in data['software']:
-        for i in item['metadata'][0]['elfDependencies']:
-            a = re.split(':', i)
-            b = re.split('\[+(.*?)\]', a[1])
-            depends_uuid = item.get('UUID')
-            fname = b[1]
-            sbom['relationships'].append([str(depends_uuid) + " Uses " + str(item.get('UUID')) for item in data['software'] if item.get('fileName')[0] == fname])
-
-       
+def parse_relationships(sbom):
+    for item in sbom['software']:
+        try:
+            for i in item['metadata'][0]['elfDependencies']:
+                shared_lib = re.split(':', i)
+                shared_lib_name = re.split('\[+(.*?)\]', shared_lib[1])
+                depends_uuid = item.get('UUID')
+                fname = shared_lib_name[1]
+                sbom['relationships'].append ({"xUUID": depends_uuid, "yUUID": [item.get('UUID') for item in sbom['software'] if item.get('fileName')[0] == fname][0], "relationship": "Uses"})
+        except:
+            print(f"\n\n {item}")
 
 #### Main part of code ####
 
-with open("examples/rtac_extracted_config.json", "r") as f:
+# Make sure json file below doesn't have a trailing '/' at the end of the path.
+with open("examples/linux_extracted_config.json", "r") as f:
     config = json.load(f)
 
 sbom = {"software": [], "relationships": []}
@@ -235,10 +240,11 @@ for entry in config:
         print("Extracted Path: " + str(epath))
         for cdir, _, files in os.walk(epath):
             print("Processing " + str(cdir))
+            
             if parent_entry:
-                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_entry["UUID"]) for f in files if check_is_elf_file(os.path.join(cdir, f))]
+                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_entry["UUID"]) for f in files if check_is_exe_file(os.path.join(cdir, f))]
             else:
-                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, install_path=install_prefix) for f in files if check_is_elf_file(os.path.join(cdir, f))]
+                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, install_path=install_prefix) for f in files if check_is_exe_file(os.path.join(cdir, f))]
             if entries:
                 sbom["software"].extend(entries)
                 if parent_entry:
@@ -246,6 +252,8 @@ for entry in config:
                         xUUID = parent_entry["UUID"]
                         yUUID = e["UUID"]
                         sbom["relationships"].append({"xUUID": xUUID, "yUUID": yUUID, "relationship": "Contains"})
+
+parse_relationships(sbom)    
                 
 with open("sbom.json", "w") as f:
     json.dump(sbom, f, indent=4)
