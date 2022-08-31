@@ -69,7 +69,7 @@ def extract_elf_info(filename):
     try:
         with open(filename, 'rb') as f:
             elf = ELFFile(f)
-            sys.path.insert(0, '/Path/to/pyelftools')
+            sys.path.insert(0, '/pyelftools')
             from scripts.readelf import ReadElf
             with open("output.txt",'w') as output:
                 readelf = ReadElf(f, output)
@@ -92,7 +92,7 @@ def extract_elf_info(filename):
         lines = [line.rstrip() for line in f]
         for item in lines:
             if 'Shared library' in item:
-                print(item)
+                # print(item)
                 shared_lib_string = re.split(r'[)]',item)
                 shared_lib = shared_lib_string[1].strip()
                 file_hdr_details["elfDependencies"].append(shared_lib)
@@ -195,10 +195,7 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
        "description": file_info_details["FileDescription"] if "FileDescription" in file_info_details else "",
        "relationshipAssertion": "Unknown",
        "comments": file_info_details["Comments"] if "Comments" in file_info_details else "",
-       "metadata": [
-           file_hdr_details,
-           file_info_details
-       ],
+       "metadata": [file_hdr_details, file_info_details] if len(file_info_details) > 0 and len(file_info_details) > 0 else [] ,
        "supplementaryFiles": [],
        "provenance": None,
        "recordedInstitution": "LLNL",
@@ -215,7 +212,7 @@ def parse_relationships(sbom):
                 fname = shared_lib_name[1]
                 sbom['relationships'].append ({"xUUID": depends_uuid, "yUUID": [item.get('UUID') for item in sbom['software'] if item.get('fileName')[0] == fname][0], "relationship": "Uses"})
         except:
-            print(f"\n\n {item}")
+            print(f" Has no dependencies -> sbom['software']= {item}")
 
 #### Main part of code ####
 
