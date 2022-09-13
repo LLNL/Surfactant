@@ -199,15 +199,18 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
 
 def parse_relationships(sbom):
     for item in sbom['software']:
-        try:
-            for i in item['metadata'][0]['elfDependencies']:
-                shared_lib = re.split(':', i)
-                shared_lib_name = re.split('\[+(.*?)\]', shared_lib[1])
-                depends_uuid = item.get('UUID')
-                fname = shared_lib_name[1]
-                sbom['relationships'].append ({"xUUID": depends_uuid, "yUUID": [item.get('UUID') for item in sbom['software'] if item.get('fileName')[0] == fname][0], "relationship": "Uses"})
-        except:
-            print(f" Has no dependencies -> sbom['software']= {item}")
+        for fname in item['metadata'][0]['elfDependencies']:
+            dependent_uuid = item.get('UUID')
+            # TODO if there are many symlinks to the same file, if item.get('fileName')[0] should be changed to check against every name
+            # for multiple separate file systems, checking only a portion of sbom['software'] might need to be handled
+            dependency_uuid = [item.get('UUID') for item in sbom['software'] if item.get('fileName')[0] == fname]
+            # there shouldn't be multiple entries found with the same UUID;
+            if dependency_uuid:
+                # shouldn't find multiple entries with the same UUID;
+                # if we did, it is possible that files outside of the search path were included in the previous step
+                sbom['relationships'].append ({"xUUID": dependent_uuid, "yUUID": dependency_uuid[0], "relationship": "Uses"})
+            else:
+                print(f" Dependency {fname} not found for sbom['software'] entry={item}")
 
 #### Main part of code ####
 
