@@ -75,6 +75,9 @@ def extract_elf_info(filename):
 
     file_hdr_details = {}
     file_hdr_details["elfDependencies"] = []
+    file_hdr_details["elfRpath"] = []
+    file_hdr_details["elfRunpath"] = []
+    file_hdr_details["elfSoname"] = []
     for section in elf.iter_sections():
         if not isinstance(section, DynamicSection):
             continue
@@ -82,6 +85,15 @@ def extract_elf_info(filename):
             if tag.entry.d_tag == 'DT_NEEDED':
                 # Shared libraries
                 file_hdr_details["elfDependencies"].append(tag.needed)
+            elif tag.entry.d_tag == 'DT_RPATH':
+                # Library rpath
+                file_hdr_details["elfRpath"].append(tag.rpath)
+            elif tag.entry.d_tag == 'DT_RUNPATH':
+                # Library runpath
+                file_hdr_details["elfRunpath"].append(tag.runpath)
+            elif tag.entry.d_tag == 'DT_SONAME':
+                # Library soname (for linking)
+                file_hdr_details["elfSoname"].append(tag.soname)
 
     if import_dir := getattr(elf, "e_ident", None):
         file_hdr_details["e_ident"] = []
