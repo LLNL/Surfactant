@@ -7,13 +7,18 @@ SBOM Surfactant
 This project contains scripts that can be used to generate a surface-level, face-value, SBOM.  It pulls information from the PE files contained within a directory structure corresponding to an extracted software package.
 
 ## Installation
-1. Install python-longclaw module
+1. Clone sbom-surfactant with submodules
+```bash
+$ git clone ssh://git@czgitlab.llnl.gov:7999/cir-software-assurance/sbom-surfactant.git
+```
+
+2. Install python-longclaw module
 ```bash
 $ git clone ssh://git@czgitlab.llnl.gov:7999/cir-software-assurance/python-longclaw.git
 $ pip install -e python-longclaw
 ```
 
-2. Install other required python modules:
+3. Install other required python modules:
 ```bash
 $ pip install -r requirements
 ```
