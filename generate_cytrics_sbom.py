@@ -20,24 +20,13 @@ import sys
 def check_exe_type(filename):
     try:
         with open(filename, 'rb') as f:
-            first_two_magic = f.read(2)
-            if first_two_magic == b"\x7fE":
+            magic_bytes = f.read(4)
+            if magic_bytes == b"\x7fELF":
                 return 'ELF'
-            elif first_two_magic == b"MZ":
+            elif magic_bytes[:2] == b"MZ":
                 return 'PE'
             else:
                 return None
-    except FileNotFoundError:
-        return False
-
-def check_is_exe_file(filename):
-    try:
-        with open(filename, 'rb') as f:
-            first_two_magic = f.read(2)
-            if first_two_magic == b"\x7fE" or first_two_magic == b"MZ" :
-                return True
-            else:
-                return False
     except FileNotFoundError:
         return False
 
@@ -249,9 +238,9 @@ for entry in config:
             print("Processing " + str(cdir))
             
             if parent_entry:
-                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_entry["UUID"]) for f in files if check_is_exe_file(os.path.join(cdir, f))]
+                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_entry["UUID"]) for f in files if check_exe_type(os.path.join(cdir, f))]
             else:
-                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, install_path=install_prefix) for f in files if check_is_exe_file(os.path.join(cdir, f))]
+                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
             if entries:
                 sbom["software"].extend(entries)
                 if parent_entry:
