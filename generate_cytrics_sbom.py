@@ -69,7 +69,7 @@ def extract_elf_info(filename):
     try:
         with open(filename, 'rb') as f:
             elf = ELFFile(f)
-            sys.path.insert(0, '/pyelftools')
+            sys.path.insert(0, './pyelftools')
             from scripts.readelf import ReadElf
             with open("output.txt",'w') as output:
                 readelf = ReadElf(f, output)
