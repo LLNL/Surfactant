@@ -1,3 +1,4 @@
+pyelftools
 pefile
 pandas
 spdx
