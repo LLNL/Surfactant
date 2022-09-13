@@ -12,6 +12,7 @@ import json
 
 import pefile
 from elftools.elf.elffile import ELFFile
+from elftools.elf.dynamic import DynamicSection
 import pathlib
 import sys
 
@@ -67,37 +68,26 @@ def calc_file_hashes(filename):
 
 def extract_elf_info(filename):
     try:
-        with open(filename, 'rb') as f:
-            elf = ELFFile(f)
-            sys.path.insert(0, './pyelftools')
-            from scripts.readelf import ReadElf
-            with open("output.txt",'w') as output:
-                readelf = ReadElf(f, output)
-                readelf.display_dynamic_tags()
-            output.close()
-        f.close()
-
+        f = open(filename, 'rb')
+        elf = ELFFile(f)
     except:
         return {}, {}
 
     file_hdr_details = {}
+    file_hdr_details["elfDependencies"] = []
+    for section in elf.iter_sections():
+        if not isinstance(section, DynamicSection):
+            continue
+        for tag in section.iter_tags():
+            if tag.entry.d_tag == 'DT_NEEDED':
+                # Shared libraries
+                file_hdr_details["elfDependencies"].append(tag.needed)
 
     if import_dir := getattr(elf, "e_ident", None):
         file_hdr_details["e_ident"] = []
         for entry in import_dir:
             file_hdr_details["e_ident"].append({entry : import_dir[entry]})
     
-    file_hdr_details["elfDependencies"] = []
-    with open("output.txt",'r') as f:
-        lines = [line.rstrip() for line in f]
-        for item in lines:
-            if 'Shared library' in item:
-                # print(item)
-                shared_lib_string = re.split(r'[)]',item)
-                shared_lib = shared_lib_string[1].strip()
-                file_hdr_details["elfDependencies"].append(shared_lib)
-    f.close()
-
     file_details = {"OS": "Linux"}
 
     if elf["e_type"] == 'ET_EXEC':
@@ -114,7 +104,6 @@ def extract_elf_info(filename):
         file_hdr_details['elfIsRel'] = True
     else:
         file_hdr_details['elfIsRel'] = False
-
 
     return file_hdr_details, file_details
 
@@ -175,10 +164,16 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
     if file_type == 'ELF':
         file_hdr_details, file_info_details = extract_elf_info(filename)
     elif file_type == 'PE':
-       file_hdr_details, file_info_details = extract_pe_info(filename)
+        file_hdr_details, file_info_details = extract_pe_info(filename)
     else:
         pass
-    # print(f'{filename} \n {file_hdr_details} \n {file_info_details}')
+
+    metadata = []
+    if file_hdr_details:
+        metadata.append(file_hdr_details)
+    if file_info_details:
+        metadata.append(file_info_details)
+
     return {
        "UUID": str(uuid.uuid4()),
        **calc_file_hashes(filename),
@@ -195,7 +190,7 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
        "description": file_info_details["FileDescription"] if "FileDescription" in file_info_details else "",
        "relationshipAssertion": "Unknown",
        "comments": file_info_details["Comments"] if "Comments" in file_info_details else "",
-       "metadata": [file_hdr_details, file_info_details] if len(file_info_details) > 0 and len(file_info_details) > 0 else [] ,
+       "metadata": metadata,
        "supplementaryFiles": [],
        "provenance": None,
        "recordedInstitution": "LLNL",
