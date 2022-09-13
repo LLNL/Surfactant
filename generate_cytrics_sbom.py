@@ -198,20 +198,42 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
        "components": [] # or null
     }
 
+def add_relationship(xUUID, yUUID, relationship):
+    sbom['relationships'].append({"xUUID": xUUID, "yUUID": yUUID, "relationship": relationship})
+
+# TODO add support for emulating the search paths for dependencies that the OS would follow
 def parse_relationships(sbom):
-    for item in sbom['software']:
-        for fname in item['metadata'][0]['elfDependencies']:
-            dependent_uuid = item.get('UUID')
-            # TODO if there are many symlinks to the same file, if item.get('fileName')[0] should be changed to check against every name
-            # for multiple separate file systems, checking only a portion of sbom['software'] might need to be handled
-            dependency_uuid = [item.get('UUID') for item in sbom['software'] if item.get('fileName')[0] == fname]
-            # there shouldn't be multiple entries found with the same UUID;
-            if dependency_uuid:
-                # shouldn't find multiple entries with the same UUID;
-                # if we did, it is possible that files outside of the search path were included in the previous step
-                sbom['relationships'].append ({"xUUID": dependent_uuid, "yUUID": dependency_uuid[0], "relationship": "Uses"})
-            else:
-                print(f" Dependency {fname} not found for sbom['software'] entry={item}")
+    for sw in sbom['software']:
+        dependent_uuid = sw.get('UUID')
+        # check each object within the metadata for an 'elfDependencies' key
+        for md in sw['metadata']:
+            dependency_uuid = []
+
+            # handle ELF dependecies
+            if 'elfDependencies' in md:
+                for fname in md['elfDependencies']:
+                    # TODO if there are many symlinks to the same file, if item.get('fileName')[0] should be changed to check against every name
+                    # for multiple separate file systems, checking only a portion of sbom['software'] might need to be handled
+                    if dependency_uuid := [item.get('UUID') for item in sbom['software'] if item.get('fileName')[0] == fname]:
+                        # shouldn't find multiple entries with the same UUID
+                        # if we did, there may be files outside of the correct search path that were considered in the previous step
+                        add_relationship(dependent_uuid, dependency_uuid[0], "Uses")
+                    else:
+                        print(f" Dependency {fname} not found for sbom['software'] entry={sw}")
+
+            # handle PE imports
+            if 'peImport' in md:
+                for fname in md['peImport']:
+                    if dependency_uuid := [item.get('UUID') for item in sbom['software'] if item.get('fileName')[0] == fname]:
+                        # shouldn't find multiple entries with the same UUID
+                        # if we did, there may be files outside of the correct search path that were considered in the previous step
+                        add_relationship(dependent_uuid, dependency_uuid[0], "Uses")
+                    else:
+                        print(f" Dependency {fname} not found for sbom['software'] entry={sw}")
+            if 'peBoundImport' in md:
+                pass
+            if 'peDelayImport' in md:
+                pass
 
 #### Main part of code ####
 
