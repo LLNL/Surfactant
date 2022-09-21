@@ -6,7 +6,6 @@
 import os
 import re
 import time
-import datetime
 from hashlib import sha256, sha1, md5
 import uuid
 import json
@@ -271,10 +270,8 @@ def extract_ole_info(filename):
         if value := getattr(md, prop, None):
             if type(value) is bytes:
                 file_hdr_details["ole"][prop] = value.decode("unicode_escape")
-            elif type(value) is datetime.datetime:
-                file_hdr_details["ole"][prop] = value.ctime() 
             else:
-                file_hdr_details["ole"][prop] = value
+                file_hdr_details["ole"][prop] = str(value)
     ole.close()
     return file_hdr_details, file_details
 
