@@ -10,25 +10,26 @@ from hashlib import sha256, sha1, md5
 import uuid
 import json
 
-import pefile
+import dnfile
 from elftools.elf.elffile import ELFFile
 from elftools.elf.dynamic import DynamicSection
 import pathlib
+from enum import Enum, auto
 import sys
 
 
 def check_exe_type(filename):
     try:
         with open(filename, 'rb') as f:
-            magic_bytes = f.read(4)
-            if magic_bytes == b"\x7fELF":
+            magic_bytes = f.read(8)
+            if magic_bytes[:4] == b"\x7fELF":
                 return 'ELF'
             elif magic_bytes[:2] == b"MZ":
                 return 'PE'
             else:
                 return None
     except FileNotFoundError:
-        return False
+        return None
 
 def get_file_info(filename):
     try:
@@ -109,9 +110,9 @@ def extract_elf_info(filename):
     return file_hdr_details, file_details
 
 def extract_pe_info(filename):
-    pefile.fast_load = False
+    dnfile.fast_load = False
     try:
-        pe = pefile.PE(filename, fast_load=False)
+        pe = dnfile.dnPE(filename, fast_load=False)
     except:
         return {}, {}
 
@@ -146,7 +147,7 @@ def extract_pe_info(filename):
     if opt_hdr := getattr(pe, "OPTIONAL_HEADER", None):
         if opt_hdr_data_dir := getattr(opt_hdr, "DATA_DIRECTORY", None):
             #print("---COM Descriptor---")
-            com_desc_dir_num = pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR"]
+            com_desc_dir_num = dnfile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR"]
             com_desc_dir = opt_hdr_data_dir[com_desc_dir_num]
             file_hdr_details["peIsClr"] = (com_desc_dir.VirtualAddress > 0) and (com_desc_dir.Size > 0)
 
@@ -158,6 +159,87 @@ def extract_pe_info(filename):
                     for st in fi_entry.StringTable:
                         for st_entry in st.entries.items():
                             file_details[st_entry[0].decode()] = st_entry[1].decode()
+
+    # If this is a .NET assembly, extract information about it from the headers
+    if dnet := getattr(pe, "net", None):
+        if dnet_flags := getattr(dnet, "Flags", None):
+            file_hdr_details["dotnetFlags"] = {
+                        "ILONLY": dnet_flags.CLR_ILONLY,
+                        "32BITREQUIRED": dnet_flags.CLR_32BITREQUIRED,
+                        "IL_LIBRARY": dnet_flags.CLR_IL_LIBRARY,
+                        "STRONGNAMESIGNED": dnet_flags.CLR_STRONGNAMESIGNED,
+                        "NATIVE_ENTRYPOINT": dnet_flags.CLR_NATIVE_ENTRYPOINT,
+                        "TRACKDEBUGDATA": dnet_flags.CLR_TRACKDEBUGDATA,
+                        "32BITPREFERRED": dnet_flags.CLR_PREFER_32BIT
+                    }
+        if dnet_mdtables := getattr(dnet, "mdtables", None):
+            if assembly_info := getattr(dnet_mdtables, "Assembly", None):
+                assemblies = []
+                for a_info in assembly_info:
+                    asm = {}
+                    asm["Name"] = a_info.Name
+                    asm["Culture"] = a_info.Culture
+                    asm["Version"] = f"{a_info.MajorVersion}.{a_info.MinorVersion}.{a_info.BuildNumber}.{a_info.RevisionNumber}"
+                    asm["PublicKey"] = a_info.PublicKey.decode('unicode_escape')
+                    asm["HashAlgId"] = a_info.HashAlgId
+                    print("Processing:"+a_info.Name)
+                    # Info on flags
+                    # Processor Architecture fields/values: https://learn.microsoft.com/en-us/dotnet/api/system.reflection.processorarchitecture?view=net-6.0
+                    # PA enum values in dnfile: https://github.com/malwarefrank/dnfile/blob/7441fe326e0cc254ed2944a18773d8b4fe99c4c6/src/dnfile/enums.py#L663-L671
+                    # .NET runtime corhdr.h PA enum: https://github.com/dotnet/runtime/blob/9d6396deb02161f5ee47af72ccac52c2e1bae458/src/coreclr/inc/corhdr.h#L747-L754
+                    # Assembly flags: https://learn.microsoft.com/en-us/dotnet/api/system.reflection.assemblyflags?view=net-6.0
+                    if a_flags := getattr(a_info, "Flags", None):
+                        asm["Flags"] = {
+                                    "DisableJitCompileOptimizer": a_flags.afDisableJITcompileOptimizer, # JIT compiler optimization disabled for assembly
+                                    "EnableJitCompileTracking": a_flags.afEnableJITcompileTracking, # JIT compiler tracking enabled for assembly
+                                    "PublicKey": a_flags.afPublicKey, # assembly ref has the full (unhashed) public key
+                                    "Retargetable": a_flags.afRetargetable, # impl of referenced assembly used at runtime may not match version seen at compile time
+                                    "PA_Specified": a_flags.afPA_Specified, # propagate processor architecture flags to AssemblyRef record
+                                    "PA_None": a_flags.afPA_None,
+                                    "PA_MSIL": a_flags.afPA_MSIL,
+                                    "PA_x86": a_flags.afPA_x86,
+                                    "PA_IA64": a_flags.afPA_IA64,
+                                    "PA_AMD64": a_flags.afPA_AMD64,
+                                    "PA_ARM": a_flags.afPA_Unknown1, # based on enumeration values in docs, clr runtime corhdr.h, and dnfile
+                                    "PA_ARM64": a_flags.afPA_Unknown2,
+                                    "PA_NoPlatform": a_flags.afPA_Unknown3 # applies to any platform but cannot run on any (e.g. reference assembly), "specified" should not be set
+                                }
+                    assemblies.append(asm)
+                file_hdr_details["dotnetAssembly"] = assemblies
+            if assemblyref_info := getattr(dnet_mdtables, "AssemblyRef", None):
+                assembly_refs = []
+                for ar_info in assemblyref_info:
+                    asmref = {}
+                    asmref["Name"] = ar_info.Name
+                    asmref["Culture"] = ar_info.Culture
+                    asmref["Version"] = f"{ar_info.MajorVersion}.{ar_info.MinorVersion}.{ar_info.BuildNumber}.{ar_info.RevisionNumber}"
+                    asmref["PublicKey"] = ar_info.PublicKey.decode('unicode_escape')
+                    asmref["HashValue"] = ar_info.HashValue.decode('unicode_escape')
+                    print("Processing:"+ar_info.Name)
+                    # Info on flags
+                    # Processor Architecture fields/values: https://learn.microsoft.com/en-us/dotnet/api/system.reflection.processorarchitecture?view=net-6.0
+                    # PA enum values in dnfile: https://github.com/malwarefrank/dnfile/blob/7441fe326e0cc254ed2944a18773d8b4fe99c4c6/src/dnfile/enums.py#L663-L671
+                    # .NET runtime corhdr.h PA enum: https://github.com/dotnet/runtime/blob/9d6396deb02161f5ee47af72ccac52c2e1bae458/src/coreclr/inc/corhdr.h#L747-L754
+                    # Assembly flags: https://learn.microsoft.com/en-us/dotnet/api/system.reflection.assemblyflags?view=net-6.0
+                    if ar_flags := getattr(ar_info, "Flags", None):
+                        asmref["Flags"] = {
+                                    "DisableJitCompileOptimizer": ar_flags.afDisableJITcompileOptimizer, # JIT compiler optimization disabled for assembly
+                                    "EnableJitCompileTracking": ar_flags.afEnableJITcompileTracking, # JIT compiler tracking enabled for assembly
+                                    "PublicKey": ar_flags.afPublicKey, # assembly ref has the full (unhashed) public key
+                                    "Retargetable": ar_flags.afRetargetable, # impl of referenced assembly used at runtime may not match version seen at compile time
+                                    "PA_Specified": ar_flags.afPA_Specified, # propagate processor architecture flags to AssemblyRef record
+                                    "PA_None": ar_flags.afPA_None,
+                                    "PA_MSIL": ar_flags.afPA_MSIL,
+                                    "PA_x86": ar_flags.afPA_x86,
+                                    "PA_IA64": ar_flags.afPA_IA64,
+                                    "PA_AMD64": ar_flags.afPA_AMD64,
+                                    "PA_ARM": ar_flags.afPA_Unknown1, # based on enumeration values in docs, clr runtime corhdr.h, and dnfile
+                                    "PA_ARM64": ar_flags.afPA_Unknown2,
+                                    "PA_NoPlatform": ar_flags.afPA_Unknown3 # applies to any platform but cannot run on any (e.g. reference assembly), "specified" should not be set
+                                }
+                    assembly_refs.append(asmref)
+                file_hdr_details["dotnetAssemblyRef"] = assembly_refs
+
     return file_hdr_details, file_details
 
 def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None):

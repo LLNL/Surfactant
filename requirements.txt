@@ -1,4 +1,5 @@
 pyelftools
 pefile
+dnfile
 pandas
 spdx
