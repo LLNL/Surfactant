@@ -21,6 +21,9 @@ class ExeType(Enum):
     ELF = auto()
     PE = auto()
     OLE = auto()
+    JAVA_MACHOFAT = auto()
+    MACHO32 = auto()
+    MACHO64 = auto()
 
 def check_exe_type(filename):
     try:
@@ -32,6 +35,13 @@ def check_exe_type(filename):
                 return 'PE'
             elif magic_bytes == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
                 return 'OLE'
+            #elif magic_bytes[:4] == b"\xca\xfe\xba\xbe":
+            #    # magic bytes can either be for Java class file or Mach-O Fat Binary
+            #    return 'JAVA_MACHOFAT'
+            #elif magic_bytes[:4] == b"\xfe\xed\xfa\xce":
+            #    return 'MACHO32'
+            #elif magic_bytes[:4] == b"\xfe\xed\xfa\xcf":
+            #    return 'MACHO64'
             else:
                 return None
     except FileNotFoundError:
