@@ -17,6 +17,10 @@ import pathlib
 from enum import Enum, auto
 import sys
 
+class ExeType(Enum):
+    ELF = auto()
+    PE = auto()
+    OLE = auto()
 
 def check_exe_type(filename):
     try:
@@ -26,6 +30,8 @@ def check_exe_type(filename):
                 return 'ELF'
             elif magic_bytes[:2] == b"MZ":
                 return 'PE'
+            elif magic_bytes == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
+                return 'OLE'
             else:
                 return None
     except FileNotFoundError:
