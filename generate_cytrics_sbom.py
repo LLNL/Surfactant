@@ -6,6 +6,7 @@
 import os
 import re
 import time
+import datetime
 from hashlib import sha256, sha1, md5
 import uuid
 import json
@@ -13,6 +14,7 @@ import json
 import dnfile
 from elftools.elf.elffile import ELFFile
 from elftools.elf.dynamic import DynamicSection
+import olefile
 import pathlib
 from enum import Enum, auto
 import sys
@@ -258,12 +260,32 @@ def extract_pe_info(filename):
 
     return file_hdr_details, file_details
 
+def extract_ole_info(filename):
+    file_hdr_details = {}
+    file_details = {}
+
+    ole = olefile.OleFileIO(filename)
+    md = ole.get_metadata()
+    file_hdr_details["ole"] = {}
+    for prop in md.SUMMARY_ATTRIBS:
+        if value := getattr(md, prop, None):
+            if type(value) is bytes:
+                file_hdr_details["ole"][prop] = value.decode("unicode_escape")
+            elif type(value) is datetime.datetime:
+                file_hdr_details["ole"][prop] = value.ctime() 
+            else:
+                file_hdr_details["ole"][prop] = value
+    ole.close()
+    return file_hdr_details, file_details
+
 def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None):
     file_type = check_exe_type(filename)
     if file_type == 'ELF':
         file_hdr_details, file_info_details = extract_elf_info(filename)
     elif file_type == 'PE':
         file_hdr_details, file_info_details = extract_pe_info(filename)
+    elif file_type == 'OLE':
+        file_hdr_details, file_info_details = extract_ole_info(filename)
     else:
         pass
 
@@ -273,10 +295,29 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
     if file_info_details:
         metadata.append(file_info_details)
 
+    # common case is Windows PE file has these details
+    name = file_info_details["ProductName"] if "ProductName" in file_info_details else ""
+    version = file_info_details["FileVersion"] if "FileVersion" in file_info_details else ""
+    vendor = [file_info_details["CompanyName"]] if "CompanyName" in file_info_details else []
+    description = file_info_details["FileDescription"] if "FileDescription" in file_info_details else ""
+    comments = file_info_details["Comments"] if "Comments" in file_info_details else ""
+
+    # less common: OLE file metadata that might be relevant
+    if file_type == 'OLE':
+        print("-----------OLE--------------")
+        if "subject" in file_hdr_details["ole"]:
+            name = file_hdr_details["ole"]["subject"]
+        if "revision_number" in file_hdr_details["ole"]:
+            version = file_hdr_details["ole"]["revision_number"]
+        if "author" in file_hdr_details["ole"]:
+            vendor.append(file_hdr_details["ole"]["author"])
+        if "comments" in file_hdr_details["ole"]:
+            comments = file_hdr_details["ole"]["comments"]
+
     return {
        "UUID": str(uuid.uuid4()),
        **calc_file_hashes(filename),
-       "name": (file_info_details["ProductName"]) if "ProductName" in file_info_details else "",
+       "name": name,
        "fileName": [
            pathlib.Path(filename).name
        ],
@@ -284,11 +325,11 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
        "containerPath": [re.sub("^"+root_path, container_uuid, filename)] if root_path and container_uuid else None,
        "size": get_file_info(filename)["size"],
        "captureTime": int(time.time()),
-       "version": file_info_details["FileVersion"] if "FileVersion" in file_info_details else "",
-       "vendor": [file_info_details["CompanyName"]] if "CompanyName" in file_info_details else [],
-       "description": file_info_details["FileDescription"] if "FileDescription" in file_info_details else "",
+       "version": version,
+       "vendor": vendor,
+       "description": description,
        "relationshipAssertion": "Unknown",
-       "comments": file_info_details["Comments"] if "Comments" in file_info_details else "",
+       "comments": comments,
        "metadata": metadata,
        "supplementaryFiles": [],
        "provenance": None,
