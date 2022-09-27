@@ -284,7 +284,9 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
     elif file_type == 'OLE':
         file_hdr_details, file_info_details = extract_ole_info(filename)
     else:
-        pass
+        # details are just empty; this is the case for archive files (e.g. zip, tar, iso)
+        file_hdr_details = []
+        file_info_details = []
 
     metadata = []
     if file_hdr_details:
@@ -292,7 +294,7 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
     if file_info_details:
         metadata.append(file_info_details)
 
-    # common case is Windows PE file has these details
+    # common case is Windows PE file has these details, fallback default value is okay for any other file type
     name = file_info_details["ProductName"] if "ProductName" in file_info_details else ""
     version = file_info_details["FileVersion"] if "FileVersion" in file_info_details else ""
     vendor = [file_info_details["CompanyName"]] if "CompanyName" in file_info_details else []
