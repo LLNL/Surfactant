@@ -362,12 +362,14 @@ def parse_relationships(sbom):
             # handle PE imports
             if 'peImport' in md:
                 for fname in md['peImport']:
+                    # TODO add a check for the dependency being in the same install folder as the exectutable (depends on being able to get accurate install locations from msi/exe installers)
                     if dependency_uuid := [item.get('UUID') for item in sbom['software'] if item.get('fileName')[0] == fname]:
                         # shouldn't find multiple entries with the same UUID
                         # if we did, there may be files outside of the correct search path that were considered in the previous step
                         add_relationship(dependent_uuid, dependency_uuid[0], "Uses")
                     else:
                         print(f" Dependency {fname} not found for sbom['software'] entry={sw}")
+            # TODO handle .NET imports
             if 'peBoundImport' in md:
                 pass
             if 'peDelayImport' in md:
@@ -385,32 +387,37 @@ for entry in config:
     if "archive" in entry:
         print("Processing parent container " + str(entry["archive"]))
         parent_entry = get_software_entry(entry["archive"])
+        parent_uuid = parent_entry["UUID"]
         sbom["software"].append(parent_entry)
     else:
         parent_entry = None
+        parent_uuid = None
+
     if "installPrefix" in entry:
         install_prefix = entry["installPrefix"]
     else:
-        install_prefix = None 
+        install_prefix = None
+
     for epath in entry["extractPaths"]:
         print("Extracted Path: " + str(epath))
         for cdir, _, files in os.walk(epath):
             print("Processing " + str(cdir))
             
-            if parent_entry:
-                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_entry["UUID"]) for f in files if check_exe_type(os.path.join(cdir, f))]
-            else:
-                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
+            entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
             if entries:
                 sbom["software"].extend(entries)
+                # if the config file specified a parent/container for the files, add it as a "Contains" relationship
                 if parent_entry:
                     for e in entries:
                         xUUID = parent_entry["UUID"]
                         yUUID = e["UUID"]
                         sbom["relationships"].append({"xUUID": xUUID, "yUUID": yUUID, "relationship": "Contains"})
 
-parse_relationships(sbom)    
-                
+# add "Uses" relationships based on gathered metadata for software entries
+# TODO: could add an option for establishing relationships in an existing SBOM; this would save dev time, since new metadata to gather is unlikely
+parse_relationships(sbom)
+
+# TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
 with open("sbom.json", "w") as f:
     json.dump(sbom, f, indent=4)
 
