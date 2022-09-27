@@ -17,6 +17,7 @@ import olefile
 import pathlib
 from enum import Enum, auto
 import sys
+import argparse
 
 class ExeType(Enum):
     ELF = auto()
@@ -377,9 +378,12 @@ def parse_relationships(sbom):
 
 #### Main part of code ####
 
-# Make sure json file below doesn't have a trailing '/' at the end of the path.
-with open("examples/linux_extracted_config.json", "r") as f:
-    config = json.load(f)
+parser = argparse.ArgumentParser()
+parser.add_argument('config_file', metavar='CONFIG_FILE', nargs='?', type=argparse.FileType('r'), default=sys.stdin, help='Config file (JSON); make sure keys with paths do not have a trailing /')
+parser.add_argument('sbom_outfile', metavar='SBOM_OUTPUT', nargs='?', type=argparse.FileType('w'), default=sys.stdout, help='Output SBOM file')
+args = parser.parse_args()
+
+config = json.load(args.config_file)
 
 sbom = {"software": [], "relationships": []}
 
@@ -418,8 +422,7 @@ for entry in config:
 parse_relationships(sbom)
 
 # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
-with open("sbom.json", "w") as f:
-    json.dump(sbom, f, indent=4)
+json.dump(sbom, args.sbom_outfile, indent=4)
 
 
 
