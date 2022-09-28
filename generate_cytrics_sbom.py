@@ -381,45 +381,60 @@ def parse_relationships(sbom):
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', metavar='CONFIG_FILE', nargs='?', type=argparse.FileType('r'), default=sys.stdin, help='Config file (JSON); make sure keys with paths do not have a trailing /')
 parser.add_argument('sbom_outfile', metavar='SBOM_OUTPUT', nargs='?', type=argparse.FileType('w'), default=sys.stdout, help='Output SBOM file')
+parser.add_argument('-i', '--input_sbom', type=argparse.FileType('r'), help='Input SBOM to use as a base for subsequent operations')
+parser.add_argument('--skip_gather', action='store_true', help='Skip gathering information on files and adding software entries')
+parser.add_argument('--skip_relationships', action='store_true', help='Skip adding relationships based on Linux/Windows/etc metadata')
 args = parser.parse_args()
 
 config = json.load(args.config_file)
 
-sbom = {"software": [], "relationships": []}
+if not args.input_sbom:
+    sbom = {"software": [], "relationships": []}
+else:
+    sbom = json.load(args.input_sbom)
 
-for entry in config:
-    if "archive" in entry:
-        print("Processing parent container " + str(entry["archive"]))
-        parent_entry = get_software_entry(entry["archive"])
-        parent_uuid = parent_entry["UUID"]
-        sbom["software"].append(parent_entry)
-    else:
-        parent_entry = None
-        parent_uuid = None
+# gather metadata for files and add/augment software entries in the sbom
+if not args.skip_gather:
+    for entry in config:
+        if "archive" in entry:
+            print("Processing parent container " + str(entry["archive"]))
+            parent_entry = get_software_entry(entry["archive"])
+            parent_uuid = parent_entry["UUID"]
+            sbom["software"].append(parent_entry)
+        else:
+            parent_entry = None
+            parent_uuid = None
 
-    if "installPrefix" in entry:
-        install_prefix = entry["installPrefix"]
-    else:
-        install_prefix = None
+        if "installPrefix" in entry:
+            install_prefix = entry["installPrefix"]
+        else:
+            install_prefix = None
 
-    for epath in entry["extractPaths"]:
-        print("Extracted Path: " + str(epath))
-        for cdir, _, files in os.walk(epath):
-            print("Processing " + str(cdir))
+        for epath in entry["extractPaths"]:
+            print("Extracted Path: " + str(epath))
+            for cdir, _, files in os.walk(epath):
+                print("Processing " + str(cdir))
             
-            entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
-            if entries:
-                sbom["software"].extend(entries)
-                # if the config file specified a parent/container for the files, add it as a "Contains" relationship
-                if parent_entry:
-                    for e in entries:
-                        xUUID = parent_entry["UUID"]
-                        yUUID = e["UUID"]
-                        sbom["relationships"].append({"xUUID": xUUID, "yUUID": yUUID, "relationship": "Contains"})
+                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
+                if entries:
+                    # TODO if a software entry already exists with a matching file hash, augment the info in the existing entry
+                    # new file name (possibly) to the list of file names, new install path, container path
+                    # parent uuid relationship may already exist, needs checking
+                    sbom["software"].extend(entries)
+                    # if the config file specified a parent/container for the files, add it as a "Contains" relationship
+                    if parent_entry:
+                        for e in entries:
+                            xUUID = parent_entry["UUID"]
+                            yUUID = e["UUID"]
+                            sbom["relationships"].append({"xUUID": xUUID, "yUUID": yUUID, "relationship": "Contains"})
+else:
+    print("Skipping gathering file metadata and adding software entries")
 
 # add "Uses" relationships based on gathered metadata for software entries
-# TODO: could add an option for establishing relationships in an existing SBOM; this would save dev time, since new metadata to gather is unlikely
-parse_relationships(sbom)
+if not args.skip_relationships:
+    parse_relationships(sbom)
+else:
+    print("Skipping relationships based on imports metadata")
 
 # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
 json.dump(sbom, args.sbom_outfile, indent=4)
