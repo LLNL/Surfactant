@@ -15,7 +15,50 @@ from elftools.elf.elffile import ELFFile
 from elftools.elf.dynamic import DynamicSection
 import pathlib
 import sys
+import string
 
+def check_motorolla(current_line):
+    current_line = current_line.strip()
+    if current_line[0] != 'S' or current_line[0] != 's':
+        return False
+    for x in range(1, len(current_line)):
+        if current_line[x] not in string.hexdigits:
+            return False
+    return True
+
+def check_intel(current_line):
+    current_line = current_line.strip()
+    if current_line[0] != ':':
+        return False
+    for x in range(1, len(current_line)):
+        if current_line[x] not in string.hexdigits:
+            return False
+    return True
+
+
+def check_hex_type(filename):
+    try:
+        with open(filename, 'r') as f:
+            
+            percent_intel = 0
+            percent_motorolla = 0
+            for line in range(100):
+                curr = f.readline()
+                if not curr:
+                    break
+                if check_motorolla(curr):
+                    percent_motorolla+=1
+                elif check_intel(curr):
+                    percent_intel+=1
+            if percent_intel > percent_motorolla:
+                return "Intel_Hex"
+            elif percent_motorolla > percent_intel:
+                return "Motorolla_Srec"
+            else:
+                return None
+            
+    except FileNotFoundError:
+        return False
 
 def check_exe_type(filename):
     try:
