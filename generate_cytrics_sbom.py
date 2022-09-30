@@ -19,7 +19,7 @@ import string
 
 def check_motorolla(current_line):
     current_line = current_line.strip()
-    if current_line[0] != 'S' or current_line[0] != 's':
+    if current_line[0] != 'S' and current_line[0] != 's':
         return False
     for x in range(1, len(current_line)):
         if current_line[x] not in string.hexdigits:
