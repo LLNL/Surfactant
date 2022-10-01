@@ -17,7 +17,7 @@ import pathlib
 import sys
 import string
 
-def check_motorolla(current_line):
+def check_motorola(current_line):
     current_line = current_line.strip()
     if current_line[0] != 'S' and current_line[0] != 's':
         return False
@@ -41,19 +41,19 @@ def check_hex_type(filename):
         with open(filename, 'r') as f:
             
             percent_intel = 0
-            percent_motorolla = 0
+            percent_motorola = 0
             for line in range(100):
                 curr = f.readline()
                 if not curr:
                     break
-                if check_motorolla(curr):
-                    percent_motorolla+=1
+                if check_motorola(curr):
+                    percent_motorola+=1
                 elif check_intel(curr):
                     percent_intel+=1
-            if percent_intel > percent_motorolla:
+            if percent_intel > percent_motorola:
                 return "Intel_Hex"
-            elif percent_motorolla > percent_intel:
-                return "Motorolla_Srec"
+            elif percent_motorola > percent_intel:
+                return "Motorola_Srec"
             else:
                 return None
             
