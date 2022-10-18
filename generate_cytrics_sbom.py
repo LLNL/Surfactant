@@ -14,6 +14,7 @@ import dnfile
 from elftools.elf.elffile import ELFFile
 from elftools.elf.dynamic import DynamicSection
 import olefile
+import defusedxml.ElementTree
 import pathlib
 from enum import Enum, auto
 import sys
@@ -258,7 +259,250 @@ def extract_pe_info(filename):
                     assembly_refs.append(asmref)
                 file_hdr_details["dotnetAssemblyRef"] = assembly_refs
 
+    manifest_info = get_windows_manifest_info(filename)
+    if manifest_info:
+        file_details["manifestFile"] = manifest_info
+
+    app_config_info = get_windows_application_config_info(filename)
+    if app_config_info:
+        file_details["appConfigFile"] = app_config_info
+
     return file_hdr_details, file_details
+
+def get_xmlns_and_tag(uri):
+    check_xmlns = re.match(r'\{.*\}', uri.tag)
+    xmlns = check_xmlns.group(0) if check_xmlns else ''
+    tag = uri.tag
+    if tag.startswith(xmlns):
+        tag = tag.replace(xmlns, "", 1)
+    return xmlns, tag
+
+# check for manifest file on Windows (note: could also be a resource contained within an exe/dll)
+# return any info that could be useful for establishing "Uses" relationships later
+def get_windows_manifest_info(filename):
+    binary_filepath = pathlib.Path(filename)
+    manifest_filepath = binary_filepath.with_suffix(binary_filepath.suffix + '.manifest')
+    if manifest_filepath.exists():
+        print("Found application manifest file for " + filename)
+        et = defusedxml.ElementTree.parse(manifest_filepath)
+        manifest_info = {}
+
+        # root element is <assembly> which could contain:
+        # <assemblyIdentity>
+        # <file>
+        # <dependency>, which contains the usual <dependentAssembly> element found in Windows app config files
+        for asm_e in et.getroot():
+            asm_xmlns, asm_tag = get_xmlns_and_tag(asm_e)
+            if asm_tag == "assemblyIdentity":
+                if "assemblyIdentity" in manifest_info:
+                    print("[WARNING] duplicate assemblyIdentity element found in the manifest file: " + str(manifest_filepath))
+                manifest_info["assemblyIdentity"] = asm_e.attrib
+            if asm_tag == "file":
+                if not "file" in manifest_info:
+                    manifest_info["file"] = []
+                manifest_info["file"].append(asm_e.attrib)
+            if asm_tag == "dependency":
+                if "dependency" in manifest_info:
+                    print("[WARNING] duplicate dependency element found in the manifest file: " + str(manifest_filepath))
+                dependency_info = {}
+                for dependency in asm_e:
+                    dependency_xmlns, dependency_tag = get_xmlns_and_tag(dependency)
+                    if dependency_tag == "dependentAssembly":
+                        if not "dependentAssembly" in dependency_info:
+                            dependency_info["dependentAssembly"] = []
+                        dependency_info["dependentAssembly"].append(get_dependentAssembly_info(dependency))
+                manifest_info["dependency"] = dependency_info
+        return manifest_info
+    return None
+
+# returns info on a dependentAssembly
+def get_dependentAssembly_info(da_et):
+    daet_xmlns, daet_tag = get_xmlns_and_tag(da_et)
+    if daet_tag != "dependentAssembly":
+        print("[WARNING] element tree given was not for a dependentAssembly element tag")
+    da_info = {}
+    for da_e in da_et:
+        da_xmlns, da_tag = get_xmlns_and_tag(da_e)
+        if da_tag == "assemblyIdentity":
+            if "assemblyIdentity" in da_info:
+                print("[WARNING] duplicate assemblyIdentity element found in the app config file: " + str(config_filepath))
+            da_info["assemblyIdentity"] = da_e.attrib
+        if da_tag == "codeBase":
+            if "codeBase" in da_info:
+                print("[WARNING] duplicate codeBase element found in the app config file: " + str(config_filepath))
+            da_info["codeBase"] = da_e.attrib
+        if da_tag == "bindingRedirect":
+            if "bindingRedirect" in da_info:
+                print("[WARNING] duplicate bindingRedirect element found in the app config file: " + str(config_filepath))
+            da_info["bindingRedirect"] = da_e.attrib
+    return da_info
+
+# returns a map for the given assembly binding element tree based on content within the elemnt tree for an "assemblyBinding" tag
+# the "assemblyBinding" tag can appear within either a <runtime> or <windows> element, or under the root <configuration> element
+# <runtime>: could contain appliesTo attribute, probing, dependentAssembly, and qualifyAssembly elements
+# <windows>: could contain probing, assemblyIdentity, and dependentAssembly elements
+def get_assemblyBinding_info(ab_et):
+    xmlns, tag = get_xmlns_and_tag(ab_et)
+    if tag != "assemblyBinding":
+        print("[WARNING] element tree given was not for an assemblyBinding tag")
+
+    ab_info = {}
+
+    # Specifies runtime version .NET assembly redirection applies to
+    # uses .NET Framework version number; if not given, assemblyBinding
+    # element applies to all versions of .NET Framework
+    # ab_e.attrib["appliesTo"]
+    if "appliesTo" in ab_et.attrib:
+        ab_info["appliesTo"] = ab_et.attrib["appliesTo"]
+    for ab_e in ab_et:
+        ab_xmlns, ab_tag = get_xmlns_and_tag(ab_e)
+        # <probing>
+        # specifies subdirs of application's base dir to search for assemblies
+        # privatePath: "bin;bin2\subbin;bin3"
+        if ab_tag == "probing":
+            if "probing" in ab_info:
+                print("[WARNING] duplicate probing element found in the app config file: " + str(config_filepath))
+            ab_info["probing"] = ab_e.attrib
+
+        # <dependentAssembly> for .NET
+        # binding policy and assembly location for dependent assemblies
+        #   <assemblyIdentity>
+        #   used to determine if this dependentAssembly config element should apply
+        #   - name: name of the assembly
+        #   - culture: (optional) specify language and country/region of assembly
+        #   - publicKeyToken: (optional) specify assembly strong name
+        #   - processorArchitecture: (optional) "x86", "amd64", "msil", or "ia64"
+        #   <codeBase>
+        #   specifies assembly to use; if not present, usual probing for assemblies
+        #   - version: version of assembly the codebase applies to
+        #   - href: URL where runtime can find specified version of assembly
+        #   <bindingRedirect>
+        #   redirect one assembly to another version
+        #   - oldVersion: assembly version originally requested
+        #   - newVersion: the assembly version to use instead
+        if ab_tag == "dependentAssembly":
+            if not "dependentAssembly" in ab_info:
+                ab_info["dependentAssembly"] = []
+            ab_info["dependentAssembly"].append(get_dependentAssembly_info(ab_e))
+
+        # <qualifyAssembly>
+        # replaces partial name in Assembly.Load with full name
+        # - partialName: "math"
+        # - fullName: "math,version=...,publicKeyToken=...,culture=neutral"
+        if ab_tag == "qualifyAssembly":
+            if "qualifyAssembly" in ab_info:
+                print("[WARNING] duplicate qualifyAssembly element found in the app config file: " + str(config_filepath))
+            ab_info["qualifyAssembly"] = ab_e.attrib
+    return ab_info
+
+# check for an application configuration file and return (potentially) useful information
+# https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies#application-configuration-file
+# https://learn.microsoft.com/en-us/windows/win32/sbscs/application-configuration-files
+def get_windows_application_config_info(filename):
+    binary_filepath = pathlib.Path(filename)
+    config_filepath = binary_filepath.with_suffix(binary_filepath.suffix + '.config')
+    if config_filepath.exists():
+        print("Found application configuration file for " + filename)
+        et = defusedxml.ElementTree.parse(config_filepath)
+        app_config_info = {}
+
+        # requiredRuntime is used for v1.0 of .NET Framework, supportedRuntime is for v1.1+
+        supportedRuntime = et.find('./startup/supportedRuntime')
+        requiredRuntime = et.find('./startup/requiredRuntime')
+        if (supportedRuntime != None) or (requiredRuntime != None):
+            startup_info = {}
+            if (supportedRuntime != None) and supportedRuntime.attrib:
+                startup_info["supportedRuntime"] = supportedRuntime.attrib
+            if (requiredRuntime != None) and requiredRuntime.attrib:
+                startup_info["requiredRuntime"] = requiredRuntime.attrib
+            app_config_info["startup"] = startup_info
+
+        # <linkedConfiguration href="URL of linked XML file" />
+        # - seems to appear within an assemblyBinding element right under the root configuration element
+        # - only format for href is `file://` either local or UNC
+        # - includes assembly config file contents here, similar to #include
+        linkedConfiguration = et.find('./assemblyBinding/linkedConfiguration')
+        if (linkedConfiguration != None) and linkedConfiguration.attrib:
+            app_config_info["assemblyBinding"] = {"linkedConfiguration": linkedConfiguration.attrib}
+
+        # The following appear within a <windows> element:
+        # <probing privatePath="bin;..\bin2\subbin;bin3"/>
+        # - valid starting on Windows Server 2008 R2 and Windows 7
+        # - privatePath: (optional) specifies relative paths of subdirs of the app base dir that might contain assemblies
+        # <assemblyBinding>
+        # - first element must be an assemblyIdentity describing the assembly; followed by dependentAssembly elements (also below)
+        #   <probing privatePath="bin;..\bin2\subbin;bin3"/>
+        #   - valid starting on Windows Server 2008 R2 and Windows 7
+        #   - privatePath: (optional) specifies relative paths of subdirs of the app base dir that might contain assemblies
+        # <dependency> (based on the app config file schema, this
+        # - contains one or more dependentAssembly elements (optional)
+        #  <dependentAssembly>
+        #  - contains assemblyIdentity that unique identifies an app
+        #  - app config file redirects binding of application to side-by-side assemblies
+        #    <assemblyIdentity processorArchitecture="X86" name="Microsoft.Windows.mysampleApp" type="win32" version="1.0.0.0"/>
+        #    - describes side-by-side assembly the application depends on
+        #    - type: must be "win32" lowercase
+        #    - name: identifies app being affected by app config file or assembly being redirected
+        #    - language: (optional) identifies the language by DHTML code or "*" if language neutral/worldwide use
+        #    - processorArchitecture: the processor running the application
+        #    - version: version of app or assembly
+        #    - publicKeyToken: 16-char hex string w/ last 8 bytes of SHA-1 hash of public key the assembly is signed by
+        #    <bindingRedirect oldVersion="1.0.0.0" newVersion="1.0.10.0"/>
+        #    - oldVersion: assembly version being overriden or redirected
+        #    - newVersion: replacement assembly version
+        windows_et = et.find('./windows')
+        if windows_et != None:
+            windows_info = {}
+            for win_child in windows_et:
+                xmlns, tag = get_xmlns_and_tag(win_child)
+                if tag == "probing":
+                    if "probing" in windows_info:
+                        print("[WARNING] duplicate windows/probing element was found in the app config file: " + str(config_filepath))
+                    if "privatePath" in win_child.attrib:
+                        windows_info["probing"] = {"privatePath": win_child.attrib['privatePath']}
+                    else:
+                        print("[WARNING] windows/probing element missing privatePath attribute in app config file: " + str(config_filepath))
+                if tag == "assemblyBinding":
+                    windows_info["assemblyBinding"] = get_assemblyBinding_info(win_child)
+                if tag == "dependency":
+                    dependency_info = {}
+                    for dependency in win_child:
+                        dependency_xmlns, dependency_tag = get_xmlns_and_tag(dependency)
+                        if dependency_tag == "dependentAssembly":
+                            if not "dependentAssembly" in dependency_info:
+                                dependency_info["dependentAssembly"] = []
+                            dependency_info["dependentAssembly"].append(get_dependentAssembly_info(dependency))
+                    windows_info["dependency"] = dependency_info
+            app_config_info["windows"] = windows_info
+
+        # runtime element used for .NET related configuration info that can affect how the runtime locates assemblies to load
+        runtime_et = et.find('./runtime')
+        if runtime_et != None:
+            runtime_info = {}
+            for rt_child in runtime_et:
+                # Docs say "urn:schemas-microsoft-com:asm.v1" is the namespace for assemblyBinding
+                xmlns, tag = get_xmlns_and_tag(rt_child)
+                if tag == "developmentMode":
+                    # attribute is either 'true' or 'false' (string)
+                    # Causes runtime to search directory given in DEVPATH env var for assemblies first (skips signature checks)
+                    if "developmentMode" in runtime_info:
+                        print("[WARNING] duplicate developmentMode element was found in the app config file: " + str(config_filepath))
+                    if "developerInstallation" in rt_child.attrib:
+                        runtime_info["developmentMode"] = {"developerInstallation": rt_child.attrib['developerInstallation']}
+                    else:
+                        print("[WARNING] developmentMode element missing developerInstallation attribute in app config file: " + str(config_filepath))
+                if tag == "assemblyBinding":
+                    runtime_info["assemblyBinding"] = get_assemblyBinding_info(rt_child)
+            app_config_info["runtime"] = runtime_info
+
+        # Info returned includes:
+        # - runtime information related to .NET
+        # - config options (codeBase, probing) that affect how .NET assemblies are located
+        # - config options (probing) that affect how native Windows DLLs are found
+        # - assembly identity info (processor targeted, etc)
+        # - dependent assembly info (used to determine correct version of an assembly to use)
+        return app_config_info
+    return None
 
 def extract_ole_info(filename):
     file_hdr_details = {}

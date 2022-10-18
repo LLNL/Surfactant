@@ -2,5 +2,6 @@ pyelftools
 pefile
 dnfile
 olefile
+defusedxml
 pandas
 spdx
