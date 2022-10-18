@@ -4,3 +4,4 @@ dnfile
 olefile
 pandas
 spdx
+deepdiff

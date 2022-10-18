@@ -18,6 +18,7 @@ import pathlib
 from enum import Enum, auto
 import sys
 import argparse
+from deepdiff import DeepDiff
 
 class ExeType(Enum):
     ELF = auto()
@@ -375,6 +376,38 @@ def parse_relationships(sbom):
                 pass
             if 'peDelayImport' in md:
                 pass
+
+def entry_search(hsh, sbom):
+    for index, item in enumerate(sbom['software']):
+        hsh_list = [item['sha256'], item['sha1'], item['md5']]
+        if hsh in hsh_list:
+            return True, index
+        else:
+            return False, None
+
+def update_entry(org_sbom, new_entry, hsh):
+    hsh_in_sbom, index = entry_search(hsh, org_sbom)
+    if hsh_in_sbom and index != None:
+        # duplicate entry, check other fields to see if data differs. 
+        org_entry = org_sbom['software'][index]
+        if org_entry != new_entry:
+            # go through each key-value pair between the entries to find the differences and update accordingly.
+            diff = DeepDiff(org_entry, new_entry)['values_changed']
+            for key in diff:
+                value = diff[key]['new_value']
+                location = key.replace("root", "")[2:-2]
+                if location not in ['UUID', 'captureTime']:
+                    org_sbom['software'][index].update({location : value})
+    return org_sbom
+
+def new_entry(file_name, install_path, container_path, sbom):
+    # need to create a new entry and add to sbom
+    # add new file name, install path, and container path to those in an existing sbom entry (if they differ from what is already there)
+    entry = get_software_entry(file_name, container_path,  install_path) 
+    sbom['software'].append(entry)
+
+    return sbom
+
 
 #### Main part of code ####
 
