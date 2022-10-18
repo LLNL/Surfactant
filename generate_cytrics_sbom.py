@@ -259,6 +259,9 @@ def extract_pe_info(filename):
                     assembly_refs.append(asmref)
                 file_hdr_details["dotnetAssemblyRef"] = assembly_refs
 
+    # TODO for a custom intermediate SBOM format, the information read from the manifest and app config files
+    # should be tied to a specific "<install path>/<file name>", in case the same file appears in separate
+    # directories/file systems with different manifest/config file settings for paths to search
     manifest_info = get_windows_manifest_info(filename)
     if manifest_info:
         file_details["manifestFile"] = manifest_info
