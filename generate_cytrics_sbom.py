@@ -383,8 +383,8 @@ def entry_search(sbom, hsh):
     for index, item in enumerate(sbom['software']):
         if hsh in item['sha256']:
             return True, index
-        else:
-            return False, None
+        
+    return False, None
 
 def update_entry(sbom, entry, index):
     if index != None:
