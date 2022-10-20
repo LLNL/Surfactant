@@ -370,7 +370,7 @@ def parse_relationships(sbom):
                         # if we did, there may be files outside of the correct search path that were considered in the previous step
                         add_relationship(dependent_uuid, dependency_uuid[0], "Uses")
                     else:
-                        print(f" Dependency {fname} not found for sbom['software'] entry={sw}")
+                        print(f" Dependency {fname} not found for sbom['software'] entry={sw}\n")
             # TODO handle .NET imports
             if 'peBoundImport' in md:
                 pass
@@ -378,6 +378,8 @@ def parse_relationships(sbom):
                 pass
 
 def entry_search(sbom, hsh):
+    if len(sbom['software']) == 0:
+        return False, None
     for index, item in enumerate(sbom['software']):
         if hsh in item['sha256']:
             return True, index
