@@ -669,6 +669,9 @@ def find_dotnet_assemblies(probedirs, filename):
     possible_matches = []
     # iterate through all sbom entries
     for e in sbom['software']:
+        # Skip if no install path (e.g. installer/temporary file)
+        if e['installPath'] == None:
+            continue
         for pdir in probedirs:
             # installPath contains full path+filename, so check for all combinations of probedirs+filename
             pfile = pathlib.PureWindowsPath(pdir, filename)
@@ -684,6 +687,9 @@ def find_windows_dlls(probedirs, filename):
     possible_matches = []
     # iterate through all sbom entries
     for e in sbom['software']:
+        # Skip if no install path (e.g. installer/temporary file)
+        if e['installPath'] == None:
+            continue
         for pdir in probedirs:
             # installPath contains full path+filename, so check for all combinations of probedirs+filename
             pfile = pathlib.PureWindowsPath(pdir, filename)
@@ -695,6 +701,11 @@ def find_windows_dlls(probedirs, filename):
     return possible_matches
 
 def add_windows_pe_dependencies(sw, peImports):
+    # No installPath is probably temporary files/installer
+    # TODO maybe resolve dependencies using relative locations in containerPath, for files originating from the same container UUID?
+    if sw['installPath'] == None:
+        return
+
     # https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order
     # Desktop Applications (we can only check a subset of these without much more info gathering, disassembly + full filesystem + environment details)
     # 1. Specifying full path, using DLL redirection, or using a manifest
@@ -732,6 +743,9 @@ def add_windows_pe_dependencies(sw, peImports):
 
 def parse_relationships(sbom):
     for sw in sbom['software']:
+        # Skip for temporary files/installer that don't have any installPath to find dependencies with
+        if sw['installPath'] == None:
+            continue
         dependent_uuid = sw.get('UUID')
         windowsAppConfig = None
         windowsManifest = None
