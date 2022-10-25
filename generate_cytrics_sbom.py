@@ -46,6 +46,8 @@ def check_exe_type(filename):
             #    return 'MACHO32'
             #elif magic_bytes[:4] == b"\xfe\xed\xfa\xcf":
             #    return 'MACHO64'
+            #elif magic_bytes[:4] == b"\xde\xc0\x17\x0b":
+            #    return 'LLVM_BITCODE'
             else:
                 return None
     except FileNotFoundError:
