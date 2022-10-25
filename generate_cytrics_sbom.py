@@ -874,7 +874,7 @@ def update_entry(sbom, entry, index):
                     # TODO: for intermediate file format, find/figure out way to resolve conflicts between surfactant sboms and those with manual additions
   
             # return UUID of existing entry, UUID of entry being discarded 
-            return existing_uuid, entry_uuid
+            return existing_uuid, entry_uuid, existing_entry
     
 
 
@@ -921,22 +921,33 @@ if not args.skip_gather:
             
                 entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
                 if entries:
-                    # TODO if a software entry already exists with a matching file hash, augment the info in the existing entry
-                    # new file name (possibly) to the list of file names, new install path, container path
-                    # parent uuid relationship may already exist, needs checking
+                    # if a software entry already exists with a matching file hash, augment the info in the existing entry
                     for e in entries:
                         found, index = entry_search(sbom, e['sha256'])
                         if not found:
                             sbom["software"].append(e)
                         else:
-                            existing_uuid, entry_uuid = update_entry(sbom, e, index)
-                            # TODO use existing uuid and entry uuid to  update the sbom['relationships'] entries
+                            existing_uuid, entry_uuid, updated_entry = update_entry(sbom, e, index)
+                            # use existing uuid and entry uuid to update parts of the software entry (containerPath) that may be out of date
+                            if 'containerPath' in updated_entry and updated_entry['containerPath'] != None:
+                                for index, value in enumerate(updated_entry['containerPath']:
+                                    if value.startswith(entry_uuid):
+                                        updated_entry['containerPath'][index] = value.replace(entry_uuid, existing_uuid)
+                            # go through relationships and see if any need existing entries existed for the replaced uuid (e.g. merging SBOMs)
+                            for index, value in enumerate(sbom['relationships']):
+                                if value['xUUID'] == entry_uuid:
+                                    sbom['relationships'][index]['xUUID'] = existing_uuid
+                                if value['yUUID'] == entry_uuid:
+                                    sbom['relationships'][index]['yUUID'] = existing_uuid
+                            # TODO a pass later on to remove duplicate relationships will be needed
                     # if the config file specified a parent/container for the files, add it as a "Contains" relationship
                     if parent_entry:
                         for e in entries:
                             xUUID = parent_entry["UUID"]
                             yUUID = e["UUID"]
-                            sbom["relationships"].append({"xUUID": xUUID, "yUUID": yUUID, "relationship": "Contains"})
+                            # make sure an existing parent relationship doesn't already exist (due to a duplicate file hash returning an existing entry)
+                            if not find_relationship(xUUID, yUUID, "Contains"):
+                                add_relationship(xUUID, yUUID, "Contains")
 else:
     print("Skipping gathering file metadata and adding software entries")
 
