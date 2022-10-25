@@ -255,7 +255,7 @@ def extract_pe_info(filename):
                     asm["Name"] = a_info.Name
                     asm["Culture"] = a_info.Culture
                     asm["Version"] = f"{a_info.MajorVersion}.{a_info.MinorVersion}.{a_info.BuildNumber}.{a_info.RevisionNumber}"
-                    asm["PublicKey"] = a_info.PublicKey.decode('unicode_escape')
+                    asm["PublicKey"] = a_info.PublicKey.hex()
                     asm["HashAlgId"] = a_info.HashAlgId
                     print("Processing:"+a_info.Name)
                     # Info on flags
@@ -288,8 +288,8 @@ def extract_pe_info(filename):
                     asmref["Name"] = ar_info.Name
                     asmref["Culture"] = ar_info.Culture
                     asmref["Version"] = f"{ar_info.MajorVersion}.{ar_info.MinorVersion}.{ar_info.BuildNumber}.{ar_info.RevisionNumber}"
-                    asmref["PublicKey"] = ar_info.PublicKey.decode('unicode_escape')
-                    asmref["HashValue"] = ar_info.HashValue.decode('unicode_escape')
+                    asmref["PublicKey"] = ar_info.PublicKey.hex()
+                    asmref["HashValue"] = ar_info.HashValue.hex()
                     print("Processing:"+ar_info.Name)
                     # Info on flags
                     # Processor Architecture fields/values: https://learn.microsoft.com/en-us/dotnet/api/system.reflection.processorarchitecture?view=net-6.0
