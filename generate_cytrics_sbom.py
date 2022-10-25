@@ -32,6 +32,8 @@ class ExeType(Enum):
 
 def check_motorola(current_line):
     current_line = current_line.strip()
+    if len(current_line) < 1:
+        return False
     if current_line[0] != 'S' and current_line[0] != 's':
         return False
     for x in range(1, len(current_line)):
@@ -41,6 +43,8 @@ def check_motorola(current_line):
 
 def check_intel(current_line):
     current_line = current_line.strip()
+    if len(current_line) < 1:
+        return False
     if current_line[0] != ':':
         return False
     for x in range(1, len(current_line)):
