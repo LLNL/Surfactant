@@ -836,6 +836,7 @@ def entry_search(sbom, hsh):
         
     return False, None
 
+# updates fields in an entry, with the assumption that the hashes match (e.g. most extracted values should match)
 def update_entry(sbom, entry, index):
     if index != None:
         # duplicate entry, check other fields to see if data differs. 
@@ -847,33 +848,36 @@ def update_entry(sbom, entry, index):
             diff = DeepDiff(existing_entry, entry)['values_changed']
             for key in diff:
                 value = diff[key]['new_value']
-                location = key.replace("root", "")[2:-2]
+                # key will look something like root['fileName'][0], we only want the first location/key
+                location = key.replace("root", "")
+                location = location[2:location.index("']")]
                 if location not in ['UUID', 'captureTime']:
                     # if new value to replace is an empty string or None - just leave as is
                     if value not in ['', " ", None]:
                         # if value is an array, append the new values; only add if not a duplicate
-                        # ex: containerPath (array), fileName, installPath, vendor, metadata, supplementaryFiles, components
+                        # ex: containerPath (array), fileName, installPath, vendor, provenance, metadata, supplementaryFiles, components
                         if isinstance(sbom['software'][index][location], list):
-                            for item in sbom['software'][index][location]:
-                                entries = eval(value)
-                                # case where value is a list cast as a string (because of the DeepDiff output) that needs to be converted back to a list 
-                                if isinstance(value, str) and type(entries) == list:
-                                    for e in entries:
-                                        if e not in item:
-                                            sbom['software'][index][location].append(e)
-                                else:
-                                    raise Exception("Trying to compare a string with a list, when two lists are being compared")
-                        # if new value and old value don't match, print some sort of message showing discrepancy
-                        if value != sbom['software'][index][location]:
-                            raise Exception(f'New value and old value do not match.')
+                            if location in ["containerPath", "fileName", "installPath", "vendor", "provenance", "metadata", "supplementaryFiles", "components"]:
+                                if not value in sbom['software'][index][location]:
+                                    sbom['software'][index][location].append(value)
+                            #for item in sbom['software'][index][location]:
+                            #    entries = eval(value)
+                            #    # case where value is a list cast as a string (because of the DeepDiff output) that needs to be converted back to a list
+                            #    if isinstance(value, str) and type(entries) == list:
+                            #        for e in entries:
+                            #            if e not in item:
+                            #                sbom['software'][index][location].append(e)
+                            #    else:
+                            #        raise Exception("Trying to compare a string with a list, when two lists are being compared")
                         
                         # if value is a string, update the dictionary
-                        # ex: name, provenance (may be an array?), comments, version, description, relationshipAssertion, recordedInstitution
-                        sbom['software'][index].update({location : value})
+                        # ex: name, comments, version, description, relationshipAssertion, recordedInstitution
+                        if location in ["name", "comments", "version", "description", "relationshipAssertion", "recordedInstitution"]:
+                            sbom['software'][index].update({location : value})
                 
                     # TODO: for intermediate file format, find/figure out way to resolve conflicts between surfactant sboms and those with manual additions
   
-            # return UUID of existing entry, UUID of entry being discarded 
+            # return UUID of existing entry, UUID of entry being discarded, existing_entry object
             return existing_uuid, entry_uuid, existing_entry
     
 
@@ -930,7 +934,7 @@ if not args.skip_gather:
                             existing_uuid, entry_uuid, updated_entry = update_entry(sbom, e, index)
                             # use existing uuid and entry uuid to update parts of the software entry (containerPath) that may be out of date
                             if 'containerPath' in updated_entry and updated_entry['containerPath'] != None:
-                                for index, value in enumerate(updated_entry['containerPath']:
+                                for index, value in enumerate(updated_entry['containerPath']):
                                     if value.startswith(entry_uuid):
                                         updated_entry['containerPath'][index] = value.replace(entry_uuid, existing_uuid)
                             # go through relationships and see if any need existing entries existed for the replaced uuid (e.g. merging SBOMs)
