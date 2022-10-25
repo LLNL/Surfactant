@@ -975,8 +975,12 @@ if not args.skip_gather:
         if "archive" in entry:
             print("Processing parent container " + str(entry["archive"]))
             parent_entry = get_software_entry(entry["archive"])
+            archive_found, archive_index = entry_search(sbom, parent_entry['sha256'])
+            if not archive_found:
+                sbom["software"].append(parent_entry)
+            else:
+                parent_entry = sbom["software"][archive_index]
             parent_uuid = parent_entry["UUID"]
-            sbom["software"].append(parent_entry)
         else:
             parent_entry = None
             parent_uuid = None
