@@ -18,6 +18,7 @@ import defusedxml.ElementTree
 import pathlib
 from enum import Enum, auto
 import sys
+import string
 import argparse
 from deepdiff import DeepDiff
 
@@ -28,6 +29,48 @@ class ExeType(Enum):
     JAVA_MACHOFAT = auto()
     MACHO32 = auto()
     MACHO64 = auto()
+
+def check_motorola(current_line):
+    current_line = current_line.strip()
+    if current_line[0] != 'S' and current_line[0] != 's':
+        return False
+    for x in range(1, len(current_line)):
+        if current_line[x] not in string.hexdigits:
+            return False
+    return True
+
+def check_intel(current_line):
+    current_line = current_line.strip()
+    if current_line[0] != ':':
+        return False
+    for x in range(1, len(current_line)):
+        if current_line[x] not in string.hexdigits:
+            return False
+    return True
+
+def check_hex_type(filename):
+    try:
+        with open(filename, 'r') as f:
+            
+            percent_intel = 0
+            percent_motorola = 0
+            for line in range(100):
+                curr = f.readline()
+                if not curr:
+                    break
+                if check_motorola(curr):
+                    percent_motorola+=1
+                elif check_intel(curr):
+                    percent_intel+=1
+            if percent_intel > percent_motorola:
+                return "Intel_Hex"
+            elif percent_motorola > percent_intel:
+                return "Motorola_Srec"
+            else:
+                return None
+            
+    except FileNotFoundError:
+        return False
 
 def check_exe_type(filename):
     try:
