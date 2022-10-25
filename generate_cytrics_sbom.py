@@ -52,6 +52,12 @@ def check_intel(current_line):
             return False
     return True
 
+# extensions from:
+# https://en.wikipedia.org/wiki/Intel_HEX
+# - not included: all p00 to pff extensions
+# https://en.wikipedia.org/wiki/SREC_(file_format)
+hex_file_extensions = [".hex", ".mcs", ".h86", ".hxl", ".hxh", ".obl", ".obh", ".ihex", ".ihe", ".ihx", ".a43", ".a90", ".s-record", ".srecord", ".s-rec", ".srec", ".s19", ".s28", ".s37", ".s", ".s1", ".s2", ".s3", ".sx", ".exo", ".mot", ".mxt"]
+
 def check_hex_type(filename):
     try:
         with open(filename, 'r') as f:
@@ -67,9 +73,9 @@ def check_hex_type(filename):
                 elif check_intel(curr):
                     percent_intel+=1
             if percent_intel > percent_motorola:
-                return "Intel_Hex"
+                return "INTEL_HEX"
             elif percent_motorola > percent_intel:
-                return "Motorola_Srec"
+                return "MOTOROLA_SREC"
             else:
                 return None
             
@@ -592,6 +598,7 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
         file_hdr_details, file_info_details = extract_ole_info(filename)
     else:
         # details are just empty; this is the case for archive files (e.g. zip, tar, iso)
+        # as well as intel hex or motorola s-rec files
         file_hdr_details = []
         file_info_details = []
 
@@ -971,8 +978,16 @@ if not args.skip_gather:
             print("Extracted Path: " + str(epath))
             for cdir, _, files in os.walk(epath):
                 print("Processing " + str(cdir))
-            
-                entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
+
+                entries = []
+                for f in files:
+                    filepath = os.path.join(cdir, f)
+                    file_suffix = pathlib.Path(filepath).suffix.lower()
+                    if check_exe_type(filepath):
+                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix))
+                    elif (file_suffix in hex_file_extensions) and check_hex_type(filepath):
+                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix))
+                #entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
                 if entries:
                     # if a software entry already exists with a matching file hash, augment the info in the existing entry
                     for e in entries:
