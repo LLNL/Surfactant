@@ -5,3 +5,4 @@ olefile
 defusedxml
 pandas
 spdx
+deepdiff

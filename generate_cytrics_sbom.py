@@ -19,6 +19,7 @@ import pathlib
 from enum import Enum, auto
 import sys
 import argparse
+from deepdiff import DeepDiff
 
 class ExeType(Enum):
     ELF = auto()
@@ -38,7 +39,7 @@ def check_exe_type(filename):
                 return 'PE'
             elif magic_bytes == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
                 return 'OLE'
-            #elif magic_bytes[:4] == b"\xca\xfe\xba\xbe":
+            # elif magic_bytes[:4] == b"\xca\xfe\xba\xbe":
             #    # magic bytes can either be for Java class file or Mach-O Fat Binary
             #    return 'JAVA_MACHOFAT'
             #elif magic_bytes[:4] == b"\xfe\xed\xfa\xce":
@@ -826,6 +827,57 @@ def parse_relationships(sbom):
                             # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
                             #print(f" Dependency {refName} not found for sbom['software'] entry={sw}")
 
+def entry_search(sbom, hsh):
+    if len(sbom['software']) == 0:
+        return False, None
+    for index, item in enumerate(sbom['software']):
+        if hsh in item['sha256']:
+            return True, index
+        
+    return False, None
+
+def update_entry(sbom, entry, index):
+    if index != None:
+        # duplicate entry, check other fields to see if data differs. 
+        existing_entry = sbom['software'][index]
+        if existing_entry != entry:
+            # go through each key-value pair between the entries to find the differences and update accordingly.
+            existing_uuid = existing_entry['UUID']
+            entry_uuid = entry['UUID']
+            diff = DeepDiff(existing_entry, entry)['values_changed']
+            for key in diff:
+                value = diff[key]['new_value']
+                location = key.replace("root", "")[2:-2]
+                if location not in ['UUID', 'captureTime']:
+                    # if new value to replace is an empty string or None - just leave as is
+                    if value not in ['', " ", None]:
+                        # if value is an array, append the new values; only add if not a duplicate
+                        # ex: containerPath (array), fileName, installPath, vendor, metadata, supplementaryFiles, components
+                        if isinstance(sbom['software'][index][location], list):
+                            for item in sbom['software'][index][location]:
+                                entries = eval(value)
+                                # case where value is a list cast as a string (because of the DeepDiff output) that needs to be converted back to a list 
+                                if isinstance(value, str) and type(entries) == list:
+                                    for e in entries:
+                                        if e not in item:
+                                            sbom['software'][index][location].append(e)
+                                else:
+                                    raise Exception("Trying to compare a string with a list, when two lists are being compared")
+                        # if new value and old value don't match, print some sort of message showing discrepancy
+                        if value != sbom['software'][index][location]:
+                            raise Exception(f'New value and old value do not match.')
+                        
+                        # if value is a string, update the dictionary
+                        # ex: name, provenance (may be an array?), comments, version, description, relationshipAssertion, recordedInstitution
+                        sbom['software'][index].update({location : value})
+                
+                    # TODO: for intermediate file format, find/figure out way to resolve conflicts between surfactant sboms and those with manual additions
+  
+            # return UUID of existing entry, UUID of entry being discarded 
+            return existing_uuid, entry_uuid
+    
+
+
 #### Main part of code ####
 
 parser = argparse.ArgumentParser()
@@ -872,7 +924,13 @@ if not args.skip_gather:
                     # TODO if a software entry already exists with a matching file hash, augment the info in the existing entry
                     # new file name (possibly) to the list of file names, new install path, container path
                     # parent uuid relationship may already exist, needs checking
-                    sbom["software"].extend(entries)
+                    for e in entries:
+                        found, index = entry_search(sbom, e['sha256'])
+                        if not found:
+                            sbom["software"].append(e)
+                        else:
+                            existing_uuid, entry_uuid = update_entry(sbom, e, index)
+                            # TODO use existing uuid and entry uuid to  update the sbom['relationships'] entries
                     # if the config file specified a parent/container for the files, add it as a "Contains" relationship
                     if parent_entry:
                         for e in entries:
