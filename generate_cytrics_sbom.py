@@ -1012,6 +1012,11 @@ if not args.skip_gather:
                         found, index = entry_search(sbom, e['sha256'])
                         if not found:
                             sbom["software"].append(e)
+                            # if the config file specified a parent/container for the file, add the new entry as a "Contains" relationship
+                            if parent_entry:
+                                parent_uuid = parent_entry["UUID"]
+                                child_uuid = e["UUID"]
+                                add_relationship(parent_uuid, child_uuid, "Contains")
                         else:
                             existing_uuid, entry_uuid, updated_entry = update_entry(sbom, e, index)
                             # use existing uuid and entry uuid to update parts of the software entry (containerPath) that may be out of date
@@ -1019,21 +1024,20 @@ if not args.skip_gather:
                                 for index, value in enumerate(updated_entry['containerPath']):
                                     if value.startswith(entry_uuid):
                                         updated_entry['containerPath'][index] = value.replace(entry_uuid, existing_uuid)
-                            # go through relationships and see if any need existing entries existed for the replaced uuid (e.g. merging SBOMs)
+                            # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs)
                             for index, value in enumerate(sbom['relationships']):
                                 if value['xUUID'] == entry_uuid:
                                     sbom['relationships'][index]['xUUID'] = existing_uuid
                                 if value['yUUID'] == entry_uuid:
                                     sbom['relationships'][index]['yUUID'] = existing_uuid
-                            # TODO a pass later on to remove duplicate relationships will be needed
-                    # if the config file specified a parent/container for the files, add it as a "Contains" relationship
-                    if parent_entry:
-                        for e in entries:
-                            xUUID = parent_entry["UUID"]
-                            yUUID = e["UUID"]
-                            # make sure an existing parent relationship doesn't already exist (due to a duplicate file hash returning an existing entry)
-                            if not find_relationship(xUUID, yUUID, "Contains"):
-                                add_relationship(xUUID, yUUID, "Contains")
+                            # add a new contains relationship if the duplicate file is from a different container/archive than previous times seeing the file
+                            if parent_entry:
+                                parent_uuid = parent_entry["UUID"]
+                                child_uuid = existing_uuid
+                                # avoid duplicate entries
+                                if not find_relationship(parent_uuid, child_uuid, "Contains"):
+                                    add_relationship(parent_uuid, child_uuid, "Contains")
+                            # TODO a pass later on to check for and remove duplicate relationships should be added just in case
 else:
     print("Skipping gathering file metadata and adding software entries")
 
