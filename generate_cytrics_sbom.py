@@ -411,7 +411,7 @@ def get_windows_manifest_info(filename):
     return None
 
 # returns info on a dependentAssembly
-def get_dependentAssembly_info(da_et):
+def get_dependentAssembly_info(da_et, config_filepath=""):
     daet_xmlns, daet_tag = get_xmlns_and_tag(da_et)
     if daet_tag != "dependentAssembly":
         print("[WARNING] element tree given was not for a dependentAssembly element tag")
@@ -436,7 +436,7 @@ def get_dependentAssembly_info(da_et):
 # the "assemblyBinding" tag can appear within either a <runtime> or <windows> element, or under the root <configuration> element
 # <runtime>: could contain appliesTo attribute, probing, dependentAssembly, and qualifyAssembly elements
 # <windows>: could contain probing, assemblyIdentity, and dependentAssembly elements
-def get_assemblyBinding_info(ab_et):
+def get_assemblyBinding_info(ab_et, config_filepath=""):
     xmlns, tag = get_xmlns_and_tag(ab_et)
     if tag != "assemblyBinding":
         print("[WARNING] element tree given was not for an assemblyBinding tag")
@@ -478,7 +478,7 @@ def get_assemblyBinding_info(ab_et):
         if ab_tag == "dependentAssembly":
             if not "dependentAssembly" in ab_info:
                 ab_info["dependentAssembly"] = []
-            ab_info["dependentAssembly"].append(get_dependentAssembly_info(ab_e))
+            ab_info["dependentAssembly"].append(get_dependentAssembly_info(ab_e, config_filepath))
 
         # <qualifyAssembly>
         # replaces partial name in Assembly.Load with full name
@@ -573,7 +573,7 @@ def get_windows_application_config_info(filename):
                         if dependency_tag == "dependentAssembly":
                             if not "dependentAssembly" in dependency_info:
                                 dependency_info["dependentAssembly"] = []
-                            dependency_info["dependentAssembly"].append(get_dependentAssembly_info(dependency))
+                            dependency_info["dependentAssembly"].append(get_dependentAssembly_info(dependency, config_filepath))
                     windows_info["dependency"] = dependency_info
             app_config_info["windows"] = windows_info
 
@@ -594,7 +594,7 @@ def get_windows_application_config_info(filename):
                     else:
                         print("[WARNING] developmentMode element missing developerInstallation attribute in app config file: " + str(config_filepath))
                 if tag == "assemblyBinding":
-                    runtime_info["assemblyBinding"] = get_assemblyBinding_info(rt_child)
+                    runtime_info["assemblyBinding"] = get_assemblyBinding_info(rt_child, config_filepath)
             app_config_info["runtime"] = runtime_info
 
         # Info returned includes:
