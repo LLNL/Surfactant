@@ -113,6 +113,13 @@ def check_exe_type(filename):
     except FileNotFoundError:
         return None
 
+# https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#machine-types
+# Values for CPU types that can appear in a PE file
+pe_machine_types = {0x0: "UNKNOWN", 0x1d3: "AM33", 0x8664: "AMD", 0x1c0: "ARM", 0xaa64: "ARM64", 0x1c4: "ARMNT",
+        0xebc: "EBC", 0x14c: "I386", 0x200: "IA64", 0x6232: "LOONGARCH32", 0x6264: "LOONGARCH64", 0x9041: "M32R",
+        0x266: "MIPS16", 0x366: "MIPSFPU", 0x466: "MIPSFPU16", 0x1f0: "POWERPC", 0x1f1: "POWERPCFP", 0x166: "R4000",
+        0x5032: "RISCV32", 0x5064: "RISCV64", 0x5128: "RISCV128", 0x1a2: "SH3", 0x1a3: "SH3DSP"}
+
 def get_file_info(filename):
     try:
         fstats = os.stat(filename)
@@ -199,7 +206,12 @@ def extract_pe_info(filename):
         return {}, {}
 
     file_hdr_details = {}
-
+    if pe.FILE_HEADER is not None:
+        if pe.FILE_HEADER.Machine in pe_machine_types:
+            file_hdr_details["peMachine"] = pe_machine_types[pe.FILE_HEADER.Machine]
+        else:
+            file_hdr_details["peMachine"] = pe.FILE_HEADER.Machine
+            print("[WARNING] Unknown machine type encountered in PE file header")
     if import_dir := getattr(pe, "DIRECTORY_ENTRY_IMPORT", None):
         #print("---Imported Symbols---")
         file_hdr_details["peImport"] = []
