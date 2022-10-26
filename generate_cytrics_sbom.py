@@ -120,6 +120,12 @@ pe_machine_types = {0x0: "UNKNOWN", 0x1d3: "AM33", 0x8664: "AMD", 0x1c0: "ARM", 
         0x266: "MIPS16", 0x366: "MIPSFPU", 0x466: "MIPSFPU16", 0x1f0: "POWERPC", 0x1f1: "POWERPCFP", 0x166: "R4000",
         0x5032: "RISCV32", 0x5064: "RISCV64", 0x5128: "RISCV128", 0x1a2: "SH3", 0x1a3: "SH3DSP"}
 
+# https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#windows-subsystem
+# Values for Windows subsystem optional header field that determines which is required to run the image
+pe_subsystem_types = {0: "UNKNOWN", 1: "NATIVE", 2: "WINDOWS_GUI", 3: "WINDOWS_CUI", 5: "OS2_CUI", 7: "POSIX_CUI",
+        8: "NATIVE_WINDOWS", 9: "WINDOWS_CE_GUI", 10: "EFI_APPLICATION", 11: "EFI_BOOT_SERVICE_DRIVER",
+        12: "EFI_RUNTIME_DRIVER", 13: "EFI_ROM", 14: "XBOX", 16: "WINDOWS_BOOT_APPLICATION"}
+
 def get_file_info(filename):
     try:
         fstats = os.stat(filename)
@@ -212,6 +218,15 @@ def extract_pe_info(filename):
         else:
             file_hdr_details["peMachine"] = pe.FILE_HEADER.Machine
             print("[WARNING] Unknown machine type encountered in PE file header")
+    if pe.OPTIONAL_HEADER is not None:
+        file_hdr_details["peOperatingSystemVersion"] = f"{pe.OPTIONAL_HEADER.MajorOperatingSystemVersion}.{pe.OPTIONAL_HEADER.MinorOperatingSystemVersion}"
+        file_hdr_details["peSubsystemVersion"] = f"{pe.OPTIONAL_HEADER.MajorSubsystemVersion}.{pe.OPTIONAL_HEADER.MinorSubsystemVersion}"
+        if pe.OPTIONAL_HEADER.Subsystem in pe_subsystem_types:
+            file_hdr_details["peSubsystem"] = pe_subsystem_types[pe.OPTIONAL_HEADER.Subsystem]
+        else:
+            file_hdr_details["peSubsystem"] = pe.OPTIONAL_HEADER.Subsystem
+            print("[WARNING] Unknown Windows Subsystem type encountered in PE file header")
+        file_hdr_details["peLinkerVersion"] = f"{pe.OPTIONAL_HEADER.MajorLinkerVersion}.{pe.OPTIONAL_HEADER.MinorLinkerVersion}"
     if import_dir := getattr(pe, "DIRECTORY_ENTRY_IMPORT", None):
         #print("---Imported Symbols---")
         file_hdr_details["peImport"] = []
