@@ -963,17 +963,7 @@ def update_entry(sbom, entry, index):
                         if isinstance(sbom['software'][index][location], list):
                             if location in ["containerPath", "fileName", "installPath", "vendor", "provenance", "metadata", "supplementaryFiles", "components"]:
                                 if not value in sbom['software'][index][location]:
-                                    sbom['software'][index][location].append(value)
-                            #for item in sbom['software'][index][location]:
-                            #    entries = eval(value)
-                            #    # case where value is a list cast as a string (because of the DeepDiff output) that needs to be converted back to a list
-                            #    if isinstance(value, str) and type(entries) == list:
-                            #        for e in entries:
-                            #            if e not in item:
-                            #                sbom['software'][index][location].append(e)
-                            #    else:
-                            #        raise Exception("Trying to compare a string with a list, when two lists are being compared")
-                        
+                                    sbom['software'][index][location].append(value)                     
                         # if value is a string, update the dictionary
                         # ex: name, comments, version, description, relationshipAssertion, recordedInstitution
                         if location in ["name", "comments", "version", "description", "relationshipAssertion", "recordedInstitution"]:
