@@ -21,6 +21,7 @@ import sys
 import string
 import argparse
 from deepdiff import DeepDiff
+import struct
 
 class ExeType(Enum):
     ELF = auto()
@@ -163,6 +164,9 @@ def extract_elf_info(filename):
     file_hdr_details["elfRpath"] = []
     file_hdr_details["elfRunpath"] = []
     file_hdr_details["elfSoname"] = []
+    file_hdr_details["elfHumanArch"] = ""
+    file_hdr_details["elfArchNumber"] = -1
+    file_hdr_details["elfArchitecture"] = ""
     for section in elf.iter_sections():
         if not isinstance(section, DynamicSection):
             continue
@@ -201,6 +205,15 @@ def extract_elf_info(filename):
         file_hdr_details['elfIsRel'] = True
     else:
         file_hdr_details['elfIsRel'] = False
+    file_hdr_details["elfHumanArch"] = elf.get_machine_arch()
+    f.seek(18)
+    isa_data = f.read(2)
+    if elf.little_endian:
+        file_hdr_details["elfArchNumber"] = struct.unpack("<H", isa_data)[0]
+    else:
+        file_hdr_details["elfArchNumber"] = struct.unpack(">H", isa_data)[0]
+    file_hdr_details["elfArchitecture"] = elf["e_machine"]
+
 
     return file_hdr_details, file_details
 
