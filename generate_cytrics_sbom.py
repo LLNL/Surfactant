@@ -252,7 +252,7 @@ def extract_pe_info(filename):
         #print("---Bound Imported Symbols---")
         file_hdr_details["peBoundImport"] = []
         for entry in bound_import_dir:
-            file_hdr_details["peBoundImport"].append(entry.dll.decode())
+            file_hdr_details["peBoundImport"].append(entry.name.decode())
             #for imp in entry.imports:
             #    print("\t" + hex(imp.address) + " " + str(imp.name))
 
