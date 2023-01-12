@@ -97,20 +97,45 @@ def add_windows_pe_dependencies(sbom, sw, peImports):
         #print(f" Dependency {fname} not found for sbom['software'] entry={sw}")
 
 
+# construct a list of directories to probe for establishing dotnet relationships
+def get_dotnet_probedirs(sw, refCulture, refName, dnProbingPaths):
+    probedirs = []
+    # probe for the referenced assemblies
+    for install_filepath in sw['installPath']:
+        install_basepath = pathlib.PureWindowsPath(install_filepath).parent.as_posix()
+        if refCulture == None or refCulture == '':
+            # [application base] / [assembly name].dll
+            # [application base] / [assembly name] / [assembly name].dll
+            probedirs.append(pathlib.PureWindowsPath(install_basepath).as_posix())
+            probedirs.append(pathlib.PureWindowsPath(install_basepath, refName).as_posix())
+            if dnProbingPaths != None:
+                # add probing private paths
+                for path in dnProbingPaths:
+                    # [application base] / [binpath] / [assembly name].dll
+                    # [application base] / [binpath] / [assembly name] / [assembly name].dll
+                    probedirs.append(pathlib.PureWindowsPath(install_basepath, path).as_posix())
+                    probedirs.append(pathlib.PureWindowsPath(install_basepath, path, refName).as_posix())
+        else:
+            # [application base] / [culture] / [assembly name].dll
+            # [application base] / [culture] / [assembly name] / [assembly name].dll
+            probedirs.append(pathlib.PureWindowsPath(install_basepath, refCulture).as_posix())
+            probedirs.append(pathlib.PureWindowsPath(install_basepath, refName, refCulture).as_posix())
+            if dnProbingPaths != None:
+                # add probing private paths
+                for path in dnProbingPaths:
+                    # [application base] / [binpath] / [culture] / [assembly name].dll
+                    # [application base] / [binpath] / [culture] / [assembly name] / [assembly name].dll
+                    probedirs.append(pathlib.PureWindowsPath(install_basepath, path, refCulture).as_posix())
+                    probedirs.append(pathlib.PureWindowsPath(install_basepath, path, refName, refCulture).as_posix())
+    return probedirs
+
 def parse_relationships(sbom):
     for sw in sbom['software']:
         # Skip for temporary files/installer that don't have any installPath to find dependencies with
         if sw['installPath'] == None:
             continue
         dependent_uuid = sw.get('UUID')
-        windowsAppConfig = None
-        windowsManifest = None
-        # Find metadata for app config or manifest files with info to help establish dependencies on Windows
-        for md in sw['metadata']:
-            if 'appConfigFile' in md:
-                windowsAppConfig = md['appConfigFile']
-            if 'manifestFile' in md:
-                windowsManifest = md['manifestFile']
+
         # Find metadata saying what dependencies are used by the software entry
         for md in sw['metadata']:
             dependency_uuid = []
@@ -149,9 +174,18 @@ def parse_relationships(sbom):
                         dnCulture = dnAssembly['Culture']
                     if 'Version' in dnAssembly:
                         dnVersion = dnAssembly['Version']
+
                 # get additional probing paths if they exist
                 dnProbingPaths = None
                 dnDependentAssemblies = None
+
+                windowsAppConfig = None
+                windowsManifest = None
+                if 'appConfigFile' in md:
+                    windowsAppConfig = md['appConfigFile']
+                if 'manifestFile' in md:
+                    windowsManifest = md['manifestFile']
+
                 if windowsAppConfig:
                     if 'runtime' in windowsAppConfig:
                         wac_runtime = windowsAppConfig['runtime']
@@ -217,35 +251,8 @@ def parse_relationships(sbom):
                                                         add_relationship(sbom, dependent_uuid, dependency_uuid, "Uses")
 
                         # continue on to probing even if codebase element was found, since we can't guarantee the assembly identity required by the codebase element
-                        # create list of probing paths
-                        probedirs = []
-                        # probe for the referenced assemblies
-                        for install_filepath in sw['installPath']:
-                            install_basepath = pathlib.PureWindowsPath(install_filepath).parent.as_posix()
-                            if refCulture == None or refCulture == '':
-                                # [application base] / [assembly name].dll
-                                # [application base] / [assembly name] / [assembly name].dll
-                                probedirs.append(pathlib.PureWindowsPath(install_basepath).as_posix())
-                                probedirs.append(pathlib.PureWindowsPath(install_basepath, refName).as_posix())
-                                if dnProbingPaths != None:
-                                    # add probing private paths
-                                    for path in dnProbingPaths:
-                                        # [application base] / [binpath] / [assembly name].dll
-                                        # [application base] / [binpath] / [assembly name] / [assembly name].dll
-                                        probedirs.append(pathlib.PureWindowsPath(install_basepath, path).as_posix())
-                                        probedirs.append(pathlib.PureWindowsPath(install_basepath, path, refName).as_posix())
-                            else:
-                                # [application base] / [culture] / [assembly name].dll
-                                # [application base] / [culture] / [assembly name] / [assembly name].dll
-                                probedirs.append(pathlib.PureWindowsPath(install_basepath, refCulture).as_posix())
-                                probedirs.append(pathlib.PureWindowsPath(install_basepath, refName, refCulture).as_posix())
-                                if dnProbingPaths != None:
-                                    # add probing private paths
-                                    for path in dnProbingPaths:
-                                        # [application base] / [binpath] / [culture] / [assembly name].dll
-                                        # [application base] / [binpath] / [culture] / [assembly name] / [assembly name].dll
-                                        probedirs.append(pathlib.PureWindowsPath(install_basepath, path, refCulture).as_posix())
-                                        probedirs.append(pathlib.PureWindowsPath(install_basepath, path, refName, refCulture).as_posix())
+                        # get the list of paths to probe based on locations sw is installed, assembly culture, assembly name, and probing paths from appconfig file
+                        probedirs = get_dotnet_probedirs(sw, refCulture, refName, dnProbingPaths)
                         for e in find_dotnet_assemblies(sbom, probedirs, refName+".dll"):
                             dependency_uuid = e['UUID']
                             if not find_relationship(sbom, dependent_uuid, dependency_uuid, "Uses"):
