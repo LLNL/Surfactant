@@ -22,39 +22,37 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
-    file_hdr_details = []
-    file_info_details = []
+    file_details = []
 
     for p in surfactant.pluginsystem.InfoPlugin.get_plugins():
         if p.supports_type(file_type):
-            file_hdr_details, file_info_details = p.extract_info(filename)
+            file_details = p.extract_info(filename)
             # only one file type should match; should consider the case of polyglot files eventually
             break
 
     metadata = []
-    if file_hdr_details:
-        metadata.append(file_hdr_details)
-    if file_info_details:
-        metadata.append(file_info_details)
+    if file_details:
+        metadata.append(file_details)
 
-    # common case is Windows PE file has these details, fallback default value is okay for any other file type
-    name = file_info_details["ProductName"] if "ProductName" in file_info_details else ""
-    version = file_info_details["FileVersion"] if "FileVersion" in file_info_details else ""
-    vendor = [file_info_details["CompanyName"]] if "CompanyName" in file_info_details else []
-    description = file_info_details["FileDescription"] if "FileDescription" in file_info_details else ""
-    comments = file_info_details["Comments"] if "Comments" in file_info_details else ""
+    # common case is Windows PE file has these details under FileInfo, otherwise fallback default value is fine
+    fi = file_details["FileInfo"] if "FileInfo" in file_details else {}
+    name = fi["ProductName"] if "ProductName" in fi else ""
+    version = fi["FileVersion"] if "FileVersion" in fi else ""
+    vendor = [fi["CompanyName"]] if "CompanyName" in fi else []
+    description = fi["FileDescription"] if "FileDescription" in fi else ""
+    comments = fi["Comments"] if "Comments" in fi else ""
 
     # less common: OLE file metadata that might be relevant
     if file_type == 'OLE':
         print("-----------OLE--------------")
-        if "subject" in file_hdr_details["ole"]:
-            name = file_hdr_details["ole"]["subject"]
-        if "revision_number" in file_hdr_details["ole"]:
-            version = file_hdr_details["ole"]["revision_number"]
-        if "author" in file_hdr_details["ole"]:
-            vendor.append(file_hdr_details["ole"]["author"])
-        if "comments" in file_hdr_details["ole"]:
-            comments = file_hdr_details["ole"]["comments"]
+        if "subject" in file_details["ole"]:
+            name = file_details["ole"]["subject"]
+        if "revision_number" in file_details["ole"]:
+            version = file_details["ole"]["revision_number"]
+        if "author" in file_details["ole"]:
+            vendor.append(file_details["ole"]["author"])
+        if "comments" in file_details["ole"]:
+            comments = file_details["ole"]["comments"]
 
     return {
        "UUID": str(uuid.uuid4()),

@@ -41,70 +41,70 @@ def extract_pe_info(filename):
     try:
         pe = dnfile.dnPE(filename, fast_load=False)
     except:
-        return {}, {}
+        return {}
 
-    file_hdr_details = {}
+    file_details = {"OS": "Windows"}
     if pe.FILE_HEADER is not None:
         if pe.FILE_HEADER.Machine in pe_machine_types:
-            file_hdr_details["peMachine"] = pe_machine_types[pe.FILE_HEADER.Machine]
+            file_details["peMachine"] = pe_machine_types[pe.FILE_HEADER.Machine]
         else:
-            file_hdr_details["peMachine"] = pe.FILE_HEADER.Machine
+            file_details["peMachine"] = pe.FILE_HEADER.Machine
             print("[WARNING] Unknown machine type encountered in PE file header")
     if pe.OPTIONAL_HEADER is not None:
-        file_hdr_details["peOperatingSystemVersion"] = f"{pe.OPTIONAL_HEADER.MajorOperatingSystemVersion}.{pe.OPTIONAL_HEADER.MinorOperatingSystemVersion}"
-        file_hdr_details["peSubsystemVersion"] = f"{pe.OPTIONAL_HEADER.MajorSubsystemVersion}.{pe.OPTIONAL_HEADER.MinorSubsystemVersion}"
+        file_details["peOperatingSystemVersion"] = f"{pe.OPTIONAL_HEADER.MajorOperatingSystemVersion}.{pe.OPTIONAL_HEADER.MinorOperatingSystemVersion}"
+        file_details["peSubsystemVersion"] = f"{pe.OPTIONAL_HEADER.MajorSubsystemVersion}.{pe.OPTIONAL_HEADER.MinorSubsystemVersion}"
         if pe.OPTIONAL_HEADER.Subsystem in pe_subsystem_types:
-            file_hdr_details["peSubsystem"] = pe_subsystem_types[pe.OPTIONAL_HEADER.Subsystem]
+            file_details["peSubsystem"] = pe_subsystem_types[pe.OPTIONAL_HEADER.Subsystem]
         else:
-            file_hdr_details["peSubsystem"] = pe.OPTIONAL_HEADER.Subsystem
+            file_details["peSubsystem"] = pe.OPTIONAL_HEADER.Subsystem
             print("[WARNING] Unknown Windows Subsystem type encountered in PE file header")
-        file_hdr_details["peLinkerVersion"] = f"{pe.OPTIONAL_HEADER.MajorLinkerVersion}.{pe.OPTIONAL_HEADER.MinorLinkerVersion}"
+        file_details["peLinkerVersion"] = f"{pe.OPTIONAL_HEADER.MajorLinkerVersion}.{pe.OPTIONAL_HEADER.MinorLinkerVersion}"
     if import_dir := getattr(pe, "DIRECTORY_ENTRY_IMPORT", None):
         #print("---Imported Symbols---")
-        file_hdr_details["peImport"] = []
+        file_details["peImport"] = []
         for entry in import_dir:
-             file_hdr_details["peImport"].append(entry.dll.decode())
+             file_details["peImport"].append(entry.dll.decode())
              #for imp in entry.imports:
              #    print("\t" + hex(imp.address) + " " + str(imp.name))
 
     if bound_import_dir := getattr(pe, "DIRECTORY_ENTRY_BOUND_IMPORT", None):
         #print("---Bound Imported Symbols---")
-        file_hdr_details["peBoundImport"] = []
+        file_details["peBoundImport"] = []
         for entry in bound_import_dir:
-            file_hdr_details["peBoundImport"].append(entry.name.decode())
+            file_details["peBoundImport"].append(entry.name.decode())
             #for imp in entry.imports:
             #    print("\t" + hex(imp.address) + " " + str(imp.name))
 
     if delay_import_dir := getattr(pe, "DIRECTORY_ENTRY_DELAY_IMPORT", None):
         #print("---Delay Imported Symbols---")
-        file_hdr_details["peDelayImport"] = []
+        file_details["peDelayImport"] = []
         for entry in delay_import_dir:
-            file_hdr_details["peDelayImport"].append(entry.dll.decode())
+            file_details["peDelayImport"].append(entry.dll.decode())
             #for imp in entry.imports:
             #    print("\t" + hex(imp.address) + " " + str(imp.name))
     
-    file_hdr_details["peIsExe"] = pe.is_exe()
-    file_hdr_details["peIsDll"] = pe.is_dll()
+    file_details["peIsExe"] = pe.is_exe()
+    file_details["peIsDll"] = pe.is_dll()
     if opt_hdr := getattr(pe, "OPTIONAL_HEADER", None):
         if opt_hdr_data_dir := getattr(opt_hdr, "DATA_DIRECTORY", None):
             #print("---COM Descriptor---")
             com_desc_dir_num = dnfile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR"]
             com_desc_dir = opt_hdr_data_dir[com_desc_dir_num]
-            file_hdr_details["peIsClr"] = (com_desc_dir.VirtualAddress > 0) and (com_desc_dir.Size > 0)
+            file_details["peIsClr"] = (com_desc_dir.VirtualAddress > 0) and (com_desc_dir.Size > 0)
 
-    file_details = {"OS": "Windows"}
     if pe_fi := getattr(pe, "FileInfo", None):
         if len(pe_fi) > 0:
+            file_details["FileInfo"] = {}
             for fi_entry in pe_fi[0]:
                 if fi_entry.name == "StringFileInfo":
                     for st in fi_entry.StringTable:
                         for st_entry in st.entries.items():
-                            file_details[st_entry[0].decode()] = st_entry[1].decode()
+                            file_details["FileInfo"][st_entry[0].decode()] = st_entry[1].decode()
 
     # If this is a .NET assembly, extract information about it from the headers
     if dnet := getattr(pe, "net", None):
         if dnet_flags := getattr(dnet, "Flags", None):
-            file_hdr_details["dotnetFlags"] = {
+            file_details["dotnetFlags"] = {
                         "ILONLY": dnet_flags.CLR_ILONLY,
                         "32BITREQUIRED": dnet_flags.CLR_32BITREQUIRED,
                         "IL_LIBRARY": dnet_flags.CLR_IL_LIBRARY,
@@ -118,12 +118,12 @@ def extract_pe_info(filename):
                 assemblies = []
                 for a_info in assembly_info:
                     assemblies.append(get_assembly_info(a_info))
-                file_hdr_details["dotnetAssembly"] = assemblies
+                file_details["dotnetAssembly"] = assemblies
             if assemblyref_info := getattr(dnet_mdtables, "AssemblyRef", None):
                 assembly_refs = []
                 for ar_info in assemblyref_info:
                     assembly_refs.append(get_assemblyref_info(ar_info))
-                file_hdr_details["dotnetAssemblyRef"] = assembly_refs
+                file_details["dotnetAssemblyRef"] = assembly_refs
 
     # TODO for a custom intermediate SBOM format, the information read from the manifest and app config files
     # should be tied to a specific "<install path>/<file name>", in case the same file appears in separate
@@ -138,7 +138,7 @@ def extract_pe_info(filename):
     if app_config_info:
         file_details["appConfigFile"] = app_config_info
 
-    return file_hdr_details, file_details
+    return file_details
 
 
 def add_core_assembly_info(asm_dict, asm_info):

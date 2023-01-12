@@ -20,13 +20,8 @@ def check_exe_type(filename):
             elif magic_bytes[:2] == b"MZ":
                 return 'PE'
             elif magic_bytes == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
-                # to check if an OLE is an MSI file, check the root storage object CLSID
-                # {000c1084-0000-0000-c000-000000000046}	MSI
-                # {000c1086-0000-0000-c000-000000000046}       Windows Installer Patch MSP
-                # for olefile python library: ole.root.clsid (clsid without {} wrapper)"
-                # extensions are typically .msi and .msp for files with these two clsid's
-                # less common would be a .msm (merge) with the same clsid as MSI
-                # as well as .mst (transform) with a clsid of 000c1082
+                # MSI (install), MSP (patch), MST (transform), and MSM (merge) files are all types of OLE files
+                # the root storage object CLSID is used to identify what it is (+ file extension)
                 return 'OLE'
             # elif magic_bytes[:4] == b"\xca\xfe\xba\xbe":
             #    # magic bytes can either be for Java class file or Mach-O Fat Binary
