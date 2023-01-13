@@ -37,20 +37,28 @@ class InfoPlugin(PluginBase):
 
     @classmethod
     def supports_type(cls, filetype):
-        raise NotImplemented("supportsType not implemented")
+        raise NotImplemented("supports_type not implemented")
 
     @classmethod
     def extract_info(cls, filename):
-        raise NotImplemented("extractInfo not implemented")
+        raise NotImplemented("extract_info not implemented")
 
 
 class RelationshipPlugin(PluginBase):
     PLUGIN_TYPE = "RELATIONSHIP"
     PLUGIN_NAME = ""
 
+    @staticmethod
+    def create_relationship(xUUID, yUUID, relationship):
+        return {"xUUID": xUUID, "yUUID": yUUID, "relationship": relationship}
+
     @classmethod
-    def define_relationships(cls):
-        raise NotImplemented("defineRelationships not implemented")
+    def has_required_fields(cls, metadata) -> bool:
+        raise NotImplemented("has_required_fields not implemented")
+
+    @classmethod
+    def get_relationships(cls, sbom, sw, metadata) -> list:
+        raise NotImplemented("get_relationships not implemented")
 
 
 class OutputPlugin(PluginBase):
