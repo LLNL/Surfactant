@@ -75,8 +75,5 @@ def extract_elf_info(filename):
     else:
         file_details["elfArchNumber"] = struct.unpack(">H", isa_data)[0]
     file_details["elfArchitecture"] = elf["e_machine"]
-
-
+    
     return file_details
-
-

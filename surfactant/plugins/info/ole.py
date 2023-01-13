@@ -44,5 +44,3 @@ def extract_ole_info(filename):
                 file_details["ole"][prop] = str(value)
     ole.close()
     return file_details
-
-

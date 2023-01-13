@@ -44,5 +44,3 @@ def update_entry(sbom, entry, index):
   
             # return UUID of existing entry, UUID of entry being discarded, existing_entry object
             return existing_uuid, entry_uuid, existing_entry
- 
-

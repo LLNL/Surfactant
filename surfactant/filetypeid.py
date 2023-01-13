@@ -92,5 +92,3 @@ def check_hex_type(filename):
             
     except FileNotFoundError:
         return False
-
-

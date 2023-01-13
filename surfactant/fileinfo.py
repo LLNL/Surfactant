@@ -26,5 +26,3 @@ def calc_file_hashes(filename):
     except FileNotFoundError:
         return None
     return {"sha256": sha256_hash.hexdigest(), "sha1": sha1_hash.hexdigest(), "md5": md5_hash.hexdigest()}
-
-

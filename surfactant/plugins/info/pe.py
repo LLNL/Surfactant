@@ -436,5 +436,3 @@ def get_windows_application_config_info(filename):
         # - dependent assembly info (used to determine correct version of an assembly to use)
         return app_config_info
     return None
-
-

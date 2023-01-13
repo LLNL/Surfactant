@@ -175,4 +175,3 @@ else:
 
 # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
 surfactant.pluginsystem.OutputPlugin.get_plugin("CYTRICS").write(sbom, args.sbom_outfile)
-

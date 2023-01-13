@@ -104,4 +104,3 @@ import surfactant.plugins
 # load user plugins
 load_user_plugins()
 #print_available_plugins()
-
