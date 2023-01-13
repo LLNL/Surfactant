@@ -6,11 +6,11 @@ class OLE(pluginsystem.InfoPlugin):
     PLUGIN_NAME = "OLE"
     
     @classmethod
-    def supports_type(cls, filetype):
+    def supports_file(cls, filename, filetype=None) -> bool:
         return filetype == "OLE"
 
     @classmethod
-    def extract_info(cls, filename):
+    def extract_info(cls, filename) -> dict:
         return extract_ole_info(filename)
 
 

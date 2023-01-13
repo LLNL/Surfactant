@@ -36,11 +36,11 @@ class InfoPlugin(PluginBase):
     PLUGIN_NAME = ""
 
     @classmethod
-    def supports_type(cls, filetype):
-        raise NotImplemented("supports_type not implemented")
+    def supports_file(cls, filename="", filetype=None) -> bool:
+        raise NotImplemented("supports_file not implemented")
 
     @classmethod
-    def extract_info(cls, filename):
+    def extract_info(cls, filename) -> dict:
         raise NotImplemented("extract_info not implemented")
 
 

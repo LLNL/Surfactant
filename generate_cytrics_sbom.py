@@ -25,7 +25,7 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
     file_details = []
 
     for p in surfactant.pluginsystem.InfoPlugin.get_plugins():
-        if p.supports_type(file_type):
+        if p.supports_file(filename, file_type):
             file_details = p.extract_info(filename)
             # only one file type should match; should consider the case of polyglot files eventually
             break

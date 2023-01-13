@@ -8,11 +8,11 @@ class ELF(pluginsystem.InfoPlugin):
     PLUGIN_NAME = "ELF"
 
     @classmethod
-    def supports_type(cls, filetype):
+    def supports_file(cls, filename, filetype=None) -> bool:
         return filetype == "ELF"
 
     @classmethod
-    def extract_info(cls, filename):
+    def extract_info(cls, filename) -> dict:
         return extract_elf_info(filename)
 
 

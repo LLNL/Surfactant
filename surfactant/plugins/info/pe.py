@@ -14,11 +14,11 @@ class PE(pluginsystem.InfoPlugin):
     PLUGIN_NAME = "PE"
     
     @classmethod
-    def supports_type(cls, filetype):
+    def supports_file(cls, filename, filetype=None) -> bool:
         return filetype == "PE"
 
     @classmethod
-    def extract_info(cls, filename):
+    def extract_info(cls, filename) -> dict:
         return extract_pe_info(filename)
 
 
