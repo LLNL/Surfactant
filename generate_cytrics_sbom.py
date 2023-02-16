@@ -9,6 +9,7 @@ import json
 import pathlib
 import sys
 import argparse
+import platform
 
 from surfactant.relationships import parse_relationships, add_relationship, find_relationship
 from surfactant.fileinfo import get_file_info, calc_file_hashes
@@ -30,7 +31,11 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
             # only one file type should match; should consider the case of polyglot files eventually
             break
 
-    metadata = []
+    # add basic file info, and information on what collected the information listed for the file to aid later processing
+    stat_file_info = get_file_info(filename)
+    collection_info = {"collectedBy": "Surfactant", "collectionPlatform": platform.platform(), "fileInfo": stat_file_info}
+
+    metadata = [stat_file_info]
     if file_details:
         metadata.append(file_details)
 
@@ -63,7 +68,7 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
        ],
        "installPath": [re.sub("^"+root_path + "/", install_path, filename)] if root_path and install_path else None,
        "containerPath": [re.sub("^"+root_path, container_uuid, filename)] if root_path and container_uuid else None,
-       "size": get_file_info(filename)["size"],
+       "size": stat_file_info["size"],
        "captureTime": int(time.time()),
        "version": version,
        "vendor": vendor,
