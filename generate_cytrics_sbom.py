@@ -33,9 +33,10 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
 
     # add basic file info, and information on what collected the information listed for the file to aid later processing
     stat_file_info = get_file_info(filename)
-    collection_info = {"collectedBy": "Surfactant", "collectionPlatform": platform.platform(), "fileInfo": stat_file_info}
+    collection_info = {"collectedBy": "Surfactant", "collectionPlatform": platform.platform(), "fileInfo": {"mode": stat_file_info["filemode"], "hidden": stat_file_info["filehidden"]}}
 
-    metadata = [stat_file_info]
+    metadata = []
+    metadata.append(collection_info)
     if file_details:
         metadata.append(file_details)
 
