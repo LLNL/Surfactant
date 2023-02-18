@@ -11,7 +11,7 @@ def get_file_info(filename):
     else:
         filehidden = False
         # stat.UF_HIDDEN (file shouldn't be shown in GUI macOS 10.5+)
-        if hasattr(fstats, "st_flags");
+        if hasattr(fstats, "st_flags"):
             filehidden = bool(fstats.st_flags & stat.UF_HIDDEN)
         # stat.FILE_ATTRIBUTE_HIDDEN (shouldn't be shown on Windows)
         if hasattr(fstats, "st_file_attributes"):
