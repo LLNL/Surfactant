@@ -1,3 +1,4 @@
+#generate_cytrics_sbom
 # https://en.wikipedia.org/wiki/Comparison_of_executable_file_formats
 
 import os
@@ -5,7 +6,6 @@ import re
 import time
 import uuid
 import json
-
 import pathlib
 import sys
 import argparse
@@ -14,22 +14,30 @@ import platform
 from surfactant.relationships import parse_relationships, add_relationship, find_relationship
 from surfactant.fileinfo import get_file_info, calc_file_hashes
 from surfactant.filetypeid import check_exe_type, check_hex_type, hex_file_extensions
-from surfactant.sbom_utils import entry_search, update_entry
+from surfactant.sbom_utils import entry_search, update_entry 
 import surfactant.pluginsystem # handles loading the various plugins included with surfactant, for gathering information/relationships/output
+
+#retrieving all arguments passed by user
+args = sys.argv
+user_institution_name = 'LLNL'
+#locating institution name manually set by user 
+if len(args) > 1:
+    user_institution_name = args[1] 
 
 
 def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None):
     file_type = check_exe_type(filename)
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
-    # as well as intel hex or motorola s-rec files
-    file_details = []
+    # as well as intel hex or motorola s-rec files 
+    file_hdr_details = []
+    file_info_details = [] 
 
     for p in surfactant.pluginsystem.InfoPlugin.get_plugins():
-        if p.supports_file(filename, file_type):
-            file_details = p.extract_info(filename)
+        if p.supports_type(file_type):
+            file_hdr_details, file_info_details = p.extract_info(filename)
             # only one file type should match; should consider the case of polyglot files eventually
-            break
+            break 
 
     # add basic file info, and information on what collected the information listed for the file to aid later processing
     stat_file_info = get_file_info(filename)
@@ -51,21 +59,21 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
     # less common: OLE file metadata that might be relevant
     if file_type == 'OLE':
         print("-----------OLE--------------")
-        if "subject" in file_details["ole"]:
-            name = file_details["ole"]["subject"]
-        if "revision_number" in file_details["ole"]:
-            version = file_details["ole"]["revision_number"]
-        if "author" in file_details["ole"]:
-            vendor.append(file_details["ole"]["author"])
-        if "comments" in file_details["ole"]:
-            comments = file_details["ole"]["comments"]
+        if "subject" in file_hdr_details["ole"]:
+            name = file_hdr_details["ole"]["subject"]
+        if "revision_number" in file_hdr_details["ole"]:
+            version = file_hdr_details["ole"]["revision_number"]
+        if "author" in file_hdr_details["ole"]:
+            vendor.append(file_hdr_details["ole"]["author"])
+        if "comments" in file_hdr_details["ole"]:
+            comments = file_hdr_details["ole"]["comments"] 
 
     return {
        "UUID": str(uuid.uuid4()),
        **calc_file_hashes(filename),
        "name": name,
        "fileName": [
-           pathlib.Path(filename).name
+           pathlib.Path(filename).name 
        ],
        "installPath": [re.sub("^"+root_path + "/", install_path, filename)] if root_path and install_path else None,
        "containerPath": [re.sub("^"+root_path, container_uuid, filename)] if root_path and container_uuid else None,
@@ -74,15 +82,17 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
        "version": version,
        "vendor": vendor,
        "description": description,
-       "relationshipAssertion": "Unknown",
+       "relationshipAssertion": "Unknown", 
        "comments": comments,
        "metadata": metadata,
        "supplementaryFiles": [],
        "provenance": None,
-       "recordedInstitution": "LLNL",
+       "recordedInstitution": user_institution_name,
        "components": [] # or null
     }
 
+if user_institution_name in args:
+    args.remove(user_institution_name)
 
 #### Main part of code ####
 
@@ -91,15 +101,17 @@ parser.add_argument('config_file', metavar='CONFIG_FILE', nargs='?', type=argpar
 parser.add_argument('sbom_outfile', metavar='SBOM_OUTPUT', nargs='?', type=argparse.FileType('w'), default=sys.stdout, help='Output SBOM file')
 parser.add_argument('-i', '--input_sbom', type=argparse.FileType('r'), help='Input SBOM to use as a base for subsequent operations')
 parser.add_argument('--skip_gather', action='store_true', help='Skip gathering information on files and adding software entries')
-parser.add_argument('--skip_relationships', action='store_true', help='Skip adding relationships based on Linux/Windows/etc metadata')
-args = parser.parse_args()
+parser.add_argument('--skip_relationships', action='store_true', help='Skip adding relationships based on Linux/Windows/etc metadata') 
+args = parser.parse_args() 
 
-config = json.load(args.config_file)
+config = json.load(args.config_file) 
+
 
 if not args.input_sbom:
     sbom = {"software": [], "relationships": []}
 else:
     sbom = json.load(args.input_sbom)
+    print(sbom)
 
 # gather metadata for files and add/augment software entries in the sbom
 if not args.skip_gather:
@@ -111,8 +123,8 @@ if not args.skip_gather:
             if not archive_found:
                 sbom["software"].append(parent_entry)
             else:
-                parent_entry = sbom["software"][archive_index]
-            parent_uuid = parent_entry["UUID"]
+                parent_entry = sbom["software"][archive_index] 
+            parent_uuid = parent_entry["UUID"] 
         else:
             parent_entry = None
             parent_uuid = None
@@ -177,7 +189,7 @@ else:
 if not args.skip_relationships:
     parse_relationships(sbom)
 else:
-    print("Skipping relationships based on imports metadata")
+    print("Skipping relationships based on imports metadata") 
 
 # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
 surfactant.pluginsystem.OutputPlugin.get_plugin("CYTRICS").write(sbom, args.sbom_outfile)
