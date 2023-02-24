@@ -82,6 +82,7 @@ def extract_elf_info(filename):
         if isinstance(section, NoteSection):
             for note in section.iter_notes():
                 # Info on contents of NetBSD and PaX notes: https://www.netbsd.org/docs/kernel/elf-notes.html
+                # Heuristics used by Avast RetDec to identify compiler/OS: https://github.com/avast/retdec/commit/d55b541c26fb110381b2203dc7baa50928e3f473
                 note_info={}
                 note_info["sectionName"] = section.name
                 note_info["name"] = note.n_name
