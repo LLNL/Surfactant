@@ -29,7 +29,8 @@ def parse_relationships(sbom):
                 if p.has_required_fields(md):
                     print(f"====={p.PLUGIN_NAME} RelationshipPlugin=====")
                     relationships = p.get_relationships(sbom, sw, md)
-                    print(relationships)
+                    if relationships:
+                        print(relationships)
                     for r in relationships:
                         if not find_relationship(sbom, r["xUUID"], r["yUUID"], r["relationship"]):
                             add_relationship(sbom, r["xUUID"], r["yUUID"], r["relationship"])
