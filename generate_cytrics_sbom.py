@@ -17,25 +17,19 @@ from surfactant.filetypeid import check_exe_type, check_hex_type, hex_file_exten
 from surfactant.sbom_utils import entry_search, update_entry 
 import surfactant.pluginsystem # handles loading the various plugins included with surfactant, for gathering information/relationships/output
 
-#adding optional argument for institution 
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--recordedinstitution', help='name of user institution', default = 'LLNL')
-args = parser.parse_args() 
 
 
-def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None, user_institution_name = args.recordedinstitution):
+def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None, user_institution_name = ''):
     file_type = check_exe_type(filename)
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files 
-    file_hdr_details = []
-    file_info_details = [] 
+    file_details = []
 
     for p in surfactant.pluginsystem.InfoPlugin.get_plugins():
         if p.supports_type(file_type):
-            file_hdr_details, file_info_details = p.extract_info(filename)
-            # only one file type should match; should consider the case of polyglot files eventually
+            file_details = p.extract_info(filename)
+            # only one file type should match; should consider the case of polyglot files eventually 
             break 
 
     # add basic file info, and information on what collected the information listed for the file to aid later processing
@@ -58,14 +52,14 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
     # less common: OLE file metadata that might be relevant
     if file_type == 'OLE':
         print("-----------OLE--------------")
-        if "subject" in file_hdr_details["ole"]:
-            name = file_hdr_details["ole"]["subject"]
-        if "revision_number" in file_hdr_details["ole"]:
-            version = file_hdr_details["ole"]["revision_number"]
-        if "author" in file_hdr_details["ole"]:
-            vendor.append(file_hdr_details["ole"]["author"])
-        if "comments" in file_hdr_details["ole"]:
-            comments = file_hdr_details["ole"]["comments"] 
+        if "subject" in file_details["ole"]:
+            name = file_details["ole"]["subject"]
+        if "revision_number" in file_details["ole"]:
+            version = file_details["ole"]["revision_number"]
+        if "author" in file_details["ole"]:
+            vendor.append(file_details["ole"]["author"])
+        if "comments" in file_details["ole"]:
+            comments = file_details["ole"]["comments"] 
 
     return {
        "UUID": str(uuid.uuid4()),
@@ -99,6 +93,7 @@ parser.add_argument('sbom_outfile', metavar='SBOM_OUTPUT', nargs='?', type=argpa
 parser.add_argument('-i', '--input_sbom', type=argparse.FileType('r'), help='Input SBOM to use as a base for subsequent operations')
 parser.add_argument('--skip_gather', action='store_true', help='Skip gathering information on files and adding software entries')
 parser.add_argument('--skip_relationships', action='store_true', help='Skip adding relationships based on Linux/Windows/etc metadata') 
+parser.add_argument('--recordedinstitution', help='name of user institution', default = 'LLNL')
 args = parser.parse_args() 
 
 config = json.load(args.config_file) 
@@ -115,7 +110,7 @@ if not args.skip_gather:
     for entry in config:
         if "archive" in entry:
             print("Processing parent container " + str(entry["archive"]))
-            parent_entry = get_software_entry(entry["archive"])
+            parent_entry = get_software_entry(entry["archive"], user_institution_name=args.recordedinstitution)
             archive_found, archive_index = entry_search(sbom, parent_entry['sha256'])
             if not archive_found:
                 sbom["software"].append(parent_entry)
@@ -143,10 +138,10 @@ if not args.skip_gather:
                     filepath = os.path.join(cdir, f)
                     file_suffix = pathlib.Path(filepath).suffix.lower()
                     if check_exe_type(filepath):
-                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix))
+                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix, user_institution_name=args.recordedinstitution))
                     elif (file_suffix in hex_file_extensions) and check_hex_type(filepath):
-                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix))
-                #entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
+                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix, user_institution_name=args.recordedinstitution))
+                #entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix, user_institution_name=args.recordedinstitution) for f in files if check_exe_type(os.path.join(cdir, f))]
                 if entries:
                     # if a software entry already exists with a matching file hash, augment the info in the existing entry
                     for e in entries:
