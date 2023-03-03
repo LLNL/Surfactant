@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Surfactant"
+authors = [
+    {name = "Levi Lloyd", email = "lloyd27@llnl.gov"},
+    {name = "Ryan Mast", email = "mast9@llnl.gov"},
+    {name = "Micaela Gallegos", email = "gallegos31@llnl.gov"},
+    {name = "Alexander Armstrong", email = "armstrong48@llnl.gov"},
+]
+maintainers = [
+    {name = "Ryan Mast", email = "mast9@llnl.gov"},
+]
+description = "Generate an SBOM using information from file metadata"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["sbom", "pe", "elf", "ole", "msi"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Security",
+    "Topic :: Software Development",
+    "Topic :: System",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "pyelftools",
+    "pefile",
+    "dnfile",
+    "olefile",
+    "defusedxml",
+    "deepdiff",
+    "spdx",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+tests = ["pytest"]
+
+[project.scripts]
+# After generate_cytrics_sbom.py is moved to surfactant/__main__.py, this will allow running surfactant from the git repo with python -m surfactant
+#surfactant = "surfactant.__main__:main"
+
+#[project.urls]
+#homepage = "https://example.com"
+#documentation = "https://readthedocs.org"
+#repository = "https://github.com/me/spam.git"
+#changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+
+[tool.setuptools_scm]
