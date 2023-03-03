@@ -5,7 +5,6 @@ import re
 import time
 import uuid
 import json
-
 import pathlib
 import sys
 import argparse
@@ -18,7 +17,7 @@ from surfactant.sbom_utils import entry_search, update_entry
 import surfactant.pluginsystem # handles loading the various plugins included with surfactant, for gathering information/relationships/output
 
 
-def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None):
+def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None, user_institution_name = ''):
     file_type = check_exe_type(filename)
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
@@ -79,7 +78,7 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
        "metadata": metadata,
        "supplementaryFiles": [],
        "provenance": None,
-       "recordedInstitution": "LLNL",
+       "recordedInstitution": user_institution_name,
        "components": [] # or null
     }
 
@@ -92,6 +91,7 @@ parser.add_argument('sbom_outfile', metavar='SBOM_OUTPUT', nargs='?', type=argpa
 parser.add_argument('-i', '--input_sbom', type=argparse.FileType('r'), help='Input SBOM to use as a base for subsequent operations')
 parser.add_argument('--skip_gather', action='store_true', help='Skip gathering information on files and adding software entries')
 parser.add_argument('--skip_relationships', action='store_true', help='Skip adding relationships based on Linux/Windows/etc metadata')
+parser.add_argument('--recordedinstitution', help='name of user institution', default='LLNL')
 args = parser.parse_args()
 
 config = json.load(args.config_file)
@@ -106,7 +106,7 @@ if not args.skip_gather:
     for entry in config:
         if "archive" in entry:
             print("Processing parent container " + str(entry["archive"]))
-            parent_entry = get_software_entry(entry["archive"])
+            parent_entry = get_software_entry(entry["archive"], user_institution_name=args.recordedinstitution)
             archive_found, archive_index = entry_search(sbom, parent_entry['sha256'])
             if not archive_found:
                 sbom["software"].append(parent_entry)
@@ -134,10 +134,10 @@ if not args.skip_gather:
                     filepath = os.path.join(cdir, f)
                     file_suffix = pathlib.Path(filepath).suffix.lower()
                     if check_exe_type(filepath):
-                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix))
+                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix, user_institution_name=args.recordedinstitution))
                     elif (file_suffix in hex_file_extensions) and check_hex_type(filepath):
-                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix))
-                #entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix) for f in files if check_exe_type(os.path.join(cdir, f))]
+                        entries.append(get_software_entry(filepath, root_path=epath, container_uuid=parent_uuid, install_path=install_prefix, user_institution_name=args.recordedinstitution))
+                #entries = [get_software_entry(os.path.join(cdir, f), root_path=epath, container_uuid=parent_uuid, install_path=install_prefix, user_institution_name=args.recordedinstitution) for f in files if check_exe_type(os.path.join(cdir, f))]
                 if entries:
                     # if a software entry already exists with a matching file hash, augment the info in the existing entry
                     for e in entries:
