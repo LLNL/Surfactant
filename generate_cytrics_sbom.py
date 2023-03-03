@@ -17,15 +17,14 @@ from surfactant.filetypeid import check_exe_type, check_hex_type, hex_file_exten
 from surfactant.sbom_utils import entry_search, update_entry 
 import surfactant.pluginsystem # handles loading the various plugins included with surfactant, for gathering information/relationships/output
 
-#retrieving all arguments passed by user
-args = sys.argv
-user_institution_name = 'LLNL'
-#locating institution name manually set by user 
-if len(args) > 1:
-    user_institution_name = args[1] 
+#adding optional argument for institution 
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--recordedinstitution', help='name of user institution', default = 'LLNL')
+args = parser.parse_args() 
 
 
-def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None):
+def get_software_entry(filename, container_uuid=None, root_path=None, install_path=None, user_institution_name = args.recordedinstitution):
     file_type = check_exe_type(filename)
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
@@ -91,8 +90,6 @@ def get_software_entry(filename, container_uuid=None, root_path=None, install_pa
        "components": [] # or null
     }
 
-if user_institution_name in args:
-    args.remove(user_institution_name)
 
 #### Main part of code ####
 
