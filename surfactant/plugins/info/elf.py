@@ -1,8 +1,10 @@
-from elftools.elf.elffile import ELFFile
-from elftools.elf.dynamic import DynamicSection
-from elftools.elf.sections import NoteSection
-from elftools.elf.enums import ENUM_DT_FLAGS, ENUM_DT_FLAGS_1, ENUM_EI_OSABI
 import struct
+
+from elftools.elf.dynamic import DynamicSection
+from elftools.elf.elffile import ELFFile
+from elftools.elf.enums import ENUM_DT_FLAGS, ENUM_DT_FLAGS_1, ENUM_EI_OSABI
+from elftools.elf.sections import NoteSection
+
 import surfactant.pluginsystem as pluginsystem
 
 

@@ -1,6 +1,6 @@
-import sys
-import json
 import argparse
+import json
+import sys
 import uuid
 from collections import deque
 
@@ -414,6 +414,8 @@ visited = set()
 roots = set()
 rootFound = set()
 recursionStack = deque()
+
+
 # maintain a recursion stack to check for cycles; if we are visiting a node that is in the stack, there is a cycle; arbitrarily pick one to add as a root
 def dfs(rel):
     recursionStack.append(rel)

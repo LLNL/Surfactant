@@ -1,6 +1,6 @@
 import os
 import stat
-from hashlib import sha256, sha1, md5
+from hashlib import md5, sha1, sha256
 
 
 def get_file_info(filename):

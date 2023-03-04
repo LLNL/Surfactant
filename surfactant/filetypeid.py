@@ -100,7 +100,6 @@ hex_file_extensions = [
 def check_hex_type(filename):
     try:
         with open(filename, "r") as f:
-
             percent_intel = 0
             percent_motorola = 0
             for line in range(100):

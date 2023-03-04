@@ -3,10 +3,12 @@
 # pefile only handles MZ magic bytes, but ZM might be valid as well
 # there could also be some other supported Windows EXE formats such as NE, LE, LX, TX, and COM (generally no header, except CP/M 3 format COM has RET instruction)
 
-import re
-import dnfile
-import defusedxml.ElementTree
 import pathlib
+import re
+
+import defusedxml.ElementTree
+import dnfile
+
 import surfactant.pluginsystem as pluginsystem
 
 
