@@ -55,3 +55,7 @@ tests = ["pytest"]
 #changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
 [tool.setuptools_scm]
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+pythonpath = "."
