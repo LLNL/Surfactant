@@ -191,6 +191,5 @@ def get_elf_ident_from_file_header(f, little_endian):
         e_ident['E_MACHINE'] = struct.unpack("<H", isa_data)[0]
     else:
         e_ident['E_MACHINE'] = struct.unpack(">H", isa_data)[0]
-    
-    return e_ident
 
+    return e_ident

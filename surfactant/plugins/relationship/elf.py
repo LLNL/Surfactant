@@ -35,7 +35,7 @@ class ELF(pluginsystem.RelationshipPlugin):
         relationships = []
         dependent_uuid = sw.get('UUID')
         default_search_paths = ELF.generate_search_paths(sw, metadata)
-        for dep in metadata['elfDependencies']:            
+        for dep in metadata['elfDependencies']:
             # if dependency has a slash, it is interpreted as a pathname to shared object to load
             # construct fname and full file path(s) to search for; paths must be a list if the dependency is given as a relative path
             if "/" in dep:
@@ -119,7 +119,7 @@ class ELF(pluginsystem.RelationshipPlugin):
                 for p in rp.split(":") # iterate through all components (paths) in each runpath entry
                 if p != '' # if the path entry is not empty
                 for sp in ELF.substitute_all_dst(sw, md, p)] # substitute DSTs in the path
-    
+
     @staticmethod
     def replace_dst(origstr, dvar, newval) -> list:
         return origstr.replace("$"+dvar, newval).replace("${"+dvar+"}", newval)
@@ -154,7 +154,7 @@ class ELF(pluginsystem.RelationshipPlugin):
                             for p in pathlist
                             for newp in (ELF.replace_dst(p, "LIB", "lib"), ELF.replace_dst(p, "LIB", "lib64"))]
 
-        
+
         # PLATFORM: expands to string corresponding to CPU type of the host system (e.g. "x86_64")
         # some archs the string comes from AT_PLATFORM value in auxiliary vector (getauxval)
         if (path.find("$PLATFORM") != -1) or (path.find("${PLATFORM}") != -1):

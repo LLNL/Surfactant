@@ -4,7 +4,7 @@ import surfactant.pluginsystem as pluginsystem
 
 class OLE(pluginsystem.InfoPlugin):
     PLUGIN_NAME = "OLE"
-    
+
     @classmethod
     def supports_file(cls, filename, filetype=None) -> bool:
         return filetype == "OLE"

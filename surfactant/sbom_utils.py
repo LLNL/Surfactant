@@ -7,14 +7,14 @@ def entry_search(sbom, hsh):
     for index, item in enumerate(sbom['software']):
         if hsh in item['sha256']:
             return True, index
-        
+
     return False, None
 
 
 # updates fields in an entry, with the assumption that the hashes match (e.g. most extracted values should match)
 def update_entry(sbom, entry, index):
     if index != None:
-        # duplicate entry, check other fields to see if data differs. 
+        # duplicate entry, check other fields to see if data differs.
         existing_entry = sbom['software'][index]
         if existing_entry != entry:
             # go through each key-value pair between the entries to find the differences and update accordingly.
@@ -34,13 +34,13 @@ def update_entry(sbom, entry, index):
                         if isinstance(sbom['software'][index][location], list):
                             if location in ["containerPath", "fileName", "installPath", "vendor", "provenance", "metadata", "supplementaryFiles", "components"]:
                                 if not value in sbom['software'][index][location]:
-                                    sbom['software'][index][location].append(value)                     
+                                    sbom['software'][index][location].append(value)
                         # if value is a string, update the dictionary
                         # ex: name, comments, version, description, relationshipAssertion, recordedInstitution
                         if location in ["name", "comments", "version", "description", "relationshipAssertion", "recordedInstitution"]:
                             sbom['software'][index].update({location : value})
-                
+
                     # TODO: for intermediate file format, find/figure out way to resolve conflicts between surfactant sboms and those with manual additions
-  
+
             # return UUID of existing entry, UUID of entry being discarded, existing_entry object
             return existing_uuid, entry_uuid, existing_entry

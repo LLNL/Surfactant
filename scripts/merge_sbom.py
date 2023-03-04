@@ -375,7 +375,7 @@ def dfs(rel):
             rootFound.add(rel)
         recursionStack.pop()
         return rel in rootFound
-       
+
 for rel in rel_graph:
     dfs(rel)
 print(f"ROOTS: {roots}")
@@ -409,4 +409,3 @@ for r in roots:
     msbom['relationships'].append({"xUUID": system["UUID"], "yUUID": r, "relationship": "Includes"})
 
 json.dump(msbom, args.sbom_outfile, indent=4)
-

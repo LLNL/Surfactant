@@ -8,4 +8,3 @@ If the config file option is given, a top-level system entry will be created tha
 software entries are tied to (directly or indirectly based on other relationships). Specifying
 an empty UUID will make a random UUID get generated for the new system entry, otherwise it will
 use the one provided.
-

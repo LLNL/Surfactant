@@ -22,7 +22,7 @@ def get_file_info(filename):
         # stat.IO_REPARSE_TAG_SYMLINK
         # stat.IO_REPARSE_TAG_MOUNT_POINT
         return {"size": fstats.st_size, "accesstime": fstats.st_atime, "modifytime": fstats.st_mtime, "createtime": fstats.st_ctime, "filemode": stat.filemode(fstats.st_mode), "filehidden": filehidden}
-    
+
 
 def calc_file_hashes(filename):
     sha256_hash = sha256()

@@ -12,7 +12,7 @@ import surfactant.pluginsystem as pluginsystem
 
 class PE(pluginsystem.InfoPlugin):
     PLUGIN_NAME = "PE"
-    
+
     @classmethod
     def supports_file(cls, filename, filetype=None) -> bool:
         return filetype == "PE"
@@ -82,7 +82,7 @@ def extract_pe_info(filename):
             file_details["peDelayImport"].append(entry.dll.decode())
             #for imp in entry.imports:
             #    print("\t" + hex(imp.address) + " " + str(imp.name))
-    
+
     file_details["peIsExe"] = pe.is_exe()
     file_details["peIsDll"] = pe.is_dll()
     if opt_hdr := getattr(pe, "OPTIONAL_HEADER", None):

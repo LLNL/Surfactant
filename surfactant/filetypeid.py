@@ -72,7 +72,7 @@ hex_file_extensions = [".hex", ".mcs", ".h86", ".hxl", ".hxh", ".obl", ".obh", "
 def check_hex_type(filename):
     try:
         with open(filename, 'r') as f:
-            
+
             percent_intel = 0
             percent_motorola = 0
             for line in range(100):
@@ -89,6 +89,6 @@ def check_hex_type(filename):
                 return "MOTOROLA_SREC"
             else:
                 return None
-            
+
     except FileNotFoundError:
         return False
