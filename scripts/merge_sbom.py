@@ -4,12 +4,14 @@ import argparse
 import uuid
 from collections import deque
 
+
 def is_valid_uuid4(u):
     try:
         u_test = uuid.UUID(u, version=4)
     except ValueError:
         return False
     return str(u_test) == u
+
 
 def find_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
     for rel in sbom["relationships"]:
@@ -26,6 +28,7 @@ def find_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
         if all_match:
             return rel
 
+
 def find_star_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
     for rel in sbom["starRelationships"]:
         all_match = True
@@ -41,6 +44,7 @@ def find_star_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None
         if all_match:
             return rel
 
+
 def find_systems_entry(sbom, uuid=None, name=None):
     for system in sbom["systems"]:
         all_match = True
@@ -52,6 +56,7 @@ def find_systems_entry(sbom, uuid=None, name=None):
                 all_match = False
         if all_match:
             return sw
+
 
 def find_software_entry(sbom, uuid=None, sha256=None, md5=None, sha1=None):
     for sw in sbom["software"]:
@@ -70,8 +75,7 @@ def find_software_entry(sbom, uuid=None, sha256=None, md5=None, sha1=None):
                 all_match = False
         if all_match:
             return sw
-#if sw := find_software_entry(sbom1_json, uuid="befe0d3e-3202-42f9-aef3-c8ed1b5626b5", sha256="cab105489d8e07035c4a5b932f0760cdad3228a87684a4732ade879a75de56d9", md5="b96482694cc5c915f4d82fb3ec6aa3f3", sha1="4abc447e1b7f2e711b32893d747cdd4466bb8d5e"):
-#    print(sw)
+
 
 def merge_number_same(e1, e2, k):
     # use e2 number if field isn't in e1
@@ -83,6 +87,7 @@ def merge_number_same(e1, e2, k):
             if e1[k] != e2[k]:
                 print(f"Field {k} that should match does not! e1={e1} e2={e2}")
 
+
 def merge_number_lt(e1, e2, k):
     # use e2 number if the field isn't in e1
     if not k in e1:
@@ -92,6 +97,7 @@ def merge_number_lt(e1, e2, k):
         if k in e2:
             if e1[k] > e2[k]:
                 e1[k] = e2[k]
+
 
 def merge_number_gt(e1, e2, k):
     # use e2 number if the field isn't in e1
@@ -103,11 +109,13 @@ def merge_number_gt(e1, e2, k):
             if e1[k] < e2[k]:
                 e1[k] = e2[k]
 
+
 def merge_string(e1, e2, k):
     if not k in e1 or not e1[k]:
         # worst case, e2 has an empty string/null just like e1
         if k in e2:
             e1[k] = e2[k]
+
 
 def merge_array(e1, e2, k):
     if not k in e1 or not e1[k]:
@@ -121,6 +129,7 @@ def merge_array(e1, e2, k):
             for item in e2[k]:
                 if not item in e1[k]:
                     e1[k].append(item)
+
 
 # merges data from two systems entries, modifying the first to contain new info from the second
 def merge_systems_entries(e1, e2):
@@ -139,6 +148,7 @@ def merge_systems_entries(e1, e2):
     # provenance
     merge_array(e1, e2, "provenance")
     return e1["UUID"], e2["UUID"]
+
 
 # merges data from two software entries, modifying the first entry to contain new info from the second (under the assumption that hashes are the same, so certain values must match)
 def merge_software_entries(e1, e2):
@@ -159,7 +169,7 @@ def merge_software_entries(e1, e2):
     # size
     merge_number_same(e1, e2, "size")
     # captureTime
-    merge_number_lt(e1, e2, "captureTime") # favor the older time
+    merge_number_lt(e1, e2, "captureTime")  # favor the older time
     # version
     merge_string(e1, e2, "version")
     # vendor
@@ -170,7 +180,11 @@ def merge_software_entries(e1, e2):
     merge_string(e1, e2, "relationshipAssertion")
     if "relationshipAssertion" in e1 and e1["relationshipAssertion"] == "Unknown":
         # e2 has a better relationshipAssertion than "Unknown"
-        if "relationshipAssertion" in e2 and e2["relationshipAssertion"] and e2["relationshipAssertion"] != "Unknown":
+        if (
+            "relationshipAssertion" in e2
+            and e2["relationshipAssertion"]
+            and e2["relationshipAssertion"] != "Unknown"
+        ):
             e1["relationshipAssertion"] = e2["relationshipAssertion"]
     # comments
     merge_string(e1, e2, "comments")
@@ -186,16 +200,26 @@ def merge_software_entries(e1, e2):
     merge_array(e1, e2, "components")
     return e1["UUID"], e2["UUID"]
 
+
 def merge_sbom(sbom_m, sbom):
     # some older SBOMs might have duplicate hashes within them... create a new merged sbom to avoid issues...
-    merged_sbom = {"systems": [], "software": [], "relationships": [], "analysisData": [], "observations": [], "starRelationships": []}
+    merged_sbom = {
+        "systems": [],
+        "software": [],
+        "relationships": [],
+        "analysisData": [],
+        "observations": [],
+        "starRelationships": [],
+    }
     # merged/old to new UUID map
     uuid_updates = {}
     # merge systems entries
     if "systems" in sbom_m:
         for system in sbom_m["systems"]:
             # check for duplicate UUID/name, merge with existing entry
-            if existing_system := find_systems_entry(merged_sbom, uuid=system["UUID"], name=system["name"]):
+            if existing_system := find_systems_entry(
+                merged_sbom, uuid=system["UUID"], name=system["name"]
+            ):
                 # merge system entries
                 u1, u2 = merge_systems_entries(existing_system, system)
                 print(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
@@ -205,7 +229,9 @@ def merge_sbom(sbom_m, sbom):
     if "systems" in sbom:
         for system in sbom["systems"]:
             # check for duplicate UUID/name, merge with existing entry
-            if existing_system := find_systems_entry(merged_sbom, uuid=system["UUID"], name=system["name"]):
+            if existing_system := find_systems_entry(
+                merged_sbom, uuid=system["UUID"], name=system["name"]
+            ):
                 # merge system entries
                 u1, u2 = merge_systems_entries(existing_system, system)
                 print(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
@@ -216,7 +242,9 @@ def merge_sbom(sbom_m, sbom):
     if "software" in sbom_m:
         for sw in sbom_m["software"]:
             # check for a duplicate hash, and merge with the existing entry
-            if existing_sw := find_software_entry(merged_sbom, sha256=sw["sha256"], md5=sw["md5"], sha1=sw["sha1"]):
+            if existing_sw := find_software_entry(
+                merged_sbom, sha256=sw["sha256"], md5=sw["md5"], sha1=sw["sha1"]
+            ):
                 u1, u2 = merge_software_entries(existing_sw, sw)
                 print(f"MERGE_DUPLICATE: uuid1={u1}, uuid2={u2}")
                 uuid_updates[u2] = u1
@@ -224,7 +252,9 @@ def merge_sbom(sbom_m, sbom):
                 merged_sbom["software"].append(sw)
     if "software" in sbom:
         for sw in sbom["software"]:
-            if existing_sw := find_software_entry(merged_sbom, sha256=sw["sha256"], md5=sw["md5"], sha1=sw["sha1"]):
+            if existing_sw := find_software_entry(
+                merged_sbom, sha256=sw["sha256"], md5=sw["md5"], sha1=sw["sha1"]
+            ):
                 u1, u2 = merge_software_entries(existing_sw, sw)
                 print(f"MERGE DUPLICATE: uuid1={u1}, uuid2={u2}")
                 uuid_updates[u2] = u1
@@ -238,7 +268,12 @@ def merge_sbom(sbom_m, sbom):
                 rel["xUUID"] = uuid_updates[rel["xUUID"]]
             if rel["yUUID"] in uuid_updates:
                 rel["yUUID"] = uuid_updates[rel["xUUID"]]
-            if existing_rel := find_relationship_entry(merged_sbom, xUUID=rel["xUUID"], yUUID=rel["yUUID"], relationship=rel["relationship"]):
+            if existing_rel := find_relationship_entry(
+                merged_sbom,
+                xUUID=rel["xUUID"],
+                yUUID=rel["yUUID"],
+                relationship=rel["relationship"],
+            ):
                 print("DUPLICATE RELATIONSHIP: {existing_rel}")
             else:
                 merged_sbom["relationships"].append(rel)
@@ -249,13 +284,18 @@ def merge_sbom(sbom_m, sbom):
                 rel["xUUID"] = uuid_updates[rel["xUUID"]]
             if rel["yUUID"] in uuid_updates:
                 rel["yUUID"] = uuid_updates[rel["yUUID"]]
-            if existing_rel := find_relationship_entry(merged_sbom, xUUID=rel["xUUID"], yUUID=rel["yUUID"], relationship=rel["relationship"]):
+            if existing_rel := find_relationship_entry(
+                merged_sbom,
+                xUUID=rel["xUUID"],
+                yUUID=rel["yUUID"],
+                relationship=rel["relationship"],
+            ):
                 print(f"DUPLICATE RELATIONSHIP: {existing_rel}")
             else:
                 merged_sbom["relationships"].append(rel)
     # rewrite container path UUIDs using rewrite map/list
     for sw in merged_sbom["software"]:
-         if "containerPath" in sw and sw["containerPath"]:
+        if "containerPath" in sw and sw["containerPath"]:
             for idx, path in enumerate(sw["containerPath"]):
                 u = path[:36]
                 # if container path starts with an invalid uuid4, sbom might not be valid
@@ -290,7 +330,12 @@ def merge_sbom(sbom_m, sbom):
                 rel["xUUID"] = uuid_updates[rel["xUUID"]]
             if rel["yUUID"] in uuid_updates:
                 rel["yUUID"] = uuid_updates[rel["xUUID"]]
-            if existing_rel := find_star_relationship_entry(merged_sbom, xUUID=rel["xUUID"], yUUID=rel["yUUID"], relationship=rel["relationship"]):
+            if existing_rel := find_star_relationship_entry(
+                merged_sbom,
+                xUUID=rel["xUUID"],
+                yUUID=rel["yUUID"],
+                relationship=rel["relationship"],
+            ):
                 print("DUPLICATE STAR RELATIONSHIP: {existing_rel}")
             else:
                 merged_sbom["starRelationships"].append(rel)
@@ -301,19 +346,45 @@ def merge_sbom(sbom_m, sbom):
                 rel["xUUID"] = uuid_updates[rel["xUUID"]]
             if rel["yUUID"] in uuid_updates:
                 rel["yUUID"] = uuid_updates[rel["yUUID"]]
-            if existing_rel := find_star_relationship_entry(merged_sbom, xUUID=rel["xUUID"], yUUID=rel["yUUID"], relationship=rel["relationship"]):
+            if existing_rel := find_star_relationship_entry(
+                merged_sbom,
+                xUUID=rel["xUUID"],
+                yUUID=rel["yUUID"],
+                relationship=rel["relationship"],
+            ):
                 print(f"DUPLICATE RELATIONSHIP: {existing_rel}")
             else:
                 merged_sbom["starRelationships"].append(rel)
     return merged_sbom
 
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--config_file', metavar='CONFIG_FILE', nargs='?', type=argparse.FileType('r'), help='Config file (JSON); make sure keys with paths do not have a trailing /')
-parser.add_argument('--sbom_outfile', metavar='SBOM_OUTPUT', nargs='?', type=argparse.FileType('w'), default=sys.stdout, help='Output SBOM file')
-parser.add_argument('input_sbom', type=argparse.FileType('r'), nargs='+')
+parser.add_argument(
+    "--config_file",
+    metavar="CONFIG_FILE",
+    nargs="?",
+    type=argparse.FileType("r"),
+    help="Config file (JSON); make sure keys with paths do not have a trailing /",
+)
+parser.add_argument(
+    "--sbom_outfile",
+    metavar="SBOM_OUTPUT",
+    nargs="?",
+    type=argparse.FileType("w"),
+    default=sys.stdout,
+    help="Output SBOM file",
+)
+parser.add_argument("input_sbom", type=argparse.FileType("r"), nargs="+")
 args = parser.parse_args()
 
-msbom = {"systems": [], "software": [], "relationships": [], "analysisData": [], "observations": [], "starRelationships": []}
+msbom = {
+    "systems": [],
+    "software": [],
+    "relationships": [],
+    "analysisData": [],
+    "observations": [],
+    "starRelationships": [],
+}
 for f in args.input_sbom:
     sbom = json.load(f)
     msbom = merge_sbom(msbom, sbom)
@@ -376,6 +447,7 @@ def dfs(rel):
         recursionStack.pop()
         return rel in rootFound
 
+
 for rel in rel_graph:
     dfs(rel)
 print(f"ROOTS: {roots}")
@@ -406,6 +478,6 @@ print(f"SYSTEM: {system}")
 
 # add a system relationship to each root software/systems entry identified
 for r in roots:
-    msbom['relationships'].append({"xUUID": system["UUID"], "yUUID": r, "relationship": "Includes"})
+    msbom["relationships"].append({"xUUID": system["UUID"], "yUUID": r, "relationship": "Includes"})
 
 json.dump(msbom, args.sbom_outfile, indent=4)

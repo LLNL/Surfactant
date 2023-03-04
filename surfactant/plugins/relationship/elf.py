@@ -8,7 +8,7 @@ class ELF(pluginsystem.RelationshipPlugin):
 
     @classmethod
     def has_required_fields(cls, metadata) -> bool:
-        return 'elfDependencies' in metadata
+        return "elfDependencies" in metadata
 
     # Information on loading dynamic libraries from ld.so man page:
     # 1. if dependency string contains a slash, it is interpreted as a (relative or absolute) pathname and shared object is loaded using that
@@ -33,14 +33,16 @@ class ELF(pluginsystem.RelationshipPlugin):
     @classmethod
     def get_relationships(cls, sbom, sw, metadata) -> list:
         relationships = []
-        dependent_uuid = sw.get('UUID')
+        dependent_uuid = sw.get("UUID")
         default_search_paths = ELF.generate_search_paths(sw, metadata)
-        for dep in metadata['elfDependencies']:
+        for dep in metadata["elfDependencies"]:
             # if dependency has a slash, it is interpreted as a pathname to shared object to load
             # construct fname and full file path(s) to search for; paths must be a list if the dependency is given as a relative path
             if "/" in dep:
                 # search SBOM entries for a library at a matching relative/absolute path
-                dep = pathlib.PurePosixPath(os.path.normpath(dep)) # normpath takes care of redundancies such as `//`->`/` and `ab/../xy`->`xy`; NOTE may change meaning of path containing symlinks
+                dep = pathlib.PurePosixPath(
+                    os.path.normpath(dep)
+                )  # normpath takes care of redundancies such as `//`->`/` and `ab/../xy`->`xy`; NOTE may change meaning of path containing symlinks
                 fname = dep.name
                 if dep.is_absolute():
                     # absolute path
@@ -49,27 +51,34 @@ class ELF(pluginsystem.RelationshipPlugin):
                     # relative path
                     fpaths = []
                     # iterate through install paths for sw to get the full path to the file as it would appear in installPaths for the software entry
-                    for ipath in sw['installPath']:
-                        ipath = pathlib.PurePosixPath(os.path.normpath(ipath)) # NOTE symlinks in install path may be affected by normpath
-                        fpaths.append(os.path.normpath(str(ipath.parent.joinpath(dep)))) # paths to search are install path folders + relative path of dependency
+                    for ipath in sw["installPath"]:
+                        ipath = pathlib.PurePosixPath(
+                            os.path.normpath(ipath)
+                        )  # NOTE symlinks in install path may be affected by normpath
+                        fpaths.append(
+                            os.path.normpath(str(ipath.parent.joinpath(dep)))
+                        )  # paths to search are install path folders + relative path of dependency
             else:
                 fname = dep
                 # the paths for the dependency follow the default search path order for Linux/FreeBSD/etc
-                fpaths = [os.path.join(p, fname) for p in default_search_paths] # append fname to the end of the paths to get the full file install paths of the dependency
-
+                fpaths = [
+                    os.path.join(p, fname) for p in default_search_paths
+                ]  # append fname to the end of the paths to get the full file install paths of the dependency
 
             # Look for a software entry with a file name and install path that matches the dependency that would be loaded
-            for item in sbom['software']:
+            for item in sbom["software"]:
                 # Check if the software entry has a name matching the dependency first as a quick check to rule out non-matches
-                if not fname in item['fileName']:
+                if not fname in item["fileName"]:
                     continue
 
                 # check if the software entry is installed to one of the paths looked at for loading the dependency
                 for fp in fpaths:
-                    if fp in item['installPath']:
+                    if fp in item["installPath"]:
                         # software matching requirements to be the loaded dependency was found
-                        dependency_uuid = item['UUID']
-                        r = pluginsystem.RelationshipPlugin.create_relationship(dependent_uuid, dependency_uuid, "Uses")
+                        dependency_uuid = item["UUID"]
+                        r = pluginsystem.RelationshipPlugin.create_relationship(
+                            dependent_uuid, dependency_uuid, "Uses"
+                        )
                         if r not in relationships:
                             relationships.append(r)
         return relationships
@@ -79,7 +88,7 @@ class ELF(pluginsystem.RelationshipPlugin):
         # 1. Search using directories in DT_RPATH if present and no DT_RUNPATH exists (use of DT_RPATH is deprecated)
         # 2. Use LD_LIBRARY_PATH environment variable; ignore if suid/sgid binary (nothing to do, we don't have this information w/o running on a live system)
         # 3. Search using directories in DT_RUNPATH if present
-        paths = ELF.generate_runpaths(sw, md) # will return an empty list if none
+        paths = ELF.generate_runpaths(sw, md)  # will return an empty list if none
 
         # 4. From /etc/ld.so.cache (/var/run/ld.so.hints on FreeBSD) list of compiled candidate libraries previously found in augmented library path; if binary was linked with -z nodeflib linker option, libraries in default library paths are skipped
         # /etc/ld.so.conf can be used to add additional directories to defaults (e.g. /usr/local/lib or /opt/lib), but we don't necessarily have a way to gather this info
@@ -114,15 +123,17 @@ class ELF(pluginsystem.RelationshipPlugin):
             rp_to_use = runpath
 
         # split up the paths first, then substitute DSTs
-        return [sp # append path with DSTs replaced to the list
-                for rp in rp_to_use # iterate through all possible runpath entries
-                for p in rp.split(":") # iterate through all components (paths) in each runpath entry
-                if p != '' # if the path entry is not empty
-                for sp in ELF.substitute_all_dst(sw, md, p)] # substitute DSTs in the path
+        return [
+            sp  # append path with DSTs replaced to the list
+            for rp in rp_to_use  # iterate through all possible runpath entries
+            for p in rp.split(":")  # iterate through all components (paths) in each runpath entry
+            if p != ""  # if the path entry is not empty
+            for sp in ELF.substitute_all_dst(sw, md, p)  # substitute DSTs in the path
+        ]
 
     @staticmethod
     def replace_dst(origstr, dvar, newval) -> list:
-        return origstr.replace("$"+dvar, newval).replace("${"+dvar+"}", newval)
+        return origstr.replace("$" + dvar, newval).replace("${" + dvar + "}", newval)
 
     @staticmethod
     def substitute_all_dst(sw, md, path) -> list:
@@ -150,10 +161,14 @@ class ELF(pluginsystem.RelationshipPlugin):
                 pathlist.append(ELF.replace_dst(path, "LIB", "lib64"))
             else:
                 # perform substitutions with every current entry in pathlist
-                pathlist = [newp
-                            for p in pathlist
-                            for newp in (ELF.replace_dst(p, "LIB", "lib"), ELF.replace_dst(p, "LIB", "lib64"))]
-
+                pathlist = [
+                    newp
+                    for p in pathlist
+                    for newp in (
+                        ELF.replace_dst(p, "LIB", "lib"),
+                        ELF.replace_dst(p, "LIB", "lib64"),
+                    )
+                ]
 
         # PLATFORM: expands to string corresponding to CPU type of the host system (e.g. "x86_64")
         # some archs the string comes from AT_PLATFORM value in auxiliary vector (getauxval)

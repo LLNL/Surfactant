@@ -21,7 +21,14 @@ def get_file_info(filename):
         # fstats.st_reparse_tag from os.lstat()
         # stat.IO_REPARSE_TAG_SYMLINK
         # stat.IO_REPARSE_TAG_MOUNT_POINT
-        return {"size": fstats.st_size, "accesstime": fstats.st_atime, "modifytime": fstats.st_mtime, "createtime": fstats.st_ctime, "filemode": stat.filemode(fstats.st_mode), "filehidden": filehidden}
+        return {
+            "size": fstats.st_size,
+            "accesstime": fstats.st_atime,
+            "modifytime": fstats.st_mtime,
+            "createtime": fstats.st_ctime,
+            "filemode": stat.filemode(fstats.st_mode),
+            "filehidden": filehidden,
+        }
 
 
 def calc_file_hashes(filename):
@@ -38,4 +45,8 @@ def calc_file_hashes(filename):
                 md5_hash.update(mv[:n])
     except FileNotFoundError:
         return None
-    return {"sha256": sha256_hash.hexdigest(), "sha1": sha1_hash.hexdigest(), "md5": md5_hash.hexdigest()}
+    return {
+        "sha256": sha256_hash.hexdigest(),
+        "sha1": sha1_hash.hexdigest(),
+        "md5": md5_hash.hexdigest(),
+    }

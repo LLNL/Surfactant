@@ -27,12 +27,12 @@ def extract_ole_info(filename):
     # extensions are typically .msi and .msp for files with these two clsid's
     # less common would be a .msm (merge) with the same clsid as MSI
     # as well as .mst (transform) with a clsid of 000c1082
-    if ole.root and hasattr(ole.root, 'clsid'):
+    if ole.root and hasattr(ole.root, "clsid"):
         file_details["ole"]["clsid"] = str(ole.root.clsid).lower()
         if file_details["ole"]["clsid"] == "000c1082-0000-0000-c000-000000000046":
             file_details["ole"]["clsid_type"] = "MST"
         if file_details["ole"]["clsid"] == "000c1084-0000-0000-c000-000000000046":
-            file_details["ole"]["clsid_type"] = "MSI" # or msm, depending on file extension
+            file_details["ole"]["clsid_type"] = "MSI"  # or msm, depending on file extension
         if file_details["ole"]["clsid"] == "000c1086-0000-0000-c000-000000000046":
             file_details["ole"]["clsid_type"] = "MSP"
 

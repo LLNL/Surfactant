@@ -1,4 +1,3 @@
-
 import pathlib
 import surfactant.pluginsystem as pluginsystem
 
@@ -8,18 +7,18 @@ class PE(pluginsystem.RelationshipPlugin):
 
     @classmethod
     def has_required_fields(cls, metadata) -> bool:
-        return 'peImport' in metadata or 'peBoundImport' in metadata or 'peDelayImport' in metadata
+        return "peImport" in metadata or "peBoundImport" in metadata or "peDelayImport" in metadata
 
     @classmethod
     def get_relationships(cls, sbom, sw, metadata) -> list:
         relationships = []
-        if 'peImport' in metadata:
+        if "peImport" in metadata:
             # NOTE: UWP apps have their own search order for libraries; they use a .appx or .msix file extension and appear to be zip files, so our SBOM probably doesn't even include them
-            relationships.extend(get_windows_pe_dependencies(sbom, sw, metadata['peImport']))
-        if 'peBoundImport' in metadata:
-            relationships.extend(get_windows_pe_dependencies(sbom, sw, metadata['peBoundImport']))
-        if 'peDelayImport' in metadata:
-            relationships.extend(get_windows_pe_dependencies(sbom, sw, metadata['peDelayImport']))
+            relationships.extend(get_windows_pe_dependencies(sbom, sw, metadata["peImport"]))
+        if "peBoundImport" in metadata:
+            relationships.extend(get_windows_pe_dependencies(sbom, sw, metadata["peBoundImport"]))
+        if "peDelayImport" in metadata:
+            relationships.extend(get_windows_pe_dependencies(sbom, sw, metadata["peDelayImport"]))
         return relationships
 
 
@@ -27,14 +26,14 @@ class PE(pluginsystem.RelationshipPlugin):
 def find_windows_dlls(sbom, probedirs, filename):
     possible_matches = []
     # iterate through all sbom entries
-    for e in sbom['software']:
+    for e in sbom["software"]:
         # Skip if no install path (e.g. installer/temporary file)
-        if e['installPath'] == None:
+        if e["installPath"] == None:
             continue
         for pdir in probedirs:
             # installPath contains full path+filename, so check for all combinations of probedirs+filename
             pfile = pathlib.PureWindowsPath(pdir, filename)
-            for ifile in e['installPath']:
+            for ifile in e["installPath"]:
                 # PureWindowsPath is case-insensitive for file/directory names
                 if pfile == pathlib.PureWindowsPath(ifile):
                     # matching probe directory and filename, add software to list
@@ -46,7 +45,7 @@ def get_windows_pe_dependencies(sbom, sw, peImports):
     relationships = []
     # No installPath is probably temporary files/installer
     # TODO maybe resolve dependencies using relative locations in containerPath, for files originating from the same container UUID?
-    if sw['installPath'] == None:
+    if sw["installPath"] == None:
         return relationships
 
     # https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order
@@ -71,16 +70,20 @@ def get_windows_pe_dependencies(sbom, sw, peImports):
 
     # Of those steps, without gathering much more information that is likely not available or manual/dynamic analysis, we can do:
     # 4. Look for DLL in the directory the application was loaded from
-    dependent_uuid = sw.get('UUID')
+    dependent_uuid = sw.get("UUID")
     for fname in peImports:
         probedirs = []
-        for ipath in sw['installPath']:
+        for ipath in sw["installPath"]:
             probedirs.append(pathlib.PureWindowsPath(ipath).parent.as_posix())
         # likely just one found, unless sw entry has the same file installed to multiple places
         for e in find_windows_dlls(sbom, probedirs, fname):
-            dependency_uuid = e['UUID']
-            relationships.append(pluginsystem.RelationshipPlugin.create_relationship(dependent_uuid, dependency_uuid, "Uses"))
+            dependency_uuid = e["UUID"]
+            relationships.append(
+                pluginsystem.RelationshipPlugin.create_relationship(
+                    dependent_uuid, dependency_uuid, "Uses"
+                )
+            )
         # logging DLLs not found would be nice, but is excessively noisy due being almost exclusively system DLLs
-        #print(f" Dependency {fname} not found for sbom['software'] entry={sw}")
+        # print(f" Dependency {fname} not found for sbom['software'] entry={sw}")
 
     return relationships
