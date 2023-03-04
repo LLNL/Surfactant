@@ -71,7 +71,7 @@ class ELF(pluginsystem.RelationshipPlugin):
                         dependency_uuid = item['UUID']
                         r = pluginsystem.RelationshipPlugin.create_relationship(dependent_uuid, dependency_uuid, "Uses")
                         if r not in relationships:
-                            relationships.append(r)     
+                            relationships.append(r)
         return relationships
 
     @staticmethod
@@ -163,4 +163,7 @@ class ELF(pluginsystem.RelationshipPlugin):
             #      the number of search paths for a feature that is rarely used (similar to hwcaps subfolder searching)
             # For now, discard paths given that no valid substitution was found
             return []
+
+        # normalize paths after expanding tokens to avoid portions of the path involving  ../, ./, and // occurences
+        pathlist = [os.path.normpath(p) for p in pathlist]
         return pathlist
