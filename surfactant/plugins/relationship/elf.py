@@ -20,7 +20,7 @@ class ELF(pluginsystem.RelationshipPlugin):
     # - in default path /lib, and then /usr/lib (/lib64 and /usr/lib64 maybe for 64-bit libraries); skipped if binary was linked with -z nodeflib linker option
     # some strings are expanded; $ORIGIN, $LIB, $PLATFORM
     # /etc/ld.so.conf can be used to configure the dynamic loader to search for other directories (such as /usr/local/lib or /opt/lib) as well; format is separate lines naming additional directories, and include <path> statement that can use wildcards to include paths from additional files, such as /etc/ld.so.conf.d/*.conf
-    # secure execution mode if AT_SECURE entry in auxiliary vector has nonzero value (process real & effective user IDs differ, or real & effectived group IDs differ; process with non-root user ID executed a binary that conferred capabilites to the process; nonzero value set by a Linux Security Module)
+    # secure execution mode if AT_SECURE entry in auxiliary vector has nonzero value (process real & effective user IDs differ, or real & effectived group IDs differ; process with non-root user ID executed a binary that conferred capabilities to the process; nonzero value set by a Linux Security Module)
     # hardware capability directories can be cascaded
     # ----- hardware capabilities, recognized names -----
     # Alpha: ev4, ev5, ev56, ev6, ev67
@@ -164,6 +164,6 @@ class ELF(pluginsystem.RelationshipPlugin):
             # For now, discard paths given that no valid substitution was found
             return []
 
-        # normalize paths after expanding tokens to avoid portions of the path involving  ../, ./, and // occurences
+        # normalize paths after expanding tokens to avoid portions of the path involving  ../, ./, and // occurrences
         pathlist = [os.path.normpath(p) for p in pathlist]
         return pathlist

@@ -24,7 +24,7 @@ def parse_relationships(sbom):
 
         # Find metadata saying what dependencies are used by the software entry
         for md in sw['metadata']:
-            # handle ELF dependecies, PE imports, and dotNet assembly references using included plugins
+            # handle ELF dependencies, PE imports, and dotNet assembly references using included plugins
             for p in surfactant.pluginsystem.RelationshipPlugin.get_plugins():
                 if p.has_required_fields(md):
                     print(f"====={p.PLUGIN_NAME} RelationshipPlugin=====")

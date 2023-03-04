@@ -261,7 +261,7 @@ def get_dependentAssembly_info(da_et, config_filepath=""):
     return da_info
 
 
-# returns a map for the given assembly binding element tree based on content within the elemnt tree for an "assemblyBinding" tag
+# returns a map for the given assembly binding element tree based on content within the element tree for an "assemblyBinding" tag
 # the "assemblyBinding" tag can appear within either a <runtime> or <windows> element, or under the root <configuration> element
 # <runtime>: could contain appliesTo attribute, probing, dependentAssembly, and qualifyAssembly elements
 # <windows>: could contain probing, assemblyIdentity, and dependentAssembly elements
@@ -381,7 +381,7 @@ def get_windows_application_config_info(filename):
         #    - version: version of app or assembly
         #    - publicKeyToken: 16-char hex string w/ last 8 bytes of SHA-1 hash of public key the assembly is signed by
         #    <bindingRedirect oldVersion="1.0.0.0" newVersion="1.0.10.0"/>
-        #    - oldVersion: assembly version being overriden or redirected
+        #    - oldVersion: assembly version being overridden or redirected
         #    - newVersion: replacement assembly version
         windows_et = et.find('./windows')
         if windows_et != None:
