@@ -1,0 +1,33 @@
+variables:
+    TEST_VAR: "A Default Value"
+ 
+
+.oslic:
+  tags:
+    - shell
+    - oslic
+  except:
+    refs:
+      - /_onone/
+    variables:
+      - $CI_OSLIC == "OFF"
+
+before_script:
+  - python3 --version  # For debugging
+  - python3 -m pip install virtualenv # Should already be installed, but just to be sure...
+  - python3 -m virtualenv venv # Create venv
+  - source venv/bin/activate
+
+
+pre-commit:
+  extends:
+    - .oslic
+  variables:
+    GIT_STRATEGY: clone # or fetch (faster), none (no code needed)
+  script:
+    - pip install -r requirements-dev.txt
+    - pre-commit run --all-files
+    #- git config user.email "$GITLAB_USER_EMAIL"
+    #- git config user.name "pre-commit fix $GITLAB_USER_NAME"
+    #- git commit -m "auto fixes from pre-commit hooks"
+    #- GIT_SSH_COMMAND="ssh -i $PRECOMIT_SSH_KEY" git push ssh://git@czgitlab.llnl.gov:7999/cir-software-assurance/sbom-surfactant.git -o ci.skip
