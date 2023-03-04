@@ -1,16 +1,15 @@
-variables:
-    TEST_VAR: "A Default Value"
- 
+# Run workflow for both push and MR triggers, but avoid duplicate pipeline runs
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
 
 .oslic:
   tags:
     - shell
     - oslic
-  except:
-    refs:
-      - /_onone/
-    variables:
-      - $CI_OSLIC == "OFF"
 
 before_script:
   - python3 --version  # For debugging
@@ -18,16 +17,36 @@ before_script:
   - python3 -m virtualenv venv # Create venv
   - source venv/bin/activate
 
-
 pre-commit:
   extends:
     - .oslic
   variables:
     GIT_STRATEGY: clone # or fetch (faster), none (no code needed)
-  script:
-    - pip install -r requirements-dev.txt
-    - pre-commit run --all-files
-    #- git config user.email "$GITLAB_USER_EMAIL"
-    #- git config user.name "pre-commit fix $GITLAB_USER_NAME"
-    #- git commit -m "auto fixes from pre-commit hooks"
-    #- GIT_SSH_COMMAND="ssh -i $PRECOMIT_SSH_KEY" git push ssh://git@czgitlab.llnl.gov:7999/cir-software-assurance/sbom-surfactant.git -o ci.skip
+  rules:
+    - exists: [.pre-commit-config.yaml]
+  script: |
+    pip install -r requirements-dev.txt
+    status=0
+    pre-commit run --all-files || status=$?
+    if [[ $status -eq 0 ]]; then
+      exit 0
+    else
+      echo "Running pre-commit again to check for issues that can't be auto fixed."
+      pre-commit run --all-files # should exit on failure
+    fi
+
+    if [[ -z "$PRECOMMIT_SSH_KEY" ]]; then
+      echo "No pre-commit SSH key is set up for automatic fixes." > /dev/stderr
+      exit 1
+    fi
+
+    if [[ -n "$CI_MERGE_REQUEST_IID" ]]; then
+      echo "Attempting to auto fix issues for open MR."
+      git config user.email "$GITLAB_USER_EMAIL"
+      git config user.name "pre-commit fix $GITLAB_USER_NAME"
+      git add .
+      git commit -m "auto fixes from pre-commit CI job"
+      # note: add -o ci.skip if repeated pipeline triggering loops are a concern... worst case here should be committing fails because no files changed
+      GIT_SSH_COMMAND="ssh -i $PRECOMMIT_SSH_KEY" git push ssh://git@czgitlab.llnl.gov:7999/cir-software-assurance/sbom-surfactant.git HEAD:"$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+    fi
+    exit 1
