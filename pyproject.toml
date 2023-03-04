@@ -20,6 +20,7 @@ keywords = ["sbom", "pe", "elf", "ole", "msi"]
 license = {text = "BSD-3-Clause"}
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Operating System :: MacOS",
@@ -48,8 +49,8 @@ tests = ["pytest"]
 # After generate_cytrics_sbom.py is moved to surfactant/__main__.py, this will allow running surfactant from the git repo with python -m surfactant
 #surfactant = "surfactant.__main__:main"
 
-#[project.urls]
-#homepage = "https://example.com"
+[project.urls]
+homepage = "https://lc.llnl.gov/gitlab/cir-software-assurance/sbom-surfactant"
 #documentation = "https://readthedocs.org"
 #repository = "https://github.com/me/spam.git"
 #changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
