@@ -27,6 +27,7 @@ def find_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
                 all_match = False
         if all_match:
             return rel
+    return None
 
 
 def find_star_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
@@ -43,6 +44,7 @@ def find_star_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None
                 all_match = False
         if all_match:
             return rel
+    return None
 
 
 def find_systems_entry(sbom, uuid=None, name=None):
@@ -56,6 +58,7 @@ def find_systems_entry(sbom, uuid=None, name=None):
                 all_match = False
         if all_match:
             return sw
+    return None
 
 
 def find_software_entry(sbom, uuid=None, sha256=None, md5=None, sha1=None):
@@ -75,6 +78,7 @@ def find_software_entry(sbom, uuid=None, sha256=None, md5=None, sha1=None):
                 all_match = False
         if all_match:
             return sw
+    return None
 
 
 def merge_number_same(e1, e2, k):
@@ -402,7 +406,7 @@ for sw in msbom["software"]:
 # iterate through all relationships, adding edges to the adjacency list
 for rel in msbom["relationships"]:
     # check case where xUUID doesn't exist (and error if yUUID doesn't exist) in the graph
-    if not rel["xUUID"] in rel_graph or not rel["yUUID"] in rel_graph:
+    if rel["xUUID"] not in rel_graph or rel["yUUID"] not in rel_graph:
         print("====ERROR xUUID or yUUID doesn't exist====")
         print(rel)
         continue
@@ -431,23 +435,22 @@ def dfs(rel):
         rootFound.add(rel)
         recursionStack.pop()
         return True
-    else:
-        cycle = False
-        # node is not a root, move on to parents
-        for parent in rel_graph[rel]:
-            # detect cycles
-            if parent in recursionStack:
-                print(f"CYCLE DETECTED: {parent} {rel}")
-                cycle = True
-            if dfs(parent):
-                rootFound.add(rel)
-        # if there was a cycle, and none of the parents led to a definite root node
-        if cycle and rel not in rootFound:
-            print(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
-            roots.add(rel)
+    cycle = False
+    # node is not a root, move on to parents
+    for parent in rel_graph[rel]:
+        # detect cycles
+        if parent in recursionStack:
+            print(f"CYCLE DETECTED: {parent} {rel}")
+            cycle = True
+        if dfs(parent):
             rootFound.add(rel)
-        recursionStack.pop()
-        return rel in rootFound
+    # if there was a cycle, and none of the parents led to a definite root node
+    if cycle and rel not in rootFound:
+        print(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
+        roots.add(rel)
+        rootFound.add(rel)
+    recursionStack.pop()
+    return rel in rootFound
 
 
 for rel in rel_graph:

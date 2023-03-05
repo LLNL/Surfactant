@@ -97,7 +97,7 @@ def extract_elf_info(filename):
                         note_info[
                             "abi"
                         ] = f"{note.n_desc.abi_major}.{note.n_desc.abi_minor}.{note.n_desc.abi_tiny}"
-                    elif note.n_type == "NT_GNU_BUILD_ID" or "NT_GNU_GOLD_VERSION":
+                    elif note.n_type in ("NT_GNU_BUILD_ID", "NT_GNU_GOLD_VERSION"):
                         note_info["desc"] = note.n_desc
                     else:
                         note_info["descdata"] = note.n_descdata.decode("unicode_escape")

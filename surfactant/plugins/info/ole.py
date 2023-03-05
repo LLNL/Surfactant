@@ -39,7 +39,7 @@ def extract_ole_info(filename):
 
     for prop in md.SUMMARY_ATTRIBS:
         if value := getattr(md, prop, None):
-            if type(value) is bytes:
+            if isinstance(value, bytes):
                 file_details["ole"][prop] = value.decode("unicode_escape")
             else:
                 file_details["ole"][prop] = str(value)

@@ -18,7 +18,7 @@ class PluginBase(object, metaclass=_PluginRegistrationMetaClass):
 
     @classmethod
     def get_plugins(cls):
-        if cls.PLUGIN_TYPE not in cls._PLUGINS.keys():
+        if cls.PLUGIN_TYPE not in cls._PLUGINS:
             return []
         return [
             plugin
@@ -28,7 +28,7 @@ class PluginBase(object, metaclass=_PluginRegistrationMetaClass):
 
     @classmethod
     def get_plugin(cls, plugin_name):
-        if cls.PLUGIN_TYPE not in cls._PLUGINS.keys():
+        if cls.PLUGIN_TYPE not in cls._PLUGINS:
             return None
         for plugin in cls._PLUGINS[cls.PLUGIN_TYPE]:
             if plugin.PLUGIN_NAME == plugin_name:

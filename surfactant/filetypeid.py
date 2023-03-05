@@ -17,23 +17,22 @@ def check_exe_type(filename):
             magic_bytes = f.read(8)
             if magic_bytes[:4] == b"\x7fELF":
                 return "ELF"
-            elif magic_bytes[:2] == b"MZ":
+            if magic_bytes[:2] == b"MZ":
                 return "PE"
-            elif magic_bytes == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
+            if magic_bytes == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
                 # MSI (install), MSP (patch), MST (transform), and MSM (merge) files are all types of OLE files
                 # the root storage object CLSID is used to identify what it is (+ file extension)
                 return "OLE"
-            # elif magic_bytes[:4] == b"\xca\xfe\xba\xbe":
+            # if magic_bytes[:4] == b"\xca\xfe\xba\xbe":
             #    # magic bytes can either be for Java class file or Mach-O Fat Binary
             #    return 'JAVA_MACHOFAT'
-            # elif magic_bytes[:4] == b"\xfe\xed\xfa\xce":
+            # if magic_bytes[:4] == b"\xfe\xed\xfa\xce":
             #    return 'MACHO32'
-            # elif magic_bytes[:4] == b"\xfe\xed\xfa\xcf":
+            # if magic_bytes[:4] == b"\xfe\xed\xfa\xcf":
             #    return 'MACHO64'
-            # elif magic_bytes[:4] == b"\xde\xc0\x17\x0b":
+            # if magic_bytes[:4] == b"\xde\xc0\x17\x0b":
             #    return 'LLVM_BITCODE'
-            else:
-                return None
+            return None
     except FileNotFoundError:
         return None
 
@@ -112,10 +111,9 @@ def check_hex_type(filename):
                     percent_intel += 1
             if percent_intel > percent_motorola:
                 return "INTEL_HEX"
-            elif percent_motorola > percent_intel:
+            if percent_motorola > percent_intel:
                 return "MOTOROLA_SREC"
-            else:
-                return None
+            return None
 
     except FileNotFoundError:
         return False
