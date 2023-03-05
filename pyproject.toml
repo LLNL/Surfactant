@@ -63,6 +63,7 @@ pythonpath = "."
 
 [tool.pylint.messages_control]
 max-line-length = "100"
+good-names-rgxs = "x,y,e,md,sw"
 disable = [
   "line-too-long",
   "missing-module-docstring",
