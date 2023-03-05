@@ -46,7 +46,7 @@ pre-commit:
         echo "Can not autofix when Merged results pipelines are enabled."
       fi
       git config user.email "$GITLAB_USER_EMAIL"
-      git config user.name "pre-commit fix $GITLAB_USER_NAME"
+      git config user.name "$GITLAB_USER_NAME"
       git add .
       git commit -m "auto fixes from pre-commit CI job (!$CI_MERGE_REQUEST_IID)" -m "job: $CI_JOB_URL"
       # note: add -o ci.skip if repeated pipeline triggering loops are a concern... worst case here should be committing fails because no files changed
