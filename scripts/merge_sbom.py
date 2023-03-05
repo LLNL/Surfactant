@@ -79,7 +79,7 @@ def find_software_entry(sbom, uuid=None, sha256=None, md5=None, sha1=None):
 
 def merge_number_same(e1, e2, k):
     # use e2 number if field isn't in e1
-    if not k in e1:
+    if k not in e1:
         if k in e2:
             e1[k] = e2[k]
     else:
@@ -90,7 +90,7 @@ def merge_number_same(e1, e2, k):
 
 def merge_number_lt(e1, e2, k):
     # use e2 number if the field isn't in e1
-    if not k in e1:
+    if k not in e1:
         if k in e2:
             e1[k] = e2[k]
     else:
@@ -101,7 +101,7 @@ def merge_number_lt(e1, e2, k):
 
 def merge_number_gt(e1, e2, k):
     # use e2 number if the field isn't in e1
-    if not k in e1:
+    if k not in e1:
         if k in e2:
             e1[k] = e2[k]
     else:
@@ -111,14 +111,14 @@ def merge_number_gt(e1, e2, k):
 
 
 def merge_string(e1, e2, k):
-    if not k in e1 or not e1[k]:
+    if k not in e1 or not e1[k]:
         # worst case, e2 has an empty string/null just like e1
         if k in e2:
             e1[k] = e2[k]
 
 
 def merge_array(e1, e2, k):
-    if not k in e1 or not e1[k]:
+    if k not in e1 or not e1[k]:
         # e2 is at worst empty list like e1, or contains some entries
         if k in e2:
             e1[k] = e2[k]
@@ -127,7 +127,7 @@ def merge_array(e1, e2, k):
         # merge in items from e2 that aren't already in e1
         if k in e2 and e2[k]:
             for item in e2[k]:
-                if not item in e1[k]:
+                if item not in e1[k]:
                     e1[k].append(item)
 
 
@@ -442,7 +442,7 @@ def dfs(rel):
             if dfs(parent):
                 rootFound.add(rel)
         # if there was a cycle, and none of the parents led to a definite root node
-        if cycle and not rel in rootFound:
+        if cycle and rel not in rootFound:
             print(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
             roots.add(rel)
             rootFound.add(rel)
@@ -460,9 +460,9 @@ if args.config_file:
     config = json.load(args.config_file)
     system = config["system"]
 # make sure the required fields are present and at least mostly valid
-if not "UUID" in system or not is_valid_uuid4(system["UUID"]):
+if "UUID" not in system or not is_valid_uuid4(system["UUID"]):
     system["UUID"] = str(uuid.uuid4())
-if not "name" in system:
+if "name" not in system:
     system["name"] = ""
 captureStart = -1
 captureEnd = -1
@@ -471,9 +471,9 @@ for sw in msbom["software"]:
         captureStart = sw["captureTime"]
     if captureEnd == -1 or sw["captureTime"] > captureEnd:
         captureEnd = sw["captureTime"]
-if not "captureStart" in system or not system["captureStart"]:
+if "captureStart" not in system or not system["captureStart"]:
     system["captureStart"] = captureStart
-if not "captureEnd" in system or not system["captureEnd"]:
+if "captureEnd" not in system or not system["captureEnd"]:
     system["captureEnd"] = captureEnd
 msbom["systems"].append(system)
 print(f"SYSTEM: {system}")
