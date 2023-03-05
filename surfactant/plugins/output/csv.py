@@ -21,7 +21,7 @@ class CSV(pluginsystem.OutputPlugin):
     def write(cls, sbom, outfile):
         # plugin args could be handled here to change behavior
         fields = cls.default_fields
-        
+
         # match output format with pandas.DataFrame.to_csv
         # equivalent to `excel` dialect, other than lineterminator
         writer = csv.DictWriter(outfile, fieldnames=fields, lineterminator=os.linesep)
@@ -41,14 +41,14 @@ class CSV(pluginsystem.OutputPlugin):
                 if not software["installPath"]:
                     if "containerPath" in software and software["containerPath"]:
                         pathkey = "containerPath"
-        
+
         # an entry will be created for every entry with a valid path
         for p in software[pathkey]:
             row = {}
             row["Path"] = p
             # if containerPath is being used, remove the UUID portion at the start
             if pathkey == "containerPath":
-                row["Path"] = ''.join(row["Path"].split("/")[1:])
+                row["Path"] = "".join(row["Path"].split("/")[1:])
             for f in fields:
                 # Path already added to row info
                 if f == "Path":
