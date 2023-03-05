@@ -2,7 +2,7 @@ import csv
 import json
 import os
 
-import surfactant.pluginsystem as pluginsystem
+from surfactant import pluginsystem
 
 
 class CSV(pluginsystem.OutputPlugin):

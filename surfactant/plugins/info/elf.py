@@ -6,7 +6,7 @@ from elftools.elf.elffile import ELFFile
 from elftools.elf.enums import ENUM_DT_FLAGS, ENUM_DT_FLAGS_1
 from elftools.elf.sections import NoteSection
 
-import surfactant.pluginsystem as pluginsystem
+from surfactant import pluginsystem
 
 
 class ELF(pluginsystem.InfoPlugin):

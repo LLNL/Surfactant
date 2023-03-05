@@ -1,7 +1,7 @@
 import os
 import pathlib
 
-import surfactant.pluginsystem as pluginsystem
+from surfactant import pluginsystem
 
 
 class ELF(pluginsystem.RelationshipPlugin):
