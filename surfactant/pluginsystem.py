@@ -18,7 +18,7 @@ class PluginBase(object, metaclass=_PluginRegistrationMetaClass):
 
     @classmethod
     def get_plugins(cls):
-        if cls.PLUGIN_TYPE not in cls._PLUGINS.keys():
+        if cls.PLUGIN_TYPE not in cls._PLUGINS:
             return []
         return [
             plugin
@@ -28,7 +28,7 @@ class PluginBase(object, metaclass=_PluginRegistrationMetaClass):
 
     @classmethod
     def get_plugin(cls, plugin_name):
-        if cls.PLUGIN_TYPE not in cls._PLUGINS.keys():
+        if cls.PLUGIN_TYPE not in cls._PLUGINS:
             return None
         for plugin in cls._PLUGINS[cls.PLUGIN_TYPE]:
             if plugin.PLUGIN_NAME == plugin_name:
@@ -42,11 +42,11 @@ class InfoPlugin(PluginBase):
 
     @classmethod
     def supports_file(cls, filename="", filetype=None) -> bool:
-        raise NotImplemented("supports_file not implemented")
+        raise NotImplementedError("supports_file not implemented")
 
     @classmethod
     def extract_info(cls, filename) -> dict:
-        raise NotImplemented("extract_info not implemented")
+        raise NotImplementedError("extract_info not implemented")
 
 
 class RelationshipPlugin(PluginBase):
@@ -59,11 +59,11 @@ class RelationshipPlugin(PluginBase):
 
     @classmethod
     def has_required_fields(cls, metadata) -> bool:
-        raise NotImplemented("has_required_fields not implemented")
+        raise NotImplementedError("has_required_fields not implemented")
 
     @classmethod
     def get_relationships(cls, sbom, sw, metadata) -> list:
-        raise NotImplemented("get_relationships not implemented")
+        raise NotImplementedError("get_relationships not implemented")
 
 
 class OutputPlugin(PluginBase):
@@ -72,7 +72,7 @@ class OutputPlugin(PluginBase):
 
     @classmethod
     def write(cls, sbom, outfile):
-        raise NotImplemented("write not implemented")
+        raise NotImplementedError("write not implemented")
 
 
 def print_available_plugins():
@@ -87,8 +87,12 @@ def print_available_plugins():
         print(p.PLUGIN_NAME)
 
 
+# default directory to look in for user plugins
+default_user_plugin_dir = pathlib.Path.home().joinpath(".surfactant", "plugins")
+
+
 # function to load local user plugins from a directory (default: ~/.surfactant/plugins)
-def load_user_plugins(directory=pathlib.Path.home().joinpath(".surfactant", "plugins")):
+def load_user_plugins(directory=default_user_plugin_dir):
     import importlib.machinery
     import importlib.util
 
@@ -109,6 +113,9 @@ def load_user_plugins(directory=pathlib.Path.home().joinpath(".surfactant", "plu
 
 
 # load plugins included with surfactant
+# TODO refactor this... explicit function call for loading of plugins?
+# another issue is it looks like having some plugins share code would be useful
+# such as for golang metadata parsing; possibly some way of "chaining" plugins?
 import surfactant.plugins
 
 # load user plugins

@@ -1,4 +1,3 @@
-import pathlib
 import surfactant.pluginsystem
 
 
@@ -19,7 +18,7 @@ def find_relationship(sbom, xUUID, yUUID, relationship):
 def parse_relationships(sbom):
     for sw in sbom["software"]:
         # Skip for temporary files/installer that don't have any installPath to find dependencies with
-        if sw["installPath"] == None:
+        if sw["installPath"] is None:
             continue
 
         # Find metadata saying what dependencies are used by the software entry

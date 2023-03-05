@@ -1,8 +1,11 @@
-from elftools.elf.elffile import ELFFile
-from elftools.elf.dynamic import DynamicSection
-from elftools.elf.sections import NoteSection
-from elftools.elf.enums import ENUM_DT_FLAGS, ENUM_DT_FLAGS_1, ENUM_EI_OSABI
 import struct
+
+from elftools.common.exceptions import ELFError
+from elftools.elf.dynamic import DynamicSection
+from elftools.elf.elffile import ELFFile
+from elftools.elf.enums import ENUM_DT_FLAGS, ENUM_DT_FLAGS_1
+from elftools.elf.sections import NoteSection
+
 import surfactant.pluginsystem as pluginsystem
 
 
@@ -48,7 +51,7 @@ def extract_elf_info(filename):
     try:
         f = open(filename, "rb")
         elf = ELFFile(f)
-    except:
+    except (OSError, ELFError):
         return {}
 
     # Don't assume OS is Linux, map e_ident EI_OSABI value to an OS name
@@ -94,7 +97,7 @@ def extract_elf_info(filename):
                         note_info[
                             "abi"
                         ] = f"{note.n_desc.abi_major}.{note.n_desc.abi_minor}.{note.n_desc.abi_tiny}"
-                    elif note.n_type == "NT_GNU_BUILD_ID" or "NT_GNU_GOLD_VERSION":
+                    elif note.n_type in ("NT_GNU_BUILD_ID", "NT_GNU_GOLD_VERSION"):
                         note_info["desc"] = note.n_desc
                     else:
                         note_info["descdata"] = note.n_descdata.decode("unicode_escape")

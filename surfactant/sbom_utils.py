@@ -13,7 +13,7 @@ def entry_search(sbom, hsh):
 
 # updates fields in an entry, with the assumption that the hashes match (e.g. most extracted values should match)
 def update_entry(sbom, entry, index):
-    if index != None:
+    if index is not None:
         # duplicate entry, check other fields to see if data differs.
         existing_entry = sbom["software"][index]
         if existing_entry != entry:
@@ -42,7 +42,7 @@ def update_entry(sbom, entry, index):
                                 "supplementaryFiles",
                                 "components",
                             ]:
-                                if not value in sbom["software"][index][location]:
+                                if value not in sbom["software"][index][location]:
                                     sbom["software"][index][location].append(value)
                         # if value is a string, update the dictionary
                         # ex: name, comments, version, description, relationshipAssertion, recordedInstitution
@@ -60,3 +60,4 @@ def update_entry(sbom, entry, index):
 
             # return UUID of existing entry, UUID of entry being discarded, existing_entry object
             return existing_uuid, entry_uuid, existing_entry
+    return None, None, None
