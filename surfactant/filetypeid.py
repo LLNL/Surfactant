@@ -101,7 +101,7 @@ def check_hex_type(filename):
         with open(filename, "r") as f:
             percent_intel = 0
             percent_motorola = 0
-            for line in range(100):
+            for _ in range(100):
                 curr = f.readline()
                 if not curr:
                     break

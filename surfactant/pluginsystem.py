@@ -87,8 +87,12 @@ def print_available_plugins():
         print(p.PLUGIN_NAME)
 
 
+# default directory to look in for user plugins
+default_user_plugin_dir = pathlib.Path.home().joinpath(".surfactant", "plugins")
+
+
 # function to load local user plugins from a directory (default: ~/.surfactant/plugins)
-def load_user_plugins(directory=pathlib.Path.home().joinpath(".surfactant", "plugins")):
+def load_user_plugins(directory=default_user_plugin_dir):
     import importlib.machinery
     import importlib.util
 

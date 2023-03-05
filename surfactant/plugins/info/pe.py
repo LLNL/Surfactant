@@ -76,7 +76,7 @@ def extract_pe_info(filename):
     dnfile.fast_load = False
     try:
         pe = dnfile.dnPE(filename, fast_load=False)
-    except (OSError, FileExistsError, dnfile.PEFormatError):
+    except (OSError, dnfile.PEFormatError):
         return {}
 
     file_details = {"OS": "Windows"}

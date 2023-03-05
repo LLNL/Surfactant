@@ -51,7 +51,7 @@ def extract_elf_info(filename):
     try:
         f = open(filename, "rb")
         elf = ELFFile(f)
-    except (OSError, FileExistsError, ELFError):
+    except (OSError, ELFError):
         return {}
 
     # Don't assume OS is Linux, map e_ident EI_OSABI value to an OS name
