@@ -69,7 +69,7 @@ class ELF(pluginsystem.RelationshipPlugin):
             # Look for a software entry with a file name and install path that matches the dependency that would be loaded
             for item in sbom["software"]:
                 # Check if the software entry has a name matching the dependency first as a quick check to rule out non-matches
-                if not fname in item["fileName"]:
+                if fname not in item["fileName"]:
                     continue
 
                 # check if the software entry is installed to one of the paths looked at for loading the dependency

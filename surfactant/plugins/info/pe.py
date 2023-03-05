@@ -76,7 +76,7 @@ def extract_pe_info(filename):
     dnfile.fast_load = False
     try:
         pe = dnfile.dnPE(filename, fast_load=False)
-    except:
+    except (OSError, FileExistsError, dnfile.PEFormatError):
         return {}
 
     file_details = {"OS": "Windows"}
@@ -267,7 +267,7 @@ def get_windows_manifest_info(filename):
                     )
                 manifest_info["assemblyIdentity"] = asm_e.attrib
             if asm_tag == "file":
-                if not "file" in manifest_info:
+                if "file" not in manifest_info:
                     manifest_info["file"] = []
                 manifest_info["file"].append(asm_e.attrib)
             if asm_tag == "dependency":
@@ -280,7 +280,7 @@ def get_windows_manifest_info(filename):
                 for dependency in asm_e:
                     dependency_xmlns, dependency_tag = get_xmlns_and_tag(dependency)
                     if dependency_tag == "dependentAssembly":
-                        if not "dependentAssembly" in dependency_info:
+                        if "dependentAssembly" not in dependency_info:
                             dependency_info["dependentAssembly"] = []
                         dependency_info["dependentAssembly"].append(
                             get_dependentAssembly_info(dependency)
@@ -369,7 +369,7 @@ def get_assemblyBinding_info(ab_et, config_filepath=""):
         #   - oldVersion: assembly version originally requested
         #   - newVersion: the assembly version to use instead
         if ab_tag == "dependentAssembly":
-            if not "dependentAssembly" in ab_info:
+            if "dependentAssembly" not in ab_info:
                 ab_info["dependentAssembly"] = []
             ab_info["dependentAssembly"].append(get_dependentAssembly_info(ab_e, config_filepath))
 
@@ -409,11 +409,11 @@ def get_windows_application_config_info(filename):
         # requiredRuntime is used for v1.0 of .NET Framework, supportedRuntime is for v1.1+
         supportedRuntime = et.find("./startup/supportedRuntime")
         requiredRuntime = et.find("./startup/requiredRuntime")
-        if (supportedRuntime != None) or (requiredRuntime != None):
+        if (supportedRuntime is not None) or (requiredRuntime is not None):
             startup_info = {}
-            if (supportedRuntime != None) and supportedRuntime.attrib:
+            if (supportedRuntime is not None) and supportedRuntime.attrib:
                 startup_info["supportedRuntime"] = supportedRuntime.attrib
-            if (requiredRuntime != None) and requiredRuntime.attrib:
+            if (requiredRuntime is not None) and requiredRuntime.attrib:
                 startup_info["requiredRuntime"] = requiredRuntime.attrib
             app_config_info["startup"] = startup_info
 
@@ -422,7 +422,7 @@ def get_windows_application_config_info(filename):
         # - only format for href is `file://` either local or UNC
         # - includes assembly config file contents here, similar to #include
         linkedConfiguration = et.find("./assemblyBinding/linkedConfiguration")
-        if (linkedConfiguration != None) and linkedConfiguration.attrib:
+        if (linkedConfiguration is not None) and linkedConfiguration.attrib:
             app_config_info["assemblyBinding"] = {"linkedConfiguration": linkedConfiguration.attrib}
 
         # The following appear within a <windows> element:
@@ -451,7 +451,7 @@ def get_windows_application_config_info(filename):
         #    - oldVersion: assembly version being overridden or redirected
         #    - newVersion: replacement assembly version
         windows_et = et.find("./windows")
-        if windows_et != None:
+        if windows_et is not None:
             windows_info = {}
             for win_child in windows_et:
                 xmlns, tag = get_xmlns_and_tag(win_child)
@@ -475,7 +475,7 @@ def get_windows_application_config_info(filename):
                     for dependency in win_child:
                         dependency_xmlns, dependency_tag = get_xmlns_and_tag(dependency)
                         if dependency_tag == "dependentAssembly":
-                            if not "dependentAssembly" in dependency_info:
+                            if "dependentAssembly" not in dependency_info:
                                 dependency_info["dependentAssembly"] = []
                             dependency_info["dependentAssembly"].append(
                                 get_dependentAssembly_info(dependency, config_filepath)
@@ -485,7 +485,7 @@ def get_windows_application_config_info(filename):
 
         # runtime element used for .NET related configuration info that can affect how the runtime locates assemblies to load
         runtime_et = et.find("./runtime")
-        if runtime_et != None:
+        if runtime_et is not None:
             runtime_info = {}
             for rt_child in runtime_et:
                 # Docs say "urn:schemas-microsoft-com:asm.v1" is the namespace for assemblyBinding

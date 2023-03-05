@@ -49,7 +49,7 @@ class DotNet(pluginsystem.RelationshipPlugin):
                         if "privatePath" in wac_probing:
                             wac_paths = wac_probing["privatePath"]
                             for path in wac_paths.split(";"):
-                                if dnProbingPaths == None:
+                                if dnProbingPaths is None:
                                     dnProbingPaths = []
                                 dnProbingPaths.append(pathlib.PureWindowsPath(path).as_posix())
 
@@ -78,7 +78,7 @@ class DotNet(pluginsystem.RelationshipPlugin):
                     refVersion = asmRef["Version"]
 
                 # check if codeBase element exists for this assembly in appconfig
-                if dnDependentAssemblies != None:
+                if dnDependentAssemblies is not None:
                     for depAsm in dnDependentAssemblies:
                         # dependent assembly object contains info on assembly id and binding redirects that with a better internal SBOM
                         # representation could be used to also verify the right assembly is being found
@@ -140,7 +140,7 @@ def find_dotnet_assemblies(sbom, probedirs, filename):
     # iterate through all sbom entries
     for e in sbom["software"]:
         # Skip if no install path (e.g. installer/temporary file)
-        if e["installPath"] == None:
+        if e["installPath"] is None:
             continue
         for pdir in probedirs:
             # installPath contains full path+filename, so check for all combinations of probedirs+filename
@@ -159,12 +159,12 @@ def get_dotnet_probedirs(sw, refCulture, refName, dnProbingPaths):
     # probe for the referenced assemblies
     for install_filepath in sw["installPath"]:
         install_basepath = pathlib.PureWindowsPath(install_filepath).parent.as_posix()
-        if refCulture == None or refCulture == "":
+        if refCulture is None or refCulture == "":
             # [application base] / [assembly name].dll
             # [application base] / [assembly name] / [assembly name].dll
             probedirs.append(pathlib.PureWindowsPath(install_basepath).as_posix())
             probedirs.append(pathlib.PureWindowsPath(install_basepath, refName).as_posix())
-            if dnProbingPaths != None:
+            if dnProbingPaths is not None:
                 # add probing private paths
                 for path in dnProbingPaths:
                     # [application base] / [binpath] / [assembly name].dll
@@ -180,7 +180,7 @@ def get_dotnet_probedirs(sw, refCulture, refName, dnProbingPaths):
             probedirs.append(
                 pathlib.PureWindowsPath(install_basepath, refName, refCulture).as_posix()
             )
-            if dnProbingPaths != None:
+            if dnProbingPaths is not None:
                 # add probing private paths
                 for path in dnProbingPaths:
                     # [application base] / [binpath] / [culture] / [assembly name].dll

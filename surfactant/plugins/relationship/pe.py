@@ -29,7 +29,7 @@ def find_windows_dlls(sbom, probedirs, filename):
     # iterate through all sbom entries
     for e in sbom["software"]:
         # Skip if no install path (e.g. installer/temporary file)
-        if e["installPath"] == None:
+        if e["installPath"] is None:
             continue
         for pdir in probedirs:
             # installPath contains full path+filename, so check for all combinations of probedirs+filename
@@ -46,7 +46,7 @@ def get_windows_pe_dependencies(sbom, sw, peImports):
     relationships = []
     # No installPath is probably temporary files/installer
     # TODO maybe resolve dependencies using relative locations in containerPath, for files originating from the same container UUID?
-    if sw["installPath"] == None:
+    if sw["installPath"] is None:
         return relationships
 
     # https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order
