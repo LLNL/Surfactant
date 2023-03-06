@@ -1,6 +1,6 @@
 import olefile
 
-import surfactant.pluginsystem as pluginsystem
+from surfactant import pluginsystem
 
 
 class OLE(pluginsystem.InfoPlugin):

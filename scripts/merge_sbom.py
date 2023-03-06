@@ -1,13 +1,13 @@
 import argparse
 import json
 import sys
-import uuid
+import uuid as uuid_module
 from collections import deque
 
 
 def is_valid_uuid4(u):
     try:
-        u_test = uuid.UUID(u, version=4)
+        u_test = uuid_module.UUID(u, version=4)
     except ValueError:
         return False
     return str(u_test) == u
@@ -57,7 +57,7 @@ def find_systems_entry(sbom, uuid=None, name=None):
             if system["name"] != name:
                 all_match = False
         if all_match:
-            return sw
+            return system
     return None
 
 
@@ -362,127 +362,132 @@ def merge_sbom(sbom_m, sbom):
     return merged_sbom
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--config_file",
-    metavar="CONFIG_FILE",
-    nargs="?",
-    type=argparse.FileType("r"),
-    help="Config file (JSON); make sure keys with paths do not have a trailing /",
-)
-parser.add_argument(
-    "--sbom_outfile",
-    metavar="SBOM_OUTPUT",
-    nargs="?",
-    type=argparse.FileType("w"),
-    default=sys.stdout,
-    help="Output SBOM file",
-)
-parser.add_argument("input_sbom", type=argparse.FileType("r"), nargs="+")
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config_file",
+        metavar="CONFIG_FILE",
+        nargs="?",
+        type=argparse.FileType("r"),
+        help="Config file (JSON); make sure keys with paths do not have a trailing /",
+    )
+    parser.add_argument(
+        "--sbom_outfile",
+        metavar="SBOM_OUTPUT",
+        nargs="?",
+        type=argparse.FileType("w"),
+        default=sys.stdout,
+        help="Output SBOM file",
+    )
+    parser.add_argument("input_sbom", type=argparse.FileType("r"), nargs="+")
+    args = parser.parse_args()
 
-msbom = {
-    "systems": [],
-    "software": [],
-    "relationships": [],
-    "analysisData": [],
-    "observations": [],
-    "starRelationships": [],
-}
-for f in args.input_sbom:
-    sbom = json.load(f)
-    msbom = merge_sbom(msbom, sbom)
+    msbom = {
+        "systems": [],
+        "software": [],
+        "relationships": [],
+        "analysisData": [],
+        "observations": [],
+        "starRelationships": [],
+    }
+    for f in args.input_sbom:
+        in_sbom = json.load(f)
+        msbom = merge_sbom(msbom, in_sbom)
 
-print(len(msbom["software"]))
-print(len(msbom["relationships"]))
+    print(len(msbom["software"]))
+    print(len(msbom["relationships"]))
 
-# construct a graph for adding a system relationship to all root software entries
-rel_graph = {}
-# add all UUIDs as nodes in the graph
-for system in msbom["systems"]:
-    rel_graph[system["UUID"]] = []
-for sw in msbom["software"]:
-    rel_graph[sw["UUID"]] = []
-# iterate through all relationships, adding edges to the adjacency list
-for rel in msbom["relationships"]:
-    # check case where xUUID doesn't exist (and error if yUUID doesn't exist) in the graph
-    if rel["xUUID"] not in rel_graph or rel["yUUID"] not in rel_graph:
-        print("====ERROR xUUID or yUUID doesn't exist====")
-        print(rel)
-        continue
-    # consider also including relationship type for the edge
-    # treat as directed graph, with inverted edges (pointing to parents) so dfs will eventually lead to the root parent node for a (sub)graph
-    rel_graph[rel["yUUID"]].append(rel["xUUID"])
+    # construct a graph for adding a system relationship to all root software entries
+    rel_graph = {}
+    # add all UUIDs as nodes in the graph
+    for system in msbom["systems"]:
+        rel_graph[system["UUID"]] = []
+    for sw in msbom["software"]:
+        rel_graph[sw["UUID"]] = []
+    # iterate through all relationships, adding edges to the adjacency list
+    for rel in msbom["relationships"]:
+        # check case where xUUID doesn't exist (and error if yUUID doesn't exist) in the graph
+        if rel["xUUID"] not in rel_graph or rel["yUUID"] not in rel_graph:
+            print("====ERROR xUUID or yUUID doesn't exist====")
+            print(rel)
+            continue
+        # consider also including relationship type for the edge
+        # treat as directed graph, with inverted edges (pointing to parents) so dfs will eventually lead to the root parent node for a (sub)graph
+        rel_graph[rel["yUUID"]].append(rel["xUUID"])
 
-visited = set()
-roots = set()
-rootFound = set()
-recursionStack = deque()
+    visited = set()
+    roots = set()
+    rootFound = set()
+    recursionStack = deque()
 
-
-# maintain a recursion stack to check for cycles; if we are visiting a node that is in the stack, there is a cycle; arbitrarily pick one to add as a root
-def dfs(rel):
-    recursionStack.append(rel)
-    # if the node is already visited, no revisiting required
-    if rel in visited:
+    # maintain a recursion stack to check for cycles; if we are visiting a node that is in the stack, there is a cycle; arbitrarily pick one to add as a root
+    def dfs(rel):
+        recursionStack.append(rel)
+        # if the node is already visited, no revisiting required
+        if rel in visited:
+            recursionStack.pop()
+            return rel in rootFound
+        # mark the node as visited
+        visited.add(rel)
+        # the node has no parents, it is a root
+        if not rel_graph[rel]:
+            roots.add(rel)
+            rootFound.add(rel)
+            recursionStack.pop()
+            return True
+        cycle = False
+        # node is not a root, move on to parents
+        for parent in rel_graph[rel]:
+            # detect cycles
+            if parent in recursionStack:
+                print(f"CYCLE DETECTED: {parent} {rel}")
+                cycle = True
+            if dfs(parent):
+                rootFound.add(rel)
+        # if there was a cycle, and none of the parents led to a definite root node
+        if cycle and rel not in rootFound:
+            print(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
+            roots.add(rel)
+            rootFound.add(rel)
         recursionStack.pop()
         return rel in rootFound
-    # mark the node as visited
-    visited.add(rel)
-    # the node has no parents, it is a root
-    if not rel_graph[rel]:
-        roots.add(rel)
-        rootFound.add(rel)
-        recursionStack.pop()
-        return True
-    cycle = False
-    # node is not a root, move on to parents
-    for parent in rel_graph[rel]:
-        # detect cycles
-        if parent in recursionStack:
-            print(f"CYCLE DETECTED: {parent} {rel}")
-            cycle = True
-        if dfs(parent):
-            rootFound.add(rel)
-    # if there was a cycle, and none of the parents led to a definite root node
-    if cycle and rel not in rootFound:
-        print(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
-        roots.add(rel)
-        rootFound.add(rel)
-    recursionStack.pop()
-    return rel in rootFound
+
+    for rel in rel_graph:
+        dfs(rel)
+    print(f"ROOTS: {roots}")
+
+    # construct the most accurate system object we can, using a mix of user provided info and times loaded from the SBOM
+    system = {}
+    if args.config_file:
+        config = json.load(args.config_file)
+        system = config["system"]
+    # make sure the required fields are present and at least mostly valid
+    if "UUID" not in system or not is_valid_uuid4(system["UUID"]):
+        system["UUID"] = str(uuid_module.uuid4())
+    if "name" not in system:
+        system["name"] = ""
+    captureStart = -1
+    captureEnd = -1
+    for sw in msbom["software"]:
+        if captureStart == -1 or sw["captureTime"] < captureStart:
+            captureStart = sw["captureTime"]
+        if captureEnd == -1 or sw["captureTime"] > captureEnd:
+            captureEnd = sw["captureTime"]
+    if "captureStart" not in system or not system["captureStart"]:
+        system["captureStart"] = captureStart
+    if "captureEnd" not in system or not system["captureEnd"]:
+        system["captureEnd"] = captureEnd
+    msbom["systems"].append(system)
+    print(f"SYSTEM: {system}")
+
+    # add a system relationship to each root software/systems entry identified
+    for r in roots:
+        msbom["relationships"].append(
+            {"xUUID": system["UUID"], "yUUID": r, "relationship": "Includes"}
+        )
+
+    json.dump(msbom, args.sbom_outfile, indent=4)
 
 
-for rel in rel_graph:
-    dfs(rel)
-print(f"ROOTS: {roots}")
-
-# construct the most accurate system object we can, using a mix of user provided info and times loaded from the SBOM
-system = {}
-if args.config_file:
-    config = json.load(args.config_file)
-    system = config["system"]
-# make sure the required fields are present and at least mostly valid
-if "UUID" not in system or not is_valid_uuid4(system["UUID"]):
-    system["UUID"] = str(uuid.uuid4())
-if "name" not in system:
-    system["name"] = ""
-captureStart = -1
-captureEnd = -1
-for sw in msbom["software"]:
-    if captureStart == -1 or sw["captureTime"] < captureStart:
-        captureStart = sw["captureTime"]
-    if captureEnd == -1 or sw["captureTime"] > captureEnd:
-        captureEnd = sw["captureTime"]
-if "captureStart" not in system or not system["captureStart"]:
-    system["captureStart"] = captureStart
-if "captureEnd" not in system or not system["captureEnd"]:
-    system["captureEnd"] = captureEnd
-msbom["systems"].append(system)
-print(f"SYSTEM: {system}")
-
-# add a system relationship to each root software/systems entry identified
-for r in roots:
-    msbom["relationships"].append({"xUUID": system["UUID"], "yUUID": r, "relationship": "Includes"})
-
-json.dump(msbom, args.sbom_outfile, indent=4)
+if __name__ == "__main__":
+    main()

@@ -9,7 +9,7 @@ import re
 import defusedxml.ElementTree
 import dnfile
 
-import surfactant.pluginsystem as pluginsystem
+from surfactant import pluginsystem
 
 
 class PE(pluginsystem.InfoPlugin):

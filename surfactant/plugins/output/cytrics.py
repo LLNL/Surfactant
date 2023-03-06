@@ -1,6 +1,6 @@
 import json
 
-import surfactant.pluginsystem as pluginsystem
+from surfactant import pluginsystem
 
 
 class CyTRICS(pluginsystem.OutputPlugin):

@@ -1,6 +1,6 @@
 import pathlib
 
-import surfactant.pluginsystem as pluginsystem
+from surfactant import pluginsystem
 
 
 class PE(pluginsystem.RelationshipPlugin):
