@@ -1,4 +1,4 @@
-exclude: ^(.gitignore|generate_cytrics_sbom.py|generate_sbom.py|extract_file_info.py|pe_info.py)
+exclude: ^(.gitignore|generate_sbom.py|extract_file_info.py|pe_info.py)
 repos:
   - repo: https://github.com/psf/black
     rev: 23.1.0
