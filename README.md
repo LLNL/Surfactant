@@ -36,8 +36,7 @@ A configuration file contains the information about the sample to gather informa
 
 **extractPaths**: (required) the absolute path or relative path from location of current working directory that generate_cytrics_sbom.py is being run from to the sample folders, cannot be a file\
 **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
-**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc\
-**containerPath**: (optional) uuid and path within the container (zip, or installer file) where the uuid is the identifier assigned to that container
+**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc
 
 #### Example configuration file
 Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share. 
@@ -131,7 +130,7 @@ The resulting SBOM would be structured like this:
 }
 ```
 ##### Example 3: Adding Related Binaries
-If our sample helics tar.gz file came with a related tar.gz file to install a helper module (extracted into a helper_module folder that contains bin and lib64 subfolders), we could add that into the configuration file as well:
+If our sample helics tar.gz file came with a related tar.gz file to install a plugin extension module (extracted into a helics_plugin folder that contains bin and lib64 subfolders), we could add that into the configuration file as well:
 ```json
 [
   {
@@ -142,9 +141,9 @@ If our sample helics tar.gz file came with a related tar.gz file to install a he
     "installPrefix": "/"
   },
   {
-    "archive": "/home/samples/helper_module.tar.gz",
+    "archive": "/home/samples/helics_plugin.tar.gz",
     "extractPaths": [
-      "/home/samples/helper_module"
+      "/home/samples/helics_plugin"
     ],
     "installPrefix": "/"
   }
