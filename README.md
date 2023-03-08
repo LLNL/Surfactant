@@ -40,20 +40,18 @@ A configuration file contains the information about the sample to gather informa
 **containerPath**: (optional) uuid and path within the container (zip, or installer file) where the uuid is the identifier assigned to that container
 
 #### Example configuration file
-Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is "/home/samples/helics.tar.gz". Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share. 
+Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share. 
 ##### Example 1: Simple Configuration File
 If we want to include only the folders that contain binary files to analyze, our most basic configuration would be:
 ```json
-{
-  [
-    {
-      "extractPaths": [
-        "/home/samples/helics/bin",
-        "/home/samples/helics/lib64"
-      ]
-    }
-  ]
-}
+[
+  {
+    "extractPaths": [
+      "/home/samples/helics/bin",
+      "/home/samples/helics/lib64"
+    ]
+  }
+]
 ```
 The resulting SBOM would be structured like this:
 ```json
@@ -61,16 +59,17 @@ The resulting SBOM would be structured like this:
     "software": [
         {
           "UUID": "abc1",
-          "filename": "lib1.so",
+          "fileName": ["helics_binary"],
           "installPath": null,
-          "containerPath": null,
+          "containerPath": null
         },
         {
           "UUID": "abc2",
-          "filename": "helics_module",
+          "fileName": ["lib1.so"],
           "installPath": null,
-          "containerPath": null,
+          "containerPath": null
         }
+
     ],
     "relationships": []
 }
@@ -78,17 +77,15 @@ The resulting SBOM would be structured like this:
 ##### Example 2: Detailed Configuration File
 A more detailed configuration file might look like the example below. The resulting SBOM would have a software entry for the helics.tar.gz with a "Contains" relationship to all binaries found to in the extractPaths. Providing the install prefix of `/` and an extractPaths as `/home/samples/helics` will allow to surfactant correctly assign the install paths in the SBOM for binaries in the subfolders as `/bin` and `/lib64`.
 ```json
-{
-  [
-    {
-      "archive": "/home/samples/helics.tar.gz",
-      "extractPaths": [
-        "/home/samples/helics"
-      ],
-      "installPrefix": "/"
-    }
-  ]
-}
+[
+  {
+    "archive": "/home/samples/helics.tar.gz",
+    "extractPaths": [
+      "/home/samples/helics"
+    ],
+    "installPrefix": "/"
+  }
+]
 ```
 The resulting SBOM would be structured like this:
 ```json
@@ -96,22 +93,23 @@ The resulting SBOM would be structured like this:
     "software": [
         {
           "UUID": "abc0",
-          "filename": "helics.tar.gz",
+          "fileName": ["helics.tar.gz"],
           "installPath": null,
-          "containerPath": null,
+          "containerPath": null
         },
         {
           "UUID": "abc1",
-          "filename": "lib1.so",
-          "installPath": "/bin/lib1.so",
-          "containerPath": null,
+          "fileName": ["helics_binary"],
+          "installPath": ["/bin/helics_binary"],
+          "containerPath": ["abc0/bin/helics_binary"]
         },
         {
           "UUID": "abc2",
-          "filename": "helics_module",
-          "installPath": "/bin/helics_module",
-          "containerPath": null,
+          "fileName": ["lib1.so"],
+          "installPath": ["/lib64/lib1.so"],
+          "containerPath": ["abc0/lib64/lib1.so"]
         }
+
     ],
     "relationships": [
         {
@@ -123,6 +121,11 @@ The resulting SBOM would be structured like this:
             "xUUID": "abc0",
             "yUUID": "abc2",
             "relationship": "Contains"
+        },
+        {
+            "xUUID": "abc1",
+            "yUUID": "abc2",
+            "relationship": "Uses"
         }
     ]
 }
@@ -130,24 +133,22 @@ The resulting SBOM would be structured like this:
 ##### Example 3: Adding Related Binaries
 If our sample helics tar.gz file came with a related tar.gz file to install a helper module (extracted into a helper_module folder that contains bin and lib64 subfolders), we could add that into the configuration file as well:
 ```json
-{
-  [
-    {
-      "archive": "/home/samples/helics.tar.gz",
-      "extractPaths": [
-        "/home/samples/helics"
-      ],
-      "installPrefix": "/"
-    },
-    {
-      "archive": "/home/samples/helper_module.tar.gz",
-      "extractPaths": [
-        "/home/samples/helper_module"
-      ],
-      "installPrefix": "/"
-    }
-  ]
-}
+[
+  {
+    "archive": "/home/samples/helics.tar.gz",
+    "extractPaths": [
+      "/home/samples/helics"
+    ],
+    "installPrefix": "/"
+  },
+  {
+    "archive": "/home/samples/helper_module.tar.gz",
+    "extractPaths": [
+      "/home/samples/helper_module"
+    ],
+    "installPrefix": "/"
+  }
+]
 ```
 The resulting SBOM would be structured like this:
 ```json
@@ -155,26 +156,82 @@ The resulting SBOM would be structured like this:
     "software": [
         {
           "UUID": "abc0",
-          "filename": "helics.tar.gz",
+          "fileName": ["helics.tar.gz"],
           "installPath": null,
-          "containerPath": null,
+          "containerPath": null
         },
         {
           "UUID": "abc1",
-          "filename": "helics_helper.tar.gz",
+          "fileName": ["helics_binary"],
+          "installPath": ["/bin/helics_binary"],
+          "containerPath": ["abc0/bin/helics_binary"]
+        },
+        {
+          "UUID": "abc2",
+          "fileName": ["lib1.so"],
+          "installPath": ["/lib64/lib1.so"],
+          "containerPath": ["abc0/lib64/lib1.so"]
+        },
+        {
+          "UUID": "abc3",
+          "fileName": ["helics_helper.tar.gz"],
           "installPath": null,
-          "containerPath": null,
+          "containerPath": null
+        },
+        {
+          "UUID": "abc4",
+          "fileName": ["helper_module"],
+          "installPath": ["/bin/helper_module"],
+          "containerPath": ["abc3/bin/helper_module"]
+        },
+        {
+          "UUID": "abc5",
+          "fileName": ["lib_helper.so"],
+          "installPath": ["/lib64/lib_helper.so"],
+          "containerPath": ["abc3/lib64/lib_helper.so"]
         }
     ],
     "relationships": [
         {
+            "xUUID": "abc1",
+            "yUUID": "abc2",
+            "relationship": "Uses"
+        },
+        {
+            "xUUID": "abc4",
+            "yUUID": "abc5",
+            "relationship": "Uses"
+        },
+        {
+            "xUUID": "abc5",
+            "yUUID": "abc2",
+            "relationship": "Uses"
+        },
+        {
             "xUUID": "abc0",
             "yUUID": "abc1",
-            "relationship": "Uses"
+            "relationship": "Contains"
+        },
+        {
+            "xUUID": "abc0",
+            "yUUID": "abc2",
+            "relationship": "Contains"
+        },
+        {
+            "xUUID": "abc3",
+            "yUUID": "abc4",
+            "relationship": "Contains"
+        },
+        {
+            "xUUID": "abc3",
+            "yUUID": "abc5",
+            "relationship": "Contains"
         }
     ]
 }
 ```
+NOTE: These examples have been simplified to show differences in output based on configuration. 
+
 ### Run surfactant
 ```bash
 $  python generate_cytrics_sbom.py [-h] [-i INPUT_SBOM] [--skip_gather] [--skip_relationships] [CONFIG_FILE] [SBOM_OUTPUT]
