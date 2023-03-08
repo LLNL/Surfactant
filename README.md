@@ -174,21 +174,21 @@ The resulting SBOM would be structured like this:
         },
         {
           "UUID": "abc3",
-          "fileName": ["helics_helper.tar.gz"],
+          "fileName": ["helics_plugin.tar.gz"],
           "installPath": null,
           "containerPath": null
         },
         {
           "UUID": "abc4",
-          "fileName": ["helper_module"],
-          "installPath": ["/bin/helper_module"],
-          "containerPath": ["abc3/bin/helper_module"]
+          "fileName": ["helics_plugin"],
+          "installPath": ["/bin/helics_plugin"],
+          "containerPath": ["abc3/bin/helics_plugin"]
         },
         {
           "UUID": "abc5",
-          "fileName": ["lib_helper.so"],
-          "installPath": ["/lib64/lib_helper.so"],
-          "containerPath": ["abc3/lib64/lib_helper.so"]
+          "fileName": ["lib_plugin.so"],
+          "installPath": ["/lib64/lib_plugin.so"],
+          "containerPath": ["abc3/lib64/lib_plugin.so"]
         }
     ],
     "relationships": [
