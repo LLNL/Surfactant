@@ -19,6 +19,8 @@ repos:
     rev: v2.17.0
     hooks:
       - id: pylint
+        args: ["--output-format=text,pylint_gitlab.GitlabCodeClimateReporter:codeclimate.json"]
+        additional_dependencies: [pylint-gitlab]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
