@@ -26,7 +26,7 @@ $ git clone https://lc.llnl.gov/gitlab/cir-software-assurance/sbom-surfactant.gi
 ```bash
 $ pip install .
 ```
-For developers: install surfactant with: 
+For developers, install surfactant with:
 ```bash
 $ pip install -e .
 ```
@@ -43,7 +43,7 @@ A configuration file contains the information about the sample to gather informa
 **installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc
 
 #### Example configuration file
-Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share. 
+Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
 ##### Example 1: Simple Configuration File
 If we want to include only the folders that contain binary files to analyze, our most basic configuration would be:
 ```json
@@ -233,7 +233,7 @@ The resulting SBOM would be structured like this:
     ]
 }
 ```
-NOTE: These examples have been simplified to show differences in output based on configuration. 
+NOTE: These examples have been simplified to show differences in output based on configuration.
 
 ### Run surfactant
 ```bash
@@ -247,7 +247,7 @@ $  python generate_cytrics_sbom.py [-h] [-i INPUT_SBOM] [--skip_gather] [--skip_
 
 ## Understanding the SBOM Output
 ### Software
-This section contains a list of entries relating to each piece of software found in the sample. Metadata including file size, vendor, version, etc are included in this section along with a uuid to uniquely identify the software entry. 
+This section contains a list of entries relating to each piece of software found in the sample. Metadata including file size, vendor, version, etc are included in this section along with a uuid to uniquely identify the software entry.
 
 ### Relationships
 This section contains information on how each of the software entries in the previous section are linked.
