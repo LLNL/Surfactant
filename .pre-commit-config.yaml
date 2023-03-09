@@ -16,7 +16,7 @@ repos:
       - id: flake8
         additional_dependencies: [flake8-bugbear]
   - repo: https://github.com/pycqa/pylint
-    rev: v2.16.3
+    rev: v2.17.0
     hooks:
       - id: pylint
   - repo: https://github.com/pre-commit/pre-commit-hooks
