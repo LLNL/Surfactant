@@ -22,9 +22,13 @@ OR
 $ git clone https://lc.llnl.gov/gitlab/cir-software-assurance/sbom-surfactant.git
 ```
 
-3. Install other required python modules:
+3. Install surfactant with:
 ```bash
-$ pip install -r requirements.txt
+$ pip install .
+```
+For developers: install surfactant with: 
+```bash
+$ pip install -e .
 ```
 
 ## Usage
