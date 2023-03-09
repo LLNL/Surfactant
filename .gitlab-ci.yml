@@ -20,9 +20,14 @@ before_script:
 pre-commit:
   extends:
     - .oslic
+  needs:
+    - job: scheduled-precommit-autoupdate
+      optional: true
   variables:
     GIT_STRATEGY: clone # or fetch (faster), none (no code needed)
   rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - exists: [.pre-commit-config.yaml]
   script: |
     pip install -r requirements-dev.txt
@@ -53,3 +58,34 @@ pre-commit:
       GIT_SSH_COMMAND="ssh -i $PRECOMMIT_SSH_KEY" git push ssh://git@czgitlab.llnl.gov:7999/cir-software-assurance/sbom-surfactant.git HEAD:"$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
     fi
     exit 1
+
+scheduled-precommit-autoupdate:
+  extends:
+    - .oslic
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: always
+    - if: $CI_PIPELINE_SOURCE != "schedule"
+      when: never
+    - exists: [.pre-commit-config.yaml]
+  script: |
+    pip install -r requirements-dev.txt
+    pre-commit autoupdate || status=$?
+    if [[ $status -ne 0 ]]; then
+      echo "Unexpected error occurred during pre-commit autoupdate." > /dev/stderr
+      exit 1
+    fi
+    if [[ -z "$PRECOMMIT_SSH_KEY" ]]; then
+      echo "No pre-commit SSH key is set up for automatic fixes." > /dev/stderr
+      exit 1
+    fi
+    git config user.email "$GITLAB_USER_EMAIL"
+    git config user.name "$GITLAB_USER_NAME"
+    git add .pre-commit-config.yaml
+    git commit -m "autoupdate pre-commit config" || status=$?
+    if [[ $status -ne 0 ]]; then
+      echo "pre-commit config is either up to date or an error occurred."
+      # Assume it is just up to date, and don't fail the pipeline run
+      exit 0
+    fi
+    GIT_SSH_COMMAND="ssh -i $PRECOMMIT_SSH_KEY" git push ssh://git@czgitlab.llnl.gov:7999/cir-software-assurance/sbom-surfactant.git HEAD:"$CI_COMMIT_BRANCH"
