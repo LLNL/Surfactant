@@ -39,6 +39,7 @@ dependencies = [
     "olefile",
     "defusedxml",
     "spdx",
+    "pluggy",
 ]
 dynamic = ["version"]
 
