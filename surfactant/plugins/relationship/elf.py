@@ -1,7 +1,10 @@
 import os
 import pathlib
+from collections.abc import Iterable
+from typing import List
 
 from surfactant import pluginsystem
+from surfactant.sbomtypes import SBOM, Relationship, Software
 
 
 class ELF(pluginsystem.RelationshipPlugin):
@@ -32,9 +35,9 @@ class ELF(pluginsystem.RelationshipPlugin):
     # x86 (32-bit only): acpi, apic, clflush, cmov, cx8, dts, fxsr, ht, i386, i486, i586, i686, mca, mmx, mtrr, pat, pbe, pge, pn, pse36, sep, ss, sse, sse2, tm
 
     @classmethod
-    def get_relationships(cls, sbom, sw, metadata) -> list:
-        relationships = []
-        dependent_uuid = sw.get("UUID")
+    def get_relationships(cls, sbom: SBOM, sw: Software, metadata) -> List[Relationship]:
+        relationships: List[Relationship] = []
+        dependent_uuid = str(sw.UUID)
         default_search_paths = ELF.generate_search_paths(sw, metadata)
         for dep in metadata["elfDependencies"]:
             # if dependency has a slash, it is interpreted as a pathname to shared object to load
@@ -52,13 +55,14 @@ class ELF(pluginsystem.RelationshipPlugin):
                     # relative path
                     fpaths = []
                     # iterate through install paths for sw to get the full path to the file as it would appear in installPaths for the software entry
-                    for ipath in sw["installPath"]:
-                        ipath = pathlib.PurePosixPath(
-                            os.path.normpath(ipath)
-                        )  # NOTE symlinks in install path may be affected by normpath
-                        fpaths.append(
-                            os.path.normpath(str(ipath.parent.joinpath(dep)))
-                        )  # paths to search are install path folders + relative path of dependency
+                    if isinstance(sw.installPath, Iterable):
+                        for ipath in sw.installPath:
+                            ipath = pathlib.PurePosixPath(
+                                os.path.normpath(ipath)
+                            )  # NOTE symlinks in install path may be affected by normpath
+                            fpaths.append(
+                                os.path.normpath(str(ipath.parent.joinpath(dep)))
+                            )  # paths to search are install path folders + relative path of dependency
             else:
                 fname = dep
                 # the paths for the dependency follow the default search path order for Linux/FreeBSD/etc
@@ -67,25 +71,23 @@ class ELF(pluginsystem.RelationshipPlugin):
                 ]  # append fname to the end of the paths to get the full file install paths of the dependency
 
             # Look for a software entry with a file name and install path that matches the dependency that would be loaded
-            for item in sbom["software"]:
+            for item in sbom.software:
                 # Check if the software entry has a name matching the dependency first as a quick check to rule out non-matches
-                if fname not in item["fileName"]:
+                if isinstance(item.fileName, Iterable) and fname not in item.fileName:
                     continue
 
                 # check if the software entry is installed to one of the paths looked at for loading the dependency
                 for fp in fpaths:
-                    if fp in item["installPath"]:
+                    if isinstance(item.installPath, Iterable) and fp in item.installPath:
                         # software matching requirements to be the loaded dependency was found
-                        dependency_uuid = item["UUID"]
-                        r = pluginsystem.RelationshipPlugin.create_relationship(
-                            dependent_uuid, dependency_uuid, "Uses"
-                        )
-                        if r not in relationships:
-                            relationships.append(r)
+                        dependency_uuid = str(item.UUID)
+                        rel = Relationship(dependent_uuid, dependency_uuid, "Uses")
+                        if rel not in relationships:
+                            relationships.append(rel)
         return relationships
 
     @staticmethod
-    def generate_search_paths(sw, md) -> list:
+    def generate_search_paths(sw: Software, md) -> list:
         # 1. Search using directories in DT_RPATH if present and no DT_RUNPATH exists (use of DT_RPATH is deprecated)
         # 2. Use LD_LIBRARY_PATH environment variable; ignore if suid/sgid binary (nothing to do, we don't have this information w/o running on a live system)
         # 3. Search using directories in DT_RUNPATH if present
@@ -106,7 +108,7 @@ class ELF(pluginsystem.RelationshipPlugin):
         return paths
 
     @staticmethod
-    def generate_runpaths(sw, md) -> list:
+    def generate_runpaths(sw: Software, md) -> list:
         # rpath and runpath are lists of strings (just in case an ELF file has several, though that is probably an invalid ELF file)
         rp_to_use = []
         rpath = None
@@ -137,7 +139,7 @@ class ELF(pluginsystem.RelationshipPlugin):
         return origstr.replace("$" + dvar, newval).replace("${" + dvar + "}", newval)
 
     @staticmethod
-    def substitute_all_dst(sw, md, path) -> list:
+    def substitute_all_dst(sw: Software, md, path) -> list:
         # substitute any dynamic string tokens found; may result in multiple strings if different variants are possible
         # replace $ORIGIN, ${ORIGIN}, $LIB, ${LIB}, $PLATFORM, ${PLATFORM} tokens
         # places the dynamic linker does this expansion are:
@@ -150,9 +152,10 @@ class ELF(pluginsystem.RelationshipPlugin):
         # ORIGIN: replace with absolute directory containing the program or shared object (with symlinks resolved and no ../ or ./ subfolders)
         # for SUID/SGID binaries, after expansion the normalized path must be in a trusted directory (https://github.com/bminor/glibc/blob/0d41182/elf/dl-load.c#L356-L357, https://github.com/bminor/glibc/blob/0d41182/elf/dl-load.c#L297-L316)
         if (path.find("$ORIGIN") != -1) or (path.find("${ORIGIN}") != -1):
-            for ipath in sw["installPath"]:
-                origin = pathlib.PurePosixPath(ipath).parent.as_posix()
-                pathlist.append(ELF.replace_dst(path, "ORIGIN", origin))
+            if isinstance(sw.installPath, Iterable):
+                for ipath in sw.installPath:
+                    origin = pathlib.PurePosixPath(ipath).parent.as_posix()
+                    pathlist.append(ELF.replace_dst(path, "ORIGIN", origin))
 
         # LIB: expands to `lib` or `lib64` depending on arch (x86-64 to lib64, x86-32 to lib)
         if (path.find("$LIB") != -1) or (path.find("${LIB}") != -1):

@@ -1,12 +1,13 @@
 import surfactant.pluginsystem
+from surfactant.sbomtypes import SBOM, Relationship, Software
 
-sbom = {
-    "software": [
-        {
-            "UUID": "abc",
-            "fileName": ["helics_broker"],
-            "installPath": ["/usr/local/bin/helics_broker"],
-            "metadata": [
+sbom = SBOM(
+    software=[
+        Software(
+            UUID="abc",
+            fileName=["helics_broker"],
+            installPath=["/usr/local/bin/helics_broker"],
+            metadata=[
                 {
                     "elfDependencies": ["libhelicscpp-apps.so"],
                     "elfRpath": [],
@@ -15,12 +16,12 @@ sbom = {
                     "elfDynamicFlags1": [{"DF_1_ORIGIN": False, "DF_1_NODEFLIB": False}],
                 }
             ],
-        },
-        {
-            "UUID": "xyz",
-            "fileName": ["libhelicscpp-apps.so"],
-            "installPath": ["/usr/local/lib/libhelicscpp-apps.so"],
-            "metadata": [
+        ),
+        Software(
+            UUID="xyz",
+            fileName=["libhelicscpp-apps.so"],
+            installPath=["/usr/local/lib/libhelicscpp-apps.so"],
+            metadata=[
                 {
                     "elfDependencies": ["libzmq.so"],
                     "elfRpath": [],
@@ -29,12 +30,12 @@ sbom = {
                     "elfDynamicFlags1": [],
                 }
             ],
-        },
-        {
-            "UUID": "def",
-            "fileName": ["libzmq.so"],
-            "installPath": ["/lib/libzmq.so", "/customlib/abspath/libzmq.so"],
-            "metadata": [
+        ),
+        Software(
+            UUID="def",
+            fileName=["libzmq.so"],
+            installPath=["/lib/libzmq.so", "/customlib/abspath/libzmq.so"],
+            metadata=[
                 {
                     "elfDependencies": [],
                     "elfRpath": [],
@@ -43,12 +44,12 @@ sbom = {
                     "elfDynamicFlags1": [],
                 }
             ],
-        },
-        {
-            "UUID": "hij",
-            "fileName": ["libcomm.so"],
-            "installPath": ["/customlib/relpath/misc/libcomm.so"],
-            "metadata": [
+        ),
+        Software(
+            UUID="hij",
+            fileName=["libcomm.so"],
+            installPath=["/customlib/relpath/misc/libcomm.so"],
+            metadata=[
                 {
                     "elfDependencies": ["/customlib/abspath/libzmq.so"],
                     "elfRpath": [],
@@ -57,12 +58,12 @@ sbom = {
                     "elfDynamicFlags1": [],
                 }
             ],
-        },
-        {
-            "UUID": "klm",
-            "fileName": ["libcomm-cpp.so"],
-            "installPath": ["/customlib/relpath/libcomm-cpp.so"],
-            "metadata": [
+        ),
+        Software(
+            UUID="klm",
+            fileName=["libcomm-cpp.so"],
+            installPath=["/customlib/relpath/libcomm-cpp.so"],
+            metadata=[
                 {
                     "elfDependencies": ["misc/libcomm.so"],
                     "elfRpath": [],
@@ -71,51 +72,43 @@ sbom = {
                     "elfDynamicFlags1": [],
                 }
             ],
-        },
+        ),
     ],
-    "relationships": [],
-}
+    relationships=[],
+)
 
 
 def test_relative_paths():
     elfPlugin = surfactant.pluginsystem.RelationshipPlugin.get_plugin("ELF")
-    sw = sbom["software"][4]
-    md = sw["metadata"][0]
+    sw = sbom.software[4]
+    md = sw.metadata[0]
     assert elfPlugin.has_required_fields(md)
     # located in /customlib/relpath/misc, dependency specified as being under misc/ relative path
-    assert elfPlugin.get_relationships(sbom, sw, md) == [
-        {"relationship": "Uses", "xUUID": "klm", "yUUID": "hij"}
-    ]
+    assert elfPlugin.get_relationships(sbom, sw, md) == [Relationship("klm", "hij", "Uses")]
 
 
 def test_absolute_paths():
     elfPlugin = surfactant.pluginsystem.RelationshipPlugin.get_plugin("ELF")
-    sw = sbom["software"][3]
-    md = sw["metadata"][0]
+    sw = sbom.software[3]
+    md = sw.metadata[0]
     assert elfPlugin.has_required_fields(md)
     # located in /customlib/abspath
-    assert elfPlugin.get_relationships(sbom, sw, md) == [
-        {"relationship": "Uses", "xUUID": "hij", "yUUID": "def"}
-    ]
+    assert elfPlugin.get_relationships(sbom, sw, md) == [Relationship("hij", "def", "Uses")]
 
 
 def test_default_system_paths():
     elfPlugin = surfactant.pluginsystem.RelationshipPlugin.get_plugin("ELF")
-    sw = sbom["software"][1]
-    md = sw["metadata"][0]
+    sw = sbom.software[1]
+    md = sw.metadata[0]
     assert elfPlugin.has_required_fields(md)
     # located in /lib
-    assert elfPlugin.get_relationships(sbom, sw, md) == [
-        {"relationship": "Uses", "xUUID": "xyz", "yUUID": "def"}
-    ]
+    assert elfPlugin.get_relationships(sbom, sw, md) == [Relationship("xyz", "def", "Uses")]
 
 
 def test_dst_expansion():
     elfPlugin = surfactant.pluginsystem.RelationshipPlugin.get_plugin("ELF")
-    sw = sbom["software"][0]
-    md = sw["metadata"][0]
+    sw = sbom.software[0]
+    md = sw.metadata[0]
     assert elfPlugin.has_required_fields(md)
     # uses origin expansion
-    assert elfPlugin.get_relationships(sbom, sw, md) == [
-        {"relationship": "Uses", "xUUID": "abc", "yUUID": "xyz"}
-    ]
+    assert elfPlugin.get_relationships(sbom, sw, md) == [Relationship("abc", "xyz", "Uses")]

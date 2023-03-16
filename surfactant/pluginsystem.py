@@ -53,10 +53,6 @@ class RelationshipPlugin(PluginBase):
     PLUGIN_TYPE = "RELATIONSHIP"
     PLUGIN_NAME = ""
 
-    @staticmethod
-    def create_relationship(xUUID, yUUID, relationship):
-        return {"xUUID": xUUID, "yUUID": yUUID, "relationship": relationship}
-
     @classmethod
     def has_required_fields(cls, metadata) -> bool:
         raise NotImplementedError("has_required_fields not implemented")

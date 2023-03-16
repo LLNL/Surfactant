@@ -1,7 +1,10 @@
 import csv
 import os
+from collections.abc import Iterable
+from typing import List
 
 from surfactant import pluginsystem
+from surfactant.sbomtypes import SBOM, Software
 
 
 class CSV(pluginsystem.OutputPlugin):
@@ -17,7 +20,7 @@ class CSV(pluginsystem.OutputPlugin):
     ]
 
     @classmethod
-    def write(cls, sbom, outfile):
+    def write(cls, sbom: SBOM, outfile):
         # plugin args could be handled here to change behavior
         fields = cls.default_fields
 
@@ -25,24 +28,23 @@ class CSV(pluginsystem.OutputPlugin):
         # equivalent to `excel` dialect, other than lineterminator
         writer = csv.DictWriter(outfile, fieldnames=fields, lineterminator=os.linesep)
         writer.writeheader()
-        if "software" in sbom:
-            for sw in sbom["software"]:
+        if sbom.software:
+            for sw in sbom.software:
                 cls.write_software_entry(writer, sw, fields)
 
     @classmethod
-    def write_software_entry(cls, writer: csv.DictWriter, software, fields: "list[str]"):
+    def write_software_entry(cls, writer: csv.DictWriter, software: Software, fields: List[str]):
         pathkey = None
         if "Path" in fields:
-            if "installPath" in software:
+            if software.installPath and isinstance(software.installPath, Iterable):
                 # default to using "installPath"
                 pathkey = "installPath"
+            elif software.containerPath and isinstance(software.containerPath, Iterable):
                 # use "containerPath" if it has entries but "installPath" does not
-                if not software["installPath"]:
-                    if "containerPath" in software and software["containerPath"]:
-                        pathkey = "containerPath"
+                pathkey = "containerPath"
 
         # an entry will be created for every entry with a valid path
-        for p in software[pathkey]:
+        for p in getattr(software, pathkey):
             row = {}
             row["Path"] = p
             # if containerPath is being used, remove the UUID portion at the start
@@ -66,13 +68,13 @@ class CSV(pluginsystem.OutputPlugin):
 
     @classmethod
     def get_software_field(cls, software, field):
-        if field in software:
-            return software[field]
+        if hasattr(software, field):
+            return getattr(software, field)
         # Copyright field currently only gets populated from Windows PE file metadata
         if field == "Copyright":
-            if "metadata" in software:
+            if software.metadata and isinstance(software.metadata, Iterable):
                 retval = []
-                for entry in software["metadata"]:
+                for entry in software.metadata:
                     if "FileInfo" in entry and "LegalCopyright" in entry["FileInfo"]:
                         return entry["FileInfo"]["LegalCopyright"]
         return None
