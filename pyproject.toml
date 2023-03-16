@@ -32,12 +32,12 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
+    "dataclasses_json",
     "pyelftools",
     "pefile",
     "dnfile",
     "olefile",
     "defusedxml",
-    "deepdiff",
     "spdx",
 ]
 dynamic = ["version"]
