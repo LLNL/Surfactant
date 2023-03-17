@@ -79,7 +79,7 @@ sbom = SBOM(
 
 
 def test_relative_paths():
-    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf")
+    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf_relationship")
     sw = sbom.software[4]
     md = sw.metadata[0]
     # located in /customlib/relpath/misc, dependency specified as being under misc/ relative path
@@ -87,7 +87,7 @@ def test_relative_paths():
 
 
 def test_absolute_paths():
-    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf")
+    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf_relationship")
     sw = sbom.software[3]
     md = sw.metadata[0]
     # located in /customlib/abspath
@@ -95,7 +95,7 @@ def test_absolute_paths():
 
 
 def test_default_system_paths():
-    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf")
+    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf_relationship")
     sw = sbom.software[1]
     md = sw.metadata[0]
     # located in /lib
@@ -103,7 +103,7 @@ def test_default_system_paths():
 
 
 def test_dst_expansion():
-    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf")
+    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf_relationship")
     sw = sbom.software[0]
     md = sw.metadata[0]
     # uses origin expansion
