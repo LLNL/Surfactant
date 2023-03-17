@@ -10,7 +10,7 @@ from ._provenance import HardwareProvenance
 
 @dataclass
 class Hardware:
-    UUID: str = field(default_factory=uuid.uuid4)
+    UUID: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: Optional[str] = None
     captureTime: Optional[int] = None
     officialName: Optional[str] = None
@@ -25,6 +25,6 @@ class Hardware:
     metadata: Optional[List[object]] = None
     supplementaryFiles: Optional[List[File]] = None
     packageType: Optional[str] = None
-    boardLocation: List[str] = None
+    boardLocation: Optional[List[str]] = None
     provenance: Optional[List[HardwareProvenance]] = None
     recordedInstitution: Optional[str] = None

@@ -32,7 +32,8 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
 
 def write_software_entry(writer: csv.DictWriter, software: Software, fields: List[str]):
-    pathkey = None
+    # last resort, use the fileName instead of an actual path to output csv entries
+    pathkey = "fileName"
     if "Path" in fields:
         if software.installPath and isinstance(software.installPath, Iterable):
             # default to using "installPath"

@@ -9,8 +9,8 @@ def parse_relationships(pluginmanager, sbom: SBOM):
     print("Determining relationships", end="")
     for sw in sbom.software:
         print(".", end="")
-        # Skip for temporary files/installer that don't have any installPath to find dependencies with
-        if sw.installPath is None:
+        # Skip for temporary files/installer that don't have any installPath or metadata to find dependencies with
+        if sw.installPath is None or sw.metadata is None:
             continue
 
         # Find metadata saying what dependencies are used by the software entry

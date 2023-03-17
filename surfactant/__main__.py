@@ -151,7 +151,7 @@ def main():
                     parent_entry = archive_entry
                 else:
                     sbom.add_software(parent_entry)
-                parent_uuid = str(parent_entry.UUID)
+                parent_uuid = parent_entry.UUID
             else:
                 parent_entry = None
                 parent_uuid = None
@@ -192,8 +192,8 @@ def main():
                                 sbom.add_software(e)
                                 # if the config file specified a parent/container for the file, add the new entry as a "Contains" relationship
                                 if parent_entry:
-                                    parent_uuid = str(parent_entry.UUID)
-                                    child_uuid = str(e.UUID)
+                                    parent_uuid = parent_entry.UUID
+                                    child_uuid = e.UUID
                                     sbom.create_relationship(parent_uuid, child_uuid, "Contains")
                             else:
                                 existing_uuid, entry_uuid = existing_sw.merge(e)
@@ -205,7 +205,7 @@ def main():
                                         rel.yUUID = existing_uuid
                                 # add a new contains relationship if the duplicate file is from a different container/archive than previous times seeing the file
                                 if parent_entry:
-                                    parent_uuid = str(parent_entry.UUID)
+                                    parent_uuid = parent_entry.UUID
                                     child_uuid = existing_uuid
                                     # avoid duplicate entries
                                     if not sbom.find_relationship(

@@ -10,7 +10,7 @@ from ._provenance import AnalysisDataProvenance
 
 @dataclass
 class AnalysisData:
-    UUID: str = field(default_factory=uuid.uuid4)
+    UUID: str = field(default_factory=lambda: str(uuid.uuid4()))
     origin: str = None
     testName: str = None
     testVersion: str = None

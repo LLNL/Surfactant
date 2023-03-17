@@ -33,7 +33,9 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 
 @hookspec
-def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Relationship]:
+def establish_relationships(
+    sbom: SBOM, software: Software, metadata
+) -> Optional[List[Relationship]]:
     """Called to add relationships to an SBOM after information has been gathered.
 
     The function will be called once for every metadata object in every software

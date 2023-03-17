@@ -1,6 +1,6 @@
 import pathlib
 from collections.abc import Iterable
-from typing import List
+from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
@@ -13,7 +13,9 @@ def has_required_fields(metadata) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Relationship]:
+def establish_relationships(
+    sbom: SBOM, software: Software, metadata
+) -> Optional[List[Relationship]]:
     if not has_required_fields(metadata):
         return None
 
@@ -57,7 +59,7 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
 
     # Of those steps, without gathering much more information that is likely not available or manual/dynamic analysis, we can do:
     # 4. Look for DLL in the directory the application was loaded from
-    dependent_uuid = str(sw.UUID)
+    dependent_uuid = sw.UUID
     for fname in peImports:
         probedirs = []
         if isinstance(sw.installPath, Iterable):
@@ -65,7 +67,7 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
                 probedirs.append(pathlib.PureWindowsPath(ipath).parent.as_posix())
         # likely just one found, unless sw entry has the same file installed to multiple places
         for e in find_installed_software(sbom, probedirs, fname):
-            dependency_uuid = str(e.UUID)
+            dependency_uuid = e.UUID
             relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
         # logging DLLs not found would be nice, but is excessively noisy due being almost exclusively system DLLs
 

@@ -1,6 +1,6 @@
 import pathlib
 from collections.abc import Iterable
-from typing import List
+from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
@@ -14,12 +14,14 @@ def has_required_fields(metadata) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Relationship]:
+def establish_relationships(
+    sbom: SBOM, software: Software, metadata
+) -> Optional[List[Relationship]]:
     if not has_required_fields(metadata):
         return None
 
     relationships: List[Relationship] = []
-    dependent_uuid = str(software.UUID)
+    dependent_uuid = software.UUID
     dnName = None
     dnCulture = None
     dnVersion = None
@@ -110,9 +112,9 @@ def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Re
                                             install_basepath, codebase_href
                                         )
                                         cb_file = cb_filepath.name
-                                        cb_path = cb_filepath.parent.as_posix()
+                                        cb_path = [cb_filepath.parent.as_posix()]
                                         for e in find_installed_software(sbom, cb_path, cb_file):
-                                            dependency_uuid = str(e.UUID)
+                                            dependency_uuid = e.UUID
                                             relationships.append(
                                                 Relationship(
                                                     dependent_uuid, dependency_uuid, "Uses"
@@ -123,7 +125,7 @@ def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Re
             # get the list of paths to probe based on locations software is installed, assembly culture, assembly name, and probing paths from appconfig file
             probedirs = get_dotnet_probedirs(software, refCulture, refName, dnProbingPaths)
             for e in find_installed_software(sbom, probedirs, refName + ".dll"):
-                dependency_uuid = str(e.UUID)
+                dependency_uuid = e.UUID
                 relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
                 # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
     return relationships

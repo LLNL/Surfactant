@@ -89,4 +89,4 @@ def identify_file_type(filepath: str) -> Optional[str]:
             return None
 
     except FileNotFoundError:
-        return False
+        return None

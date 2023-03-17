@@ -1,7 +1,7 @@
 import os
 import pathlib
 from collections.abc import Iterable
-from typing import List
+from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
@@ -34,12 +34,14 @@ def has_required_fields(metadata) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Relationship]:
+def establish_relationships(
+    sbom: SBOM, software: Software, metadata
+) -> Optional[List[Relationship]]:
     if not has_required_fields(metadata):
         return None
 
     relationships: List[Relationship] = []
-    dependent_uuid = str(software.UUID)
+    dependent_uuid = software.UUID
     default_search_paths = generate_search_paths(software, metadata)
     for dep in metadata["elfDependencies"]:
         # if dependency has a slash, it is interpreted as a pathname to shared object to load
@@ -59,11 +61,11 @@ def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Re
                 # iterate through install paths for sw to get the full path to the file as it would appear in installPaths for the software entry
                 if isinstance(software.installPath, Iterable):
                     for ipath in software.installPath:
-                        ipath = pathlib.PurePosixPath(
+                        ipath_posix = pathlib.PurePosixPath(
                             os.path.normpath(ipath)
                         )  # NOTE symlinks in install path may be affected by normpath
                         fpaths.append(
-                            os.path.normpath(str(ipath.parent.joinpath(dep)))
+                            os.path.normpath(str(ipath_posix.parent.joinpath(dep)))
                         )  # paths to search are install path folders + relative path of dependency
         else:
             fname = dep
@@ -82,7 +84,7 @@ def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Re
             for fp in fpaths:
                 if isinstance(item.installPath, Iterable) and fp in item.installPath:
                     # software matching requirements to be the loaded dependency was found
-                    dependency_uuid = str(item.UUID)
+                    dependency_uuid = item.UUID
                     rel = Relationship(dependent_uuid, dependency_uuid, "Uses")
                     if rel not in relationships:
                         relationships.append(rel)

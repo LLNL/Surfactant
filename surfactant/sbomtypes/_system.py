@@ -9,7 +9,7 @@ from ._provenance import SystemProvenance
 
 @dataclass
 class System:
-    UUID: str = field(default_factory=uuid.uuid4)
+    UUID: str = field(default_factory=lambda: str(uuid.uuid4()))
     captureStart: Optional[int] = None
     captureEnd: Optional[int] = None
     name: Optional[str] = None

@@ -27,7 +27,7 @@ class SoftwareComponent:
 
 @dataclass
 class Software:
-    UUID: str = field(default_factory=uuid.uuid4)
+    UUID: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: Optional[str] = None
     size: Optional[int] = None
     fileName: Optional[List[str]] = None
@@ -97,8 +97,8 @@ class Software:
                         for new_value in new_arr:
                             # special case, UUID in containerPaths need updating to match our UUID
                             if fld.name == "containerPath":
-                                if new_value.startswith(str(sw.UUID)):
-                                    new_value = new_value.replace(str(sw.UUID), str(self.UUID))
+                                if new_value.startswith(sw.UUID):
+                                    new_value = new_value.replace(sw.UUID, self.UUID)
                             if new_value not in current_arr:
                                 current_arr.append(new_value)
 
