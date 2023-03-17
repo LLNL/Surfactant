@@ -1,4 +1,5 @@
 import struct
+from typing import Any, Dict
 
 from elftools.common.exceptions import ELFError
 from elftools.elf.dynamic import DynamicSection
@@ -55,7 +56,7 @@ def extract_elf_info(filename):
             return {}
 
         # Don't assume OS is Linux, map e_ident EI_OSABI value to an OS name
-        file_details = {"OS": ""}
+        file_details: Dict[str, Any] = {"OS": ""}
         file_details["elfIdent"] = get_elf_ident_from_file_header(f, elf.little_endian)
         file_details["elfDependencies"] = []
         file_details["elfRpath"] = []
@@ -73,7 +74,7 @@ def extract_elf_info(filename):
         file_details["elfArchitecture"] = elf["e_machine"]
 
         # Get a human readable name for the OS
-        file_details["OS"] = _EI_OSABI_NAME.get(file_details["elfOsAbi"])
+        file_details["OS"] = _EI_OSABI_NAME.get(file_details["elfOsAbi"], "")
 
         for section in elf.iter_sections():
             if section.name == ".interp":
@@ -118,7 +119,7 @@ def extract_elf_info(filename):
                         file_details["elfSoname"].append(tag.soname)
                     elif tag.entry.d_tag == "DT_FLAGS":
                         # Dynamic Flags, DT_FLAGS
-                        dt_flags_entry = {}
+                        dt_flags_entry: Dict[str, Any] = {}
                         dt_flags_entry["value"] = hex(tag.entry.d_val)
                         # $ORIGIN processing is required
                         dt_flags_entry["DF_ORIGIN"] = bool(
@@ -131,7 +132,7 @@ def extract_elf_info(filename):
                         file_details["elfDynamicFlags"].append(dt_flags_entry)
                     elif tag.entry.d_tag == "DT_FLAGS_1":
                         # Dynamic Flags, DT_FLAGS_1 (custom entry first added by binutils)
-                        dt_flags_1_entry = {}
+                        dt_flags_1_entry: Dict[str, Any] = {}
                         dt_flags_1_entry["value"] = hex(tag.entry.d_val)
                         # Position-Independent Executable file
                         dt_flags_1_entry["DF_1_PIE"] = bool(
@@ -179,7 +180,7 @@ def extract_elf_info(filename):
         return file_details
 
 
-def get_elf_ident_from_file_header(f, little_endian):
+def get_elf_ident_from_file_header(f, little_endian) -> dict:
     # Details on ELF header information/format:
     # https://man7.org/linux/man-pages/man5/elf.5.html
     # https://en.wikipedia.org/wiki/Executable_and_Linkable_Format#File_header

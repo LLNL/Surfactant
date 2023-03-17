@@ -5,6 +5,7 @@
 
 import pathlib
 import re
+from typing import Any, Dict
 
 import defusedxml.ElementTree
 import dnfile
@@ -79,7 +80,7 @@ def extract_pe_info(filename):
     except (OSError, dnfile.PEFormatError):
         return {}
 
-    file_details = {"OS": "Windows"}
+    file_details: Dict[str, Any] = {"OS": "Windows"}
     if pe.FILE_HEADER is not None:
         if pe.FILE_HEADER.Machine in pe_machine_types:
             file_details["peMachine"] = pe_machine_types[pe.FILE_HEADER.Machine]
@@ -212,7 +213,7 @@ def add_assembly_flags_info(asm_dict, asm_info):
 
 
 def get_assembly_info(asm_info):
-    asm = {}
+    asm: Dict[str, Any] = {}
     add_core_assembly_info(asm, asm_info)
     asm["HashAlgId"] = asm_info.HashAlgId
     add_assembly_flags_info(asm, asm_info)
@@ -220,7 +221,7 @@ def get_assembly_info(asm_info):
 
 
 def get_assemblyref_info(asmref_info):
-    asmref = {}
+    asmref: Dict[str, Any] = {}
     add_core_assembly_info(asmref, asmref_info)
     asmref["HashValue"] = asmref_info.HashValue.hex()
     add_assembly_flags_info(asmref, asmref_info)
@@ -269,7 +270,7 @@ def get_windows_manifest_info(filename):
                         "[WARNING] duplicate dependency element found in the manifest file: "
                         + str(manifest_filepath)
                     )
-                dependency_info = {}
+                dependency_info: Dict[str, Any] = {}
                 for dependency in asm_e:
                     dependency_xmlns, dependency_tag = get_xmlns_and_tag(dependency)
                     if dependency_tag == "dependentAssembly":
@@ -464,7 +465,7 @@ def get_windows_application_config_info(filename):
                 if tag == "assemblyBinding":
                     windows_info["assemblyBinding"] = get_assemblyBinding_info(win_child)
                 if tag == "dependency":
-                    dependency_info = {}
+                    dependency_info: Dict[str, Any] = {}
                     for dependency in win_child:
                         dependency_xmlns, dependency_tag = get_xmlns_and_tag(dependency)
                         if dependency_tag == "dependentAssembly":

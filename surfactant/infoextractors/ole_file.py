@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import olefile
 
 import surfactant.plugin
@@ -16,7 +18,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 
 def extract_ole_info(filename):
-    file_details = {}
+    file_details: Dict[str, Any] = {}
 
     ole = olefile.OleFileIO(filename)
     md = ole.get_metadata()

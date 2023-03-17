@@ -38,7 +38,7 @@ class SBOM:
     def find_relationship(self, xUUID: str, yUUID: str, relationship: str) -> bool:
         return Relationship(xUUID, yUUID, relationship) in self.relationships
 
-    def find_software(self, sha256: str) -> Optional[Software]:
+    def find_software(self, sha256: Optional[str]) -> Optional[Software]:
         for sw in self.software:
             if sha256 == sw.sha256:
                 return sw
