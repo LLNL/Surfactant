@@ -49,19 +49,6 @@ class InfoPlugin(PluginBase):
         raise NotImplementedError("extract_info not implemented")
 
 
-class RelationshipPlugin(PluginBase):
-    PLUGIN_TYPE = "RELATIONSHIP"
-    PLUGIN_NAME = ""
-
-    @classmethod
-    def has_required_fields(cls, metadata) -> bool:
-        raise NotImplementedError("has_required_fields not implemented")
-
-    @classmethod
-    def get_relationships(cls, sbom, sw, metadata) -> list:
-        raise NotImplementedError("get_relationships not implemented")
-
-
 class OutputPlugin(PluginBase):
     PLUGIN_TYPE = "OUTPUT"
     PLUGIN_NAME = ""
@@ -74,9 +61,6 @@ class OutputPlugin(PluginBase):
 def print_available_plugins():
     print("------INFO PLUGINS------")
     for p in InfoPlugin.get_plugins():
-        print(p.PLUGIN_NAME)
-    print("------RELATIONSHIP PLUGINS------")
-    for p in RelationshipPlugin.get_plugins():
         print(p.PLUGIN_NAME)
     print("------OUTPUT PLUGINS------")
     for p in OutputPlugin.get_plugins():

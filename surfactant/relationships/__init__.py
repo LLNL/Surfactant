@@ -1,4 +1,6 @@
-import surfactant.pluginsystem
+from collections.abc import Iterable
+
+from surfactant.plugin.manager import get_plugin_manager
 from surfactant.sbomtypes import SBOM
 
 
@@ -10,15 +12,17 @@ def parse_relationships(sbom: SBOM):
         if sw.installPath is None:
             continue
 
+        pm = get_plugin_manager()
+
         # Find metadata saying what dependencies are used by the software entry
         for md in sw.metadata:
             # handle ELF dependencies, PE imports, and dotNet assembly references using included plugins
-            for p in surfactant.pluginsystem.RelationshipPlugin.get_plugins():
-                if p.has_required_fields(md):
-                    print(f"====={p.PLUGIN_NAME} RelationshipPlugin=====")
-                    relationships = p.get_relationships(sbom, sw, md)
-                    if relationships:
-                        print(relationships)
+            for relationships in pm.hook.establish_relationships(
+                sbom=sbom, software=sw, metadata=md
+            ):
+                if relationships:
+                    print(relationships)
+                if isinstance(relationships, Iterable):
                     for r in relationships:
                         if not sbom.find_relationship_object(r):
                             sbom.add_relationship(r)

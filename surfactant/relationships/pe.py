@@ -2,28 +2,28 @@ import pathlib
 from collections.abc import Iterable
 from typing import List
 
-from surfactant import pluginsystem
+import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
 
-class PE(pluginsystem.RelationshipPlugin):
-    PLUGIN_NAME = "PE"
+def has_required_fields(metadata) -> bool:
+    return "peImport" in metadata or "peBoundImport" in metadata or "peDelayImport" in metadata
 
-    @classmethod
-    def has_required_fields(cls, metadata) -> bool:
-        return "peImport" in metadata or "peBoundImport" in metadata or "peDelayImport" in metadata
 
-    @classmethod
-    def get_relationships(cls, sbom: SBOM, sw: Software, metadata) -> List[Relationship]:
-        relationships = []
-        if "peImport" in metadata:
-            # NOTE: UWP apps have their own search order for libraries; they use a .appx or .msix file extension and appear to be zip files, so our SBOM probably doesn't even include them
-            relationships.extend(get_windows_pe_dependencies(sbom, sw, metadata["peImport"]))
-        if "peBoundImport" in metadata:
-            relationships.extend(get_windows_pe_dependencies(sbom, sw, metadata["peBoundImport"]))
-        if "peDelayImport" in metadata:
-            relationships.extend(get_windows_pe_dependencies(sbom, sw, metadata["peDelayImport"]))
-        return relationships
+@surfactant.plugin.hookimpl
+def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Relationship]:
+    if not has_required_fields(metadata):
+        return None
+
+    relationships = []
+    if "peImport" in metadata:
+        # NOTE: UWP apps have their own search order for libraries; they use a .appx or .msix file extension and appear to be zip files, so our SBOM probably doesn't even include them
+        relationships.extend(get_windows_pe_dependencies(sbom, software, metadata["peImport"]))
+    if "peBoundImport" in metadata:
+        relationships.extend(get_windows_pe_dependencies(sbom, software, metadata["peBoundImport"]))
+    if "peDelayImport" in metadata:
+        relationships.extend(get_windows_pe_dependencies(sbom, software, metadata["peDelayImport"]))
+    return relationships
 
 
 # return a list of all possible matching DLLs that could be loaded on Windows
