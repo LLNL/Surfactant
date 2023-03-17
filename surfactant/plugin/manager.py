@@ -37,11 +37,10 @@ def get_plugin_manager() -> pluggy.PluginManager:
     return pm
 
 
-pm_test = get_plugin_manager()
-for p in pm_test.get_plugins():
-    print("------")
-    print("canonical name: " + pm_test.get_canonical_name(p))
-    print("name: " + pm_test.get_name(p))
-# pm.get_plugin("anotherplugin").write_sbom(sbom=None, outfile=None)
-# pm.hook.write_sbom(sbom="sbom", outfile="outfile")
-# print(pm.hook.establish_relationships(sbom=[], software=[], metadata=[]))
+def print_plugins(pm: pluggy.PluginManager):
+    print("-------")
+    print("PLUGINS")
+    for p in pm.get_plugins():
+        print("-------")
+        print("canonical name: " + pm.get_canonical_name(p))
+        print("name: " + pm.get_name(p))
