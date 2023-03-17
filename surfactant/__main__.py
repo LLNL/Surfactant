@@ -151,6 +151,8 @@ def main():
                 archive_entry = sbom.find_software(parent_entry.sha256)
                 if archive_entry:
                     parent_entry = archive_entry
+                else:
+                    sbom.add_software(parent_entry)
                 parent_uuid = str(parent_entry.UUID)
             else:
                 parent_entry = None
@@ -208,7 +210,7 @@ def main():
                                     child_uuid = str(e.UUID)
                                     sbom.create_relationship(parent_uuid, child_uuid, "Contains")
                             else:
-                                entry_uuid, existing_uuid = existing_sw.merge(e)
+                                existing_uuid, entry_uuid = existing_sw.merge(e)
                                 # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs)
                                 for rel in sbom.relationships:
                                     if rel.xUUID == entry_uuid:
