@@ -101,35 +101,30 @@ def extract_pe_info(filename):
         file_details[
             "peLinkerVersion"
         ] = f"{pe.OPTIONAL_HEADER.MajorLinkerVersion}.{pe.OPTIONAL_HEADER.MinorLinkerVersion}"
+
     if import_dir := getattr(pe, "DIRECTORY_ENTRY_IMPORT", None):
-        # print("---Imported Symbols---")
+        # Imported Symbols
         file_details["peImport"] = []
         for entry in import_dir:
             file_details["peImport"].append(entry.dll.decode())
-            # for imp in entry.imports:
-            #    print("\t" + hex(imp.address) + " " + str(imp.name))
 
     if bound_import_dir := getattr(pe, "DIRECTORY_ENTRY_BOUND_IMPORT", None):
-        # print("---Bound Imported Symbols---")
+        # Bound Imported Symbols
         file_details["peBoundImport"] = []
         for entry in bound_import_dir:
             file_details["peBoundImport"].append(entry.name.decode())
-            # for imp in entry.imports:
-            #    print("\t" + hex(imp.address) + " " + str(imp.name))
 
     if delay_import_dir := getattr(pe, "DIRECTORY_ENTRY_DELAY_IMPORT", None):
-        # print("---Delay Imported Symbols---")
+        # Delay Imported Symbols
         file_details["peDelayImport"] = []
         for entry in delay_import_dir:
             file_details["peDelayImport"].append(entry.dll.decode())
-            # for imp in entry.imports:
-            #    print("\t" + hex(imp.address) + " " + str(imp.name))
 
     file_details["peIsExe"] = pe.is_exe()
     file_details["peIsDll"] = pe.is_dll()
     if opt_hdr := getattr(pe, "OPTIONAL_HEADER", None):
         if opt_hdr_data_dir := getattr(opt_hdr, "DATA_DIRECTORY", None):
-            # print("---COM Descriptor---")
+            # COM Descriptor, used to identify CLR/.NET binaries
             com_desc_dir_num = dnfile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR"]
             com_desc_dir = opt_hdr_data_dir[com_desc_dir_num]
             file_details["peIsClr"] = (com_desc_dir.VirtualAddress > 0) and (com_desc_dir.Size > 0)
@@ -220,7 +215,6 @@ def get_assembly_info(asm_info):
     asm = {}
     add_core_assembly_info(asm, asm_info)
     asm["HashAlgId"] = asm_info.HashAlgId
-    print("Processing:" + asm_info.Name)
     add_assembly_flags_info(asm, asm_info)
     return asm
 
@@ -229,7 +223,6 @@ def get_assemblyref_info(asmref_info):
     asmref = {}
     add_core_assembly_info(asmref, asmref_info)
     asmref["HashValue"] = asmref_info.HashValue.hex()
-    print("Processing:" + asmref_info.Name)
     add_assembly_flags_info(asmref, asmref_info)
     return asmref
 

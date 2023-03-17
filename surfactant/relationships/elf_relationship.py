@@ -101,7 +101,6 @@ def generate_search_paths(sw: Software, md) -> list:
     nodeflib = False
     if "elfDynamicFlags1" in md:
         if "DF_1_NODEFLIB" in md["elfDynamicFlags1"]:
-            print("NODEFLIB flag present")
             nodeflib = md["elfDynamicFlags1"]["DF_1_NODEFLIB"]
     if not nodeflib:
         # add default search paths

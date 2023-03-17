@@ -76,8 +76,6 @@ def extract_elf_info(filename):
     file_details["OS"] = _EI_OSABI_NAME.get(file_details["elfOsAbi"])
 
     for section in elf.iter_sections():
-        # print("-----section-----")
-        # print(section.name)
         if section.name == ".interp":
             file_details["elfInterpreter"].append(section.data().rstrip(b"\x00").decode())
         if section.name == ".comment":

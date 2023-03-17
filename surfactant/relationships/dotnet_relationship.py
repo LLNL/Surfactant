@@ -124,7 +124,6 @@ def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Re
                 dependency_uuid = str(e.UUID)
                 relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
                 # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
-                # print(f" Dependency {refName} not found for sbom['software'] entry={software}")
     return relationships
 
 

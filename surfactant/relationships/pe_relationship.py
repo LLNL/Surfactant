@@ -86,6 +86,5 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
             dependency_uuid = str(e.UUID)
             relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
         # logging DLLs not found would be nice, but is excessively noisy due being almost exclusively system DLLs
-        # print(f" Dependency {fname} not found for sbom['software'] entry={sw}")
 
     return relationships
