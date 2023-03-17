@@ -1,18 +1,18 @@
 import olefile
 
-from surfactant import pluginsystem
+import surfactant.plugin
+from surfactant.sbomtypes import SBOM, Software
 
 
-class OLE(pluginsystem.InfoPlugin):
-    PLUGIN_NAME = "OLE"
+def supports_file(filetype) -> bool:
+    return filetype == "OLE"
 
-    @classmethod
-    def supports_file(cls, filename, filetype=None) -> bool:
-        return filetype == "OLE"
 
-    @classmethod
-    def extract_info(cls, filename) -> dict:
-        return extract_ole_info(filename)
+@surfactant.plugin.hookimpl
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+    if not supports_file(filetype):
+        return None
+    return extract_ole_info(filename)
 
 
 def extract_ole_info(filename):

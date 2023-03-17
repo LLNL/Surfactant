@@ -9,19 +9,19 @@ import re
 import defusedxml.ElementTree
 import dnfile
 
-from surfactant import pluginsystem
+import surfactant.plugin
+from surfactant.sbomtypes import SBOM, Software
 
 
-class PE(pluginsystem.InfoPlugin):
-    PLUGIN_NAME = "PE"
+def supports_file(filetype) -> bool:
+    return filetype == "PE"
 
-    @classmethod
-    def supports_file(cls, filename, filetype=None) -> bool:
-        return filetype == "PE"
 
-    @classmethod
-    def extract_info(cls, filename) -> dict:
-        return extract_pe_info(filename)
+@surfactant.plugin.hookimpl
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+    if not supports_file(filetype):
+        return None
+    return extract_pe_info(filename)
 
 
 # https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#machine-types

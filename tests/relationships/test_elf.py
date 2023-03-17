@@ -1,4 +1,4 @@
-import surfactant.pluginsystem
+from surfactant.plugin.manager import get_plugin_manager
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
 sbom = SBOM(
@@ -79,36 +79,32 @@ sbom = SBOM(
 
 
 def test_relative_paths():
-    elfPlugin = surfactant.pluginsystem.RelationshipPlugin.get_plugin("ELF")
+    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf_relationship")
     sw = sbom.software[4]
     md = sw.metadata[0]
-    assert elfPlugin.has_required_fields(md)
     # located in /customlib/relpath/misc, dependency specified as being under misc/ relative path
-    assert elfPlugin.get_relationships(sbom, sw, md) == [Relationship("klm", "hij", "Uses")]
+    assert elfPlugin.establish_relationships(sbom, sw, md) == [Relationship("klm", "hij", "Uses")]
 
 
 def test_absolute_paths():
-    elfPlugin = surfactant.pluginsystem.RelationshipPlugin.get_plugin("ELF")
+    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf_relationship")
     sw = sbom.software[3]
     md = sw.metadata[0]
-    assert elfPlugin.has_required_fields(md)
     # located in /customlib/abspath
-    assert elfPlugin.get_relationships(sbom, sw, md) == [Relationship("hij", "def", "Uses")]
+    assert elfPlugin.establish_relationships(sbom, sw, md) == [Relationship("hij", "def", "Uses")]
 
 
 def test_default_system_paths():
-    elfPlugin = surfactant.pluginsystem.RelationshipPlugin.get_plugin("ELF")
+    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf_relationship")
     sw = sbom.software[1]
     md = sw.metadata[0]
-    assert elfPlugin.has_required_fields(md)
     # located in /lib
-    assert elfPlugin.get_relationships(sbom, sw, md) == [Relationship("xyz", "def", "Uses")]
+    assert elfPlugin.establish_relationships(sbom, sw, md) == [Relationship("xyz", "def", "Uses")]
 
 
 def test_dst_expansion():
-    elfPlugin = surfactant.pluginsystem.RelationshipPlugin.get_plugin("ELF")
+    elfPlugin = get_plugin_manager().get_plugin("surfactant.relationships.elf_relationship")
     sw = sbom.software[0]
     md = sw.metadata[0]
-    assert elfPlugin.has_required_fields(md)
     # uses origin expansion
-    assert elfPlugin.get_relationships(sbom, sw, md) == [Relationship("abc", "xyz", "Uses")]
+    assert elfPlugin.establish_relationships(sbom, sw, md) == [Relationship("abc", "xyz", "Uses")]
