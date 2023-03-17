@@ -7,9 +7,11 @@ from surfactant.sbomtypes import SBOM, Relationship, Software
 hookspec = HookspecMarker("surfactant")
 
 
-@hookspec
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype=None) -> object:
-    """Extracts information from the given file to add to the given software entry.
+@hookspec(firstresult=True)
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+    """Extracts information from the given file to add to the given software entry. Return `None`
+    to signal that no information can be extracted from the file, and the next plugin should be
+    tried instead.
 
     :param sbom: The SBOM that the software entry is part of. Can be used to add observations or analysis data.
     :param software: The software entry the gathered information will be added to.

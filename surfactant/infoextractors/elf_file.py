@@ -6,19 +6,19 @@ from elftools.elf.elffile import ELFFile
 from elftools.elf.enums import ENUM_DT_FLAGS, ENUM_DT_FLAGS_1
 from elftools.elf.sections import NoteSection
 
-from surfactant import pluginsystem
+import surfactant.plugin
+from surfactant.sbomtypes import SBOM, Software
 
 
-class ELF(pluginsystem.InfoPlugin):
-    PLUGIN_NAME = "ELF"
+def supports_file(filetype) -> bool:
+    return filetype == "ELF"
 
-    @classmethod
-    def supports_file(cls, filename, filetype=None) -> bool:
-        return filetype == "ELF"
 
-    @classmethod
-    def extract_info(cls, filename) -> dict:
-        return extract_elf_info(filename)
+@surfactant.plugin.hookimpl
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+    if not supports_file(filetype):
+        return None
+    return extract_elf_info(filename)
 
 
 _EI_OSABI_NAME = dict(

@@ -10,7 +10,6 @@ import sys
 import time
 from typing import List
 
-import surfactant.pluginsystem  # handles loading the various plugins included with surfactant, for gathering information/relationships/output
 from surfactant.fileinfo import calc_file_hashes, get_file_info
 from surfactant.filetypeid import check_exe_type, check_hex_type, hex_file_extensions
 from surfactant.plugin.manager import get_plugin_manager
@@ -19,7 +18,13 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def get_software_entry(
-    filename, container_uuid=None, root_path=None, install_path=None, user_institution_name=""
+    pluginmanager,
+    sbom,
+    filename,
+    container_uuid=None,
+    root_path=None,
+    install_path=None,
+    user_institution_name="",
 ) -> Software:
     file_hashes = calc_file_hashes(filename)
     stat_file_info = get_file_info(filename)
@@ -48,13 +53,9 @@ def get_software_entry(
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
-    file_details = []
-
-    for p in surfactant.pluginsystem.InfoPlugin.get_plugins():
-        if p.supports_file(filename, file_type):
-            file_details = p.extract_info(filename)
-            # only one file type should match; should consider the case of polyglot files eventually
-            break
+    file_details = pluginmanager.hook.extract_file_info(
+        sbom=sbom, software=sw_entry, filename=filename, filetype=file_type
+    )
 
     # add basic file info, and information on what collected the information listed for the file to aid later processing
     collection_info = {
@@ -65,34 +66,37 @@ def get_software_entry(
 
     metadata = []
     metadata.append(collection_info)
+
+    # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     if file_details:
         metadata.append(file_details)
 
-    # common case is Windows PE file has these details under FileInfo, otherwise fallback default value is fine
-    fi = file_details["FileInfo"] if "FileInfo" in file_details else {}
-    sw_entry.name = fi["ProductName"] if "ProductName" in fi else ""
-    sw_entry.version = fi["FileVersion"] if "FileVersion" in fi else ""
-    sw_entry.vendor = [fi["CompanyName"]] if "CompanyName" in fi else []
-    sw_entry.description = fi["FileDescription"] if "FileDescription" in fi else ""
-    sw_entry.comments = fi["Comments"] if "Comments" in fi else ""
+        # common case is Windows PE file has these details under FileInfo, otherwise fallback default value is fine
+        fi = file_details["FileInfo"] if "FileInfo" in file_details else {}
+        sw_entry.name = fi["ProductName"] if "ProductName" in fi else ""
+        sw_entry.version = fi["FileVersion"] if "FileVersion" in fi else ""
+        sw_entry.vendor = [fi["CompanyName"]] if "CompanyName" in fi else []
+        sw_entry.description = fi["FileDescription"] if "FileDescription" in fi else ""
+        sw_entry.comments = fi["Comments"] if "Comments" in fi else ""
 
-    # less common: OLE file metadata that might be relevant
-    if file_type == "OLE":
-        print("-----------OLE--------------")
-        if "subject" in file_details["ole"]:
-            sw_entry.name = file_details["ole"]["subject"]
-        if "revision_number" in file_details["ole"]:
-            sw_entry.version = file_details["ole"]["revision_number"]
-        if "author" in file_details["ole"]:
-            sw_entry.vendor.append(file_details["ole"]["author"])
-        if "comments" in file_details["ole"]:
-            sw_entry.comments = file_details["ole"]["comments"]
+        # less common: OLE file metadata that might be relevant
+        if file_type == "OLE":
+            print("-----------OLE--------------")
+            if "subject" in file_details["ole"]:
+                sw_entry.name = file_details["ole"]["subject"]
+            if "revision_number" in file_details["ole"]:
+                sw_entry.version = file_details["ole"]["revision_number"]
+            if "author" in file_details["ole"]:
+                sw_entry.vendor.append(file_details["ole"]["author"])
+            if "comments" in file_details["ole"]:
+                sw_entry.comments = file_details["ole"]["comments"]
 
     sw_entry.metadata = metadata
     return sw_entry
 
 
 def main():
+    pm = get_plugin_manager()
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "config_file",
@@ -142,7 +146,7 @@ def main():
             if "archive" in entry:
                 print("Processing parent container " + str(entry["archive"]))
                 parent_entry = get_software_entry(
-                    entry["archive"], user_institution_name=args.recordedinstitution
+                    pm, sbom, entry["archive"], user_institution_name=args.recordedinstitution
                 )
                 archive_entry = sbom.find_software(parent_entry.sha256)
                 if archive_entry:
@@ -171,6 +175,8 @@ def main():
                         if check_exe_type(filepath):
                             entries.append(
                                 get_software_entry(
+                                    pm,
+                                    sbom,
                                     filepath,
                                     root_path=epath,
                                     container_uuid=parent_uuid,
@@ -181,6 +187,8 @@ def main():
                         elif (file_suffix in hex_file_extensions) and check_hex_type(filepath):
                             entries.append(
                                 get_software_entry(
+                                    pm,
+                                    sbom,
                                     filepath,
                                     root_path=epath,
                                     container_uuid=parent_uuid,
@@ -224,12 +232,11 @@ def main():
 
     # add "Uses" relationships based on gathered metadata for software entries
     if not args.skip_relationships:
-        parse_relationships(sbom)
+        parse_relationships(pm, sbom)
     else:
         print("Skipping relationships based on imports metadata")
 
     # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
-    pm = get_plugin_manager()
     output_writer = pm.get_plugin("surfactant.output.cytrics_writer")
     output_writer.write_sbom(sbom, args.sbom_outfile)
 

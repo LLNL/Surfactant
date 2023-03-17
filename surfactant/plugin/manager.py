@@ -4,12 +4,21 @@ from surfactant.plugin import hookspecs
 
 
 def _register_plugins(pm: pluggy.PluginManager) -> None:
+    from surfactant.infoextractors import elf_file, ole_file, pe_file
     from surfactant.output import csv_writer, cytrics_writer
-    from surfactant.relationships import dotnet, elf
+    from surfactant.relationships import (
+        dotnet_relationship,
+        elf_relationship,
+        pe_relationship,
+    )
 
     internal_plugins = (
-        dotnet,
-        elf,
+        elf_file,
+        pe_file,
+        ole_file,
+        dotnet_relationship,
+        elf_relationship,
+        pe_relationship,
         csv_writer,
         cytrics_writer,
     )
