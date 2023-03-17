@@ -1,10 +1,21 @@
-from typing import List
+from typing import List, Optional
 
 from pluggy import HookspecMarker
 
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
 hookspec = HookspecMarker("surfactant")
+
+
+@hookspec(firstresult=True)
+def identify_file_type(filepath: str) -> Optional[str]:
+    """Determine the type of file located at filepath, and return a string identifying the type
+    that will be passed to file extraction plugins. Return `None` to indicate that the type was
+    unable to be determined.
+
+    :param filepath: The path to the file to determine the type of.
+    :returns: A string identifying the type of file, or None if the file type could not be recognized.
+    """
 
 
 @hookspec(firstresult=True)
