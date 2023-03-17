@@ -13,6 +13,7 @@ from typing import List
 import surfactant.pluginsystem  # handles loading the various plugins included with surfactant, for gathering information/relationships/output
 from surfactant.fileinfo import calc_file_hashes, get_file_info
 from surfactant.filetypeid import check_exe_type, check_hex_type, hex_file_extensions
+from surfactant.plugin.manager import get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 
@@ -228,7 +229,9 @@ def main():
         print("Skipping relationships based on imports metadata")
 
     # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
-    surfactant.pluginsystem.OutputPlugin.get_plugin("CYTRICS").write(sbom, args.sbom_outfile)
+    pm = get_plugin_manager()
+    output_writer = pm.get_plugin("surfactant.output.cytrics_writer")
+    output_writer.write_sbom(sbom, args.sbom_outfile)
 
 
 if __name__ == "__main__":

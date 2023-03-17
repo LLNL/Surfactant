@@ -49,21 +49,9 @@ class InfoPlugin(PluginBase):
         raise NotImplementedError("extract_info not implemented")
 
 
-class OutputPlugin(PluginBase):
-    PLUGIN_TYPE = "OUTPUT"
-    PLUGIN_NAME = ""
-
-    @classmethod
-    def write(cls, sbom, outfile):
-        raise NotImplementedError("write not implemented")
-
-
 def print_available_plugins():
     print("------INFO PLUGINS------")
     for p in InfoPlugin.get_plugins():
-        print(p.PLUGIN_NAME)
-    print("------OUTPUT PLUGINS------")
-    for p in OutputPlugin.get_plugins():
         print(p.PLUGIN_NAME)
 
 
@@ -99,5 +87,5 @@ def load_user_plugins(directory=default_user_plugin_dir):
 import surfactant.plugins
 
 # load user plugins
-load_user_plugins()
+# load_user_plugins()
 # print_available_plugins()
