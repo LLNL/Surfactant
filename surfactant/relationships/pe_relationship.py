@@ -1,9 +1,11 @@
 import pathlib
 from collections.abc import Iterable
-from typing import List
+from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
+
+from ._internal.windows_utils import find_installed_software
 
 
 def has_required_fields(metadata) -> bool:
@@ -11,7 +13,9 @@ def has_required_fields(metadata) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Relationship]:
+def establish_relationships(
+    sbom: SBOM, software: Software, metadata
+) -> Optional[List[Relationship]]:
     if not has_required_fields(metadata):
         return None
 
@@ -24,26 +28,6 @@ def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Re
     if "peDelayImport" in metadata:
         relationships.extend(get_windows_pe_dependencies(sbom, software, metadata["peDelayImport"]))
     return relationships
-
-
-# return a list of all possible matching DLLs that could be loaded on Windows
-def find_windows_dlls(sbom: SBOM, probedirs, filename) -> List[Software]:
-    possible_matches: List[Software] = []
-    # iterate through all sbom entries
-    for e in sbom.software:
-        # Skip if no install path (e.g. installer/temporary file)
-        if e.installPath is None:
-            continue
-        for pdir in probedirs:
-            # installPath contains full path+filename, so check for all combinations of probedirs+filename
-            pfile = pathlib.PureWindowsPath(pdir, filename)
-            if isinstance(e.installPath, Iterable):
-                for ifile in e.installPath:
-                    # PureWindowsPath is case-insensitive for file/directory names
-                    if pfile == pathlib.PureWindowsPath(ifile):
-                        # matching probe directory and filename, add software to list
-                        possible_matches.append(e)
-    return possible_matches
 
 
 def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Relationship]:
@@ -75,17 +59,16 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
 
     # Of those steps, without gathering much more information that is likely not available or manual/dynamic analysis, we can do:
     # 4. Look for DLL in the directory the application was loaded from
-    dependent_uuid = str(sw.UUID)
+    dependent_uuid = sw.UUID
     for fname in peImports:
         probedirs = []
         if isinstance(sw.installPath, Iterable):
             for ipath in sw.installPath:
                 probedirs.append(pathlib.PureWindowsPath(ipath).parent.as_posix())
         # likely just one found, unless sw entry has the same file installed to multiple places
-        for e in find_windows_dlls(sbom, probedirs, fname):
-            dependency_uuid = str(e.UUID)
+        for e in find_installed_software(sbom, probedirs, fname):
+            dependency_uuid = e.UUID
             relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
         # logging DLLs not found would be nice, but is excessively noisy due being almost exclusively system DLLs
-        # print(f" Dependency {fname} not found for sbom['software'] entry={sw}")
 
     return relationships

@@ -1,9 +1,11 @@
 import pathlib
 from collections.abc import Iterable
-from typing import List
+from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
+
+from ._internal.windows_utils import find_installed_software
 
 
 def has_required_fields(metadata) -> bool:
@@ -12,12 +14,14 @@ def has_required_fields(metadata) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Relationship]:
+def establish_relationships(
+    sbom: SBOM, software: Software, metadata
+) -> Optional[List[Relationship]]:
     if not has_required_fields(metadata):
         return None
 
     relationships: List[Relationship] = []
-    dependent_uuid = str(software.UUID)
+    dependent_uuid = software.UUID
     dnName = None
     dnCulture = None
     dnVersion = None
@@ -108,9 +112,9 @@ def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Re
                                             install_basepath, codebase_href
                                         )
                                         cb_file = cb_filepath.name
-                                        cb_path = cb_filepath.parent.as_posix()
-                                        for e in find_dotnet_assemblies(sbom, cb_path, cb_file):
-                                            dependency_uuid = str(e.UUID)
+                                        cb_path = [cb_filepath.parent.as_posix()]
+                                        for e in find_installed_software(sbom, cb_path, cb_file):
+                                            dependency_uuid = e.UUID
                                             relationships.append(
                                                 Relationship(
                                                     dependent_uuid, dependency_uuid, "Uses"
@@ -120,37 +124,11 @@ def establish_relationships(sbom: SBOM, software: Software, metadata) -> List[Re
             # continue on to probing even if codebase element was found, since we can't guarantee the assembly identity required by the codebase element
             # get the list of paths to probe based on locations software is installed, assembly culture, assembly name, and probing paths from appconfig file
             probedirs = get_dotnet_probedirs(software, refCulture, refName, dnProbingPaths)
-            for e in find_dotnet_assemblies(sbom, probedirs, refName + ".dll"):
-                dependency_uuid = str(e.UUID)
+            for e in find_installed_software(sbom, probedirs, refName + ".dll"):
+                dependency_uuid = e.UUID
                 relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
                 # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
-                # print(f" Dependency {refName} not found for sbom['software'] entry={software}")
     return relationships
-
-
-# return all matching dotnet assemblies
-# TODO: an intermediate file format should keep files in different places but matching hashes separate until
-# relationships are established; this would make so we can use .NET metadata about versions, strong names, etc
-# and not accidentally mix and match cultures/app config info that could differ for different copies of the same
-# file (due to app config files pointing to different assemblies despite DLL having same hash)
-# culture information to find the right assembly from app config file is likely to vary (though almost always neutral/none)
-def find_dotnet_assemblies(sbom: SBOM, probedirs, filename):
-    possible_matches = []
-    # iterate through all sbom entries
-    for e in sbom.software:
-        # Skip if no install path (e.g. installer/temporary file)
-        if e.installPath is None:
-            continue
-        for pdir in probedirs:
-            # installPath contains full path+filename, so check for all combinations of probedirs+filename
-            pfile = pathlib.PureWindowsPath(pdir, filename)
-            if isinstance(e.installPath, Iterable):
-                for ifile in e.installPath:
-                    # PureWindowsPath is case-insensitive for file/directory names
-                    if pfile == pathlib.PureWindowsPath(ifile):
-                        # matching probe directory and filename, add software to list
-                        possible_matches.append(e)
-    return possible_matches
 
 
 # construct a list of directories to probe for establishing dotnet relationships

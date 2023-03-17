@@ -10,7 +10,7 @@ from ._provenance import ObservationProvenance
 
 @dataclass
 class Observation:
-    UUID: str = field(default_factory=uuid.uuid4)
+    UUID: str = field(default_factory=lambda: str(uuid.uuid4()))
     flag: Optional[str] = None
     CWEClass: Optional[str] = None
     targetEnvironmentOrDevice: Optional[str] = None

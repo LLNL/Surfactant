@@ -1,40 +1,8 @@
+import pathlib
 import string
-from enum import Enum, auto
+from typing import Optional
 
-
-class ExeType(Enum):
-    ELF = auto()
-    PE = auto()
-    OLE = auto()
-    JAVA_MACHOFAT = auto()
-    MACHO32 = auto()
-    MACHO64 = auto()
-
-
-def check_exe_type(filename):
-    try:
-        with open(filename, "rb") as f:
-            magic_bytes = f.read(8)
-            if magic_bytes[:4] == b"\x7fELF":
-                return "ELF"
-            if magic_bytes[:2] == b"MZ":
-                return "PE"
-            if magic_bytes == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
-                # MSI (install), MSP (patch), MST (transform), and MSM (merge) files are all types of OLE files
-                # the root storage object CLSID is used to identify what it is (+ file extension)
-                return "OLE"
-            # if magic_bytes[:4] == b"\xca\xfe\xba\xbe":
-            #    # magic bytes can either be for Java class file or Mach-O Fat Binary
-            #    return 'JAVA_MACHOFAT'
-            # if magic_bytes[:4] == b"\xfe\xed\xfa\xce":
-            #    return 'MACHO32'
-            # if magic_bytes[:4] == b"\xfe\xed\xfa\xcf":
-            #    return 'MACHO64'
-            # if magic_bytes[:4] == b"\xde\xc0\x17\x0b":
-            #    return 'LLVM_BITCODE'
-            return None
-    except FileNotFoundError:
-        return None
+import surfactant.plugin
 
 
 def check_motorola(current_line):
@@ -96,9 +64,14 @@ hex_file_extensions = [
 ]
 
 
-def check_hex_type(filename):
+@surfactant.plugin.hookimpl
+def identify_file_type(filepath: str) -> Optional[str]:
+    file_suffix = pathlib.Path(filepath).suffix.lower()
+    # quick exit based on file extension
+    if file_suffix not in hex_file_extensions:
+        return None
     try:
-        with open(filename, "r") as f:
+        with open(filepath, "r") as f:
             percent_intel = 0
             percent_motorola = 0
             for _ in range(100):
@@ -116,4 +89,4 @@ def check_hex_type(filename):
             return None
 
     except FileNotFoundError:
-        return False
+        return None

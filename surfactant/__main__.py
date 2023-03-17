@@ -11,7 +11,6 @@ import time
 from typing import List
 
 from surfactant.fileinfo import calc_file_hashes, get_file_info
-from surfactant.filetypeid import check_exe_type, check_hex_type, hex_file_extensions
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
@@ -21,6 +20,7 @@ def get_software_entry(
     pluginmanager,
     sbom,
     filename,
+    filetype=None,
     container_uuid=None,
     root_path=None,
     install_path=None,
@@ -49,12 +49,10 @@ def get_software_entry(
         components=[],
     )
 
-    file_type = check_exe_type(filename)
-
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
     file_details = pluginmanager.hook.extract_file_info(
-        sbom=sbom, software=sw_entry, filename=filename, filetype=file_type
+        sbom=sbom, software=sw_entry, filename=filename, filetype=filetype
     )
 
     # add basic file info, and information on what collected the information listed for the file to aid later processing
@@ -80,7 +78,7 @@ def get_software_entry(
         sw_entry.comments = fi["Comments"] if "Comments" in fi else ""
 
         # less common: OLE file metadata that might be relevant
-        if file_type == "OLE":
+        if filetype == "OLE":
             print("-----------OLE--------------")
             if "subject" in file_details["ole"]:
                 sw_entry.name = file_details["ole"]["subject"]
@@ -153,7 +151,7 @@ def main():
                     parent_entry = archive_entry
                 else:
                     sbom.add_software(parent_entry)
-                parent_uuid = str(parent_entry.UUID)
+                parent_uuid = parent_entry.UUID
             else:
                 parent_entry = None
                 parent_uuid = None
@@ -173,25 +171,13 @@ def main():
                     entries: List[Software] = []
                     for f in files:
                         filepath = os.path.join(cdir, f)
-                        file_suffix = pathlib.Path(filepath).suffix.lower()
-                        if check_exe_type(filepath):
+                        if ftype := pm.hook.identify_file_type(filepath=filepath):
                             entries.append(
                                 get_software_entry(
                                     pm,
                                     sbom,
                                     filepath,
-                                    root_path=epath,
-                                    container_uuid=parent_uuid,
-                                    install_path=install_prefix,
-                                    user_institution_name=args.recordedinstitution,
-                                )
-                            )
-                        elif (file_suffix in hex_file_extensions) and check_hex_type(filepath):
-                            entries.append(
-                                get_software_entry(
-                                    pm,
-                                    sbom,
-                                    filepath,
+                                    filetype=ftype,
                                     root_path=epath,
                                     container_uuid=parent_uuid,
                                     install_path=install_prefix,
@@ -206,8 +192,8 @@ def main():
                                 sbom.add_software(e)
                                 # if the config file specified a parent/container for the file, add the new entry as a "Contains" relationship
                                 if parent_entry:
-                                    parent_uuid = str(parent_entry.UUID)
-                                    child_uuid = str(e.UUID)
+                                    parent_uuid = parent_entry.UUID
+                                    child_uuid = e.UUID
                                     sbom.create_relationship(parent_uuid, child_uuid, "Contains")
                             else:
                                 existing_uuid, entry_uuid = existing_sw.merge(e)
@@ -219,7 +205,7 @@ def main():
                                         rel.yUUID = existing_uuid
                                 # add a new contains relationship if the duplicate file is from a different container/archive than previous times seeing the file
                                 if parent_entry:
-                                    parent_uuid = str(parent_entry.UUID)
+                                    parent_uuid = parent_entry.UUID
                                     child_uuid = existing_uuid
                                     # avoid duplicate entries
                                     if not sbom.find_relationship(
