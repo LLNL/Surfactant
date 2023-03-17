@@ -79,7 +79,6 @@ disable = [
   "invalid-name",
   "no-member",
   "too-many-nested-blocks",
-  "consider-using-with",
   "fixme",
   "too-many-locals",
   "too-many-arguments",
