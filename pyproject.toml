@@ -54,6 +54,9 @@ homepage = "https://lc.llnl.gov/gitlab/cir-software-assurance/sbom-surfactant"
 #repository = "https://github.com/me/spam.git"
 #changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
 
+[tool.setuptools]
+packages =["surfactant"]
+
 [tool.setuptools_scm]
 
 [tool.pytest.ini_options]
