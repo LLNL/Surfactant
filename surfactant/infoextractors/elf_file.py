@@ -21,30 +21,30 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     return extract_elf_info(filename)
 
 
-_EI_OSABI_NAME = dict(
-    ELFOSABI_SYSV="System V",
-    ELFOSABI_HPUX="HP-UX",
-    ELFOSABI_NETBSD="NetBSD",
-    ELFOSABI_LINUX="Linux",
-    ELFOSABI_HURD="GNU/Hurd",
-    ELFOSABI_SOLARIS="Solaris",
-    ELFOSABI_AIX="AIX",
-    ELFOSABI_IRIX="IRIX",
-    ELFOSABI_FREEBSD="FreeBSD",
-    ELFOSABI_TRU64="TRUE64",
-    ELFOSABI_MODESTO="Novell Modesto",
-    ELFOSABI_OPENBSD="OpenBSD",
-    ELFOSABI_OPENVMS="OpenVMS",
-    ELFOSABI_NSK="HP Non-Stop Kernel",
-    ELFOSABI_AROS="AROS",
-    ELFOSABI_FENIXOS="Fenix OS",
-    ELFOSABI_CLOUD="Nuxi CloudABI",
-    ELFOSABI_SORTIX="Sortix",
-    ELFOSABI_ARM_AEABI="ARM EABI",
-    ELFOSABI_ARM="ARM",
-    ELFOSABI_CELL_LV2="CellOS Lv-2",
-    ELFOSABI_STANDALONE="Standalone",
-)
+_EI_OSABI_NAME = {
+    "ELFOSABI_SYSV": "System V",
+    "ELFOSABI_HPUX": "HP-UX",
+    "ELFOSABI_NETBSD": "NetBSD",
+    "ELFOSABI_LINUX": "Linux",
+    "ELFOSABI_HURD": "GNU/Hurd",
+    "ELFOSABI_SOLARIS": "Solaris",
+    "ELFOSABI_AIX": "AIX",
+    "ELFOSABI_IRIX": "IRIX",
+    "ELFOSABI_FREEBSD": "FreeBSD",
+    "ELFOSABI_TRU64": "TRUE64",
+    "ELFOSABI_MODESTO": "Novell Modesto",
+    "ELFOSABI_OPENBSD": "OpenBSD",
+    "ELFOSABI_OPENVMS": "OpenVMS",
+    "ELFOSABI_NSK": "HP Non-Stop Kernel",
+    "ELFOSABI_AROS": "AROS",
+    "ELFOSABI_FENIXOS": "Fenix OS",
+    "ELFOSABI_CLOUD": "Nuxi CloudABI",
+    "ELFOSABI_SORTIX": "Sortix",
+    "ELFOSABI_ARM_AEABI": "ARM EABI",
+    "ELFOSABI_ARM": "ARM",
+    "ELFOSABI_CELL_LV2": "CellOS Lv-2",
+    "ELFOSABI_STANDALONE": "Standalone",
+}
 
 
 def extract_elf_info(filename):
