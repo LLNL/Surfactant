@@ -18,17 +18,18 @@ def identify_file_type(filepath: str) -> Optional[str]:
     """
 
 
-@hookspec(firstresult=True)
+@hookspec
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
-    """Extracts information from the given file to add to the given software entry. Return `None`
-    to signal that no information can be extracted from the file, and the next plugin should be
-    tried instead.
+    """Extracts information from the given file to add to the given software entry. Return an
+    object to be included as part of the metadata field, and potentially used as part of
+    selecting default values for other Software entry fields. Returning `None` will not add
+    anything to the Software entry metadata.
 
     :param sbom: The SBOM that the software entry is part of. Can be used to add observations or analysis data.
     :param software: The software entry the gathered information will be added to.
     :param filename: The full path to the file to extract information from.
     :param filetype: File type information based on magic bytes.
-    :returns: An object to be added to the metadata field for the software entry.
+    :returns: An object to be added to the metadata field for the software entry. May be `None` to add no metadata.
     """
 
 
