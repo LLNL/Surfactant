@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surfactantplugin-checksec.py"
+authors = [
+    {name = "Ryan Mast", email = "mast9@llnl.gov"},
+]
+description = "Surfactant checksec.py"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["surfactant"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "checksec.py",
+    "surfactant",
+]
+dynamic = ["version"]
+
+[project.entry-points."surfactant"]
+"checksec.py" = "surfactantplugin_checksec"
+
+[tool.setuptools]
+py-modules=["surfactantplugin_checksec"]
