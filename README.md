@@ -43,9 +43,9 @@ In order to test out surfactant, you will need a sample file/folder. If you don'
 ### Build configuration file
 A configuration file contains the information about the sample to gather information from. Example JSON configuration files can be found in the examples folder of this repository.
 
-**extractPaths**: (required) the absolute path or relative path from location of current working directory that generate_cytrics_sbom.py is being run from to the sample folders, cannot be a file\
+**extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file (Note that even on Windows, Unix style `/` directory separators should be used in paths)\
 **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
-**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc
+**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc (Note that even on Windows, Unix style `/` directory separators should be used in the path)
 
 #### Example configuration file
 Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.

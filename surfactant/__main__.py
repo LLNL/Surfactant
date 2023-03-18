@@ -157,12 +157,10 @@ def main():
                 parent_uuid = None
 
             if "installPrefix" in entry:
-                # TODO in docs mention that installPrefix should use posix style directory separators e.g. C:/Test/example.exe
                 install_prefix = entry["installPrefix"]
             else:
                 install_prefix = None
 
-            # TODO in docs mention that extractPaths should use posix style directory separators e.g. C:/Test/example.exe
             for epath in entry["extractPaths"]:
                 print("Extracted Path: " + str(epath))
                 for cdir, _, files in os.walk(epath):
