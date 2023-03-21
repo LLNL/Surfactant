@@ -93,6 +93,17 @@ def get_software_entry(
     return sw_entry
 
 
+def validate_config(config):
+    for line in config:
+        extract_path = line["extractPaths"]
+        for pth in extract_path:
+            extract_path_convert = pathlib.Path(pth)
+            if not extract_path_convert.is_file():
+                print("invalid path: " + str(pth))
+                return False
+    return True
+
+
 def main():
     pm = get_plugin_manager()
     parser = argparse.ArgumentParser()
@@ -132,6 +143,10 @@ def main():
     args = parser.parse_args()
 
     config = json.load(args.config_file)
+
+    # quit if invalid path found
+    if not validate_config(config):
+        return
 
     if not args.input_sbom:
         sbom = SBOM()
