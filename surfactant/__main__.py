@@ -62,8 +62,7 @@ def get_software_entry(
         "fileInfo": {"mode": stat_file_info["filemode"], "hidden": stat_file_info["filehidden"]},
     }
 
-    metadata = []
-    metadata.append(collection_info)
+    sw_entry.metadata = [collection_info]
 
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
@@ -89,7 +88,6 @@ def get_software_entry(
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
 
-    sw_entry.metadata = metadata
     return sw_entry
 
 
