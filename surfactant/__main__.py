@@ -5,13 +5,10 @@ import importlib.metadata
 import json
 import os
 import pathlib
-import platform
 import re
 import sys
-import time
 from typing import List
 
-from surfactant.fileinfo import calc_file_hashes, get_file_info
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
@@ -19,63 +16,44 @@ from surfactant.sbomtypes import SBOM, Software
 
 def get_software_entry(
     pluginmanager,
-    sbom,
-    filename,
+    sbom: SBOM,
+    filepath,
     filetype=None,
     container_uuid=None,
     root_path=None,
     install_path=None,
     user_institution_name="",
 ) -> Software:
-    file_hashes = calc_file_hashes(filename)
-    stat_file_info = get_file_info(filename)
-
-    sw_entry = Software(
-        sha1=file_hashes["sha1"],
-        sha256=file_hashes["sha256"],
-        md5=file_hashes["md5"],
-        fileName=[pathlib.Path(filename).name],
-        installPath=[re.sub("^" + root_path + "/", install_path, filename)]
-        if root_path and install_path
-        else None,
-        containerPath=[re.sub("^" + root_path, container_uuid, filename)]
-        if root_path and container_uuid
-        else None,
-        size=stat_file_info["size"],
-        captureTime=int(time.time()),
-        relationshipAssertion="Unknown",
-        supplementaryFiles=[],
-        provenance=None,
-        recordedInstitution=user_institution_name,
-        components=[],
-    )
+    sw_entry = Software.create_software_from_file(filepath)
+    if root_path and install_path:
+        sw_entry.installPath = [re.sub("^" + root_path + "/", install_path, filepath)]
+    if root_path and container_uuid:
+        sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
+    sw_entry.recordedInstitution = user_institution_name
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
     extracted_info_results = pluginmanager.hook.extract_file_info(
-        sbom=sbom, software=sw_entry, filename=filename, filetype=filetype
+        sbom=sbom, software=sw_entry, filename=filepath, filetype=filetype
     )
-
-    # add basic file info, and information on what collected the information listed for the file to aid later processing
-    collection_info = {
-        "collectedBy": "Surfactant",
-        "collectionPlatform": platform.platform(),
-        "fileInfo": {"mode": stat_file_info["filemode"], "hidden": stat_file_info["filehidden"]},
-    }
-
-    sw_entry.metadata = [collection_info]
 
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
         sw_entry.metadata.append(file_details)
 
         # common case is Windows PE file has these details under FileInfo, otherwise fallback default value is fine
-        fi = file_details["FileInfo"] if "FileInfo" in file_details else {}
-        sw_entry.name = fi["ProductName"] if "ProductName" in fi else ""
-        sw_entry.version = fi["FileVersion"] if "FileVersion" in fi else ""
-        sw_entry.vendor = [fi["CompanyName"]] if "CompanyName" in fi else []
-        sw_entry.description = fi["FileDescription"] if "FileDescription" in fi else ""
-        sw_entry.comments = fi["Comments"] if "Comments" in fi else ""
+        if "FileInfo" in file_details:
+            fi = file_details["FileInfo"]
+            if "ProductName" in fi:
+                sw_entry.name = fi["ProductName"]
+            if "FileVersion" in fi:
+                sw_entry.version = fi["FileVersion"]
+            if "CompanyName" in fi:
+                sw_entry.vendor = [fi["CompanyName"]]
+            if "FileDescription" in fi:
+                sw_entry.description = fi["FileDescription"]
+            if "Comments" in fi:
+                sw_entry.comments = fi["Comments"]
 
         # less common: OLE file metadata that might be relevant
         if filetype == "OLE":
