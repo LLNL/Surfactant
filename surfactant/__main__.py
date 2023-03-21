@@ -98,7 +98,7 @@ def validate_config(config):
         extract_path = line["extractPaths"]
         for pth in extract_path:
             extract_path_convert = pathlib.Path(pth)
-            if not extract_path_convert.is_file():
+            if not extract_path_convert.exists():
                 print("invalid path: " + str(pth))
                 return False
     return True
