@@ -40,6 +40,26 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 return "GZIP"
             if magic_bytes[257:265] == b"ustar\x0000" or magic_bytes[257:265] == b"ustar  \x00":
                 return "TAR"
+            if magic_bytes[:4] in [b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"]:
+                suffix = pathlib.Path(filepath).suffix.lower()
+                if suffix in [".zip", ".zipx"]:
+                    return "ZIP"
+                # Java archive files of various types
+                if suffix == ".jar":
+                    return "JAR"
+                if suffix == ".war":
+                    return "WAR"
+                if suffix == ".ear":
+                    return "EAR"
+                # Android packages
+                if suffix == ".apk":
+                    return "APK"
+                # iOS/iPad applications
+                if suffix == ".ipa":
+                    return "IPA"
+                # Windows app package
+                if suffix == ".msix":
+                    return "MSIX"
             # if magic_bytes[:4] == b"\xca\xfe\xba\xbe":
             #    # magic bytes can either be for Java class file or Mach-O Fat Binary
             #    return 'JAVA_MACHOFAT'
