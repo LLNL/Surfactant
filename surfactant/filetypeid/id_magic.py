@@ -60,15 +60,32 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 # Windows app package
                 if suffix == ".msix":
                     return "MSIX"
-            # if magic_bytes[:4] == b"\xca\xfe\xba\xbe":
-            #    # magic bytes can either be for Java class file or Mach-O Fat Binary
-            #    return 'JAVA_MACHOFAT'
-            # if magic_bytes[:4] == b"\xfe\xed\xfa\xce":
-            #    return 'MACHO32'
-            # if magic_bytes[:4] == b"\xfe\xed\xfa\xcf":
-            #    return 'MACHO64'
-            # if magic_bytes[:4] == b"\xde\xc0\x17\x0b":
-            #    return 'LLVM_BITCODE'
+            # Magic for Java and Mach-O FAT Binary are the same
+            if magic_bytes[:4] == b"\xca\xfe\xba\xbe":
+                # Distinguish them the same way file magic and Apple do
+                # https://opensource.apple.com/source/file/file-80.40.2/file/magic/Magdir/cafebabe.auto.html
+                # https://github.com/file/file/blob/master/magic/Magdir/cafebabe
+                if int.from_bytes(magic_bytes[4:8], byteorder="big", signed=False) <= 30:
+                    return "MACHOFAT"
+                return "JAVACLASS"
+            if magic_bytes[:4] == b"\xbe\xba\xfe\xca":
+                return "MACHOFAT"
+            if magic_bytes[:4] in [b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"]:
+                return "MACHOFAT64"
+            # Apple fat EFI binaries
+            if magic_bytes[:4] == b"\x0e\xf1\xfa\b9":
+                return "EFIFAT"
+            # NOTE: the MACH032 and MACHO64 (normal byte order) magic may be located
+            # at offset 0x1000 in some files
+            if magic_bytes[:4] in [b"\xfe\xed\xfa\xce", b"\xce\xfa\xed\xfe"]:
+                return "MACHO32"
+            if magic_bytes[:4] in [b"\xfe\xed\xfa\xcf", b"\xcf\xfa\xed\xfe"]:
+                return "MACHO64"
+            # https://releases.llvm.org/2.7/docs/BitCodeFormat.html#magic
+            if magic_bytes[:4] == b"\xde\xc0\x17\x0b":
+                return "LLVM_BITCODE"
+            if magic_bytes[:4] == b"BC\xc0\xde":
+                return "LLVM_IR"
             return None
     except FileNotFoundError:
         return None
