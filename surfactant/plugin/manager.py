@@ -6,7 +6,7 @@ from surfactant.plugin import hookspecs
 def _register_plugins(pm: pluggy.PluginManager) -> None:
     # pylint: disable=import-outside-toplevel
     # don't want all these imports as part of the file-level scope
-    from surfactant.filetypeid import id_exe, id_hex
+    from surfactant.filetypeid import id_hex, id_magic
     from surfactant.infoextractors import elf_file, ole_file, pe_file
     from surfactant.output import csv_writer, cytrics_writer
     from surfactant.relationships import (
@@ -16,7 +16,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
     )
 
     internal_plugins = (
-        id_exe,
+        id_magic,
         id_hex,
         elf_file,
         pe_file,
