@@ -28,8 +28,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 # MSI (install), MSP (patch), MST (transform), and MSM (merge) files are all types of OLE files
                 # the root storage object CLSID is used to identify what it is (+ file extension)
                 return "OLE"
+            # Microsoft CAB files
             if magic_bytes[:4] == b"MSCF":
-                return "CAB"
+                return "MSCAB"
+            # InstallShield CAB files
+            if magic_bytes[:4] == b"ISc(":
+                return "ISCAB"
             # For gzipped data, also filter by extension to avoid huge number of entries with limited info
             if magic_bytes[:2] == b"\x1f\x8b" and "".join(
                 pathlib.Path(filepath).suffixes
