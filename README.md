@@ -266,5 +266,8 @@ This section contains information about notable observations about individual so
 ## Merging SBOMs
 TODO: Insert documentation on how to merge sboms here
 
+## Plugins
+Detailed information on the plugin system can be found [here](./README-PLUGIN.md).
+
 ## Support
 For questions or support, contact: Ryan Mast mast9@llnl.gov
