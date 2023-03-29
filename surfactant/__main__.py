@@ -10,6 +10,8 @@ import sys
 import time
 from typing import List
 
+import pkg_resources
+
 from surfactant.fileinfo import calc_file_hashes, get_file_info
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.relationships import parse_relationships
@@ -137,8 +139,17 @@ def main():
         action="store_true",
         help="Skip adding relationships based on Linux/Windows/etc metadata",
     )
+    parser.add_argument("--version", action="store_true", help="Print version and exit")
     parser.add_argument("--recordedinstitution", help="name of user institution", default="LLNL")
     args = parser.parse_args()
+
+    if args.version:
+        print(pkg_resources.require("surfactant")[0].version)
+        sys.exit(0)
+
+    if not args.config_file or not args.input_sbom:
+        parser.print_help()
+        sys.exit(1)
 
     config = json.load(args.config_file)
 
