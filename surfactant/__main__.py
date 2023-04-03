@@ -1,6 +1,7 @@
 # https://en.wikipedia.org/wiki/Comparison_of_executable_file_formats
 
 import argparse
+import importlib.metadata
 import json
 import os
 import pathlib
@@ -9,8 +10,6 @@ import re
 import sys
 import time
 from typing import List
-
-import pkg_resources
 
 from surfactant.fileinfo import calc_file_hashes, get_file_info
 from surfactant.plugin.manager import get_plugin_manager
@@ -144,7 +143,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print(pkg_resources.require("surfactant")[0].version)
+        print(importlib.metadata.version("surfactant"))
         sys.exit(0)
 
     if not args.config_file or not args.input_sbom:
