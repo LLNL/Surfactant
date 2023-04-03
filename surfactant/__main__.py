@@ -111,7 +111,6 @@ def main():
         metavar="CONFIG_FILE",
         nargs="?",
         type=argparse.FileType("r"),
-        default=sys.stdin,
         help="Config file (JSON); make sure keys with paths do not have a trailing /",
     )
     parser.add_argument(
@@ -119,7 +118,6 @@ def main():
         metavar="SBOM_OUTPUT",
         nargs="?",
         type=argparse.FileType("w"),
-        default=sys.stdout,
         help="Output SBOM file",
     )
     parser.add_argument(
@@ -146,7 +144,7 @@ def main():
         print(importlib.metadata.version("surfactant"))
         sys.exit(0)
 
-    if not args.config_file or not args.input_sbom:
+    if not args.config_file or not args.sbom_outfile:
         parser.print_help()
         sys.exit(1)
 
