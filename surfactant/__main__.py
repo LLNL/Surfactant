@@ -1,6 +1,7 @@
 # https://en.wikipedia.org/wiki/Comparison_of_executable_file_formats
 
 import argparse
+import importlib.metadata
 import json
 import os
 import pathlib
@@ -110,7 +111,6 @@ def main():
         metavar="CONFIG_FILE",
         nargs="?",
         type=argparse.FileType("r"),
-        default=sys.stdin,
         help="Config file (JSON); make sure keys with paths do not have a trailing /",
     )
     parser.add_argument(
@@ -118,7 +118,6 @@ def main():
         metavar="SBOM_OUTPUT",
         nargs="?",
         type=argparse.FileType("w"),
-        default=sys.stdout,
         help="Output SBOM file",
     )
     parser.add_argument(
@@ -137,8 +136,17 @@ def main():
         action="store_true",
         help="Skip adding relationships based on Linux/Windows/etc metadata",
     )
+    parser.add_argument("--version", action="store_true", help="Print version and exit")
     parser.add_argument("--recordedinstitution", help="name of user institution", default="LLNL")
     args = parser.parse_args()
+
+    if args.version:
+        print(importlib.metadata.version("surfactant"))
+        sys.exit(0)
+
+    if not args.config_file or not args.sbom_outfile:
+        parser.print_help()
+        sys.exit(1)
 
     config = json.load(args.config_file)
 
