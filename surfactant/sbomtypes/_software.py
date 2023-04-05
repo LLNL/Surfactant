@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import pathlib
+import platform
+import time
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field, fields
 from typing import Any, List, Optional
+
+from surfactant.fileinfo import calc_file_hashes, get_file_info
 
 from ._file import File
 from ._provenance import SoftwareComponentProvenance, SoftwareProvenance
@@ -53,6 +58,42 @@ class Software:
     def _update_field(self, field_name: str, value: Any):
         if value not in ["", " ", None]:
             setattr(self, field_name, value)
+
+    @staticmethod
+    def create_software_from_file(filepath) -> Software:
+        file_hashes = calc_file_hashes(filepath)
+        stat_file_info = get_file_info(filepath)
+
+        # add basic file info, and information on what collected the information listed for the file to aid later processing
+        collection_info = {
+            "collectedBy": "Surfactant",
+            "collectionPlatform": platform.platform(),
+            "fileInfo": {
+                "mode": stat_file_info["filemode"],
+                "hidden": stat_file_info["filehidden"],
+            },
+        }
+
+        sw = Software(
+            sha1=file_hashes["sha1"],
+            sha256=file_hashes["sha256"],
+            md5=file_hashes["md5"],
+            fileName=[pathlib.Path(filepath).name],
+            installPath=[],
+            containerPath=[],
+            size=stat_file_info["size"],
+            captureTime=int(time.time()),
+            version="",
+            vendor=[],
+            description="",
+            relationshipAssertion="Unknown",
+            comments="",
+            metadata=[collection_info],
+            supplementaryFiles=[],
+            provenance=None,
+            components=[],
+        )
+        return sw
 
     # TODO: figure out how to handle merging an SBOM with manual additions
     def merge(self, sw: Software):
