@@ -38,7 +38,7 @@ dependencies = [
     "dnfile",
     "olefile",
     "defusedxml",
-    "spdx",
+    "spdx-tools",
     "pluggy",
     "click"
 ]
