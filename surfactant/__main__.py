@@ -15,9 +15,9 @@ def main():
 
 
 @main.command("generate")
-@click.argument("config_file", envvar="CONFIG_FILE", type=click.File("rb"), required=True)
-@click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.Path(exists=False), required=True)
-@click.argument("input_sbom", type=click.File("rb"), required=False)
+@click.argument("config_file", envvar="CONFIG_FILE", type=click.File("r"), required=True)
+@click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
+@click.argument("input_sbom", type=click.File("r"), required=False)
 @click.option(
     "--skip_gather",
     is_flag=True,
