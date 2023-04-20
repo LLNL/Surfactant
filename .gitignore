@@ -1,3 +1,6 @@
+# Test directories
+tests/symlink/test_dir/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -204,7 +207,8 @@ tags
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
