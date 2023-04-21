@@ -3,12 +3,11 @@ import os
 import pathlib
 import re
 from typing import List
+
 import click
 
-import pluggy
-
-from surfactant.relationships import parse_relationships
 from surfactant.plugin.manager import get_plugin_manager
+from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 
 
@@ -78,23 +77,11 @@ def validate_config(config):
                 return False
     return True
 
+
 @click.command("generate")
-@click.argument(
-    "config_file", 
-    envvar="CONFIG_FILE", 
-    type=click.File("r"), 
-    required=True
-)
-@click.argument(
-    "sbom_outfile", 
-    envvar="SBOM_OUTPUT", 
-    type=click.File("w"), 
-    required=True
-)
-@click.argument("input_sbom", 
-    type=click.File("r"), 
-    required=False
-)
+@click.argument("config_file", envvar="CONFIG_FILE", type=click.File("r"), required=True)
+@click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
+@click.argument("input_sbom", type=click.File("r"), required=False)
 @click.option(
     "--skip_gather",
     is_flag=True,
@@ -113,12 +100,7 @@ def validate_config(config):
     "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
 )
 def sbom(
-    config_file,
-    sbom_outfile,
-    input_sbom,
-    skip_gather,
-    skip_relationships,
-    recorded_institution
+    config_file, sbom_outfile, input_sbom, skip_gather, skip_relationships, recorded_institution
 ):
     pm = get_plugin_manager()
     config = json.load(config_file)
