@@ -5,3 +5,4 @@ olefile
 defusedxml
 spdx
 deepdiff
+click
