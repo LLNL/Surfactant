@@ -45,7 +45,8 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-tests = ["pytest"]
+test = ["pytest"]
+dev = ["build", "pre-commit"]
 
 [project.scripts]
 surfactant = "surfactant.__main__:main"
