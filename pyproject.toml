@@ -61,6 +61,7 @@ homepage = "https://lc.llnl.gov/gitlab/cir-software-assurance/sbom-surfactant"
 packages =["surfactant"]
 
 [tool.setuptools_scm]
+write_to = "surfactant/_version.py"
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
