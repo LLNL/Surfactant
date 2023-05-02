@@ -2,7 +2,6 @@ import json
 import os
 import pathlib
 import re
-import pathlib
 from typing import List, Union
 
 import click
@@ -215,7 +214,7 @@ def sbom(
                     for link_source, link_dest in symlinks:
                         if path.startswith(link_dest):
                             # Replace the matching start with the symlink instead
-                            paths_to_add.append(os.path.join(link_source, path[len(link_dest):]))
+                            paths_to_add.append(os.path.join(link_source, path[len(link_dest) :]))
                 paths += paths_to_add
     else:
         print("Skipping gathering file metadata and adding software entries")
@@ -244,7 +243,7 @@ def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
         # Convert relative paths to absolute local paths
         if not pathlib.Path(dest).is_absolute():
             common_path = os.path.commonpath([cur_dir, extract_dir])
-            local_path = os.path.join('/', cur_dir[len(common_path):])
+            local_path = os.path.join("/", cur_dir[len(common_path) :])
             dest = os.path.join(local_path, dest)
         # Convert to a canonical form to eliminate .. to prevent reading above extract_dir
         dest = os.path.normpath(dest)
