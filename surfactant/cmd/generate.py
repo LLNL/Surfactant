@@ -131,6 +131,8 @@ def sbom(
 
     # gather metadata for files and add/augment software entries in the sbom
     if not skip_gather:
+        # List of symlinks; 2-sized tuples with (source, dest)
+        symlinks = []
         for entry in config:
             if "archive" in entry:
                 print("Processing parent container " + str(entry["archive"]))
@@ -163,13 +165,22 @@ def sbom(
                 print("Extracted Path: " + str(epath))
                 for cdir, dirs, files in os.walk(epath):
                     print("Processing " + str(cdir))
-                    
-                    for dir_ in dirs:
-                        print(f'\t{dir_} -- {os.path.islink(os.path.join(cdir, dir_))}')
+
+                    for dir in dirs:
+                        full_path = os.path.join(cdir, dir)
+                        if os.path.islink(full_path):
+                            dest = resolve_link(full_path, cdir, epath)
+                            if dest is not None:
+                                symlinks.append((dir, dest))
 
                     entries: List[Software] = []
                     for f in files:
                         filepath = os.path.join(cdir, f)
+                        if os.path.islink(filepath):
+                            filepath = resolve_link(filepath, cdir, epath)
+                            # Dead/infinite links will error so skip them
+                            if filepath is None:
+                                continue
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
                             entries.append(
                                 get_software_entry(
@@ -216,6 +227,17 @@ def sbom(
                                             parent_uuid, child_uuid, "Contains"
                                         )
                                 # TODO a pass later on to check for and remove duplicate relationships should be added just in case
+
+        # Add symlink destinations to extract/install paths
+        for software in new_sbom.software:
+            for paths in (software.containerPath, software.installPath):
+                paths_to_add = []
+                for path in paths:
+                    for link_source, link_dest in symlinks:
+                        if path.startswith(link_dest):
+                            # Replace the matching start with the symlink instead
+                            paths_to_add.append(os.path.join(link_source, link_source[len(link_dest):]))
+                paths += paths_to_add
     else:
         print("Skipping gathering file metadata and adding software entries")
 
