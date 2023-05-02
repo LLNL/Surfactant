@@ -145,12 +145,12 @@ def sbom(
                 for cdir, dirs, files in os.walk(epath):
                     print("Processing " + str(cdir))
 
-                    for dir in dirs:
-                        full_path = os.path.join(cdir, dir)
+                    for dir_ in dirs:
+                        full_path = os.path.join(cdir, dir_)
                         if os.path.islink(full_path):
                             dest = resolve_link(full_path, cdir, epath)
                             if dest is not None:
-                                symlinks.append((dir, dest))
+                                symlinks.append((dir_, dest))
 
                     entries: List[Software] = []
                     for f in files:
@@ -215,7 +215,7 @@ def sbom(
                     for link_source, link_dest in symlinks:
                         if path.startswith(link_dest):
                             # Replace the matching start with the symlink instead
-                            paths_to_add.append(os.path.join(link_source, link_source[len(link_dest):]))
+                            paths_to_add.append(os.path.join(link_source, path[len(link_dest):]))
                 paths += paths_to_add
     else:
         print("Skipping gathering file metadata and adding software entries")
@@ -258,6 +258,6 @@ def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
     # If the path is still a symlink we've hit the iteration limit
     if os.path.islink(current_path):
         return None
-    elif not os.path.exists(current_path):
+    if not os.path.exists(current_path):
         return None
     return os.path.normpath(current_path)
