@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 import pathlib
@@ -6,8 +5,9 @@ import re
 import pathlib
 from typing import List, Union
 
-import pluggy
+import click
 
+from surfactant.plugin.manager import get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 
@@ -79,28 +79,51 @@ def validate_config(config):
     return True
 
 
-def sbom(args: argparse.Namespace, pm: pluggy.PluginManager):
-    config = json.load(args.config_file)
+@click.command("generate")
+@click.argument("config_file", envvar="CONFIG_FILE", type=click.File("r"), required=True)
+@click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
+@click.argument("input_sbom", type=click.File("r"), required=False)
+@click.option(
+    "--skip_gather",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Skip gathering information on files and adding software entries",
+)
+@click.option(
+    "--skip_relationships",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Skip adding relationships based on Linux/Windows/etc metadata",
+)
+@click.option(
+    "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
+)
+def sbom(
+    config_file, sbom_outfile, input_sbom, skip_gather, skip_relationships, recorded_institution
+):
+    pm = get_plugin_manager()
+    config = json.load(config_file)
 
     # quit if invalid path found
     if not validate_config(config):
         return
 
-    if not args.input_sbom:
+    if not input_sbom:
         new_sbom = SBOM()
     else:
-        new_sbom = SBOM.from_json(args.input_sbom.read())
+        new_sbom = SBOM.from_json(input_sbom.read())
 
     # gather metadata for files and add/augment software entries in the sbom
-    if not args.skip_gather:
+    if not skip_gather:
         # List of symlinks; 2-sized tuples with (source, dest)
         symlinks = []
-
         for entry in config:
             if "archive" in entry:
                 print("Processing parent container " + str(entry["archive"]))
                 parent_entry = get_software_entry(
-                    pm, new_sbom, entry["archive"], user_institution_name=args.recordedinstitution
+                    pm, new_sbom, entry["archive"], user_institution_name=recorded_institution
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
                 if archive_entry:
@@ -147,7 +170,7 @@ def sbom(args: argparse.Namespace, pm: pluggy.PluginManager):
                                     root_path=epath,
                                     container_uuid=parent_uuid,
                                     install_path=install_prefix,
-                                    user_institution_name=args.recordedinstitution,
+                                    user_institution_name=recorded_institution,
                                 )
                             )
                     if entries:
@@ -198,14 +221,14 @@ def sbom(args: argparse.Namespace, pm: pluggy.PluginManager):
         print("Skipping gathering file metadata and adding software entries")
 
     # add "Uses" relationships based on gathered metadata for software entries
-    if not args.skip_relationships:
+    if not skip_relationships:
         parse_relationships(pm, new_sbom)
     else:
         print("Skipping relationships based on imports metadata")
 
     # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
     output_writer = pm.get_plugin("surfactant.output.cytrics_writer")
-    output_writer.write_sbom(new_sbom, args.sbom_outfile)
+    output_writer.write_sbom(new_sbom, sbom_outfile)
 
 
 def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
