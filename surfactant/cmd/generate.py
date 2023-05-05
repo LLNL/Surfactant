@@ -12,8 +12,9 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 # Converts from a true path to an install path
-def real_path_to_install_path(root_path : str, install_path : str, filepath : str) -> str:
+def real_path_to_install_path(root_path: str, install_path: str, filepath: str) -> str:
     return re.sub("^" + root_path + "/", install_path, filepath)
+
 
 def get_software_entry(
     pluginmanager,
@@ -155,8 +156,12 @@ def sbom(
                             if os.path.islink(full_path):
                                 dest = resolve_link(full_path, cdir, epath)
                                 if dest is not None:
-                                    install_source = real_path_to_install_path(epath, install_prefix, dir_)
-                                    install_dest = real_path_to_install_path(epath, install_prefix, dest)
+                                    install_source = real_path_to_install_path(
+                                        epath, install_prefix, dir_
+                                    )
+                                    install_dest = real_path_to_install_path(
+                                        epath, install_prefix, dest
+                                    )
                                     dir_symlinks.append((install_source, install_dest))
 
                     entries: List[Software] = []
@@ -169,8 +174,12 @@ def sbom(
                                 continue
                             # Otherwise add them and skip adding the entry
                             if install_prefix:
-                                install_filepath = real_path_to_install_path(epath, install_prefix, filepath)
-                                install_dest = real_path_to_install_path(epath, install_prefix, true_filepath)
+                                install_filepath = real_path_to_install_path(
+                                    epath, install_prefix, filepath
+                                )
+                                install_dest = real_path_to_install_path(
+                                    epath, install_prefix, true_filepath
+                                )
                                 file_symlinks.append((install_filepath, install_dest))
                             continue
 
@@ -237,7 +246,7 @@ def sbom(
                             # Replace the matching start with the symlink instead
                             # We can't use os.path.join here because we end up with absolute paths after
                             # removing the common start.  We need to re-add the initial slash though
-                            paths_to_add.append('/' + path.replace(link_dest, link_source, 1))
+                            paths_to_add.append("/" + path.replace(link_dest, link_source, 1))
                 paths += paths_to_add
     else:
         print("Skipping gathering file metadata and adding software entries")
