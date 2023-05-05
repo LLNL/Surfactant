@@ -38,6 +38,21 @@ class SBOM:
     def find_relationship(self, xUUID: str, yUUID: str, relationship: str) -> bool:
         return Relationship(xUUID, yUUID, relationship) in self.relationships
 
+    def has_relationship(
+        self, xUUID: str = None, yUUID: str = None, relationship: str = None
+    ) -> bool:
+        for rel in self.relationships:
+            all_match = True
+            if xUUID and rel.xUUID != xUUID:
+                all_match = False
+            if yUUID and rel.yUUID != yUUID:
+                all_match = False
+            if relationship and rel.relationship.upper() != relationship.upper():
+                all_match = False
+            if all_match:
+                return True
+        return False
+
     def find_software(self, sha256: Optional[str]) -> Optional[Software]:
         for sw in self.software:
             if sha256 == sw.sha256:
