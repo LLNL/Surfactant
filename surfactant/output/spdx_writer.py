@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple
 import spdx.utils
 import spdx.writers.json as jsonwriter
 import spdx.writers.tagvalue as tvwriter
-from spdx.checksum import Checksum, ChecksumAlgorithm
+from spdx.checksum import Checksum
 from spdx.creationinfo import Organization, Tool
 from spdx.document import Document
 from spdx.file import File, FileType
@@ -19,7 +19,6 @@ from spdx.package import Package
 from spdx.relationship import Relationship, RelationshipType
 from spdx.utils import NoAssert
 from spdx.version import Version
-from spdx.parsers.loggers import ErrorMessages
 
 import surfactant.plugin
 from surfactant import __version__ as surfactant_version
@@ -28,6 +27,18 @@ from surfactant.sbomtypes import SBOM, Software, System
 
 @surfactant.plugin.hookimpl
 def write_sbom(sbom: SBOM, outfile) -> None:
+    """Writes the contents of the SBOM to an SPDX file.
+
+    The write_sbom hook for the spdx_writer makes a best-effort attempt
+    to map the information gathered from the internal SBOM representation
+    to a valid SPDX file. Currently there are known bugs in the spdx-tools
+    library used for validating and writing an SPDX file that make it not
+    work in relatively common cases.
+
+    Args:
+        sbom (SBOM): The SBOM to write to the output file.
+        outfile: The output file handle to write the SBOM to.
+    """
     # NOTE eventually outformat and many fields in SPDX document should be user settable (namespace, name)
     outformat = "json"
 
@@ -120,6 +131,18 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
 
 def convert_system_to_spdx_packages(system: System) -> Tuple[str, Package]:
+    """Converts a system entry in the SBOM to an SPDX Package.
+
+    If a system entry has multiple vendors, only the first one is chosen as the
+    supplier for the SPDX Package (due to limitations of the SPDX format).
+
+    Args:
+        system (System): The SBOM system to convert to an SPDX Package.
+
+    Returns:
+        Tuple[str, Package]: A tuple containing the UUID of the system that was
+        converted into a Package, and the SPDX Package object that was created.
+    """
     # Pick the best name for the package
     name = system.officialName
     if not name and system.name:
@@ -131,10 +154,23 @@ def convert_system_to_spdx_packages(system: System) -> Tuple[str, Package]:
         # assume Organization, not enough info to distinguish People
         supplier = Organization(system.vendor[0])
 
-    return (system.UUID, create_spdx_package(name, system.description, supplier))
+    return system.UUID, create_spdx_package(name, system.description, supplier)
 
 
 def convert_software_to_spdx_packages(software: Software) -> Tuple[str, List[Package]]:
+    """Converts a software entry in the SBOM to one or more SPDX Packages.
+
+    An SPDX Package is created for each file name that the software can have. If
+    a software entry has multiple vendors, only the first one is chosen as the
+    supplier for the SPDX Package (due to limitations of the SPDX format).
+
+    Args:
+        software (Software): The SBOM software entry to convert to SPDX Packages.
+
+    Returns:
+        Tuple[str, List[Package]]: A tuple containing the UUID of the software that was
+        converted into Packages, and a list of the SPDX Package objects that were created.
+    """
     packages: List[Package] = []
     for fname in software.fileName:
         name = software.name
@@ -162,6 +198,22 @@ def convert_software_to_spdx_packages(software: Software) -> Tuple[str, List[Pac
 
 
 def convert_software_to_spdx_files(software: Software) -> List[Tuple[str, str, File]]:
+    """Converts a software entry in the SBOM to one or more SPDX Files.
+
+    An SPDX File is created for each unique container path that the software has. If
+    no container paths exist, each unique file name will be used instead. If a software
+    entry has multiple vendors, only the first one is chosen as the supplier for the SPDX
+    File (due to limitations of the SPDX format).
+
+    Args:
+        software (Software): The SBOM software entry to convert to SPDX Files.
+
+    Returns:
+        List[Tuple[str, str, File]]: A list of tuples that contains the UUID of the parent
+        container for the software entry (or None if file names were used), the UUID of the
+        software entry that was converted into a SPDX File, and the resulting SPDX File that
+        was created.
+    """
     files: List[Tuple[str, str, File]] = []
     for cpathstr in software.containerPath:
         cpath = pathlib.PurePath(cpathstr)
@@ -185,6 +237,11 @@ def convert_software_to_spdx_files(software: Software) -> List[Tuple[str, str, F
 
 
 def create_spdx_doc() -> Document:
+    """Creates a SPDX Document with some default values for required fields filled in.
+
+    Returns:
+        Document: The SPDX Document that was created.
+    """
     spdx_doc = Document()
     # Document fields set here are mandatory
     spdx_doc.version = Version(2, 2)
@@ -211,6 +268,18 @@ def create_spdx_doc() -> Document:
 
 
 def create_spdx_file(idstring: str, file_path: str, software: Software) -> File:
+    """Creates a SPDX File from a software entry.
+
+    At minimum, the software entry must have a valid 'sha1' checksum.
+
+    Args:
+        idstring (str): A unique SPDX ID string (consisting of only alphanumeric, '.', and '-' characters).
+        file_path (str): The full path to the SPDX File (starting with './', relative to the package/container).
+        software (Software): The SBOM software entry to convert to create an SPDX File from.
+
+    Returns:
+        File: A SPDX File with information filled in based on the provided software entry.
+    """
     file = File(file_path)
 
     # Required File fields
@@ -252,6 +321,23 @@ def create_spdx_package(
     sha256: Optional[str] = None,
     md5: Optional[str] = None,
 ) -> Package:
+    """Creates a SPDX Package from the provided information.
+
+    If there is a checksum provided, at minimum the 'sha1' should be present.
+
+    Args:
+        name (str): Name of the SPDX package.
+        summary: A concise summary of the function or use of the package.
+        supplier: The vendor the package came from.
+        file_name (Optional[str]): Actual file name or path to the directory that is being treated as a package (subdirectory is denoted with './').
+        version (Optional[str]): Version identifier for the package.
+        sha1 (Optional[str]): SHA1 checksum that uniquely identifies the package. If the package includes the SPDX file, this should NOT be present.
+        sha256 (Optional[str]): SHA256 checksum that uniquely identifies the package. If the package includes the SPDX file, this should NOT be present.
+        md5 (Optional[str]): MD5 checksum that uniquely identifies the package. If the package includes the SPDX file, this should NOT be present.
+
+    Returns:
+        Package: A SPDX Package with information filled in based on the provided information.
+    """
     pkg = Package()
     # Required Package fields
     pkg.name = name
@@ -299,12 +385,33 @@ def create_spdx_package(
     return pkg
 
 
-def generate_random_idstring(num_chars=5) -> str:
+def generate_random_idstring(num_chars: int = 5) -> str:
+    """Generate a unique random alphanumeric ID string.
+
+    Args:
+        num_chars (int): Number of characters (default=5) that should be in the generated id string.
+
+    Returns:
+        str: The randomly generated idstring.
+    """
     return "".join(random.choices(string.ascii_letters + string.digits, k=num_chars))
 
 
 def generate_file_idstring(software: Software, filename: str) -> str:
-    # Create an SPDXRef unique ID string (valid chars: alphanumeric, ".", and "-")
+    """Generate a unique random alphanumeric ID string for a SPDX File.
+
+    The generated id string will consist of the provided file name, software product name,
+    software version, and a randomly generated string separated by '-'. Non-alphanumeric or
+    '.' or '-' characters will be removed from those components, and empty components will
+    be omitted.
+
+    Args:
+        software (Software): Software entry to get product name and version to use in the id string.
+        filename (str): File name (one of possibly several in software) to include in the id string.
+
+    Returns:
+        str: The randomly generated idstring for a SPDX File.
+    """
     # Filename
     idfilename = "".join(ch for ch in filename if (ch.isalnum() or ch in ".-"))
     # Product name
@@ -323,7 +430,20 @@ def generate_file_idstring(software: Software, filename: str) -> str:
 
 
 def generate_package_idstring(name: str, version: str, file_name: str) -> str:
-    # Create an SPDXRef unique ID string (valid chars: alphanumeric, ".", and "-")
+    """Generate a unique random alphanumeric ID string for a SPDX Package.
+
+    The generated id string will consist of the provided name, file name, version, and a
+    randomly generated string separated by '-'. Non-alphanumeric or '.' or '-' characters
+    will be removed from those components, and empty components will be omitted.
+
+    Args:
+        name (str): Name to include in the id string.
+        version (str): Version to include in the id string.
+        file_name (str): File name to include in the id string.
+
+    Returns:
+        str: The randomly generated idstring for a SPDX Package.
+    """
     # Package Name
     idname = ""
     if idname:
@@ -342,31 +462,61 @@ def generate_package_idstring(name: str, version: str, file_name: str) -> str:
 
 
 def get_fileinfo_metadata(software: Software, field: str) -> Optional[str]:
+    """Retrieves the value for a field in a 'FileInfo' metadata object in a software entry.
+
+    Args:
+        software (Software): The software entry to get the 'FileInfo' field from.
+        field (str): The name of the 'FileInfo' field to get the value of.
+
+    Returns:
+        Optional[str]: The value of the 'FileInfo' metadata field request, or None.
+    """
     if software.metadata and isinstance(software.metadata, Iterable):
-        retval = []
         for entry in software.metadata:
             if "FileInfo" in entry and field in entry["FileInfo"]:
                 return entry["FileInfo"][field]
     return None
 
 
-def get_software_field(software: Software, field):
+def get_software_field(software: Software, field: str):
+    """Retrieves the value for a field in a SBOM software entry.
+
+    The field retrieved can be the name of an attribute in the Software dataclass,
+    or if the field provided is 'Copyright' it will try to retrieve the copyright
+    information from a 'FileInfo' metadata object.
+
+    Args:
+        software (Software): The software entry to read the field from.
+        field (str): The name of the field to get the value of, or 'Copyright'.
+
+    Returns:
+        Optional[str]: The value of the requested field, or None.
+    """
     if hasattr(software, field):
         return getattr(software, field)
     # Copyright field currently only gets populated from Windows PE file metadata
     if field == "Copyright":
         if software.metadata and isinstance(software.metadata, Iterable):
-            retval = []
             for entry in software.metadata:
                 if "FileInfo" in entry and "LegalCopyright" in entry["FileInfo"]:
                     return entry["FileInfo"]["LegalCopyright"]
     return None
 
 
-# Verification Code generation used by spdx tools written in Java (not what is defined in SPDX spec)
-# based on: https://github.com/spdx/tools/blob/bc35e25/TestFiles/spdx-parser-source/org/spdx/rdfparser/VerificationCodeGenerator.java
-# sha1 checksums are lowercase with no leading 0x: https://github.com/spdx/tools/blob/bc35e25d/src/org/spdx/rdfparser/JavaSha1ChecksumGenerator.java
-def java_generate_package_verification_code(software: List[Software]):
+def java_generate_package_verification_code(software: List[Software]) -> Tuple[str, List[str]]:
+    """Generate a SPDX package verif_code according to the method used by the Java SPDX Tools.
+
+    This is not the algorithm defined in the SPDX specification. The implementation here is provided
+    in case we need to support an SBOM with verification codes that are compatible with the Java tool.
+    Based on: https://github.com/spdx/tools/blob/bc35e25/TestFiles/spdx-parser-source/org/spdx/rdfparser/VerificationCodeGenerator.java
+
+    Args:
+        software (List[Software]): The software entries to include in the generated verification code.
+
+    Returns:
+        Tuple[str, List[str]]: A tuple consisting of the generated package verification code, and a list of
+        skipped file names.
+    """
     skippedFileNames: List[str] = []
     fileNameAndChecksums: List[str] = collect_file_data(software)
     fileNameAndChecksums.sort()
@@ -377,21 +527,38 @@ def java_generate_package_verification_code(software: List[Software]):
 
 
 def collect_file_data(software: List[Software]) -> List[str]:
+    """Collect file checksums and paths as done by the Java SPDX Tools.
+
+    Args:
+        software (List[Software]): The software entries to include in the collected data.
+
+    Returns:
+        List[str]: A list of checksums and file paths, in the form "<checksum>||<filepath>".
+    """
     file_data: List[str] = []
     for sw in software:
         # lower case sha1 hash without a leading 0x prefix
         checksum = sw.sha1.lower()
-        for fpath in sw.install_path:
+        for fpath in sw.installPath:
             # GitHub spdx/tools uses this format for checksumming file data: checksumValue+"||"+filePath+END_OF_LINE_CHAR
             file_data.append(checksum + "||" + normalize_file_path(fpath) + "\n")
     return file_data
 
 
-# normalize file path per the Java SPDX utility... not part of the SPDX spec
-# NOTE I think GitHub spdx/tools uses a "./" replacement method that is too
-# liberal and will mess up directory names ending in a "."; also ".." should
-# remove the previously added part of the path
 def normalize_file_path(nonNormalizedFilePath: str) -> str:
+    """Normalization of file paths as done by Java SPDX Tools (not part of the SPDX specification).
+
+    NOTE: The Java GitHub spdx/tools seems to have several bugs. It uses a './' replacement method
+    that is too liberal and will mess up directory names ending in a '.'; it also does not appear
+    to correctly remove the previously added part of the a path when it encounters a '..' relative
+    directory.
+
+    Args:
+        nonNormalizedFilePath (str): The file path to normalize.
+
+    Returns:
+        str: A normalized file path.
+    """
     # replace backslashes with forward slash
     filePath = nonNormalizedFilePath.replace("\\", "/").strip()
     # this splits the filepath, and removes instances of "./"

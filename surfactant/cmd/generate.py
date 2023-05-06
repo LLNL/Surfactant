@@ -103,10 +103,16 @@ def validate_config(config):
     "--output_format",
     is_flag=False,
     default="surfactant.output.cytrics_writer",
-    help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx]_writer (NOTE: underlying SPDX library has bugs)"
+    help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx]_writer (NOTE: underlying SPDX library has bugs)",
 )
 def sbom(
-    config_file, sbom_outfile, input_sbom, skip_gather, skip_relationships, recorded_institution, output_format
+    config_file,
+    sbom_outfile,
+    input_sbom,
+    skip_gather,
+    skip_relationships,
+    recorded_institution,
+    output_format,
 ):
     pm = get_plugin_manager()
     output_writer = pm.get_plugin(output_format)
