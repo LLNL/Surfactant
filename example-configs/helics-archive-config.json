@@ -1,0 +1,14 @@
+[
+  {
+    "archive": "Helics-3.4.0-win64.zip",
+    "extractPaths": [
+      "Helics-3.4.0-win64"
+    ]
+  },
+  {
+    "archive": "Helics-3.4.0-Linux-x86_64.tar.gz",
+    "extractPaths": [
+      "Helics-3.4.0-Linux-x86_64"
+    ]
+  }
+]
