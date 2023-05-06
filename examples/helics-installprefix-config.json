@@ -1,0 +1,8 @@
+[
+  {
+    "installPrefix": "/usr/",
+    "extractPaths": [
+      "Helics-3.4.0-Linux-x86_64"
+    ]
+  }
+]
