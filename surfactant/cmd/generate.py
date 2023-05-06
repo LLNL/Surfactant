@@ -148,10 +148,17 @@ def sbom(
 
             if "installPrefix" in entry:
                 install_prefix = entry["installPrefix"]
+                # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
+                if install_prefix and not install_prefix.endswith(("/", "\\")):
+                    print("Fixing install path")
+                    install_prefix += "/"
             else:
                 install_prefix = None
 
             for epath in entry["extractPaths"]:
+                # extractPath should not end with "/" (Windows-style backslash paths shouldn't be used at all)
+                if epath.endswith("/"):
+                    epath = epath[:-1]
                 print("Extracted Path: " + str(epath))
                 for cdir, _, files in os.walk(epath):
                     print("Processing " + str(cdir))
