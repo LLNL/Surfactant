@@ -62,7 +62,6 @@ def write_software_entry(writer: csv.DictWriter, software: Software, fields: Lis
             elif f == "Supplier":
                 fld_norm = "vendor"
             row[f] = get_software_field(software, fld_norm)
-        print(row)
         writer.writerow(row)
 
 
