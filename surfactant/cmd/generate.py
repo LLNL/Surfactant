@@ -99,10 +99,24 @@ def validate_config(config):
 @click.option(
     "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
 )
+@click.option(
+    "--output_format",
+    is_flag=False,
+    default="surfactant.output.cytrics_writer",
+    help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx]_writer (NOTE: underlying SPDX library has bugs)",
+)
 def sbom(
-    config_file, sbom_outfile, input_sbom, skip_gather, skip_relationships, recorded_institution
+    config_file,
+    sbom_outfile,
+    input_sbom,
+    skip_gather,
+    skip_relationships,
+    recorded_institution,
+    output_format,
 ):
     pm = get_plugin_manager()
+    output_writer = pm.get_plugin(output_format)
+
     config = json.load(config_file)
 
     # quit if invalid path found
@@ -201,5 +215,4 @@ def sbom(
         print("Skipping relationships based on imports metadata")
 
     # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
-    output_writer = pm.get_plugin("surfactant.output.cytrics_writer")
     output_writer.write_sbom(new_sbom, sbom_outfile)
