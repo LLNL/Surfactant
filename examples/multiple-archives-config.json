@@ -1,0 +1,20 @@
+[
+  {
+    "archive": "SampleArchives/openssl-1.0.2u-i386-win32.zip",
+    "extractPaths": [
+      "SampleBinaries/openssl32"
+    ]
+  },
+  {
+    "archive": "SampleArchives/curl-7.84.0_4-win64-mingw.zip",
+    "extractPaths": [
+      "SampleBinaries/curl-7.84.0_4-win64-mingw"
+    ]
+  },
+  {
+    "archive": "SampleArchives/WinSCP-5.21.1-Portable.zip",
+    "extractPaths": [
+      "SampleBinaries/WinSCP-5-Portable"
+    ]
+  }
+]
