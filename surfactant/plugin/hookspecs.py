@@ -13,8 +13,11 @@ def identify_file_type(filepath: str) -> Optional[str]:
     that will be passed to file extraction plugins. Return `None` to indicate that the type was
     unable to be determined.
 
-    :param filepath: The path to the file to determine the type of.
-    :returns: A string identifying the type of file, or None if the file type could not be recognized.
+    Args:
+        filepath (str): The path to the file to determine the type of.
+
+    Returns:
+        Optional[str]: A string identifying the type of file, or None if the file type could not be recognized.
     """
 
 
@@ -25,11 +28,14 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     selecting default values for other Software entry fields. Returning `None` will not add
     anything to the Software entry metadata.
 
-    :param sbom: The SBOM that the software entry is part of. Can be used to add observations or analysis data.
-    :param software: The software entry the gathered information will be added to.
-    :param filename: The full path to the file to extract information from.
-    :param filetype: File type information based on magic bytes.
-    :returns: An object to be added to the metadata field for the software entry. May be `None` to add no metadata.
+    Args:
+        sbom (SBOM): The SBOM that the software entry is part of. Can be used to add observations or analysis data.
+        software (Software): The software entry the gathered information will be added to.
+        filename (str): The full path to the file to extract information from.
+        filetype (str): File type information based on magic bytes.
+
+    Returns:
+        object: An object to be added to the metadata field for the software entry. May be `None` to add no metadata.
     """
 
 
@@ -46,10 +52,13 @@ def establish_relationships(
 
     Returns a list of relationships to be added to the SBOM.
 
-    :param sbom: The SBOM object that the Software is part of.
-    :param sw: The Software entry that the metadata object is from.
-    :param metadata: The metadata object to establish relationships based on.
-    :returns: A list of relationships to add to the SBOM.
+    Args:
+        sbom (SBOM): The SBOM object that the Software is part of.
+        software (Software): The Software entry that the metadata object is from.
+        metadata: The metadata object to establish relationships based on.
+
+    Returns:
+        Optional[List[Relationship]]: A list of relationships to add to the SBOM.
     """
 
 
@@ -57,6 +66,7 @@ def establish_relationships(
 def write_sbom(sbom: SBOM, outfile) -> None:
     """Writes the contents of the SBOM to the given output file.
 
-    :param sbom: The SBOM to write to the output file.
-    :param outfile: The output file handle to write the SBOM to.
+    Args:
+        sbom (SBOM): The SBOM to write to the output file.
+        outfile: The output file handle to write the SBOM to.
     """
