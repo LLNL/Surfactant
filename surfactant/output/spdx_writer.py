@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple
 import spdx.utils
 import spdx.writers.json as jsonwriter
 import spdx.writers.tagvalue as tvwriter
-from spdx.checksum import Checksum
+from spdx.checksum import Checksum, ChecksumAlgorithm
 from spdx.creationinfo import Organization, Tool
 from spdx.document import Document
 from spdx.file import File, FileType
@@ -285,12 +285,12 @@ def create_spdx_file(idstring: str, file_path: str, software: Software) -> File:
     # Required File fields
     file.spdx_id = f"SPDXRef-{idstring}"
     file.set_checksum(
-        Checksum("SHA1", software.sha1.lower())
+        Checksum(ChecksumAlgorithm.SHA1, software.sha1.lower())
     )  # SHA1 required, should probably error if doesn't exist
     if software.sha256:
-        file.set_checksum(Checksum("SHA256", software.sha256.lower()))
+        file.set_checksum(Checksum(ChecksumAlgorithm.SHA256, software.sha256.lower()))
     if software.md5:
-        file.set_checksum(Checksum("MD5", software.md5.lower()))
+        file.set_checksum(Checksum(ChecksumAlgorithm.MD5, software.md5.lower()))
     file.conc_lics = (
         NoAssert()
     )  # SPDXNone if no license available for file, NoAssert if can't determine
@@ -371,11 +371,11 @@ def create_spdx_package(
         NoAssert()
     )  # 3rd party who distributed package is different than the supplier/vendor
     if sha1:
-        pkg.set_checksum(Checksum("SHA1", sha1.lower()))
+        pkg.set_checksum(Checksum(ChecksumAlgorithm.SHA1, sha1.lower()))
     if sha256:
-        pkg.set_checksum(Checksum("SHA256", sha256.lower()))
+        pkg.set_checksum(Checksum(ChecksumAlgorithm.SHA256, sha256.lower()))
     if md5:
-        pkg.set_checksum(Checksum("MD5", md5.lower()))
+        pkg.set_checksum(Checksum(ChecksumAlgorithm.MD5, md5.lower()))
     if summary:
         pkg.summary = summary  # concise info on the function or use of package, without having to parse source code
     pkg.homepage = NoAssert()  # SPDXNone if none exists, NoAssert if didn't try to find a homepage
