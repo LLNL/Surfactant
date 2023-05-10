@@ -1,5 +1,7 @@
 # Test directories
 tests/symlink/test_dir/
+# setuptools_scm auto-generated version file
+surfactant/_version.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

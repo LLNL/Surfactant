@@ -8,7 +8,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
     # don't want all these imports as part of the file-level scope
     from surfactant.filetypeid import id_hex, id_magic
     from surfactant.infoextractors import elf_file, ole_file, pe_file
-    from surfactant.output import csv_writer, cytrics_writer
+    from surfactant.output import csv_writer, cytrics_writer, spdx_writer
     from surfactant.relationships import (
         dotnet_relationship,
         elf_relationship,
@@ -26,6 +26,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         pe_relationship,
         csv_writer,
         cytrics_writer,
+        spdx_writer,
     )
     for plugin in internal_plugins:
         pm.register(plugin)

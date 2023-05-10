@@ -104,10 +104,24 @@ def validate_config(config):
 @click.option(
     "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
 )
+@click.option(
+    "--output_format",
+    is_flag=False,
+    default="surfactant.output.cytrics_writer",
+    help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx]_writer",
+)
 def sbom(
-    config_file, sbom_outfile, input_sbom, skip_gather, skip_relationships, recorded_institution
+    config_file,
+    sbom_outfile,
+    input_sbom,
+    skip_gather,
+    skip_relationships,
+    recorded_institution,
+    output_format,
 ):
     pm = get_plugin_manager()
+    output_writer = pm.get_plugin(output_format)
+
     config = json.load(config_file)
 
     # quit if invalid path found
@@ -142,10 +156,17 @@ def sbom(
 
             if "installPrefix" in entry:
                 install_prefix = entry["installPrefix"]
+                # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
+                if install_prefix and not install_prefix.endswith(("/", "\\")):
+                    print("Fixing install path")
+                    install_prefix += "/"
             else:
                 install_prefix = None
 
             for epath in entry["extractPaths"]:
+                # extractPath should not end with "/" (Windows-style backslash paths shouldn't be used at all)
+                if epath.endswith("/"):
+                    epath = epath[:-1]
                 print("Extracted Path: " + str(epath))
                 for cdir, dirs, files in os.walk(epath):
                     print("Processing " + str(cdir))
@@ -258,19 +279,21 @@ def sbom(
         print("Skipping relationships based on imports metadata")
 
     # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
-    output_writer = pm.get_plugin("surfactant.output.cytrics_writer")
     output_writer.write_sbom(new_sbom, sbom_outfile)
 
 
 def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
     assert cur_dir.startswith(extract_dir)
-    # Maximum number of indirections allowed before failing to resolve the link
-    MAX_STEPS = 128
+    # Links seen before
+    seen_paths = set()
     # os.readlink() resolves one step of a symlink
     current_path = path
     steps = 0
-    while steps < MAX_STEPS and os.path.islink(current_path):
-        steps += 1
+    while os.path.islink(current_path):
+        # If we've already seen this then we're in an infinite loop
+        if current_path in seen_paths:
+            return None
+        seen_paths.add(current_path)
         dest = os.readlink(current_path)
         # Convert relative paths to absolute local paths
         if not pathlib.Path(dest).is_absolute():
@@ -286,9 +309,6 @@ def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
         # Rebase to get the true location
         current_path = os.path.join(extract_dir, dest)
         cur_dir = os.path.dirname(current_path)
-    # If the path is still a symlink we've hit the iteration limit
-    if os.path.islink(current_path):
-        return None
     if not os.path.exists(current_path):
         return None
     return os.path.normpath(current_path)

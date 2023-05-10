@@ -1,10 +1,8 @@
-# SBOM Surfactant
-
-## Name
-SBOM Surfactant
+# Surfactant
 
 ## Description
-This project contains scripts that can be used to generate a surface-level, face-value, SBOM.  It pulls information from the PE files contained within a directory structure corresponding to an extracted software package.
+Surfactant can be used to gather information from a set of files to generate an SBOM, along with manipulating SBOMs and analyzing the information in them.  It pulls information from recognized file types (such as PE, ELF, or MSI files) contained within a directory structure corresponding to an extracted software package.  By default, the information is "surface-level" metadata contained in the files that does not require running the files
+or decompilation.
 
 ## Installation
 1. Create a virtual environment with python >= 3.8
@@ -242,13 +240,16 @@ NOTE: These examples have been simplified to show differences in output based on
 
 ### Run surfactant
 ```bash
-$  python generate_cytrics_sbom.py [-h] [-i INPUT_SBOM] [--skip_gather] [--skip_relationships] [CONFIG_FILE] [SBOM_OUTPUT]
+$  surfactant generate [OPTIONS] CONFIG_FILE SBOM_OUTFILE [INPUT_SBOM]
 ```
 **CONFIG_FILE**: (required) the config file created earlier that contains the information on the sample\
 **SBOM OUTPUT**: (required) the desired name of the output file\
 **INPUT_SBOM**: (optional) a base sbom, should be used with care as relationships could be messed up when files are installed on different systems\
-**skip_gather**: (optional) skips the gathering of information on files and adding software entires\
-**skip_relationships**: (optional) skips the adding of relationships based on metadata
+**--skip_gather**: (optional) skips the gathering of information on files and adding software entires\
+**--skip_relationships**: (optional) skips the adding of relationships based on metadata\
+**--recorded_institution**: (optional) the name of the institution collecting the SBOM data (default: LLNL)\
+**--output_format**: (optional) changes the output format for the SBOM (given as full module name of a surfactant plugin implementing the `write_sbom` hook)\
+**--help**: (optional) show the help message and exit
 
 ## Understanding the SBOM Output
 ### Software

@@ -38,14 +38,15 @@ dependencies = [
     "dnfile",
     "olefile",
     "defusedxml",
-    "spdx",
+    "spdx-tools>=0.7.1,==0.7.*",
     "pluggy",
     "click"
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-tests = ["pytest"]
+test = ["pytest"]
+dev = ["build", "pre-commit"]
 
 [project.scripts]
 surfactant = "surfactant.__main__:main"
@@ -60,6 +61,7 @@ homepage = "https://lc.llnl.gov/gitlab/cir-software-assurance/sbom-surfactant"
 packages =["surfactant"]
 
 [tool.setuptools_scm]
+write_to = "surfactant/_version.py"
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
