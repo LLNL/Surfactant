@@ -284,13 +284,16 @@ def sbom(
 
 def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
     assert cur_dir.startswith(extract_dir)
-    # Maximum number of indirections allowed before failing to resolve the link
-    MAX_STEPS = 128
+    # Links seen before
+    seen_paths = set()
     # os.readlink() resolves one step of a symlink
     current_path = path
     steps = 0
-    while steps < MAX_STEPS and os.path.islink(current_path):
-        steps += 1
+    while os.path.islink(current_path):
+        # If we've already seen this then we're in an infinite loop
+        if current_path in seen_paths:
+            return None
+        seen_paths.add(current_path)
         dest = os.readlink(current_path)
         # Convert relative paths to absolute local paths
         if not pathlib.Path(dest).is_absolute():
@@ -306,9 +309,6 @@ def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
         # Rebase to get the true location
         current_path = os.path.join(extract_dir, dest)
         cur_dir = os.path.dirname(current_path)
-    # If the path is still a symlink we've hit the iteration limit
-    if os.path.islink(current_path):
-        return None
     if not os.path.exists(current_path):
         return None
     return os.path.normpath(current_path)
