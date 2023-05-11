@@ -14,6 +14,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
         return None
     return extract_a_out_info(filename)
 
+
 _A_OUT_TARGET_NAME = {
     0x00: "Unknown",
     0x01: "M68010",
@@ -52,8 +53,9 @@ _A_OUT_TARGET_NAME = {
     0xB7: "ARM AARCH64",
     0xB8: "OpenRISC 1000",
     0xB9: "RISC-V",
-    0xFF: "Axis ETRAC CRIS"
+    0xFF: "Axis ETRAC CRIS",
 }
+
 
 def extract_a_out_info(filename: str) -> object:
     try:
@@ -66,12 +68,15 @@ def extract_a_out_info(filename: str) -> object:
     except FileNotFoundError:
         return None
 
+
 def get_target_type(magic_bytes: bytes) -> Union[str, None]:
     # Again, need to test both small and big endian for a.out files
     big_endian_magic = (int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) >> 8) & 0xFF
     if big_endian_magic in _A_OUT_TARGET_NAME:
         return _A_OUT_TARGET_NAME[big_endian_magic]
-    little_endian_magic = (int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) >> 8) & 0xFF
+    little_endian_magic = (
+        int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) >> 8
+    ) & 0xFF
     if little_endian_magic in _A_OUT_TARGET_NAME:
         return _A_OUT_TARGET_NAME[little_endian_magic]
     return None

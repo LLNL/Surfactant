@@ -92,9 +92,15 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 return "LLVM_IR"
             # Need to check both small and big endian for a.out
             a_out_magic = [0x111, 0x108, 0x107, 0x0CC, 0x10B]
-            if int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) & 0xFFFF in a_out_magic:
+            if (
+                int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) & 0xFFFF
+                in a_out_magic
+            ):
                 return "A.OUT"
-            if int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) & 0xFFFF in a_out_magic:
+            if (
+                int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) & 0xFFFF
+                in a_out_magic
+            ):
                 return "A.OUT"
             return None
     except FileNotFoundError:
