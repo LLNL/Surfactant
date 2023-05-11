@@ -62,8 +62,7 @@ def extract_a_out_info(filename: str) -> object:
             target = get_target_type(magic_bytes)
             if target is None:
                 return None
-            else:
-                return {"target": target}
+            return {"target": target}
     except FileNotFoundError:
         return None
 
