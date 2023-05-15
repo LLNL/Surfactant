@@ -26,6 +26,7 @@ _A_OUT_TARGET_NAME = {
     0x64: "386",
     0x65: "AMD 29K",
     0x66: "386 DYNIX",
+    0x67: "ARM",
     0x83: "Sparclet",
     0x86: "386 NetBSD",
     0x87: "M68K NetBSD",
@@ -64,18 +65,18 @@ def extract_a_out_info(filename: str) -> object:
             target = get_target_type(magic_bytes)
             if target is None:
                 return None
-            return {"target": target}
+            return {"aoutMachineType": target}
     except FileNotFoundError:
         return None
 
 
 def get_target_type(magic_bytes: bytes) -> Union[str, None]:
     # Again, need to test both small and big endian for a.out files
-    big_endian_magic = (int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) >> 8) & 0xFF
+    big_endian_magic = (int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) >> 16) & 0xFF
     if big_endian_magic in _A_OUT_TARGET_NAME:
         return _A_OUT_TARGET_NAME[big_endian_magic]
     little_endian_magic = (
-        int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) >> 8
+        int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) >> 16
     ) & 0xFF
     if little_endian_magic in _A_OUT_TARGET_NAME:
         return _A_OUT_TARGET_NAME[little_endian_magic]
