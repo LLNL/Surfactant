@@ -2,7 +2,7 @@ import json
 import os
 import pathlib
 import re
-from typing import List, Union, Mapping
+from typing import List, Mapping, Union
 
 import click
 
