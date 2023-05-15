@@ -96,12 +96,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) & 0xFFFF
                 in a_out_magic
             ):
-                return "A.OUT"
+                return "A.OUT big"
             if (
                 int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) & 0xFFFF
                 in a_out_magic
             ):
-                return "A.OUT"
+                return "A.OUT little"
             return None
     except FileNotFoundError:
         return None

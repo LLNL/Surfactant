@@ -5,14 +5,14 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype: str) -> bool:
-    return filetype == "A.OUT"
+    return filetype == "A.OUT little" or filetype == "A.OUT big"
 
 
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
     if not supports_file(filetype):
         return None
-    return extract_a_out_info(filename)
+    return extract_a_out_info(filetype, filename)
 
 
 _A_OUT_TARGET_NAME = {
@@ -58,11 +58,11 @@ _A_OUT_TARGET_NAME = {
 }
 
 
-def extract_a_out_info(filename: str) -> object:
+def extract_a_out_info(filetype: str, filename: str) -> object:
     try:
         with open(filename, "rb") as f:
             magic_bytes = f.read(4)
-            target = get_target_type(magic_bytes)
+            target = get_target_type(filetype, magic_bytes)
             if target is None:
                 return None
             return {"aoutMachineType": target}
@@ -70,14 +70,15 @@ def extract_a_out_info(filename: str) -> object:
         return None
 
 
-def get_target_type(magic_bytes: bytes) -> Union[str, None]:
-    # Again, need to test both small and big endian for a.out files
-    big_endian_magic = (int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) >> 16) & 0xFF
-    if big_endian_magic in _A_OUT_TARGET_NAME:
-        return _A_OUT_TARGET_NAME[big_endian_magic]
-    little_endian_magic = (
-        int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) >> 16
-    ) & 0xFF
-    if little_endian_magic in _A_OUT_TARGET_NAME:
-        return _A_OUT_TARGET_NAME[little_endian_magic]
+def get_target_type(filetype: str, magic_bytes: bytes) -> Union[str, None]:
+    if filetype == "A.OUT big":
+        big_endian_magic = (int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) >> 16) & 0xFF
+        if big_endian_magic in _A_OUT_TARGET_NAME:
+            return _A_OUT_TARGET_NAME[big_endian_magic]
+    if filetype == "A.OUT little":
+        little_endian_magic = (
+            int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) >> 16
+        ) & 0xFF
+        if little_endian_magic in _A_OUT_TARGET_NAME:
+            return _A_OUT_TARGET_NAME[little_endian_magic]
     return None
