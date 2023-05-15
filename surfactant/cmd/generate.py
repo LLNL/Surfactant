@@ -2,7 +2,7 @@ import json
 import os
 import pathlib
 import re
-from typing import List, Union
+from typing import List, Union, Mapping
 
 import click
 
@@ -138,7 +138,7 @@ def sbom(
         # List of directory symlinks; 2-sized tuples with (source, dest)
         dir_symlinks: List[tuple[str, str]] = []
         # List of file symlinks; keys are SHA256 hashes, values are source paths
-        file_symlinks: map[str, List[str]] = {}
+        file_symlinks: Mapping[str, List[str]] = {}
         for entry in config:
             if "archive" in entry:
                 print("Processing parent container " + str(entry["archive"]))
