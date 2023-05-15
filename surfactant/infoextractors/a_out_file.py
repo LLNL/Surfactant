@@ -72,7 +72,9 @@ def extract_a_out_info(filetype: str, filename: str) -> object:
 
 def get_target_type(filetype: str, magic_bytes: bytes) -> Union[str, None]:
     if filetype == "A.OUT big":
-        big_endian_magic = (int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) >> 16) & 0xFF
+        big_endian_magic = (
+            int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) >> 16
+        ) & 0xFF
         if big_endian_magic in _A_OUT_TARGET_NAME:
             return _A_OUT_TARGET_NAME[big_endian_magic]
     if filetype == "A.OUT little":
