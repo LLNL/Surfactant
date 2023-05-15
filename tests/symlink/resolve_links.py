@@ -21,6 +21,7 @@ def create_symlinks():
     symlink("..", "parent", True)
     symlink("parent", "link_to_parent", True)
     symlink("/none/", "does_not_exist", True)
+    symlink("does_not_exist", "link_to_non_existant", False)
     symlink("..", "subdir/parent", True)
     # Revert back to the original working directory
     os.chdir(base_dir)
@@ -42,6 +43,7 @@ def run_tests():
         )
         == base_path
     )
+    assert resolve_link(os.path.join(base_path, "link_to_non_existant"), base_path, base_path) is None
 
 
 if __name__ == "__main__":

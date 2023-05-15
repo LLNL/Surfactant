@@ -137,7 +137,8 @@ def sbom(
     if not skip_gather:
         # List of directory symlinks; 2-sized tuples with (source, dest)
         dir_symlinks: List[tuple[str, str]] = []
-        file_symlinks: List[tuple[str, str]] = []
+        # List of file symlinks; keys are SHA256 hashes, values are source paths
+        file_symlinks: map[str, List[str]] = {}
         for entry in config:
             if "archive" in entry:
                 print("Processing parent container " + str(entry["archive"]))
@@ -188,6 +189,7 @@ def sbom(
                     entries: List[Software] = []
                     for f in files:
                         filepath = os.path.join(cdir, f)
+                        file_is_symlink = False
                         if os.path.islink(filepath):
                             true_filepath = resolve_link(filepath, cdir, epath)
                             # Dead/infinite links will error so skip them
@@ -201,11 +203,14 @@ def sbom(
                                 install_dest = real_path_to_install_path(
                                     epath, install_prefix, true_filepath
                                 )
+                                # A dead link shows as a file so need to test if it's a
+                                # file or a directory once rebased
                                 if os.path.isfile(true_filepath):
-                                    file_symlinks.append((install_filepath, install_dest))
+                                    # file_symlinks.append((install_filepath, install_dest))
+                                    file_is_symlink = True
                                 else:
                                     dir_symlinks.append((install_filepath, install_dest))
-                            continue
+                                    continue
 
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
                             entries.append(
@@ -220,6 +225,14 @@ def sbom(
                                     user_institution_name=recorded_institution,
                                 )
                             )
+
+                            if file_is_symlink:
+                                # Remove the entry from the list as it'll be processed later anyways
+                                entry = entries.pop()
+                                if entry.sha256 not in file_symlinks:
+                                    file_symlinks[entry.sha256] = []
+                                file_symlinks[entry.sha256].extend(entry.installPath)
+
                     if entries:
                         # if a software entry already exists with a matching file hash, augment the info in the existing entry
                         for e in entries:
@@ -256,9 +269,13 @@ def sbom(
 
         # Add file symlinks to install paths
         for software in new_sbom.software:
-            for link_source, link_dest in file_symlinks:
-                if link_dest in software.installPath:
-                    software.installPath.append(link_source)
+            if software.sha256 in file_symlinks:
+                for full_path in file_symlinks[software.sha256]:
+                    if full_path not in software.installPath:
+                        software.installPath.append(full_path)
+                    base_name = pathlib.PurePath(full_path).name
+                    if base_name not in software.fileName:
+                        software.fileName.append(base_name)
 
         # Add directory symlink destinations to extract/install paths
         for software in new_sbom.software:
@@ -269,7 +286,7 @@ def sbom(
                         if path.startswith(link_dest):
                             # Replace the matching start with the symlink instead
                             # We can't use os.path.join here because we end up with absolute paths after
-                            # removing the common start.  We need to re-add the initial slash though
+                            # removing the common start.
                             paths_to_add.append(path.replace(link_dest, link_source, 1))
                 paths += paths_to_add
     else:
