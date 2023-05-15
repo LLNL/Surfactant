@@ -5,7 +5,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype: str) -> bool:
-    return filetype == "A.OUT little" or filetype == "A.OUT big"
+    return filetype in ("A.OUT little", "A.OUT big")
 
 
 @surfactant.plugin.hookimpl
