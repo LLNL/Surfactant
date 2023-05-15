@@ -178,7 +178,7 @@ def sbom(
                                 dest = resolve_link(full_path, cdir, epath)
                                 if dest is not None:
                                     install_source = real_path_to_install_path(
-                                        epath, install_prefix, dir_
+                                        epath, install_prefix, full_path
                                     )
                                     install_dest = real_path_to_install_path(
                                         epath, install_prefix, dest
@@ -201,7 +201,10 @@ def sbom(
                                 install_dest = real_path_to_install_path(
                                     epath, install_prefix, true_filepath
                                 )
-                                file_symlinks.append((install_filepath, install_dest))
+                                if os.path.isfile(true_filepath):
+                                    file_symlinks.append((install_filepath, install_dest))
+                                else:
+                                    dir_symlinks.append((install_filepath, install_dest))
                             continue
 
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
@@ -267,7 +270,7 @@ def sbom(
                             # Replace the matching start with the symlink instead
                             # We can't use os.path.join here because we end up with absolute paths after
                             # removing the common start.  We need to re-add the initial slash though
-                            paths_to_add.append("/" + path.replace(link_dest, link_source, 1))
+                            paths_to_add.append(path.replace(link_dest, link_source, 1))
                 paths += paths_to_add
     else:
         print("Skipping gathering file metadata and adding software entries")
