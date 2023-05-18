@@ -43,7 +43,9 @@ def run_tests():
         )
         == base_path
     )
-    assert resolve_link(os.path.join(base_path, "link_to_non_existant"), base_path, base_path) is None
+    assert (
+        resolve_link(os.path.join(base_path, "link_to_non_existant"), base_path, base_path) is None
+    )
 
 
 if __name__ == "__main__":
