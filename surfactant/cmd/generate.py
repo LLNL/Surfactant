@@ -211,6 +211,8 @@ def sbom(
                                 else:
                                     dir_symlinks.append((install_filepath, install_dest))
                                     continue
+                            # We need get_software_entry to look at the true filepath
+                            filepath = true_filepath
 
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
                             entries.append(
@@ -226,12 +228,12 @@ def sbom(
                                 )
                             )
 
-                            if file_is_symlink:
+                            if file_is_symlink and install_prefix:
                                 # Remove the entry from the list as it'll be processed later anyways
                                 entry = entries.pop()
                                 if entry.sha256 not in file_symlinks:
                                     file_symlinks[entry.sha256] = []
-                                file_symlinks[entry.sha256].extend(entry.installPath)
+                                file_symlinks[entry.sha256].append(install_filepath)
 
                     if entries:
                         # if a software entry already exists with a matching file hash, augment the info in the existing entry
