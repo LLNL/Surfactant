@@ -11,6 +11,14 @@ from collections import deque
 
 
 def is_valid_uuid4(u):
+    """ Check if a uuid is valid
+
+    Args:
+        u (string): uuid in string form.
+
+    Returns:
+        bool: true if u is a valid uuid and false if it is not.
+    """
     try:
         u_test = uuid_module.UUID(u, version=4)
     except ValueError:
@@ -19,6 +27,17 @@ def is_valid_uuid4(u):
 
 
 def find_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
+    """Search for a specific relationship entry and check if a match exists.
+
+    Args:
+        sbom (dict): Dictionary containing sbom entries.
+        xUUID (string, optional): Component x UUID. Defaults to None.
+        yUUID (string, optional): Component y UUID. Defaults to None.
+        relationship (string, optional): Describes the relationships between two components. Options are 'Uses', 'Contains'. Defaults to None.
+
+    Returns:
+        dict: Dictionary entry that contains information where the xUUID, yUUID and relationship all match. If no match, returns None.
+    """
     for rel in sbom["relationships"]:
         all_match = True
         if xUUID:
@@ -36,6 +55,17 @@ def find_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
 
 
 def find_star_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
+    """Search for a star relationship entry and check if a match exists.
+
+    Args:
+        sbom (dict): Dictionary containing sbom entries.
+        xUUID (string, optional): Component x UUID. Defaults to None.
+        yUUID (string, optional): Component y UUID. Defaults to None.
+        relationship (string, optional): Describes the star relationship between two components. Defaults to None.
+
+    Returns:
+        dict: Dictionary entry that contains information wehre the xUUID, yUUID, and relationship all match. If no match, returns None.
+    """
     for rel in sbom["starRelationships"]:
         all_match = True
         if xUUID:
@@ -53,6 +83,16 @@ def find_star_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None
 
 
 def find_systems_entry(sbom, uuid=None, name=None):
+    """Search for a systems entry and check if a match exists.
+
+    Args:
+        sbom (dict): Dictionary containing sbom entries.
+        uuid (string, optional): Contains component UUID. Defaults to None.
+        name (string, optional): Name of the larger file the component came from. Defaults to None.
+
+    Returns:
+        dict: Dictionary entry that contains the matching system entry. If no match, returns None.
+    """
     for system in sbom["systems"]:
         all_match = True
         if uuid:
@@ -67,6 +107,18 @@ def find_systems_entry(sbom, uuid=None, name=None):
 
 
 def find_software_entry(sbom, uuid=None, sha256=None, md5=None, sha1=None):
+    """Search for a specific software entry and check if a match exists.
+
+    Args:
+        sbom (dict): Dictionary containing sbom entries.
+        uuid (string, optional): Contains component UUID. Defaults to None.
+        sha256 (string, optional): SHA256 hash of component. Defaults to None.
+        md5 (string, optional): MD5 hash of component. Defaults to None.
+        sha1 (string, optional): SHA1 hash of component. Defaults to None.
+
+    Returns:
+        dict: Dictionary entry that contains the matching software entry. If no match, returns None.
+    """
     for sw in sbom["software"]:
         all_match = True
         if uuid:
