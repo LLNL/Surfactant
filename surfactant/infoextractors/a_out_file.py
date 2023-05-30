@@ -14,7 +14,11 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
         return None
     return extract_a_out_info(filetype, filename)
 
-
+# Machine ID/types can be found in various OS source files (+ file magic patterns) - some are ambiguous
+# https://github.com/file/file/tree/master/magic/Magdir
+# https://github.com/openbsd/src/blob/master/sys/sys/exec.h#L259-L291
+# https://github.com/haiku/haiku/blob/master/src/tools/elf2aout.c#L70-L111
+# https://github.com/KimLoanSA/mimuw/blob/main/sem4/so/abrams/zadania/zad6/minix_source/usr/include/sys/aout_mids.h#L36-L67
 _A_OUT_TARGET_NAME = {
     0x00: "Unknown",
     0x01: "M68010",
@@ -27,34 +31,35 @@ _A_OUT_TARGET_NAME = {
     0x65: "AMD 29K",
     0x66: "386 DYNIX",
     0x67: "ARM",
+    0x68: "IBM RT (ROMP AOS)",
     0x83: "Sparclet",
-    0x86: "386 NetBSD",
-    0x87: "M68K NetBSD",
-    0x88: "M68K 4K pages NetBSD",
-    0x89: "ns532k NetBSD",
-    0x8A: "SPARC NetBSD",
-    0x8B: "PMAX NetBSD",
-    0x8C: "VAX NetBSD",
-    0x8D: "Aplha NetBSD",
-    0x8E: "MIPS",
-    0x8F: "ARM6 NetBSD",
+    0x86: "NetBSD/i386",
+    0x87: "NetBSD/m68k",
+    0x88: "NetBSD/m68k4k",
+    0x89: "NetBSD/ns32532",
+    0x8A: "NetBSD/SPARC",
+    0x8B: "NetBSD/pmax",
+    0x8C: "NetBSD/vax 1k",
+    0x8D: "NetBSD/alpha",
+    0x8E: "NetBSD/mips",
+    0x8F: "NetBSD/arm32",
     0x91: "SH3",
     0x94: "PowerPC 64",
-    0x95: "PowerPC NetBSD",
-    0x96: "VAX 4K pages NetBSD",
+    0x95: "NetBSD/powerpc",
+    0x96: "NetBSD/vax 4k",
     0x97: "MIPS R2000/R3000",
     0x98: "MIPS R4000/R6000",
-    0x99: "m88k OpenBSD",
-    0x9A: "HPPA OpenBSD",
+    0x99: "OpenBSD/m88k",
+    0x9A: "OpenBSD/HPPA",
     0x9B: "SuperH 64-bit",
-    0x9C: "SPARC64 NetBSD",
-    0x9D: "AMD64 NetBSD",
+    0x9C: "NetBSD/sparc64",
+    0x9D: "NetBSD/amd64",
     0x9E: "SuperH 32-bit",
     0x9F: "Itanium",
     0xB7: "ARM AARCH64",
     0xB8: "OpenRISC 1000",
     0xB9: "RISC-V",
-    0xFF: "Axis ETRAC CRIS",
+    0xFF: "Axis ETRAX CRIS",
 }
 
 
