@@ -14,6 +14,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
         return None
     return extract_a_out_info(filetype, filename)
 
+
 # Machine ID/types can be found in various OS source files (+ file magic patterns) - some are ambiguous
 # https://github.com/file/file/tree/master/magic/Magdir
 # https://github.com/openbsd/src/blob/master/sys/sys/exec.h#L259-L291
