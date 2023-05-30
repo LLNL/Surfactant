@@ -12,6 +12,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
         return None
     return extract_coff_out_info(filetype, filename)
 
+
 # Machine types:
 # https://github.com/file/file/blob/master/magic/Magdir/coff
 COFF_MAGIC_TARGET_NAME = {
@@ -24,8 +25,9 @@ COFF_MAGIC_TARGET_NAME = {
     0x01C0: "ARM",
     0xA641: "ARM64EC",
     0x01C2: "ARM Thumb",
-    0x01C4: "ATMv7 Thumb"
+    0x01C4: "ATMv7 Thumb",
 }
+
 
 def extract_coff_out_info(filetype: str, filename: str) -> object:
     try:

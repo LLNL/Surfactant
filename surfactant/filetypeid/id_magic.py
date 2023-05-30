@@ -5,6 +5,7 @@ from typing import Optional
 import surfactant.plugin
 from surfactant.infoextractors.coff_file import COFF_MAGIC_TARGET_NAME
 
+
 class ExeType(Enum):
     ELF = auto()
     PE = auto()

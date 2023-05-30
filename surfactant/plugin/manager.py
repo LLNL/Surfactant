@@ -7,7 +7,13 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
     # pylint: disable=import-outside-toplevel
     # don't want all these imports as part of the file-level scope
     from surfactant.filetypeid import id_hex, id_magic
-    from surfactant.infoextractors import a_out_file, coff_file, elf_file, ole_file, pe_file
+    from surfactant.infoextractors import (
+        a_out_file,
+        coff_file,
+        elf_file,
+        ole_file,
+        pe_file,
+    )
     from surfactant.output import csv_writer, cytrics_writer, spdx_writer
     from surfactant.relationships import (
         dotnet_relationship,
