@@ -139,6 +139,13 @@ def find_software_entry(sbom, uuid=None, sha256=None, md5=None, sha1=None):
 
 
 def merge_number_same(e1, e2, k):
+    """Merges two entries if the number is the same.
+
+    Args:
+        e1 (int): Number.
+        e2 (int): Number.
+        k (string): Name of the field to compare the two numbers.
+    """
     # use e2 number if field isn't in e1
     if k not in e1:
         if k in e2:
@@ -150,6 +157,13 @@ def merge_number_same(e1, e2, k):
 
 
 def merge_number_lt(e1, e2, k):
+    """Merge two entries and assign the lesser of the two numbers.
+
+    Args:
+        e1 (int): Number.
+        e2 (int): Number.
+        k (string): Name of the field to compare the two numbers.
+    """
     # use e2 number if the field isn't in e1
     if k not in e1:
         if k in e2:
@@ -161,6 +175,13 @@ def merge_number_lt(e1, e2, k):
 
 
 def merge_number_gt(e1, e2, k):
+    """Merge two entries and assign the greater of the two numbers.
+
+    Args:
+        e1 (int): Number.
+        e2 (int): Number.
+        k (string): Name of the field to compare the two numbers.
+    """
     # use e2 number if the field isn't in e1
     if k not in e1:
         if k in e2:
@@ -172,6 +193,13 @@ def merge_number_gt(e1, e2, k):
 
 
 def merge_string(e1, e2, k):
+    """Merge two entries. If empty, keep empty.
+
+    Args:
+        e1 (string): String with information.
+        e2 (string): String with information.
+        k (string): Name of the field to compare the two strings.
+    """
     if k not in e1 or not e1[k]:
         # worst case, e2 has an empty string/null just like e1
         if k in e2:
