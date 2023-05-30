@@ -2,13 +2,18 @@ import json
 import os
 import pathlib
 import re
-from typing import List
+from typing import List, Union
 
 import click
 
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
+
+
+# Converts from a true path to an install path
+def real_path_to_install_path(root_path: str, install_path: str, filepath: str) -> str:
+    return re.sub("^" + root_path + "/", install_path, filepath)
 
 
 def get_software_entry(
@@ -23,7 +28,7 @@ def get_software_entry(
 ) -> Software:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path and install_path:
-        sw_entry.installPath = [re.sub("^" + root_path + "/", install_path, filepath)]
+        sw_entry.installPath = [real_path_to_install_path(root_path, install_path, filepath)]
     if root_path and container_uuid:
         sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
     sw_entry.recordedInstitution = user_institution_name
@@ -130,6 +135,10 @@ def sbom(
 
     # gather metadata for files and add/augment software entries in the sbom
     if not skip_gather:
+        # List of directory symlinks; 2-sized tuples with (source, dest)
+        dir_symlinks: List[tuple[str, str]] = []
+        # List of file symlinks; keys are SHA256 hashes, values are source paths
+        file_symlinks: dict[str, List[str]] = {}
         for entry in config:
             if "archive" in entry:
                 print("Processing parent container " + str(entry["archive"]))
@@ -160,12 +169,51 @@ def sbom(
                 if epath.endswith("/"):
                     epath = epath[:-1]
                 print("Extracted Path: " + str(epath))
-                for cdir, _, files in os.walk(epath):
+                for cdir, dirs, files in os.walk(epath):
                     print("Processing " + str(cdir))
+
+                    if install_prefix:
+                        for dir_ in dirs:
+                            full_path = os.path.join(cdir, dir_)
+                            if os.path.islink(full_path):
+                                dest = resolve_link(full_path, cdir, epath)
+                                if dest is not None:
+                                    install_source = real_path_to_install_path(
+                                        epath, install_prefix, full_path
+                                    )
+                                    install_dest = real_path_to_install_path(
+                                        epath, install_prefix, dest
+                                    )
+                                    dir_symlinks.append((install_source, install_dest))
 
                     entries: List[Software] = []
                     for f in files:
                         filepath = os.path.join(cdir, f)
+                        file_is_symlink = False
+                        if os.path.islink(filepath):
+                            true_filepath = resolve_link(filepath, cdir, epath)
+                            # Dead/infinite links will error so skip them
+                            if true_filepath is None:
+                                continue
+                            # Otherwise add them and skip adding the entry
+                            if install_prefix:
+                                install_filepath = real_path_to_install_path(
+                                    epath, install_prefix, filepath
+                                )
+                                install_dest = real_path_to_install_path(
+                                    epath, install_prefix, true_filepath
+                                )
+                                # A dead link shows as a file so need to test if it's a
+                                # file or a directory once rebased
+                                if os.path.isfile(true_filepath):
+                                    # file_symlinks.append((install_filepath, install_dest))
+                                    file_is_symlink = True
+                                else:
+                                    dir_symlinks.append((install_filepath, install_dest))
+                                    continue
+                            # We need get_software_entry to look at the true filepath
+                            filepath = true_filepath
+
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
                             entries.append(
                                 get_software_entry(
@@ -179,6 +227,14 @@ def sbom(
                                     user_institution_name=recorded_institution,
                                 )
                             )
+
+                            if file_is_symlink and install_prefix:
+                                # Remove the entry from the list as it'll be processed later anyways
+                                entry = entries.pop()
+                                if entry.sha256 not in file_symlinks:
+                                    file_symlinks[entry.sha256] = []
+                                file_symlinks[entry.sha256].append(install_filepath)
+
                     if entries:
                         # if a software entry already exists with a matching file hash, augment the info in the existing entry
                         for e in entries:
@@ -212,6 +268,29 @@ def sbom(
                                             parent_uuid, child_uuid, "Contains"
                                         )
                                 # TODO a pass later on to check for and remove duplicate relationships should be added just in case
+
+        # Add file symlinks to install paths
+        for software in new_sbom.software:
+            if software.sha256 in file_symlinks:
+                for full_path in file_symlinks[software.sha256]:
+                    if full_path not in software.installPath:
+                        software.installPath.append(full_path)
+                    base_name = pathlib.PurePath(full_path).name
+                    if base_name not in software.fileName:
+                        software.fileName.append(base_name)
+
+        # Add directory symlink destinations to extract/install paths
+        for software in new_sbom.software:
+            for paths in (software.containerPath, software.installPath):
+                paths_to_add = []
+                for path in paths:
+                    for link_source, link_dest in dir_symlinks:
+                        if path.startswith(link_dest):
+                            # Replace the matching start with the symlink instead
+                            # We can't use os.path.join here because we end up with absolute paths after
+                            # removing the common start.
+                            paths_to_add.append(path.replace(link_dest, link_source, 1))
+                paths += paths_to_add
     else:
         print("Skipping gathering file metadata and adding software entries")
 
@@ -223,3 +302,35 @@ def sbom(
 
     # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
     output_writer.write_sbom(new_sbom, sbom_outfile)
+
+
+def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
+    assert cur_dir.startswith(extract_dir)
+    # Links seen before
+    seen_paths = set()
+    # os.readlink() resolves one step of a symlink
+    current_path = path
+    steps = 0
+    while os.path.islink(current_path):
+        # If we've already seen this then we're in an infinite loop
+        if current_path in seen_paths:
+            return None
+        seen_paths.add(current_path)
+        dest = os.readlink(current_path)
+        # Convert relative paths to absolute local paths
+        if not pathlib.Path(dest).is_absolute():
+            common_path = os.path.commonpath([cur_dir, extract_dir])
+            local_path = os.path.join("/", cur_dir[len(common_path) :])
+            dest = os.path.join(local_path, dest)
+        # Convert to a canonical form to eliminate .. to prevent reading above extract_dir
+        dest = os.path.normpath(dest)
+        # We need to get a non-absolute path so os.path.join works as we want
+        if pathlib.Path(dest).is_absolute():
+            # TODO: Windows support, but how???
+            dest = dest[1:]
+        # Rebase to get the true location
+        current_path = os.path.join(extract_dir, dest)
+        cur_dir = os.path.dirname(current_path)
+    if not os.path.exists(current_path):
+        return None
+    return os.path.normpath(current_path)
