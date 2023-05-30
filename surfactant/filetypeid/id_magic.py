@@ -3,7 +3,7 @@ from enum import Enum, auto
 from typing import Optional
 
 import surfactant.plugin
-
+from surfactant.infoextractors.coff_file import COFF_MAGIC_TARGET_NAME
 
 class ExeType(Enum):
     ELF = auto()
@@ -102,6 +102,21 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 in a_out_magic
             ):
                 return "A.OUT little"
+            if (
+                int.from_bytes(magic_bytes[:2], byteorder="little", signed=False)
+                in COFF_MAGIC_TARGET_NAME
+            ):
+                return "COFF"
+            # XCOFF:
+            # https://www.ibm.com/docs/en/aix/7.3?topic=formats-xcoff-object-file-format
+            if magic_bytes[:2] == "\x1d\x00":
+                return "XCOFF32"
+            if magic_bytes[:2] == "\xf7\x01":
+                return "XCOFF64"
+            # ECOFF:
+            # https://web.archive.org/web/20160305114748/http://h41361.www4.hp.com/docs/base_doc/DOCUMENTATION/V50A_ACRO_SUP/OBJSPEC.PDF
+            if magic_bytes[:2] in ("\x83\x01", "\x88\x01", "\x8F\x01"):
+                return "ECOFF"
             return None
     except FileNotFoundError:
         return None
