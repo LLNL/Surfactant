@@ -11,7 +11,7 @@ from collections import deque
 
 
 def is_valid_uuid4(u):
-    """ Check if a uuid is valid
+    """Check if a uuid is valid
 
     Args:
         u (string): uuid in string form.
