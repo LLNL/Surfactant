@@ -25,7 +25,7 @@ COFF_MAGIC_TARGET_NAME = {
     0x01C0: "ARM",
     0xA641: "ARM64EC",
     0x01C2: "ARM Thumb",
-    0x01C4: "ATMv7 Thumb",
+    0x01C4: "ARMv7 Thumb",
 }
 
 
