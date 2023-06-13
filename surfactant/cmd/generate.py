@@ -84,7 +84,7 @@ def validate_config(config):
 
 
 @click.command("generate")
-@click.argument("config_file", envvar="CONFIG_FILE", type=click.File("r"), required=True)
+@click.argument("config_file", envvar="CONFIG_FILE", type=click.Path(exists=True), required=True)
 @click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
 @click.argument("input_sbom", type=click.File("r"), required=False)
 @click.option(
@@ -122,7 +122,15 @@ def sbom(
     pm = get_plugin_manager()
     output_writer = pm.get_plugin(output_format)
 
-    config = json.load(config_file)
+    if pathlib.Path(config_file).is_file():
+        with click.open_file(config_file) as f:
+            config = json.load(f)
+    else:
+        # Emulate a configuration file with the path
+        config = []
+        config.append({})
+        config[0]["extractPaths"] = [config_file]
+        config[0]["installPrefix"] = config_file
 
     # quit if invalid path found
     if not validate_config(config):
