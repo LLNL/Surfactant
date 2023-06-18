@@ -30,6 +30,7 @@ classifiers = [
     "Topic :: Software Development",
     "Topic :: System",
     "Topic :: Utilities",
+    "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
     "dataclasses_json",
