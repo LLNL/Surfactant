@@ -4,10 +4,8 @@ from typing import Any, Dict
 import javatools.jarinfo
 
 # TODO: Add documentation about how to install javatools
-# swig and libssl-dev needs to be install on Ubuntu
+# swig and libssl-dev needs to be installed on Ubuntu
 # https://gitlab.com/m2crypto/m2crypto/-/blob/master/INSTALL.rst
-
-# TODO: Pull some files off of Maven (or something) to test on
 
 def supports_file(filetype: str) -> bool:
     return filetype in ("JAVACLASS", "JAR", "WAR", "EAR")
@@ -46,19 +44,25 @@ _JAVA_VERSION_MAPPING = {
 
 def handle_java_class(info: Dict[str, Any], class_info: javatools.JavaClassInfo):
     # This shouldn't happen but just in-case it does don't overwrite information
-    if class_info.get_this() in info["classes"]:
+    if class_info.get_this() in info["javaClasses"]:
         return
-    info["classes"][class_info.get_this()] = {}
-    add_to = info["classes"][class_info.get_this()]
+    info["javaClasses"][class_info.get_this()] = {}
+    add_to = info["javaClasses"][class_info.get_this()]
     (major_version, _) = class_info.get_version()
     if major_version in _JAVA_VERSION_MAPPING:
-        add_to["JavaMinSEVersion"] = _JAVA_VERSION_MAPPING[major_version]
-    add_to["JavaExports"] = [*class_info.get_provides()]
-    add_to["JavaImports"] = [*class_info.get_requires()]
+        add_to["javaMinSEVersion"] = _JAVA_VERSION_MAPPING[major_version]
+    add_to["javaExports"] = [*class_info.get_provides()]
+    # I've seen this fail for some reason; catch errors on it and just ignore
+    # them if it fails
+    try:
+        add_to["javaImports"] = [*class_info.get_requires()]
+    except IndexError:
+        # Should this be set to "Unknown" or similar?
+        add_to["javaImports"] = []
 
 
 def extract_java_info(filename: str, filetype: str) -> object:
-    info = {"classes": {}}
+    info = {"javaClasses": {}}
     if filetype in ("JAR", "EAR", "WAR"):
         with javatools.jarinfo.JarInfo(filename) as jarinfo:
             for class_ in jarinfo.get_classes():
