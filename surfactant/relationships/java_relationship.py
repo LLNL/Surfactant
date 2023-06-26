@@ -1,4 +1,4 @@
-from typing import *
+from typing import Optional, List
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
