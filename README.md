@@ -271,4 +271,21 @@ TODO: Insert documentation on how to merge sboms here
 Detailed information on the plugin system can be found [here](./README-PLUGIN.md).
 
 ## Support
-For questions or support, contact: Ryan Mast mast9@llnl.gov
+Full user guides for Surfactant are available [online](https://surfactant.readthedocs.io)
+and in the [docs](./docs) directory.
+
+For questions or support, please create a new discussion on GitHub Discussions.
+
+## Contributing
+Contributions are welcome. Bug fixes or minor changes are preferred via a
+pull request to the [Surfactant GitHub repository](https://github.com/LLNL/Surfactant).
+For more information on contributing see the [CONTRIBUTING](./CONTRIBUTING.md) file.
+
+## License
+Surfactant is released under the MIT license. See the [LICENSE](./LICENSE)
+and [NOTICE](./NOTICE) files for details. All new contributions must be made
+under this license.
+
+SPDX-License-Identifier: MIT
+
+LLNL-CODE-850771
