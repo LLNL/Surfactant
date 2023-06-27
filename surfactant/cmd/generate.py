@@ -1,8 +1,12 @@
+# Copyright 2023 Lawrence Livermore National Security, LLC
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: MIT
 import json
 import os
 import pathlib
 import re
-from typing import List, Union
+from typing import Dict, List, Tuple, Union
 
 import click
 
@@ -144,9 +148,9 @@ def sbom(
     # gather metadata for files and add/augment software entries in the sbom
     if not skip_gather:
         # List of directory symlinks; 2-sized tuples with (source, dest)
-        dir_symlinks: List[tuple[str, str]] = []
+        dir_symlinks: List[Tuple[str, str]] = []
         # List of file symlinks; keys are SHA256 hashes, values are source paths
-        file_symlinks: dict[str, List[str]] = {}
+        file_symlinks: Dict[str, List[str]] = {}
         for entry in config:
             if "archive" in entry:
                 print("Processing parent container " + str(entry["archive"]))

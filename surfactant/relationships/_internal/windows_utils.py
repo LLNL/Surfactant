@@ -1,3 +1,7 @@
+# Copyright 2023 Lawrence Livermore National Security, LLC
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: MIT
 import pathlib
 from collections.abc import Iterable
 from typing import Any, List

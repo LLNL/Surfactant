@@ -11,13 +11,14 @@ description = "Surfactant checksec.py"
 readme = "README.md"
 requires-python = ">=3.8"
 keywords = ["surfactant"]
-license = {text = "BSD-3-Clause"}
+license = {text = "MIT License"}
 classifiers = [
     "Programming Language :: Python :: 3",
     "Environment :: Console",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
     "checksec.py",

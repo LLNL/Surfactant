@@ -1,3 +1,7 @@
+# Copyright 2023 Lawrence Livermore National Security, LLC
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: MIT
 from ._analysisdata import AnalysisData
 from ._file import File
 from ._hardware import Hardware

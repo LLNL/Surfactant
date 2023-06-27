@@ -25,3 +25,7 @@ main.add_command(version)
 
 if __name__ == "__main__":
     main()
+# Copyright 2023 Lawrence Livermore National Security, LLC
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: MIT
