@@ -1,3 +1,8 @@
+# Copyright 2023 Lawrence Livermore National Security, LLC
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: MIT
+
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
