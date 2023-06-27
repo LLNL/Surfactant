@@ -1,7 +1,7 @@
 import csv
 import os
 from collections.abc import Iterable
-from typing import List
+from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -29,6 +29,11 @@ def write_sbom(sbom: SBOM, outfile) -> None:
     if sbom.software:
         for sw in sbom.software:
             write_software_entry(writer, sw, fields)
+
+
+@surfactant.plugin.hookimpl
+def short_name() -> Optional[str]:
+    return "csv"
 
 
 def write_software_entry(writer: csv.DictWriter, software: Software, fields: List[str]):

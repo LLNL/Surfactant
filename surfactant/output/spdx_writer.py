@@ -130,6 +130,11 @@ def write_sbom(sbom: SBOM, outfile) -> None:
             sys.stderr.write(e)
 
 
+@surfactant.plugin.hookimpl
+def short_name() -> Optional[str]:
+    return "spdx"
+
+
 def convert_system_to_spdx_packages(system: System) -> Tuple[str, Package]:
     """Converts a system entry in the SBOM to an SPDX Package.
 
