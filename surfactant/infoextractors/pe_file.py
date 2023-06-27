@@ -1,3 +1,8 @@
+# Copyright 2023 Lawrence Livermore National Security, LLC
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: MIT
+
 # https://en.wikipedia.org/wiki/Comparison_of_executable_file_formats
 # https://github.com/erocarrera/pefile/blob/master/pefile.py#L2914
 # pefile only handles MZ magic bytes, but ZM might be valid as well
