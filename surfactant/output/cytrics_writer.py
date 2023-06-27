@@ -1,6 +1,7 @@
+from typing import Optional
+
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM
-from typing import Optional
 
 
 @surfactant.plugin.hookimpl

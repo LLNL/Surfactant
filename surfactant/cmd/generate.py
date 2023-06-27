@@ -130,7 +130,7 @@ def print_output_formats(ctx, _, value):
     callback=print_output_formats,
     expose_value=False,
     is_eager=True,
-    help="List supported output formats"
+    help="List supported output formats",
 )
 def sbom(
     config_file,
