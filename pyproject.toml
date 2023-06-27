@@ -5,10 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "Surfactant"
 authors = [
-    {name = "Levi Lloyd", email = "lloyd27@llnl.gov"},
     {name = "Ryan Mast", email = "mast9@llnl.gov"},
+    {name = "Levi Lloyd", email = "lloyd27@llnl.gov"},
     {name = "Micaela Gallegos", email = "gallegos31@llnl.gov"},
     {name = "Alexander Armstrong", email = "armstrong48@llnl.gov"},
+    {name = "Shayna Kapadia", email = "kapadia2@llnl.gov"},
 ]
 maintainers = [
     {name = "Ryan Mast", email = "mast9@llnl.gov"},
@@ -17,7 +18,7 @@ description = "Generate an SBOM using information from file metadata"
 readme = "README.md"
 requires-python = ">=3.8"
 keywords = ["sbom", "pe", "elf", "ole", "msi"]
-license = {text = "BSD-3-Clause"}
+license = {text = "MIT License"}
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
