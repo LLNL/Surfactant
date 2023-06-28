@@ -126,7 +126,7 @@ def print_output_formats(ctx, _, value):
     "--output_format",
     is_flag=False,
     default="surfactant.output.cytrics_writer",
-    help="SBOM output format, see --list-output-formats for list of options",
+    help="SBOM output format, see --list-output-formats for list of options; default is CyTRICS",
 )
 @click.option(
     "--list-output-formats",
@@ -151,7 +151,7 @@ def sbom(
     if output_writer is None:
         for plugin in pm.get_plugins():
             try:
-                if plugin.short_name() == output_format and hasattr(plugin, "write_sbom"):
+                if plugin.short_name().lower() == output_format.lower() and hasattr(plugin, "write_sbom"):
                     output_writer = plugin
                     break
             except AttributeError:
