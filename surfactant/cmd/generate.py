@@ -151,7 +151,9 @@ def sbom(
     if output_writer is None:
         for plugin in pm.get_plugins():
             try:
-                if plugin.short_name().lower() == output_format.lower() and hasattr(plugin, "write_sbom"):
+                if plugin.short_name().lower() == output_format.lower() and hasattr(
+                    plugin, "write_sbom"
+                ):
                     output_writer = plugin
                     break
             except AttributeError:
