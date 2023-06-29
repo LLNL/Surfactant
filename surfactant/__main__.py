@@ -6,6 +6,7 @@ import sys
 import click
 
 from surfactant.cmd.generate import sbom as generate
+from surfactant.cmd.stat import stat
 
 
 @click.group()
@@ -22,6 +23,7 @@ def version():
 
 main.add_command(generate)
 main.add_command(version)
+main.add(stat)
 
 if __name__ == "__main__":
     main()
