@@ -11,17 +11,17 @@ class _ExportDict:
     created = False
     supplied_by = {}
 
-
-def _create_export_dict(sbom: SBOM):
-    if _ExportDict.created:
-        return
-    for software_entry in sbom.software:
-        for metadata in software_entry.metadata:
-            if "javaClasses" in metadata:
-                for class_info in metadata["javaClasses"].values():
-                    for export in class_info["javaExports"]:
-                        _ExportDict.supplied_by[export] = software_entry.UUID
-    _ExportDict.created = True
+    @classmethod
+    def create_export_dict(cls, sbom: SBOM):
+        if cls.created:
+            return
+        for software_entry in sbom.software:
+            for metadata in software_entry.metadata:
+                if "javaClasses" in metadata:
+                    for class_info in metadata["javaClasses"].values():
+                        for export in class_info["javaExports"]:
+                            cls.supplied_by[export] = software_entry.UUID
+        cls.created = True
 
 
 @surfactant.plugin.hookimpl
@@ -30,7 +30,7 @@ def establish_relationships(
 ) -> Optional[List[Relationship]]:
     if not has_required_fields(metadata):
         return None
-    _create_export_dict(sbom)
+    _ExportDict.create_export_dict(sbom)
     relationships = []
     dependant_uuid = software.UUID
     for class_info in metadata["javaClasses"].values():
