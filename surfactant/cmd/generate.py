@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import re
+import sys
 from typing import Dict, List, Tuple, Union
 
 import click
@@ -87,6 +88,19 @@ def validate_config(config):
     return True
 
 
+def print_output_formats(ctx, _, value):
+    if not value or ctx.resilient_parsing:
+        return
+    pm = get_plugin_manager()
+    for plugin in pm.get_plugins():
+        if hasattr(plugin, "write_sbom"):
+            if hasattr(plugin, "short_name"):
+                print(plugin.short_name())
+            else:
+                print(pm.get_canonical_name(plugin))
+    ctx.exit()
+
+
 @click.command("generate")
 @click.argument("config_file", envvar="CONFIG_FILE", type=click.Path(exists=True), required=True)
 @click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
@@ -112,7 +126,15 @@ def validate_config(config):
     "--output_format",
     is_flag=False,
     default="surfactant.output.cytrics_writer",
-    help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx]_writer",
+    help="SBOM output format, see --list-output-formats for list of options; default is CyTRICS",
+)
+@click.option(
+    "--list-output-formats",
+    is_flag=True,
+    callback=print_output_formats,
+    expose_value=False,
+    is_eager=True,
+    help="List supported output formats",
 )
 def sbom(
     config_file,
@@ -125,6 +147,20 @@ def sbom(
 ):
     pm = get_plugin_manager()
     output_writer = pm.get_plugin(output_format)
+
+    if output_writer is None:
+        for plugin in pm.get_plugins():
+            try:
+                if plugin.short_name().lower() == output_format.lower() and hasattr(
+                    plugin, "write_sbom"
+                ):
+                    output_writer = plugin
+                    break
+            except AttributeError:
+                pass
+
+    if output_writer is None:
+        sys.exit(f'No output format "{output_format}" found')
 
     if pathlib.Path(config_file).is_file():
         with click.open_file(config_file) as f:

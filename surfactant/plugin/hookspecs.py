@@ -75,3 +75,8 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         sbom (SBOM): The SBOM to write to the output file.
         outfile: The output file handle to write the SBOM to.
     """
+
+
+@hookspec
+def short_name() -> Optional[str]:
+    """A short name to register the hook as"""
