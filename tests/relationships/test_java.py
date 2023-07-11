@@ -12,17 +12,7 @@ sbom = SBOM(
             UUID="supplier",
             fileName=["supplier"],
             installPath=["supplier"],
-            metadata=[
-                {
-                    "javaClasses": {
-                        "dummy": {
-                            "javaExports": [
-                                "someFunc():void"
-                            ]
-                        }
-                    }
-                }
-            ],
+            metadata=[{"javaClasses": {"dummy": {"javaExports": ["someFunc():void"]}}}],
         ),
         Software(
             UUID="consumer",
@@ -33,9 +23,7 @@ sbom = SBOM(
                     "javaClasses": {
                         "dummy": {
                             "javaExports": [],
-                            "javaImports": [
-                                "someFunc():void"
-                            ],
+                            "javaImports": ["someFunc():void"],
                         },
                     },
                 },
@@ -45,8 +33,11 @@ sbom = SBOM(
     relationships=[],
 )
 
+
 def test_java_relationship():
     javaPlugin = get_plugin_manager().get_plugin("surfactant.relationships.java_relationship")
     sw = sbom.software[1]
     md = sw.metadata[0]
-    assert javaPlugin.establish_relationships(sbom, sw, md) == [Relationship("consumer", "supplier", "Uses")]
+    assert javaPlugin.establish_relationships(sbom, sw, md) == [
+        Relationship("consumer", "supplier", "Uses")
+    ]

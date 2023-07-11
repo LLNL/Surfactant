@@ -1,11 +1,14 @@
+from typing import Any, Dict
+
+import javatools.jarinfo
+
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
-from typing import Any, Dict
-import javatools.jarinfo
 
 # TODO: Add documentation about how to install javatools
 # swig and libssl-dev needs to be installed on Ubuntu
 # https://gitlab.com/m2crypto/m2crypto/-/blob/master/INSTALL.rst
+
 
 def supports_file(filetype: str) -> bool:
     return filetype in ("JAVACLASS", "JAR", "WAR", "EAR")
@@ -16,6 +19,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     if not supports_file(filetype):
         return None
     return extract_java_info(filename, filetype)
+
 
 # Map from internal major number to Java SE version
 # https://docs.oracle.com/javase/specs/jvms/se20/html/jvms-4.html#jvms-4.1-200-B.2
@@ -41,6 +45,7 @@ _JAVA_VERSION_MAPPING = {
     63: "19",
     64: "20",
 }
+
 
 def handle_java_class(info: Dict[str, Any], class_info: javatools.JavaClassInfo):
     # This shouldn't happen but just in-case it does don't overwrite information
