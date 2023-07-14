@@ -23,7 +23,12 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         pe_file,
     )
     from surfactant.input_readers import cytrics_reader
-    from surfactant.output import csv_writer, cytrics_writer, spdx_writer
+    from surfactant.output import (
+        csv_writer,
+        cyclonedx_writer,
+        cytrics_writer,
+        spdx_writer,
+    )
     from surfactant.relationships import (
         dotnet_relationship,
         elf_relationship,
@@ -46,6 +51,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         pe_relationship,
         csv_writer,
         cytrics_writer,
+        cyclonedx_writer,
         spdx_writer,
         cytrics_reader,
     )
