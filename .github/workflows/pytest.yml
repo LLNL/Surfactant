@@ -27,7 +27,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install -e .[test]
-        surfactant --version
+        surfactant version
     - name: Test with pytest
       run: |
         pytest
