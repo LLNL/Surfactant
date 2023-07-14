@@ -1,5 +1,14 @@
 # Surfactant
 
+A modular framework to gather file information for SBOM generation and dependency analysis.
+
+[![CI Test Status](https://github.com/LLNL/Surfactant/actions/workflows/pytest.yml/badge.svg)](https://github.com/LLNL/Surfactant/actions/workflows/pytest.yml)
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/LLNL/Surfactant/blob/main/LICENSE)
+[![Documentation Status](https://readthedocs.org/projects/surfactant/badge/?version=latest)](https://surfactant.readthedocs.io/en/latest/?badge=latest)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/LLNL/Surfactant/main.svg)](https://results.pre-commit.ci/latest/github/LLNL/Surfactant/main)
+
+[Documentation](https://surfactant.readthedocs.io/en/latest/)
+
 ## Description
 Surfactant can be used to gather information from a set of files to generate an SBOM, along with manipulating SBOMs and analyzing the information in them.  It pulls information from recognized file types (such as PE, ELF, or MSI files) contained within a directory structure corresponding to an extracted software package.  By default, the information is "surface-level" metadata contained in the files that does not require running the files
 or decompilation.
