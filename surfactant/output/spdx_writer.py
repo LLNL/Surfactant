@@ -31,13 +31,13 @@ from surfactant.sbomtypes import SBOM, Software, System
 
 @surfactant.plugin.hookimpl
 def write_sbom(sbom: SBOM, outfile) -> None:
-    """Writes the contents of the SBOM to an SPDX file.
+    """Writes the contents of the SBOM to a SPDX file.
 
     The write_sbom hook for the spdx_writer makes a best-effort attempt
     to map the information gathered from the internal SBOM representation
-    to a valid SPDX file. Currently there are known bugs in the spdx-tools
-    library used for validating and writing an SPDX file that make it not
-    work in relatively common cases.
+    to a valid SPDX file. Currently the spdx-tools library used for validating
+    and writing a SPDX file has an unstable API which can at times lead
+    to things not working.
 
     Args:
         sbom (SBOM): The SBOM to write to the output file.
@@ -140,13 +140,13 @@ def short_name() -> Optional[str]:
 
 
 def convert_system_to_spdx_packages(system: System) -> Tuple[str, Package]:
-    """Converts a system entry in the SBOM to an SPDX Package.
+    """Converts a system entry in the SBOM to a SPDX Package.
 
     If a system entry has multiple vendors, only the first one is chosen as the
     supplier for the SPDX Package (due to limitations of the SPDX format).
 
     Args:
-        system (System): The SBOM system to convert to an SPDX Package.
+        system (System): The SBOM system to convert to a SPDX Package.
 
     Returns:
         Tuple[str, Package]: A tuple containing the UUID of the system that was
@@ -169,7 +169,7 @@ def convert_system_to_spdx_packages(system: System) -> Tuple[str, Package]:
 def convert_software_to_spdx_packages(software: Software) -> Tuple[str, List[Package]]:
     """Converts a software entry in the SBOM to one or more SPDX Packages.
 
-    An SPDX Package is created for each file name that the software can have. If
+    A SPDX Package is created for each file name that the software can have. If
     a software entry has multiple vendors, only the first one is chosen as the
     supplier for the SPDX Package (due to limitations of the SPDX format).
 
@@ -209,7 +209,7 @@ def convert_software_to_spdx_packages(software: Software) -> Tuple[str, List[Pac
 def convert_software_to_spdx_files(software: Software) -> List[Tuple[str, str, File]]:
     """Converts a software entry in the SBOM to one or more SPDX Files.
 
-    An SPDX File is created for each unique container path that the software has. If
+    A SPDX File is created for each unique container path that the software has. If
     no container paths exist, each unique file name will be used instead. If a software
     entry has multiple vendors, only the first one is chosen as the supplier for the SPDX
     File (due to limitations of the SPDX format).
@@ -284,7 +284,7 @@ def create_spdx_file(idstring: str, file_path: str, software: Software) -> File:
     Args:
         idstring (str): A unique SPDX ID string (consisting of only alphanumeric, '.', and '-' characters).
         file_path (str): The full path to the SPDX File (starting with './', relative to the package/container).
-        software (Software): The SBOM software entry to convert to create an SPDX File from.
+        software (Software): The SBOM software entry to convert to a SPDX File.
 
     Returns:
         File: A SPDX File with information filled in based on the provided software entry.
