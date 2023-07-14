@@ -49,6 +49,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
+docs = ["sphinx", "myst-parser"]
 
 [project.scripts]
 surfactant = "surfactant.__main__:main"
