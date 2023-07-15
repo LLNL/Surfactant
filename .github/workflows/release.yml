@@ -10,8 +10,13 @@ jobs:
   build-wheel:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
       - name: Build wheel
         run: |
+          pip install build
           python -m build
       - name: Upload Python package dist artifacts
         uses: actions/upload-artifact@v3
