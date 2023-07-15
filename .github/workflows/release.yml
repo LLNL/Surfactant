@@ -16,14 +16,14 @@ jobs:
           python-version: '3.10'
       - name: Build wheel
         run: |
-          pip install build
+          pip install build twine
           python -m build
+          python -m twine check dist/*
       - name: Upload Python package dist artifacts
         uses: actions/upload-artifact@v3
         with:
           name: python-package-dist
-          path: |
-            dist
+          path: dist
 
   pypi-publish:
     name: Upload release to PyPI
@@ -40,5 +40,6 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: python-package-dist
+        path: dist
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
