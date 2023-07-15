@@ -32,7 +32,7 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     environment:
       name: release
-      url: https://pypi.org/p/surfactant
+      url: https://pypi.org/project/surfactant
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
