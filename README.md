@@ -16,33 +16,39 @@ Surfactant can be used to gather information from a set of files to generate an 
 or decompilation.
 
 ## Installation
-1. Create a virtual environment with python >= 3.8
+
+### For Users:
+1. Create a virtual environment with python >= 3.8 [Optional, but recommended]
 ```bash
-$ python -m venv cytrics_venv
-$ source cytrics_venv/bin/activate
+python -m venv cytrics_venv
+source cytrics_venv/bin/activate
+```
+
+2. Install Surfactant with pip 
+```bash
+pip install surfactant
+```
+
+### For Developers:
+1. Create a virtual environment with python >= 3.8 [Optional, but recommended]
+```bash
+python -m venv cytrics_venv
+source cytrics_venv/bin/activate
 ```
 
 2. Clone sbom-surfactant
 ```bash
-$ git clone ssh://git@czgitlab.llnl.gov:7999/cir-software-assurance/sbom-surfactant.git
-```
-OR
-```bash
-$ git clone https://lc.llnl.gov/gitlab/cir-software-assurance/sbom-surfactant.git
+git clone git@github.com:LLNL/Surfactant.git
 ```
 
-3. Install surfactant with:
+3. Create an editable surfactant install (changes to code will take effect immediately):
 ```bash
-$ pip install .
-```
-For developers, install surfactant with:
-```bash
-$ pip install -e .
+pip install -e .
 ```
 
-To install optional dependencies for the test feature:
+To install optional dependencies required for running pytest and pre-commit:
 ```bash
-$ pip install -r requirements-dev.txt
+pip install -e .[test,dev]
 ```
 
 ## Usage
