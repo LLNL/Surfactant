@@ -24,7 +24,7 @@ python -m venv cytrics_venv
 source cytrics_venv/bin/activate
 ```
 
-2. Install Surfactant with pip 
+2. Install Surfactant with pip
 ```bash
 pip install surfactant
 ```
