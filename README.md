@@ -48,7 +48,7 @@ pip install -e .
 
 To install optional dependencies required for running pytest and pre-commit:
 ```bash
-pip install -e .[test,dev]
+pip install -e ".[test,dev]"
 ```
 
 ## Usage
