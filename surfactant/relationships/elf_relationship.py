@@ -10,6 +10,8 @@ from typing import List, Optional
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
+from ._internal.posix_utils import posix_normpath
+
 
 def has_required_fields(metadata) -> bool:
     # no elfDependencies info, can't establish relationships
@@ -52,8 +54,8 @@ def establish_relationships(
         # construct fname and full file path(s) to search for; paths must be a list if the dependency is given as a relative path
         if "/" in dep:
             # search SBOM entries for a library at a matching relative/absolute path
-            dep = pathlib.PurePosixPath(
-                os.path.normpath(dep)
+            dep = posix_normpath(
+                dep
             )  # normpath takes care of redundancies such as `//`->`/` and `ab/../xy`->`xy`; NOTE may change meaning of path containing symlinks
             fname = dep.name
             if dep.is_absolute():
@@ -65,11 +67,11 @@ def establish_relationships(
                 # iterate through install paths for sw to get the full path to the file as it would appear in installPaths for the software entry
                 if isinstance(software.installPath, Iterable):
                     for ipath in software.installPath:
-                        ipath_posix = pathlib.PurePosixPath(
-                            os.path.normpath(ipath)
+                        ipath_posix = posix_normpath(
+                            ipath
                         )  # NOTE symlinks in install path may be affected by normpath
                         fpaths.append(
-                            os.path.normpath(str(ipath_posix.parent.joinpath(dep)))
+                            str(posix_normpath(str(ipath_posix.parent.joinpath(dep))))
                         )  # paths to search are install path folders + relative path of dependency
         else:
             fname = dep
@@ -191,5 +193,5 @@ def substitute_all_dst(sw: Software, md, path) -> list:
         return []
 
     # normalize paths after expanding tokens to avoid portions of the path involving  ../, ./, and // occurrences
-    pathlist = [os.path.normpath(p) for p in pathlist]
+    pathlist = [str(posix_normpath(p)) for p in pathlist]
     return pathlist
