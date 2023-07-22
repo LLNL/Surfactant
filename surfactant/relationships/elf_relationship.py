@@ -2,7 +2,6 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import os
 import pathlib
 from collections.abc import Iterable
 from typing import List, Optional
@@ -71,13 +70,13 @@ def establish_relationships(
                             ipath
                         )  # NOTE symlinks in install path may be affected by normpath
                         fpaths.append(
-                            str(posix_normpath(str(ipath_posix.parent.joinpath(dep))))
+                            posix_normpath(str(ipath_posix.parent.joinpath(dep))).as_posix()
                         )  # paths to search are install path folders + relative path of dependency
         else:
             fname = dep
             # the paths for the dependency follow the default search path order for Linux/FreeBSD/etc
             fpaths = [
-                os.path.join(p, fname) for p in default_search_paths
+                p.joinpath(fname).as_posix() for p in default_search_paths
             ]  # append fname to the end of the paths to get the full file install paths of the dependency
 
         # Look for a software entry with a file name and install path that matches the dependency that would be loaded
@@ -97,7 +96,7 @@ def establish_relationships(
     return relationships
 
 
-def generate_search_paths(sw: Software, md) -> list:
+def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
     # 1. Search using directories in DT_RPATH if present and no DT_RUNPATH exists (use of DT_RPATH is deprecated)
     # 2. Use LD_LIBRARY_PATH environment variable; ignore if suid/sgid binary (nothing to do, we don't have this information w/o running on a live system)
     # 3. Search using directories in DT_RUNPATH if present
@@ -112,12 +111,14 @@ def generate_search_paths(sw: Software, md) -> list:
             nodeflib = md["elfDynamicFlags1"]["DF_1_NODEFLIB"]
     if not nodeflib:
         # add default search paths
-        paths.extend(["/lib", "/lib64", "/usr/lib", "/usr/lib64"])
+        paths.extend(
+            [pathlib.PurePosixPath(p) for p in ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]]
+        )
 
     return paths
 
 
-def generate_runpaths(sw: Software, md) -> list:
+def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
     # rpath and runpath are lists of strings (just in case an ELF file has several, though that is probably an invalid ELF file)
     rp_to_use = []
     rpath = None
@@ -144,11 +145,11 @@ def generate_runpaths(sw: Software, md) -> list:
     ]
 
 
-def replace_dst(origstr, dvar, newval) -> list:
+def replace_dst(origstr, dvar, newval) -> str:
     return origstr.replace("$" + dvar, newval).replace("${" + dvar + "}", newval)
 
 
-def substitute_all_dst(sw: Software, md, path) -> list:
+def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
     # substitute any dynamic string tokens found; may result in multiple strings if different variants are possible
     # replace $ORIGIN, ${ORIGIN}, $LIB, ${LIB}, $PLATFORM, ${PLATFORM} tokens
     # places the dynamic linker does this expansion are:
@@ -157,7 +158,7 @@ def substitute_all_dst(sw: Software, md, path) -> list:
     # - arguments to ld.so: --audit, --library-path, and --preload
     # - the filename arguments to dlopen and dlmopen
     # more details in the `Dynamic string tokens` section of https://man7.org/linux/man-pages/man8/ld.so.8.html
-    pathlist = []
+    pathlist: List[pathlib.PurePosixPath] = []
     # ORIGIN: replace with absolute directory containing the program or shared object (with symlinks resolved and no ../ or ./ subfolders)
     # for SUID/SGID binaries, after expansion the normalized path must be in a trusted directory (https://github.com/bminor/glibc/blob/0d41182/elf/dl-load.c#L356-L357, https://github.com/bminor/glibc/blob/0d41182/elf/dl-load.c#L297-L316)
     if (path.find("$ORIGIN") != -1) or (path.find("${ORIGIN}") != -1):
@@ -193,5 +194,5 @@ def substitute_all_dst(sw: Software, md, path) -> list:
         return []
 
     # normalize paths after expanding tokens to avoid portions of the path involving  ../, ./, and // occurrences
-    pathlist = [str(posix_normpath(p)) for p in pathlist]
+    pathlist = [posix_normpath(p) for p in pathlist]
     return pathlist
