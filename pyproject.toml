@@ -48,7 +48,7 @@ dependencies = [
     "spdx-tools>=0.7.1,==0.7.*",
     "pluggy",
     "click",
-    "javatools"
+    "javatools>=1.6.0"
 ]
 dynamic = ["version"]
 
