@@ -15,6 +15,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         a_out_file,
         coff_file,
         elf_file,
+        java_file,
         ole_file,
         pe_file,
     )
@@ -22,6 +23,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
     from surfactant.relationships import (
         dotnet_relationship,
         elf_relationship,
+        java_relationship,
         pe_relationship,
     )
 
@@ -31,10 +33,12 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         a_out_file,
         coff_file,
         elf_file,
+        java_file,
         pe_file,
         ole_file,
         dotnet_relationship,
         elf_relationship,
+        java_relationship,
         pe_relationship,
         csv_writer,
         cytrics_writer,

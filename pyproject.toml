@@ -47,7 +47,8 @@ dependencies = [
     "defusedxml",
     "spdx-tools>=0.7.1,==0.7.*",
     "pluggy",
-    "click"
+    "click",
+    "javatools>=1.6.0"
 ]
 dynamic = ["version"]
 
