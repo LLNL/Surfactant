@@ -1,22 +1,14 @@
-from json import dumps
-from os import getcwd, listdir, makedirs, mkdir, remove
+""" execinstaller.py """
+from os import mkdir, getcwd, remove, makedirs, listdir
 from os.path import abspath, exists
 from shutil import copy, copy2
-
-<<<<<<< HEAD
-from sys import argv, exit
-from time import sleep
-
-=======
-import sys
-from json import dumps
 from sys import argv
 from time import sleep
+from json import dumps
+import sys
 
->>>>>>> fe3f1e8 (Fixed some pylint warnings)
-
-from virtualbox import Session, VirtualBox
 from virtualbox.library_base import VBoxError
+from virtualbox import VirtualBox, Session
 
 # Passed in command line arguments
 args = {"-machine": "WinDev2307Eval", "-path": None, "-debug": "off"}
@@ -91,16 +83,16 @@ def prepare_vm(vbox: VirtualBox, session: Session) -> None:
         machine = vbox.find_machine(args["-machine"])
         progress = machine.launch_vm_process(session, "gui", [])
         progress.wait_for_completion()
-    except VBoxError as e:
-        print(e)
+    except VBoxError as err:
+        print(err)
         sys.exit("Ensure the VM is in a saved and non-running state.")
 
     # Create the shared folder on the guest machine's V: drive
     try:
-        sMachine = session.machine
-        sMachine.create_shared_folder("vb", args["-sfpath"], True, True, "V:")
-    except VBoxError as e:
-        print(e)
+        s_machine = session.machine
+        s_machine.create_shared_folder("vb", args["-sfpath"], True, True, "V:")
+    except VBoxError as err:
+        print(err)
 
     # Save settings on the machine
     session.machine.save_settings()
@@ -120,20 +112,20 @@ def deploy_installer() -> None:
 
     try:
         # Insert arguments into shared folder
-        with open("args.txt", "w") as f:
-            f.write(dumps(args, separators=(",", ":")))
+        with open("args.txt", "w", encoding="utf-8") as f_handle:
+            f_handle.write(dumps(args, separators=(",", ":")))
 
         copy("args.txt", args["-sfpath"])
         remove("args.txt")
-    except PermissionError as e:
-        print(e)
+    except PermissionError as err:
+        print(err)
         sys.exit("Make sure the files are in the current directory!")
 
     try:
         # Deploy installer
         copy(args["-path"], args["-sfpath"])
-    except PermissionError as e:
-        print(e)
+    except PermissionError as err:
+        print(err)
         sys.exit("Make sure the files are in the current directory!")
 
     # Busy wait until the installer is done
@@ -162,8 +154,8 @@ def cleanup(session: Session) -> None:
     for file in listdir(".\\vb"):
         try:
             remove(".\\vb\\" + file)
-        except IOError as e:
-            print(f"CANNOT DELETE .\\vb\\{file}: {str(e)}")
+        except IOError as err:
+            print(f"CANNOT DELETE .\\vb\\{file}: {str(err)}")
 
     # Save settings and power down the machine
     session.machine.save_settings()
@@ -178,15 +170,14 @@ def cleanup(session: Session) -> None:
     session.unlock_machine()
 
 
-def analyze_results() -> list:
-    """Analyzes the results.txt file and filters out the irrelevant files.
-    The newly created file lists files that should be extracted from the VM.
+def get_attributes() -> list:
+    """Reads from results.txt and returns the list of files
 
     Args:
         None.
 
     Returns:
-        list: contains the filtered list of files that should be extracted.
+        list: contains the attributes for each file
     """
 
     # Ensure that results.txt has been moved
@@ -199,47 +190,54 @@ def analyze_results() -> list:
     # Load file data
     lines = None
 
-    with open(fname, "r", encoding="utf-16") as fp:
-        lines = fp.readlines()
+    with open(fname, "r", encoding="utf-16") as f_handle:
+        lines = f_handle.readlines()
 
     remove(fname)
 
     # get parallel lists ready, prevent reading an incomplete file
     nfiles = len(lines) // 7
-
-    filename = [""] * nfiles
-    extension = [""] * nfiles
-    executable = [""] * nfiles
-    pid = [""] * nfiles
-    irp_op = [""] * nfiles
-    change_code = [""] * nfiles
+    attr = [[""] * nfiles] * 6
 
     for i in range(nfiles):
         idx = i * 7
 
         # Interpret the extension buffer correctly
         ext = str(lines[idx + 2]).strip("[] \t\r\n")
-        extension[i] = "".join([chr(int(x)) for x in ext.split(", ")])
+        attr[1][i] = "".join([chr(int(x)) for x in ext.split(", ")])
 
         # Construct the file name and fix the duplicate extension
         currfname = str(lines[idx + 1]).split(".", 1)[0].strip('" \t\r\n')
         currfname = "BAD:" if len(currfname) == 0 else currfname
-        filename[i] = currfname + "." + extension[i]
+        attr[0][i] = currfname + "." + attr[1][i]
 
         # Get the rest of the attributes from the file
         exename = str(lines[idx + 3]).rstrip().strip('"')
-        executable[i] = "BAD" if len(exename) == 0 else exename
-        pid[i] = int(str(lines[idx + 4]).rstrip())
-        irp_op[i] = int(str(lines[idx + 5]).rstrip())
-        change_code[i] = int(str(lines[idx + 6]).rstrip())
+        attr[2][i] = "BAD" if len(exename) == 0 else exename
+        attr[3][i] = int(str(lines[idx + 4]).rstrip())
+        attr[4][i] = int(str(lines[idx + 5]).rstrip())
+        attr[5][i] = int(str(lines[idx + 6]).rstrip())
+
+    return attr
+
+
+def analyze_results() -> list:
+    """Analyzes the results.txt file and filters out the irrelevant files.
+    The newly created file lists files that should be extracted from the VM.
+    Attribute indices: 0 = filename, 1 = extension, 2 = executable,
+    3 = pid, 4 = irp_operation, 5 = change_code
+
+    Args:
+        None.
+
+    Returns:
+        list: contains the filtered list of files that should be extracted.
+    """
 
     # Create auxillary lists
-    aux_fname = []
-    aux_ext = []
-    aux_exe = []
-    aux_pid = []
-    aux_irp_op = []
-    aux_change_code = []
+    attr = get_attributes()
+    nfiles = len(attr[0])
+    aux_attr = [] * 6
 
     # List of unwanted exe substrings
     badexes = ["msteams", "TiWorker", "MicrosoftEdge", "MoUsoCoreWorker"]
@@ -256,61 +254,52 @@ def analyze_results() -> list:
     # Remove duplicates and bad substrings
     for i in range(nfiles):
         # Remove duplicates and bad files
-        if (filename[i] in aux_fname) or filename[i].startswith("BAD:"):
+        if (attr[0][i] in aux_attr[0]) or attr[0][i].startswith("BAD:"):
             continue
 
         # Filter out bad executables and file reads
-        if executable[i].startswith("BAD") or (irp_op[i] == 1):
+        if attr[2][i].startswith("BAD") or (attr[4][i] == 1):
             continue
 
         # Filter out file deletions
-        if change_code[i] == 6:
+        if attr[5][i] == 6:
             continue
 
         # Filter out blacklisted executables and files
         skip = False
         for badexe in badexes:
-            if badexe in executable[i]:
+            if badexe in attr[2][i]:
                 skip = True
 
         for badfile in badfiles:
-            if badfile in filename[i]:
+            if badfile in attr[0][i]:
                 skip = True
 
         if skip:
             continue
 
         # Add unique file to the lists
-        aux_fname.append(filename[i])
-        aux_ext.append(extension[i])
-        aux_exe.append(executable[i])
-        aux_pid.append(pid[i])
-        aux_irp_op.append(irp_op[i])
-        aux_change_code.append(change_code[i])
+        for j in range(6):
+            aux_attr[j].append(attr[j][i])
 
     if args["-debug"] == "off":
-        return aux_fname
+        return aux_attr[0]
 
     # Reassign list references
-    filename = aux_fname
-    extension = aux_ext
-    executable = aux_exe
-    pid = aux_pid
-    irp_op = aux_irp_op
-    change_code = aux_change_code
+    attr = aux_attr
 
     # Keep intermediate file for debugging
-    nfiles = len(filename)
+    nfiles = len(attr[0])
 
-    with open("filtered.txt", "w", encoding="utf-8") as fp:
+    with open("filtered.txt", "w", encoding="utf-8") as f_handle:
         for i in range(nfiles):
-            fp.write(f"File {i}:\n")
-            fp.write(f"{'Name:':<10} {filename[i]}\n")
-            fp.write(f"{'Exe File:':<10} {executable[i]}\n")
-            fp.write(f"{'PID/ops:':<10} {pid[i]} {irp_op[i]} {change_code[i]}")
-            fp.write("\n\n")
+            f_handle.write(f"File {i}:\n")
+            f_handle.write(f"Name:     {attr[0][i]}\n")
+            f_handle.write(f"Exe File: {attr[2][i]}\n")
+            f_handle.write(f"PID/ops:  {attr[3][i]} {attr[4][i]} {attr[5][i]}")
+            f_handle.write("\n\n")
 
-    return filename
+    return attr[0]
 
 
 def recreate_dirs(files: list) -> None:
@@ -330,7 +319,7 @@ def recreate_dirs(files: list) -> None:
     newdirs = []
 
     # Send the list of desired files to the vm
-    with open(".\\files.txt", "w", encoding="utf-8") as f:
+    with open(".\\files.txt", "w", encoding="utf-8") as f_handle:
         for file in files:
             # Edit file path for the VM file to be the file path for a C folder
             dirs = ".\\C\\" + "\\".join(file.split("\\\\")[1:-1]) + "\\"
@@ -338,8 +327,8 @@ def recreate_dirs(files: list) -> None:
 
             # Add to the list of files. Remove mysterious 21 space characters
             file = file[:-21]
-            f.write(file.replace(chr(0), ""))
-            f.write("\n")
+            f_handle.write(file.replace(chr(0), ""))
+            f_handle.write("\n")
 
     copy(".\\files.txt", ".\\vb\\files.txt")
 
@@ -353,9 +342,9 @@ def recreate_dirs(files: list) -> None:
     remove(".\\vb\\files.txt")
 
     # Move files from the shared folder to their new path
-    numFiles = len(files)
+    num_files = len(files)
 
-    for i in range(numFiles):
+    for i in range(num_files):
         # The correct path for the new file is just a variant of its name
         file = files[i][4:].replace("\\\\", "__")
         newpath = f".\\\\C\\\\{files[i][4:]}"
@@ -367,8 +356,8 @@ def recreate_dirs(files: list) -> None:
             print(f"Failure: {newpath}")
             print(" --> [Errno 2] No such file or directory")
 
-            with open(".\\otherpaths.txt", "a") as f2:
-                f2.write("C:" + newpath.replace("\\\\", "\\")[3:] + "\n")
+            with open(".\\otherpaths.txt", "a", encoding="utf-8") as f_handle:
+                f_handle.write("C:" + newpath.replace("\\\\", "\\")[3:] + "\n")
 
             continue
 
@@ -379,14 +368,14 @@ def recreate_dirs(files: list) -> None:
             print(f"Success: {newpath}")
 
             # Write to the list of successful files
-            with open(".\\finalpaths.txt", "a") as f1:
-                f1.write("C:" + newpath.replace("\\\\", "\\")[3:] + "\n")
+            with open(".\\finalpaths.txt", "a", encoding="utf-8") as f_handle:
+                f_handle.write("C:" + newpath.replace("\\\\", "\\")[3:] + "\n")
 
             remove(sharedfile)
-        except (IOError, OSError) as e:
+        except (IOError, OSError) as err:
             # Since we know the file exists, deal with access errors
             print(f"Copy/Removal Failure: {newpath}")
-            print(" --> " + str(e))
+            print(" --> " + str(err))
 
     # Signal to vm that all files have been transferred
     remove(".\\vb\\done.txt")
@@ -418,8 +407,8 @@ def main() -> None:
         # Extract files from VM
         files = analyze_results()
         recreate_dirs(files)
-    except OSError as e:
-        print(e)
+    except OSError as err:
+        print(err)
 
     # Restore VM to previous state
     cleanup(session)

@@ -1,29 +1,16 @@
-<<<<<<< HEAD
-from json import loads
-from ntpath import basename
+""" setupstepper.py """
 from os import listdir, remove, system
 from os.path import abspath, exists
-
-=======
-from json import loads
-from ntpath import basename
-from os import listdir, remove, system
-from os.path import abspath, exists
-from shutil import copy, copy2
-from time import sleep
 from warnings import simplefilter
-
->>>>>>> fe3f1e8 (Fixed some pylint warnings)
+from shutil import copy, copy2
+from ntpath import basename
+from time import sleep
+from json import loads
 from re import sub
-from shutil import copy, copy2
-from sys import argv, exit
-from time import sleep
-from warnings import simplefilter
 
 from pywinauto.application import Application, WindowSpecification
-from pywinauto.findbestmatch import MatchError
 from pywinauto.findwindows import find_elements
-from pywinauto.timings import TimeoutError
+from pywinauto.findbestmatch import MatchError
 
 # Disable warnings
 simplefilter("ignore", category=UserWarning)
@@ -79,31 +66,31 @@ def get_controls(dialog: WindowSpecification) -> list:
     controls = []
 
     # Initiate list of button names that shouldn't be considered
-    unwantedControls = ["Static", "#32770", "CtrlNotifySink", "DirectUIHWND"]
-    unwantedControls.extend(["SysLink", "TNewNotebookPage", "TNewNotebook"])
+    unwanted_controls = ["Static", "#32770", "CtrlNotifySink", "DirectUIHWND"]
+    unwanted_controls.extend(["SysLink", "TNewNotebookPage", "TNewNotebook"])
 
-    editNumber = 1
+    edit_number = 1
 
     for child in dialog.children():
-        childClass = child.friendly_class_name()
+        child_class = child.friendly_class_name()
 
         # Assign edit control numbers appropriately
-        if childClass == "Edit":
-            childClass += str(editNumber)
-            editNumber += 1
+        if child_class == "Edit":
+            child_class += str(edit_number)
+            edit_number += 1
 
         # Dont include a non-selectable or unwanted control
-        if not child.is_enabled() or (childClass in unwantedControls):
+        if not child.is_enabled() or (child_class in unwanted_controls):
             continue
 
         # For readability, remove all special characters from non-text boxes
         name = child.texts()[0]
 
-        if not childClass.startswith("Edit"):
+        if not child_class.startswith("Edit"):
             name = sub(r"^\W*|[^0-9a-zA-Z| ]+|\W*$", "", name)
 
         # For each control, make a sublist with Type, Text, and ID
-        controls.append([childClass, name.lower(), child.control_id()])
+        controls.append([child_class, name.lower(), child.control_id()])
 
     return controls
 
@@ -121,37 +108,37 @@ def get_priority_list(ctrl: list) -> list:
         list: Has priority values for each control in its parallel list 'ctrl'.
     """
 
-    numControls = len(ctrl)
-    priority = [0] * numControls
+    num_controls = len(ctrl)
+    priority = [0] * num_controls
 
-    for i in range(numControls):
-        classname, text, controlId = ctrl[i]
-        isEdit = classname.startswith("Edit")
+    for i in range(num_controls):
+        classname, text, control_id = ctrl[i]
+        is_edit = classname.startswith("Edit")
 
         # Condition for license RadioButton
-        licenseCond = not isEdit and (("agree" in text) or ("accept" in text))
-        licenseCond = licenseCond and ("not" not in text)
+        license_cond = "agree" in text or "accept" in text
+        license_cond = license_cond and ("not" not in text) and not is_edit
 
         # Condition for presence of an edit box
-        editCond = (arguments["-license"] != text) and isEdit
-        editCond = editCond and not text.startswith("c:")
-        editCondValue = len(text)
+        edit_cond = (arguments["-license"] != text) and is_edit
+        edit_cond = edit_cond and not text.startswith("c:")
+        edit_cond_value = len(text)
 
         # Condition for control text being in the desired list
-        desiredCond = text in desired
+        desired_cond = text in desired
 
         # Condition for controls to avoid
-        badCond = (controlId in blacklisted) or (text == "cancel")
-        badCond = badCond or ((text == "") and not isEdit)
+        bad_cond = (control_id in blacklisted) or (text == "cancel")
+        bad_cond = bad_cond or ((text == "") and not is_edit)
 
         # Assign priority value
-        if badCond:
+        if bad_cond:
             priority[i] = 0
-        elif editCond:
-            priority[i] = 4 + editCondValue
-        elif desiredCond:
+        elif edit_cond:
+            priority[i] = 4 + edit_cond_value
+        elif desired_cond:
             priority[i] = 3
-        elif licenseCond:
+        elif license_cond:
             priority[i] = 2
         else:
             priority[i] = 1
@@ -159,7 +146,7 @@ def get_priority_list(ctrl: list) -> list:
     return priority
 
 
-def proceed(dialog: WindowSpecification, control: list, pVal: int) -> None:
+def proceed(dialog: WindowSpecification, control: list, p_val: int) -> None:
     """Decides whether to interact with the control or to wait. If the
     installation has started, allow the interaction with any control to exit
     the installer that would disrupt the installation configuration beforehand.
@@ -168,25 +155,25 @@ def proceed(dialog: WindowSpecification, control: list, pVal: int) -> None:
     Args:
         dialog (WindowSpecification): The dialog box containing the 'controls'.
         control (list): Attributes of the control with the highest priority.
-        pVal (int): The priority value of 'control'.
+        p_val (int): The priority value of 'control'.
 
     Returns:
         None.
     """
 
     # Decide whether to wait or to advance
-    classname, text, controlId = control if (pVal != 0) else ["", "", ""]
+    classname, text, control_id = control if (p_val != 0) else ["", "", ""]
 
     # If a control was the culprit, add it to the blacklist
-    onTrial = 0 if "next" in text else controlId
-    blacklisted.append(onTrial)
+    on_trial = 0 if "next" in text else control_id
+    blacklisted.append(on_trial)
 
     # Scroll down and change the text in the edit box to the license code
     if classname.startswith("Edit"):
         dialog[classname].scroll(direction="down", amount="end")
         dialog[classname].set_edit_text(arguments["-license"])
         blacklisted.pop()
-        blacklisted.append(controlId)
+        blacklisted.append(control_id)
 
     # Perform button press if we have advanced
     elif classname != "":
@@ -230,17 +217,17 @@ def step_through(app: Application) -> None:
 
             # Get controls and sort them. Retry if no controls are found
             controls = get_controls(dialog)
-            pl = get_priority_list(controls)
+            p_l = get_priority_list(controls)
 
-            if len(pl) == 0:
+            if len(p_l) == 0:
                 continue
 
-            pl, controls = (list(t) for t in zip(*sorted(zip(pl, controls))))
-            pl.reverse()
+            p_l, controls = (list(t) for t in zip(*sorted(zip(p_l, controls))))
+            p_l.reverse()
             controls.reverse()
 
             # Print controls in debug mode
-            autoStep = ""
+            auto_step = ""
 
             if arguments["-debug"] == "on":
                 print("Controls for: " + window)
@@ -249,16 +236,16 @@ def step_through(app: Application) -> None:
                 for control in controls:
                     print(f"> {control[0]: <15} {control[1]: <15}")
 
-                autoStep = input("\nENTER to step or type to manually step...")
+                auto_step = input("\nENTER to step or type to manually step:")
                 print()
 
             # Decide what to press next if debug mode allowed it
-            if len(autoStep) == 0:
-                proceed(dialog, controls[0], pl[0])
+            if len(auto_step) == 0:
+                proceed(dialog, controls[0], p_l[0])
 
-        except (RuntimeError, MatchError, TimeoutError) as e:
+        except (RuntimeError, MatchError, TimeoutError) as err:
             # If a new process has been spawned, latch on to that one instead
-            if str(e) == "No windows for that process could be found":
+            if str(err) == "No windows for that process could be found":
                 # Indicates that the installer has unexpectedly terminated
                 if controls is not None:
                     break
@@ -272,7 +259,7 @@ def step_through(app: Application) -> None:
                 app.connect(active_only=True, found_index=0)
                 continue
 
-            print(f"Error: {e}")
+            print(f"Error: {err}")
 
     print("Installer has terminated.")
 
@@ -290,20 +277,20 @@ def handle_transfers() -> None:
     """
 
     # Copy each file into the shared folder
-    with open("V:\\files.txt", "r", encoding="utf-8") as f:
-        for line in f.readlines():
+    with open("V:\\files.txt", "r", encoding="utf-8") as f_handle:
+        for line in f_handle.readlines():
             # The name for each file is changed to a variant of its path
             file = line.strip()
             newname = file[4:].replace("\\\\", "__")
 
             try:
                 copy2(file, f"V:\\{newname}")
-            except IOError as e:
-                print(e)
+            except IOError as err:
+                print(err)
 
     # Signal to the host that each file has finished copying
-    with open(".\\done.txt", "w") as f:
-        f.write("done")
+    with open(".\\done.txt", "w", encoding="utf-8") as f_handle:
+        f_handle.write("done")
 
     copy(".\\done.txt", "V:\\done.txt")
     remove(".\\done.txt")
@@ -358,8 +345,8 @@ def handle_file(fname: str) -> None:
                 sleep(0.5)
 
             print("results.txt file move complete")
-        except (IOError, OSError) as e:
-            print(e)
+        except (IOError, OSError) as err:
+            print(err)
             sleep(0.5)
 
         return
@@ -367,14 +354,14 @@ def handle_file(fname: str) -> None:
     # Parse txt into dict as json
     try:
         print("Processing text file as args...")
-        with open(fname, "r") as f:
-            argstr = f.readlines()[0]
+        with open(fname, "r", encoding="utf-8") as f_handle:
+            argstr = f_handle.readlines()[0]
             arguments.update(loads(argstr))
 
         # Remove file from folder
         remove(fname)
-    except IOError as e:
-        print(e)
+    except IOError as err:
+        print(err)
         sleep(0.5)
 
 
@@ -406,8 +393,8 @@ def main() -> None:
             files[0] = abspath("V:\\" + files[0])
 
             handle_file(files[0])
-        except OSError as e:
-            print(e)
+        except OSError as err:
+            print(err)
 
 
 if __name__ == "__main__":
