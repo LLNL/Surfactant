@@ -198,7 +198,7 @@ def get_attributes() -> list:
     # get parallel lists ready, prevent reading an incomplete file
     nfiles = len(lines) // 7
     attr = []
-    for i in range(6):
+    for _ in range(6):
         attr.append([""] * nfiles)
 
     for i in range(nfiles):
