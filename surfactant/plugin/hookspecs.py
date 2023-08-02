@@ -79,4 +79,26 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
 @hookspec
 def short_name() -> Optional[str]:
-    """A short name to register the hook as"""
+    """A short name to register the hook as.
+    
+    Returns:
+        Optional[str]: The name to register the hook with.
+    """
+
+
+@hookspec
+def extract_image_info(sbom: SBOM, software: Software, filename: str, filetype: str,) -> object:
+    """Extracts information from the given file to add to the given software entry. Return an
+    object to be included as part of the metadata field, and potentially used as part of
+    selecting default values for other Software entry fields. Returning `None` will not add
+    anything to the Software entry metadata.
+
+    Args:
+        sbom (SBOM): The SBOM that the software entry is part of. Can be used to add observations or analysis data.
+        software (Software): The software entry the gathered information will be added to.
+        filename (str): The full path to the file to extract information from.
+        filetype (str): File type information based on magic bytes.
+
+    Returns:
+        object: An object to be added to the metadata field for the software entry. May be `None` to add no metadata.
+    """
