@@ -197,7 +197,9 @@ def get_attributes() -> list:
 
     # get parallel lists ready, prevent reading an incomplete file
     nfiles = len(lines) // 7
-    attr = [[""] * nfiles] * 6
+    attr = []
+    for i in range(6):
+        attr.append([""] * nfiles)
 
     for i in range(nfiles):
         idx = i * 7
@@ -237,7 +239,7 @@ def analyze_results() -> list:
     # Create auxillary lists
     attr = get_attributes()
     nfiles = len(attr[0])
-    aux_attr = [] * 6
+    aux_attr = [[], [], [], [], [], []]
 
     # List of unwanted exe substrings
     badexes = ["msteams", "TiWorker", "MicrosoftEdge", "MoUsoCoreWorker"]
