@@ -1,14 +1,14 @@
 """ execinstaller.py """
-from os import mkdir, getcwd, remove, makedirs, listdir
+import sys
+from json import dumps
+from os import getcwd, listdir, makedirs, mkdir, remove
 from os.path import abspath, exists
 from shutil import copy, copy2
 from sys import argv
 from time import sleep
-from json import dumps
-import sys
 
+from virtualbox import Session, VirtualBox
 from virtualbox.library_base import VBoxError
-from virtualbox import VirtualBox, Session
 
 # Passed in command line arguments
 args = {"-machine": "WinDev2307Eval", "-path": None, "-debug": "off"}
