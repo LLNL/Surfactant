@@ -372,7 +372,7 @@ def recreate_dirs(files: list) -> None:
                 f_handle.write("C:" + newpath.replace("\\\\", "\\")[3:] + "\n")
 
             remove(sharedfile)
-        except (IOError, OSError) as err:
+        except OSError as err:
             # Since we know the file exists, deal with access errors
             print(f"Copy/Removal Failure: {newpath}")
             print(" --> " + str(err))

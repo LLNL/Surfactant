@@ -345,7 +345,7 @@ def handle_file(fname: str) -> None:
                 sleep(0.5)
 
             print("results.txt file move complete")
-        except (IOError, OSError) as err:
+        except OSError as err:
             print(err)
             sleep(0.5)
 
