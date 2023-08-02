@@ -1,4 +1,8 @@
-# Instructions to setup a Windows Installer SBOM Generation workflow 
+# Setting up a Windows Installer SBOM Generation Workflow
+
+## Summary
+When working with Windows software installers, it's often not obvious where the installer places its files. With this setup, the installer is ran in a modified VirtualBox VM that has a file system driver installed. This tool makes a guess at what files came from the installer and extracts them from the VM into the host machine. The extracted files are then placed into their full paths on the host, except instead of the C: drive, they're placed into a folder named "C" which is entirely empty besides those files extracted from the VM. Running Surfactant on this folder essentially creates SBOMs for almost any installer.<br><br>Following these instructions result in a working VM. The mentioned process has been made entirely automatic by running a single command.
+
 ## Sections for Host Setup
 ### Install VirtualBox and the SDK
 
@@ -126,22 +130,22 @@ python execinstaller.py -path [path to installer]
 ```
 and wait. The VM should startup, execute the installer, then close. In the same directory you should see a directory called "C" which contains the full paths of the installed files. Two txt files are created. One that lists the extracted files, and one that lists files that were detected but could not be extracted (most likely temp files). The script tries to clean up the shared folder, but you should manually make sure that the folder is empty before testing the script on another installer.
 
-### Options:
-```-path [Installer path]``` (Mandatory): The path of the installer (such as ```-path .\ICsetup.exe```) that the VM should step through.
-```-license [key]``` (Optional): If the installer has a license key, enter it here (such as ```-license 1234```)
-```-debug [on|off]``` (Optional): Manually step through the installer and don't delete unfiltered minifilter.exe output
+### Options
+```-path [Installer path]``` (Mandatory): The path of the installer (such as ```-path .\ICsetup.exe```) that the VM should step through.<br>
+```-license [key]``` (Optional): If the installer has a license key, enter it here (such as ```-license 1234```)<br>
+```-debug [on|off]``` (Optional): Manually step through the installer and don't delete unfiltered minifilter.exe output<br>
 ```-machine [VM name]``` (Optional): Specify the name of the VM to start. You can set the default machine name in ```execinstaller.py``` at line 13.
 
 ## Potential Issues
-### Note on filtering:
+### Note on filtering
 If the installed files aren't showing up, you can set the debug flag and unfilter out executable and file names in ```execinstaller.py``` at lines 246 and 249. The filter works by excluding file names that contain the specified substring.
 
-### Note on installer failure during step-through:
+### Note on installer failure during step-through
 If the installer runs into a dependency error, you can manually exit the installer and let the script finish to capture potential temporary files. You can also try to run it again after installing the dependency in the VM.
 
-### Note on VM crashing upon opening the installer:
+### Note on VM crashing upon opening the installer
 If the script running within the vm acknowledges the args.txt file before crashing, shut down the machine and restore to the TestState snapshot and try again. This happens for unknown reasons.
 
-### Note on VirtualBox errors:
+### Note on VirtualBox errors
 If you get an error that reads "The instruction at 0x... referenced memory at 0x... The memory could not be written" or similar, hit "OK" and revert the VM to the safe powered-off snapshot. Follow the steps to run the commands on both terminals and try again. The green/red flashing light on the leftmost icon indicates activity on the disk, so try to press "Close" when a light isn't on to avoid interrupting the machine during a disk read/write.
 
