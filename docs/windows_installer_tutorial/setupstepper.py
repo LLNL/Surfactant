@@ -3,14 +3,16 @@ from json import loads
 from ntpath import basename
 from os import listdir, remove, system
 from os.path import abspath, exists
+
 =======
+from json import loads
+from ntpath import basename
 from os import listdir, remove, system
 from os.path import abspath, exists
-from warnings import simplefilter
 from shutil import copy, copy2
-from ntpath import basename
 from time import sleep
-from json import loads
+from warnings import simplefilter
+
 >>>>>>> fe3f1e8 (Fixed some pylint warnings)
 from re import sub
 from shutil import copy, copy2
@@ -22,10 +24,6 @@ from pywinauto.application import Application, WindowSpecification
 from pywinauto.findbestmatch import MatchError
 from pywinauto.findwindows import find_elements
 from pywinauto.timings import TimeoutError
-
-from pywinauto.application import Application, WindowSpecification
-from pywinauto.findwindows import find_elements
-from pywinauto.findbestmatch import MatchError
 
 # Disable warnings
 simplefilter("ignore", category=UserWarning)

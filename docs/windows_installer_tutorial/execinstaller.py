@@ -2,14 +2,17 @@ from json import dumps
 from os import getcwd, listdir, makedirs, mkdir, remove
 from os.path import abspath, exists
 from shutil import copy, copy2
+
 <<<<<<< HEAD
 from sys import argv, exit
 from time import sleep
+
 =======
+import sys
+from json import dumps
 from sys import argv
 from time import sleep
-from json import dumps
-import sys
+
 >>>>>>> fe3f1e8 (Fixed some pylint warnings)
 
 from virtualbox import Session, VirtualBox
