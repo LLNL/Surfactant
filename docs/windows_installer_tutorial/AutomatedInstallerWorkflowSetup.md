@@ -18,7 +18,7 @@ Go to https://developer.microsoft.com/enus/windows/downloads/virtual-machines/. 
 
 ### Disable Hyper-V (Optional)
 
-On a Windows host, VirtualBox VMs run better with Hyper-V disabled. In administrator command prompt, run 
+On a Windows host, VirtualBox VMs run better with Hyper-V disabled. In administrator command prompt, run
 ```
 bcdedit /set hypervisorlaunchtype off
 ```
@@ -54,7 +54,7 @@ In the Microsoft Store, install the latest python. In powershell, run
 ```
 python -m pip install --upgrade pip
 ```
-and 
+and
 ```
 pip install pywinauto
 ```
@@ -79,7 +79,7 @@ Hit "Win + X" on the keyboard and select "Shut down or sign out" and then "Shift
 
 ### Build the driver and run it
 
-Right click on the downloaded EWDK and mount it. It might get mounted to the ```D:``` drive, so I'll refer to that one. Open "cmd" in the ```fsfilter-rs-0.8.0\minifilter``` directory and run 
+Right click on the downloaded EWDK and mount it. It might get mounted to the ```D:``` drive, so I'll refer to that one. Open "cmd" in the ```fsfilter-rs-0.8.0\minifilter``` directory and run
 ```
 call "D:\LaunchBuildEnv.cmd"
 ```
@@ -95,11 +95,11 @@ and select the "Install this driver software anyway" option.
 
 ### Build the minifilter
 
-From the ```fsfilter-rs-0.8.0\``` directory in powershell, run 
+From the ```fsfilter-rs-0.8.0\``` directory in powershell, run
 ```
 cargo build --release
 ```
-The compiled minifilter.exe should reside in ```fsfilter-rs-0.8.0\target\release\minifilter.exe```. Move this executable into the Documents folder. Finally, run  
+The compiled minifilter.exe should reside in ```fsfilter-rs-0.8.0\target\release\minifilter.exe```. Move this executable into the Documents folder. Finally, run
 ```
 Bcdedit.exe -set TESTSIGNING ON
 ```
@@ -107,7 +107,7 @@ then shut down the machine and create a snapshot in case something goes wrong.
 
 ### Setup the runtime environment
 
-Turn on the VM again and log in. Open a powershell window and run 
+Turn on the VM again and log in. Open a powershell window and run
 ```
 Start-Service snFilter
 ```
@@ -148,4 +148,3 @@ If the script running within the vm acknowledges the args.txt file before crashi
 
 ### Note on VirtualBox errors
 If you get an error that reads "The instruction at 0x... referenced memory at 0x... The memory could not be written" or similar, hit "OK" and revert the VM to the safe powered-off snapshot. Follow the steps to run the commands on both terminals and try again. The green/red flashing light on the leftmost icon indicates activity on the disk, so try to press "Close" when a light isn't on to avoid interrupting the machine during a disk read/write.
-

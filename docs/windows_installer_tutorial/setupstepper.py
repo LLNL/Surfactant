@@ -1,17 +1,17 @@
-from pywinauto.application import Application, WindowSpecification
-from pywinauto.findwindows import find_elements
-from pywinauto.findbestmatch import MatchError
-from pywinauto.timings import TimeoutError
-
+from json import loads
+from ntpath import basename
 from os import listdir, remove, system
 from os.path import abspath, exists
-from warnings import simplefilter
-from shutil import copy, copy2
-from ntpath import basename
-from sys import exit, argv
-from time import sleep
-from json import loads
 from re import sub
+from shutil import copy, copy2
+from sys import argv, exit
+from time import sleep
+from warnings import simplefilter
+
+from pywinauto.application import Application, WindowSpecification
+from pywinauto.findbestmatch import MatchError
+from pywinauto.findwindows import find_elements
+from pywinauto.timings import TimeoutError
 
 # Disable warnings
 simplefilter("ignore", category=UserWarning)

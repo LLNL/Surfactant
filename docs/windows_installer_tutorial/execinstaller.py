@@ -1,13 +1,12 @@
-from os import mkdir, getcwd, remove, makedirs, listdir
+from json import dumps
+from os import getcwd, listdir, makedirs, mkdir, remove
 from os.path import abspath, exists
 from shutil import copy, copy2
-from sys import exit, argv
+from sys import argv, exit
 from time import sleep
-from json import dumps
 
+from virtualbox import Session, VirtualBox
 from virtualbox.library_base import VBoxError
-from virtualbox import VirtualBox
-from virtualbox import Session
 
 # Passed in command line arguments
 args = {"-machine": "WinDev2305Eval", "-path": None, "-debug": "off"}
