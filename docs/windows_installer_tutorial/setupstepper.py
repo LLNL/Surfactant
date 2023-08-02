@@ -1,7 +1,17 @@
+<<<<<<< HEAD
 from json import loads
 from ntpath import basename
 from os import listdir, remove, system
 from os.path import abspath, exists
+=======
+from os import listdir, remove, system
+from os.path import abspath, exists
+from warnings import simplefilter
+from shutil import copy, copy2
+from ntpath import basename
+from time import sleep
+from json import loads
+>>>>>>> fe3f1e8 (Fixed some pylint warnings)
 from re import sub
 from shutil import copy, copy2
 from sys import argv, exit
@@ -13,11 +23,15 @@ from pywinauto.findbestmatch import MatchError
 from pywinauto.findwindows import find_elements
 from pywinauto.timings import TimeoutError
 
+from pywinauto.application import Application, WindowSpecification
+from pywinauto.findwindows import find_elements
+from pywinauto.findbestmatch import MatchError
+
 # Disable warnings
 simplefilter("ignore", category=UserWarning)
 
 # Passed in command line arguments as dictionary (flag: value)
-args = {"-path": None, "-debug": "off", "-license": "Stepper"}
+arguments = {"-path": None, "-debug": "off", "-license": "Stepper"}
 
 # List of controls that have elevated priority
 desired = ["next", "yes", "finish", "ok", "start", "install", "complete"]
@@ -25,45 +39,6 @@ desired.extend(["full"])
 
 # List of controls that threw an error and should not be touched
 blacklisted = []
-onTrial = ""
-
-
-def parse_args() -> None:
-    """Reads the command line arguments and creates a dictionary with settings
-    that affect the behavior of the script. If any argument in 'args' is None,
-    the script prints out correct usage and exits. For now, only the path of
-    the installer is required. '-type' is automatically generated, but the
-    '-debug' and '-license' arguments are both optional.
-
-    Args:
-        None.
-
-    Returns:
-        None.
-    """
-
-    # String that indicates correct cmd line argument usage
-    flags = "-path '...' (optional) -debug [on/off] -license '...'"
-    usage = "Usage: python setupstepper.py " + flags
-
-    # Parse cmdargs into a dictionary
-    for i in range(2, len(argv), 2):
-        if argv[i - 1] in args:
-            args[argv[i - 1]] = argv[i]
-        else:
-            exit(usage)
-
-    # Ensure args have been set
-    for key in args.keys():
-        if args[key] is None:
-            exit(usage)
-
-    # Set installer type and expand path
-    args["-path"] = abspath(args["-path"])
-    args["-type"] = args["-path"].rpartition(".")[-1]
-
-    if args["-debug"] == "on":
-        print(args)
 
 
 def launch_installer() -> Application:
@@ -82,11 +57,11 @@ def launch_installer() -> Application:
     app = Application()
 
     # Start application with proper arguments
-    msiprefix = "msiexec /i " if (args["-type"] == "msi") else ""
-    app = app.start(f"{msiprefix}\"{args['-path']}\"")
+    msiprefix = "msiexec /i " if (arguments["-type"] == "msi") else ""
+    app = app.start(f"{msiprefix}\"{arguments['-path']}\"")
 
     # Wait for the application to start
-    sleep(1.5 if (args["-type"] == "msi") else 0.75)
+    sleep(1.5 if (arguments["-type"] == "msi") else 0.75)
 
     return app
 
@@ -148,9 +123,10 @@ def get_priority_list(ctrl: list) -> list:
         list: Has priority values for each control in its parallel list 'ctrl'.
     """
 
-    priority = [0] * len(ctrl)
+    numControls = len(ctrl)
+    priority = [0] * numControls
 
-    for i in range(len(ctrl)):
+    for i in range(numControls):
         classname, text, controlId = ctrl[i]
         isEdit = classname.startswith("Edit")
 
@@ -159,8 +135,8 @@ def get_priority_list(ctrl: list) -> list:
         licenseCond = licenseCond and ("not" not in text)
 
         # Condition for presence of an edit box
-        editCond = (args["-license"] != text) and isEdit
-        editCond = editCond and not (text.startswith("c:"))
+        editCond = (arguments["-license"] != text) and isEdit
+        editCond = editCond and not text.startswith("c:")
         editCondValue = len(text)
 
         # Condition for control text being in the desired list
@@ -200,31 +176,32 @@ def proceed(dialog: WindowSpecification, control: list, pVal: int) -> None:
         None.
     """
 
-    global onTrial
-
     # Decide whether to wait or to advance
     classname, text, controlId = control if (pVal != 0) else ["", "", ""]
-    onTrial = controlId
 
-    if "next" in text:
-        onTrial = 0
+    # If a control was the culprit, add it to the blacklist
+    onTrial = 0 if "next" in text else controlId
+    blacklisted.append(onTrial)
 
     # Scroll down and change the text in the edit box to the license code
     if classname.startswith("Edit"):
         dialog[classname].scroll(direction="down", amount="end")
-        dialog[classname].set_edit_text(args["-license"])
-        blacklisted.append(onTrial)
+        dialog[classname].set_edit_text(arguments["-license"])
+        blacklisted.pop()
+        blacklisted.append(controlId)
 
     # Perform button press if we have advanced
     elif classname != "":
         dialog[text].click()
+        blacklisted.pop()
 
         # Add exit option once an install button has been pressed
-        if text == "install" or text == "start":
+        if text in ("install", "start"):
             desired.append("exit")
 
     # Give the UI a chance to load controls if it hasn't
     else:
+        blacklisted.pop()
         sleep(0.2)
 
 
@@ -267,12 +244,12 @@ def step_through(app: Application) -> None:
             # Print controls in debug mode
             autoStep = ""
 
-            if args["-debug"] == "on":
+            if arguments["-debug"] == "on":
                 print("Controls for: " + window)
                 print("--------------------------------")
 
                 for control in controls:
-                    print("> {: <15} {: <15}".format(*control))
+                    print(f"> {control[0]: <15} {control[1]: <15}")
 
                 autoStep = input("\nENTER to step or type to manually step...")
                 print()
@@ -290,16 +267,12 @@ def step_through(app: Application) -> None:
 
                 print("Ensure that the installer is in focus.")
 
-                if args["-debug"] == "on":
+                if arguments["-debug"] == "on":
                     print(find_elements(active_only=True))
 
                 # Best way to generally latch on to multiprocess installers
                 app.connect(active_only=True, found_index=0)
                 continue
-
-            # If a control was the culprit, add it to the blacklist
-            if onTrial not in blacklisted:
-                blacklisted.append(onTrial)
 
             print(f"Error: {e}")
 
@@ -327,7 +300,7 @@ def handle_transfers() -> None:
 
             try:
                 copy2(file, f"V:\\{newname}")
-            except Exception as e:
+            except IOError as e:
                 print(e)
 
     # Signal to the host that each file has finished copying
@@ -355,9 +328,7 @@ def handle_file(fname: str) -> None:
         None.
     """
 
-    global args
-
-    if args["-debug"] == "on":
+    if arguments["-debug"] == "on":
         print(f"file: {fname}")
 
     # Handle file transfers
@@ -367,7 +338,7 @@ def handle_file(fname: str) -> None:
 
     # Handle installer file
     if fname[-3:] != "txt":
-        args["-path"] = fname
+        arguments["-path"] = fname
 
         try:
             # Open and execute the installer
@@ -389,7 +360,7 @@ def handle_file(fname: str) -> None:
                 sleep(0.5)
 
             print("results.txt file move complete")
-        except Exception as e:
+        except (IOError, OSError) as e:
             print(e)
             sleep(0.5)
 
@@ -400,11 +371,11 @@ def handle_file(fname: str) -> None:
         print("Processing text file as args...")
         with open(fname, "r") as f:
             argstr = f.readlines()[0]
-            args = loads(argstr)
+            arguments.update(loads(argstr))
 
         # Remove file from folder
         remove(fname)
-    except Exception as e:
+    except IOError as e:
         print(e)
         sleep(0.5)
 

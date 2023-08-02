@@ -2,28 +2,32 @@ from json import dumps
 from os import getcwd, listdir, makedirs, mkdir, remove
 from os.path import abspath, exists
 from shutil import copy, copy2
+<<<<<<< HEAD
 from sys import argv, exit
 from time import sleep
+=======
+from sys import argv
+from time import sleep
+from json import dumps
+import sys
+>>>>>>> fe3f1e8 (Fixed some pylint warnings)
 
 from virtualbox import Session, VirtualBox
 from virtualbox.library_base import VBoxError
 
 # Passed in command line arguments
-args = {"-machine": "WinDev2305Eval", "-path": None, "-debug": "off"}
+args = {"-machine": "WinDev2307Eval", "-path": None, "-debug": "off"}
 args["-sfpath"] = getcwd() + "\\vb"
 
-# Virtualbox global variables
-vbox, machine, session = [None] * 3
 
-
-def parse_args() -> None:
+def parse_args(vbox: VirtualBox) -> None:
     """Reads the command line arguments and creates a dictionary with settings
     that affect the behavior of the script. If any argument in 'args' is None,
     the script prints out correct usage and exits. The user must specify the
     target vm name and the path of the installer.
 
     Args:
-        None.
+        vbox (VirtualBox): Primary VB object
 
     Returns:
         None.
@@ -40,25 +44,25 @@ def parse_args() -> None:
         if argv[i - 1] in args:
             args[argv[i - 1]] = argv[i]
         else:
-            exit(f"{argv[i - 1]} is not a valid argument.\n" + usage)
+            sys.exit(f"{argv[i - 1]} is not a valid argument.\n" + usage)
 
     # Ensure args have been set
-    for key in args.keys():
-        if args[key] is None:
-            exit(f"{key} is a required argument.\n" + usage)
+    for key, value in args.items():
+        if value is None:
+            sys.exit(f"{key} is a required argument.\n" + usage)
 
     # Ensure that the user has selected a valid vm name
     names = [m.name for m in vbox.machines]
 
     if args["-machine"] not in names:
-        exit(f"'{args['-machine']}' isn't in your vm list: \n{names}")
+        sys.exit(f"'{args['-machine']}' isn't in your vm list: \n{names}")
 
     # Expand installer paths
     args["-path"] = abspath(args["-path"])
     args["-type"] = args["-path"].rpartition(".")[-1]
 
 
-def prepare_vm() -> None:
+def prepare_vm(vbox: VirtualBox, session: Session) -> None:
     """Boots up the specified virtual machine and transfers the specified
     installer from the host machine.
 
@@ -68,13 +72,12 @@ def prepare_vm() -> None:
     restoring the VM from a saved state greatly simplifies the process.
 
     Args:
-        None.
+        vbox (VirtualBox): Primary VB object
+        session (Session): Session associated with vbox
 
     Returns:
         None.
     """
-
-    global machine
 
     # Create the shared folder on the host machine
     if not exists(args["-sfpath"]):
@@ -87,7 +90,7 @@ def prepare_vm() -> None:
         progress.wait_for_completion()
     except VBoxError as e:
         print(e)
-        exit("Ensure the VM is in a saved and non-running state.")
+        sys.exit("Ensure the VM is in a saved and non-running state.")
 
     # Create the shared folder on the guest machine's V: drive
     try:
@@ -121,14 +124,14 @@ def deploy_installer() -> None:
         remove("args.txt")
     except PermissionError as e:
         print(e)
-        exit("Make sure the files are in the current directory!")
+        sys.exit("Make sure the files are in the current directory!")
 
     try:
         # Deploy installer
         copy(args["-path"], args["-sfpath"])
     except PermissionError as e:
         print(e)
-        exit("Make sure the files are in the current directory!")
+        sys.exit("Make sure the files are in the current directory!")
 
     # Busy wait until the installer is done
     while not exists(args["-sfpath"] + "\\results.txt"):
@@ -140,13 +143,13 @@ def deploy_installer() -> None:
     remove(args["-sfpath"] + "\\results.txt")
 
 
-def cleanup() -> None:
+def cleanup(session: Session) -> None:
     """Cleans up the shared folder from extra files, if possible, then powers
     down the VM and restores it from the state it started as. The Snapshot
     should be called "TestState" for this to work, but it can be changed.
 
     Args:
-        None.
+        session (Session): Session associated with vbox
 
     Returns:
         None.
@@ -156,7 +159,7 @@ def cleanup() -> None:
     for file in listdir(".\\vb"):
         try:
             remove(".\\vb\\" + file)
-        except Exception as e:
+        except IOError as e:
             print(f"CANNOT DELETE .\\vb\\{file}: {str(e)}")
 
     # Save settings and power down the machine
@@ -186,7 +189,7 @@ def analyze_results() -> list:
     # Ensure that results.txt has been moved
     fname = ".\\results.txt"
     if not exists(fname):
-        return
+        return []
 
     print("processing results.txt...")
 
@@ -347,7 +350,9 @@ def recreate_dirs(files: list) -> None:
     remove(".\\vb\\files.txt")
 
     # Move files from the shared folder to their new path
-    for i in range(len(files)):
+    numFiles = len(files)
+
+    for i in range(numFiles):
         # The correct path for the new file is just a variant of its name
         file = files[i][4:].replace("\\\\", "__")
         newpath = f".\\\\C\\\\{files[i][4:]}"
@@ -375,7 +380,7 @@ def recreate_dirs(files: list) -> None:
                 f1.write("C:" + newpath.replace("\\\\", "\\")[3:] + "\n")
 
             remove(sharedfile)
-        except Exception as e:
+        except (IOError, OSError) as e:
             # Since we know the file exists, deal with access errors
             print(f"Copy/Removal Failure: {newpath}")
             print(" --> " + str(e))
@@ -394,15 +399,13 @@ def main() -> None:
         None.
     """
 
-    # Initiate global variables
-    global vbox, session
-
+    # Initiate VirtualBox variables
     vbox = VirtualBox()
     session = Session()
 
     # Read command line arguments and start the VM
-    parse_args()
-    prepare_vm()
+    parse_args(vbox)
+    prepare_vm(vbox, session)
 
     # Skip over to cleanup if a fatal error happened when deploying installer
     try:
@@ -412,11 +415,11 @@ def main() -> None:
         # Extract files from VM
         files = analyze_results()
         recreate_dirs(files)
-    except Exception as e:
+    except OSError as e:
         print(e)
 
     # Restore VM to previous state
-    cleanup()
+    cleanup(session)
 
 
 if __name__ == "__main__":
