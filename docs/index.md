@@ -11,10 +11,11 @@ Surfactant provides a modular framework to gather file information and analyze d
    :maxdepth: 2
 
    self
+   getstarted
    config
    usage
-   developers
    plugins
+   contribute
    changelog
 ```
 
