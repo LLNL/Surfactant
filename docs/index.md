@@ -1,11 +1,14 @@
-# Welcome to Surfactant's documentation!
+# Surfactant
+
+## Welcome to Surfactant's documentation!
 
 Surfactant provides a modular framework to gather file information and analyze dependencies for generating an SBOM.
+
+## Table of Contents
 
 ```{eval-rst}
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
    self
    config
