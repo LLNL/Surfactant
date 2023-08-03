@@ -15,4 +15,3 @@ Surfactant provides a modular framework to gather file information and analyze d
 * :ref:`modindex`
 * :ref:`search`
 ```
-Test change.
