@@ -7,6 +7,7 @@ Surfactant provides a modular framework to gather file information and analyze d
    :maxdepth: 2
    :caption: Contents:
 
+   self
    config
    usage
    developers

@@ -1,1 +1,1 @@
-# How to Configure Surfactant
+# Configuration
