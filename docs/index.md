@@ -6,6 +6,12 @@ Surfactant provides a modular framework to gather file information and analyze d
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+   config
+   usage
+   developers
+   plugins
+   changelog
 ```
 
 # Indices and tables
