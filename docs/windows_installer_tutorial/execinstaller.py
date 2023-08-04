@@ -1,12 +1,13 @@
 """ execinstaller.py """
 import sys
 from json import dumps
+from logging import DEBUG, basicConfig, exception, info
 from os import getcwd, listdir, makedirs, mkdir, remove
 from os.path import abspath, exists
 from shutil import copy, copy2
-from logging import basicConfig, DEBUG, exception, info
 from sys import argv
 from time import sleep
+
 from virtualbox import Session, VirtualBox
 from virtualbox.library_base import VBoxError
 

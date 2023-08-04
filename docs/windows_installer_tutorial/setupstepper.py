@@ -1,9 +1,9 @@
 """ setupstepper.py """
 from json import loads
+from logging import DEBUG, basicConfig, exception, info
 from ntpath import basename
 from os import listdir, remove, system
 from os.path import abspath, exists
-from logging import basicConfig, DEBUG, exception, info
 from re import sub
 from shutil import copy, copy2
 from time import sleep
