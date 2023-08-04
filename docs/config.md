@@ -1,8 +1,15 @@
 # Configuration
 
 ```{eval-rst}
-Example configuration file
---------------------------
+Build configuration file
+------------------------
 ```
 
-Example config file goes here
+TODO: add details about making a config file
+
+```{eval-rst}
+Example configuration files
+---------------------------
+```
+
+TODO: Example config files go here

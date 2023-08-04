@@ -19,6 +19,20 @@ Surfactant provides a modular framework to gather file information and analyze d
    changelog
 ```
 
+```{eval-rst}
+Support
+-------
+```
+
+TODO: Add support information
+
+```{eval-rst}
+License
+-------
+```
+
+TODO: License information
+
 # Indices and tables
 
 ```{eval-rst}
