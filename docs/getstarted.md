@@ -1,16 +1,10 @@
 # Getting Started
 
-```{eval-rst}
-Installation
-------------
-```
+## Installation
 
 TODO: Installation steps
 
-```{eval-rst}
-Understanding the SBOM Output
------------------------------
-```
+## Understanding the SBOM Output
 
 ### Software
 
