@@ -3,6 +3,7 @@ from json import loads
 from ntpath import basename
 from os import listdir, remove, system
 from os.path import abspath, exists
+from logging import basicConfig, DEBUG, exception, info
 from re import sub
 from shutil import copy, copy2
 from time import sleep
@@ -11,6 +12,9 @@ from warnings import simplefilter
 from pywinauto.application import Application, WindowSpecification
 from pywinauto.findbestmatch import MatchError
 from pywinauto.findwindows import find_elements
+
+# Configure logging output
+basicConfig(format="%(message)s", encoding="utf-16", level=DEBUG)
 
 # Disable warnings
 simplefilter("ignore", category=UserWarning)
@@ -230,14 +234,14 @@ def step_through(app: Application) -> None:
             auto_step = ""
 
             if arguments["-debug"] == "on":
-                print("Controls for: " + window)
-                print("--------------------------------")
+                info("Controls for: " + window)
+                info("--------------------------------")
 
                 for control in controls:
-                    print(f"> {control[0]: <15} {control[1]: <15}")
+                    info(f"> {control[0]: <15} {control[1]: <15}")
 
                 auto_step = input("\nENTER to step or type to manually step:")
-                print()
+                info("")
 
             # Decide what to press next if debug mode allowed it
             if len(auto_step) == 0:
@@ -250,18 +254,18 @@ def step_through(app: Application) -> None:
                 if controls is not None:
                     break
 
-                print("Ensure that the installer is in focus.")
+                info("Ensure that the installer is in focus.")
 
                 if arguments["-debug"] == "on":
-                    print(find_elements(active_only=True))
+                    info(find_elements(active_only=True))
 
                 # Best way to generally latch on to multiprocess installers
                 app.connect(active_only=True, found_index=0)
                 continue
 
-            print(f"Error: {err}")
+            exception(f"Error: {err}")
 
-    print("Installer has terminated.")
+    info("Installer has terminated.")
 
 
 def handle_transfers() -> None:
@@ -286,7 +290,7 @@ def handle_transfers() -> None:
             try:
                 copy2(file, f"V:\\{newname}")
             except IOError as err:
-                print(err)
+                exception(err)
 
     # Signal to the host that each file has finished copying
     with open(".\\done.txt", "w", encoding="utf-8") as f_handle:
@@ -314,7 +318,7 @@ def handle_file(fname: str) -> None:
     """
 
     if arguments["-debug"] == "on":
-        print(f"file: {fname}")
+        info(f"file: {fname}")
 
     # Handle file transfers
     if basename(fname) == "files.txt":
@@ -344,16 +348,16 @@ def handle_file(fname: str) -> None:
             while exists("V:\\results.txt"):
                 sleep(0.5)
 
-            print("results.txt file move complete")
+            info("results.txt file move complete")
         except OSError as err:
-            print(err)
+            exception(err)
             sleep(0.5)
 
         return
 
     # Parse txt into dict as json
     try:
-        print("Processing text file as args...")
+        info("Processing text file as args...")
         with open(fname, "r", encoding="utf-8") as f_handle:
             argstr = f_handle.readlines()[0]
             arguments.update(loads(argstr))
@@ -361,7 +365,7 @@ def handle_file(fname: str) -> None:
         # Remove file from folder
         remove(fname)
     except IOError as err:
-        print(err)
+        exception(err)
         sleep(0.5)
 
 
@@ -394,7 +398,7 @@ def main() -> None:
 
             handle_file(files[0])
         except OSError as err:
-            print(err)
+            exception(err)
 
 
 if __name__ == "__main__":

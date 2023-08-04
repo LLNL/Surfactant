@@ -4,11 +4,14 @@ from json import dumps
 from os import getcwd, listdir, makedirs, mkdir, remove
 from os.path import abspath, exists
 from shutil import copy, copy2
+from logging import basicConfig, DEBUG, exception, info
 from sys import argv
 from time import sleep
-
 from virtualbox import Session, VirtualBox
 from virtualbox.library_base import VBoxError
+
+# Configure logging output
+basicConfig(format="%(message)s", encoding="utf-16", level=DEBUG)
 
 # Passed in command line arguments
 args = {"-machine": "WinDev2307Eval", "-path": None, "-debug": "off"}
@@ -84,7 +87,7 @@ def prepare_vm(vbox: VirtualBox, session: Session) -> None:
         progress = machine.launch_vm_process(session, "gui", [])
         progress.wait_for_completion()
     except VBoxError as err:
-        print(err)
+        exception(err)
         sys.exit("Ensure the VM is in a saved and non-running state.")
 
     # Create the shared folder on the guest machine's V: drive
@@ -92,7 +95,7 @@ def prepare_vm(vbox: VirtualBox, session: Session) -> None:
         s_machine = session.machine
         s_machine.create_shared_folder("vb", args["-sfpath"], True, True, "V:")
     except VBoxError as err:
-        print(err)
+        exception(err)
 
     # Save settings on the machine
     session.machine.save_settings()
@@ -118,14 +121,14 @@ def deploy_installer() -> None:
         copy("args.txt", args["-sfpath"])
         remove("args.txt")
     except PermissionError as err:
-        print(err)
+        exception(err)
         sys.exit("Make sure the files are in the current directory!")
 
     try:
         # Deploy installer
         copy(args["-path"], args["-sfpath"])
     except PermissionError as err:
-        print(err)
+        exception(err)
         sys.exit("Make sure the files are in the current directory!")
 
     # Busy wait until the installer is done
@@ -155,7 +158,7 @@ def cleanup(session: Session) -> None:
         try:
             remove(".\\vb\\" + file)
         except IOError as err:
-            print(f"CANNOT DELETE .\\vb\\{file}: {str(err)}")
+            exception(f"CANNOT DELETE .\\vb\\{file}: {str(err)}")
 
     # Save settings and power down the machine
     session.machine.save_settings()
@@ -185,7 +188,7 @@ def get_attributes() -> list:
     if not exists(fname):
         return []
 
-    print("processing results.txt...")
+    info("processing results.txt...")
 
     # Load file data
     lines = None
@@ -355,8 +358,8 @@ def recreate_dirs(files: list) -> None:
 
         # Write to the list of unsuccessful files if the file doesn't exist
         if not exists(sharedfile):
-            print(f"Failure: {newpath}")
-            print(" --> [Errno 2] No such file or directory")
+            info(f"Failure: {newpath}")
+            info(" --> [Errno 2] No such file or directory")
 
             with open(".\\otherpaths.txt", "a", encoding="utf-8") as f_handle:
                 f_handle.write("C:" + newpath.replace("\\\\", "\\")[3:] + "\n")
@@ -367,7 +370,7 @@ def recreate_dirs(files: list) -> None:
             # If the file exists, make the directories for it and copy it in
             makedirs(newdirs[i], exist_ok=True)
             copy2(sharedfile, newpath)
-            print(f"Success: {newpath}")
+            info(f"Success: {newpath}")
 
             # Write to the list of successful files
             with open(".\\finalpaths.txt", "a", encoding="utf-8") as f_handle:
@@ -376,8 +379,8 @@ def recreate_dirs(files: list) -> None:
             remove(sharedfile)
         except OSError as err:
             # Since we know the file exists, deal with access errors
-            print(f"Copy/Removal Failure: {newpath}")
-            print(" --> " + str(err))
+            exception(f"Copy/Removal Failure: {newpath}")
+            exception(" --> " + str(err))
 
     # Signal to vm that all files have been transferred
     remove(".\\vb\\done.txt")
@@ -410,7 +413,7 @@ def main() -> None:
         files = analyze_results()
         recreate_dirs(files)
     except OSError as err:
-        print(err)
+        exception(err)
 
     # Restore VM to previous state
     cleanup(session)
