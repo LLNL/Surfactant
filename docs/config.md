@@ -6,8 +6,6 @@ TODO: add details about making a config file
 
 ## Example configuration files
 
-TODO: Configuration options
-
 ### Example 1: Simple Configuration File
 
 TODO: Add details
