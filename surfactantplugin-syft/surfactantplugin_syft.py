@@ -5,18 +5,18 @@ from surfactant.plugin.manager import get_plugin_manager
 from typing import List, Optional
 
 @surfactant.plugin.hookimpl
-def extract_image_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_child_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> List[Software]:
   pm = get_plugin_manager()
-  #Change to properly filter filetypes
-  #if filetype == "TAR":
-  if True:
+  #Change to properly filter filetypes, add to if statement for filetypes syft should run for
+  if filetype == "TAR":
       data = subprocess.check_output('anchore_syft ' + filename + ' -o json --scope all-layers', shell=True)
       data = json.loads(data.decode())
-      #software.installPath = data['source']['target']['userInput']
       sw_list = []
       for i in data['artifacts']:
         sw_entry = Software(
             sha1=None,
+            #Syft does not provide a SHA256 for each artifact.
+            #This uses their unique IDs in place since surfactant is dependent on this hash.
             sha256=i['id'],
             md5=None,
             name=[i['name']],
@@ -29,12 +29,18 @@ def extract_image_info(sbom: SBOM, software: Software, filename: str, filetype: 
             vendor=[i['metadata']['maintainer']],
             description="",
             relationshipAssertion="Unknown",
-            comments="Discovered using the Syft plugin",
+            comments="Discovered using the Syft plugin with this cataloger: " + i['foundBy'],
             metadata=[],
             supplementaryFiles=[],
             provenance=None,
             components=[],
         )
+        for file in i['metadata']['files']:
+          if file['path'] not in sw_entry.supplementaryFiles:
+            sw_entry.supplementaryFiles.append(file['path'])
+        for file in i['locations']:
+          if file['path'] not in sw_entry.supplementaryFiles:
+            sw_entry.supplementaryFiles.append(file['path'])
         sw_list.append(sw_entry)
       gather_relationship_data(software, data, sw_list)
       return sw_list
@@ -54,11 +60,14 @@ def establish_relationships(
 
 def gather_relationship_data(image_sw: Software, data: str, sw_list: object):
     uuid_dict = {}
+    #Build UUID dict for fast lookup
+    #First entry is the image sw entry
     uuid_dict[data['source']['id']] = [-1, image_sw.UUID]
     for count, sw in enumerate(sw_list):
        index_uuid_list = [count, sw.UUID]
        uuid_dict[sw.sha256] = index_uuid_list
     for rel in data['artifactRelationships']:
+      #Both the parent and the child must have an existing software object
       if rel['parent'] in uuid_dict and rel['child'] in uuid_dict:
         parent_info = uuid_dict[rel['parent']]
         child_info = uuid_dict[rel['child']]
@@ -73,6 +82,7 @@ def gather_relationship_data(image_sw: Software, data: str, sw_list: object):
           if 'syftRelationships' in meta:
             relationship_list = meta['syftRelationships']
             break
+        #Software object did not already have a list of syft relationships
         if len(relationship_list) == 0:
           sw.metadata.append({})
           sw.metadata[-1]['syftRelationships'] = relationship_list

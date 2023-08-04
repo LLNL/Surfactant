@@ -87,11 +87,10 @@ def short_name() -> Optional[str]:
 
 
 @hookspec
-def extract_image_info(sbom: SBOM, software: Software, filename: str, filetype: str,) -> object:
-    """Extracts information from the given file to add to the given software entry. Return an
-    object to be included as part of the metadata field, and potentially used as part of
-    selecting default values for other Software entry fields. Returning `None` will not add
-    anything to the Software entry metadata.
+def extract_child_info(sbom: SBOM, software: Software, filename: str, filetype: str,) -> List[Software]:
+    """Extracts information from the given file to add to the given software entry. Returns a list of
+    software objects that were contained in that file. Will also provide relationship data so
+    relationships can be built.
 
     Args:
         sbom (SBOM): The SBOM that the software entry is part of. Can be used to add observations or analysis data.

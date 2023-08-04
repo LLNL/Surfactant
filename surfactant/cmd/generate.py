@@ -45,7 +45,7 @@ def get_software_entry(
         sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype
     )
 
-    sw_list = pluginmanager.hook.extract_image_info(
+    sw_list = pluginmanager.hook.extract_child_info(
         sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype,
     )
 
