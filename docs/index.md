@@ -16,7 +16,6 @@ Surfactant provides a modular framework to gather file information and analyze d
    usage
    plugins
    contribute
-   changelog
 ```
 
 ## Support
