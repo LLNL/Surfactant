@@ -4,7 +4,7 @@
 
 Surfactant provides a modular framework to gather file information and analyze dependencies for generating an SBOM.
 
-## Table of Contents
+## Contents
 
 ```{eval-rst}
 .. toctree::
@@ -16,6 +16,7 @@ Surfactant provides a modular framework to gather file information and analyze d
    usage
    plugins
    contribute
+   changelog
 ```
 
 ## Support
