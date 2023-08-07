@@ -4,7 +4,7 @@
 .. image:: https://pepy.tech/badge/surfactant/month
     :target: https://pepy.tech/project/surfactant
     :alt: Surfactant Downloads Per Month Badge
-    
+
 .. image:: https://img.shields.io/pypi/l/surfactant.svg
     :target: https://pypi.org/project/surfactant/
     :alt: License Badge
