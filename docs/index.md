@@ -1,22 +1,11 @@
 # Surfactant
 
-```{eval-rst}
-.. image:: https://pepy.tech/badge/surfactant/month
-    :target: https://pepy.tech/project/surfactant
-    :alt: Surfactant Downloads Per Month Badge
-
-.. image:: https://img.shields.io/pypi/l/surfactant.svg
-    :target: https://pypi.org/project/surfactant/
-    :alt: License Badge
-
-.. image:: https://img.shields.io/pypi/wheel/surfactant.svg
-    :target: https://pypi.org/project/surfactant/
-    :alt: Wheel Support Badge
-
-.. image:: https://img.shields.io/pypi/pyversions/surfactant.svg
-    :target: https://pypi.org/project/surfactant/
-    :alt: Python Version Support Badge
-```
+[![CI Test Status](https://github.com/LLNL/Surfactant/actions/workflows/pytest.yml/badge.svg)](https://github.com/LLNL/Surfactant/actions/workflows/pytest.yml)
+[![PyPI](https://img.shields.io/pypi/v/surfactant)](https://pypi.org/project/Surfactant/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/surfactant.svg)](https://pypi.org/project/Surfactant/)
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/LLNL/Surfactant/blob/main/LICENSE)
+[![Documentation Status](https://readthedocs.org/projects/surfactant/badge/?version=latest)](https://surfactant.readthedocs.io/en/latest/?badge=latest)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/LLNL/Surfactant/main.svg)](https://results.pre-commit.ci/latest/github/LLNL/Surfactant/main)
 
 ## Welcome to Surfactant's documentation!
 
