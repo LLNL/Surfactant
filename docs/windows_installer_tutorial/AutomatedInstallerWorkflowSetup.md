@@ -3,7 +3,7 @@
 ## Summary
 When working with Windows software installers, it's often not obvious where the installer places its files. With this setup, the installer is run in a modified VirtualBox VM that has a file system driver installed. This tool uses the file system driver to determine what files came from the installer and extracts them from the VM into the host machine. The extracted files are then placed into a directory structure on the host that mimics the guest file system VM, except instead of the `C:` drive, the files are placed into a subfolder named `C` which only contains those files extracted from the VM. Running Surfactant on this folder can be essentially be used to create SBOMs for almost any installer.
 
-Following these instructions result in a working VM. The mentioned process has been made entirely automatic by running a single command.
+Following these instructions result in a working VM. The mentioned process has been made entirely automatic by running a single command. Configuration settings are near the bottom and should be considered before setting up the VM.
 
 ## Sections for Host Setup
 ### Install VirtualBox and the SDK
@@ -79,7 +79,7 @@ Go to https://learn.microsoft.com/en-us/windows-hardware/drivers/download-the-wd
 
 ### Enable unsigned drivers
 
-Hit "Win + X" on the keyboard and select "Shut down or sign out" and then "Shift + Click" the "Restart" option. Then, Troubleshoot -> Advanced options -> Start-up Settings -> Restart -> "Disable driver signature enforcement" which can be selected by hitting "7" on the keyboard. Now you can sign out and login as Administrator again.
+Hit `Win + X` on the keyboard and select `Shut down or sign out` and then `Shift + Click` the `Restart` option. Then, `Troubleshoot -> Advanced options -> Start-up Settings -> Restart -> "Disable driver signature enforcement"` which can be selected by hitting "7" on the keyboard. Now you can sign out and login as Administrator again.
 
 ### Build the driver and run it
 
@@ -123,7 +123,7 @@ and type (but don't run)
 ```shell
 python ./setupstepper.py
 ```
-in the other window. Run the minifilter command first then the python command in quick succession, it doesn't have to be insanely fast. On the taskbar, select File -> Close -> "Save the machine state" and let it close. Create a snapshot called "TestState" and let it save.
+in the other window. Run the minifilter command first then the python command in quick succession, it doesn't have to be insanely fast. On the taskbar, select `File -> Close -> "Save the machine state"` and let it close. Create a snapshot called "TestState" and let it save.
 
 ## Running
 ### These steps are done on the host machine.
@@ -135,13 +135,23 @@ python execinstaller.py -path [path to installer]
 and wait. The VM should startup, execute the installer, then close. In the same directory you should see a directory called "C" which contains the full paths of the installed files. Two txt files are created. One that lists the extracted files, and one that lists files that were detected but could not be extracted (most likely temp files). The script tries to clean up the shared folder, but you should manually make sure that the folder is empty before testing the script on another installer.
 
 ### Options
+
 `-path [Installer path]` (Mandatory): The path of the installer (such as `-path ./ICsetup.exe`) that the VM should step through.
 
 `-license [key]` (Optional): If the installer has a license key, enter it here (such as `-license 1234`)
 
 `-debug [on|off]` (Optional): Manually step through the installer and don't delete unfiltered minifilter.exe output
 
-`-machine [VM name]` (Optional): Specify the name of the VM to start. You can set the default machine name in `execinstaller.py` at line 13.
+`-machine [VM name]` (Optional): Specify the name of the VM to start.
+
+### Configuration
+To set a default machine name, edit `execinstaller.py` at line 13.
+
+To set the name of the snapshot that you'd like the VM to restore to, edit `execinstaller.py` at line 27.
+
+To set the name of the shared folder that will be created, edit `execinstaller.py` at line 18.
+
+Lines 20 - 26 in `execinstaller.py` contain string constants that mostly consist of file names that will be created and deleted throughout runtime. The `EXTRACTED` and `NOT_EXTRACTED` constants denote the output files. the other constants are the names of other files which are created and deleted throughout runtime. If you want to edit the names of these other files, make sure they remain consistent with lines 24 - 26 in `setupstepper.py`.
 
 ## Potential Issues
 ### Note on filtering
