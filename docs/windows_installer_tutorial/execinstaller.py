@@ -200,8 +200,7 @@ def get_attributes() -> list:
     """
 
     # Ensure that results.txt has been moved
-    fname = f"./{UNFILTERED}"
-    if not exists(fname):
+    if not exists(UNFILTERED):
         return []
 
     info(f"processing {UNFILTERED}...")
@@ -209,10 +208,10 @@ def get_attributes() -> list:
     # Load file data
     lines = None
 
-    with open(fname, "r", encoding="utf-16") as f_handle:
+    with open(UNFILTERED, "r", encoding="utf-16") as f_handle:
         lines = f_handle.readlines()
 
-    remove(fname)
+    remove(UNFILTERED)
 
     # get parallel lists ready, prevent reading an incomplete file
     nfiles = len(lines) // 7
