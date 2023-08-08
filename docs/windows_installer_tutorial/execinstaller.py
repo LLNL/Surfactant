@@ -106,8 +106,8 @@ def prepare_vm(vbox: VirtualBox, session: Session) -> None:
     try:
         s_machine = session.machine
         s_machine.create_shared_folder(SHARED, HOST_SF, True, True, "Z:")
-    except VBoxError as err:
-        exception(err)
+    except VBoxError:
+        exception(f"The shared folder ./{SHARED}/ already exists")
 
     # Save settings on the machine
     session.machine.save_settings()
@@ -274,15 +274,13 @@ def analyze_results() -> list:
     # Remove duplicates and bad substrings
     for i in range(nfiles):
         # Remove duplicates and bad files
-        if (attr[0][i] in aux_attr[0]) or attr[0][i].startswith("BAD:"):
-            continue
+        cond = (attr[0][i] in aux_attr[0]) or attr[0][i].startswith("BAD:")
 
         # Filter out bad executables and file reads
-        if attr[2][i].startswith("BAD") or (attr[4][i] == 1):
-            continue
+        cond = cond or attr[2][i].startswith("BAD") or (attr[4][i] == 1)
 
         # Filter out file deletions
-        if attr[5][i] == 6:
+        if cond or (attr[5][i] == 6):
             continue
 
         # Filter out blacklisted executables and files
@@ -346,8 +344,7 @@ def recreate_dirs(files: list) -> None:
             newdirs.append(dirs)
 
             # Add to the list of files. Remove mysterious 21 space characters
-            file = file[:-21]
-            f_handle.write(file.replace(chr(0), ""))
+            f_handle.write(file[:-21].replace(chr(0), ""))
             f_handle.write("\n")
 
     copy(FILE_LIST, f"./{SHARED}/{FILE_LIST}")
