@@ -54,12 +54,12 @@ def parse_args(vbox: VirtualBox) -> None:
         if argv[i - 1] in args:
             args[argv[i - 1]] = argv[i]
         else:
-            sys.exit(f"{argv[i - 1]} is not a valid argument.\n" + usage)
+            sys.exit(f"{argv[i - 1]} is not a valid argument.\n{usage}")
 
     # Ensure args have been set
     for key, value in args.items():
         if value is None:
-            sys.exit(f"{key} is a required argument.\n" + usage)
+            sys.exit(f"{key} is a required argument.\n{usage}")
 
     # Ensure that the user has selected a valid vm name
     names = [m.name for m in vbox.machines]
