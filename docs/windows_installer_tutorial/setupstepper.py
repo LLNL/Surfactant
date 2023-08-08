@@ -281,26 +281,26 @@ def handle_transfers() -> None:
     """
 
     # Copy each file into the shared folder
-    with open("V:\\files.txt", "r", encoding="utf-8") as f_handle:
+    with open("V:/files.txt", "r", encoding="utf-8") as f_handle:
         for line in f_handle.readlines():
             # The name for each file is changed to a variant of its path
             file = line.strip()
             newname = file[4:].replace("\\\\", "__")
 
             try:
-                copy2(file, f"V:\\{newname}")
+                copy2(file, f"V:/{newname}")
             except IOError as err:
                 exception(err)
 
     # Signal to the host that each file has finished copying
-    with open(".\\done.txt", "w", encoding="utf-8") as f_handle:
+    with open("./done.txt", "w", encoding="utf-8") as f_handle:
         f_handle.write("done")
 
-    copy(".\\done.txt", "V:\\done.txt")
-    remove(".\\done.txt")
+    copy("./done.txt", "V:/done.txt")
+    remove("./done.txt")
 
     # "Sleep" until the host has finished processing files
-    while exists("V:\\done.txt"):
+    while exists("V:/done.txt"):
         sleep(0.5)
 
 
@@ -341,8 +341,8 @@ def handle_file(fname: str) -> None:
             # Move results into the shared folder and cleanup
             remove(fname)
             sleep(5)
-            copy(".\\results.txt", "V:\\results.txt")
-            remove(".\\results.txt")
+            copy("./results.txt", "V:/results.txt")
+            remove("./results.txt")
 
             # Wait for results.txt to transfer
             while exists("V:\\results.txt"):
@@ -383,18 +383,18 @@ def main() -> None:
 
     while True:
         # Retry if the shared folder doesn't exist
-        if not exists("V:\\"):
+        if not exists("V:/"):
             continue
 
         try:
             # Check for any files in the shared folder
-            files = listdir("V:\\")
+            files = listdir("V:/")
 
             if len(files) == 0:
                 continue
 
             # Consider the next file in line
-            files[0] = abspath("V:\\" + files[0])
+            files[0] = abspath("V:/" + files[0])
 
             handle_file(files[0])
         except OSError as err:

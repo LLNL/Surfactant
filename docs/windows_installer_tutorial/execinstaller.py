@@ -16,7 +16,7 @@ basicConfig(format="%(message)s", encoding="utf-16", level=DEBUG)
 
 # Passed in command line arguments
 args = {"-machine": "WinDev2307Eval", "-path": None, "-debug": "off"}
-args["-sfpath"] = getcwd() + "\\vb"
+args["-sfpath"] = getcwd() + "/vb"
 
 
 def parse_args(vbox: VirtualBox) -> None:
@@ -133,13 +133,13 @@ def deploy_installer() -> None:
         sys.exit("Make sure the files are in the current directory!")
 
     # Busy wait until the installer is done
-    while not exists(args["-sfpath"] + "\\results.txt"):
+    while not exists(args["-sfpath"] + "/results.txt"):
         sleep(0.1)
 
     # Retrieve results
     sleep(2)
-    copy(args["-sfpath"] + "\\results.txt", getcwd())
-    remove(args["-sfpath"] + "\\results.txt")
+    copy(args["-sfpath"] + "\/results.txt", getcwd())
+    remove(args["-sfpath"] + "/results.txt")
 
 
 def cleanup(session: Session) -> None:
@@ -155,11 +155,11 @@ def cleanup(session: Session) -> None:
     """
 
     # Cleanup the shared folder
-    for file in listdir(".\\vb"):
+    for file in listdir("./vb"):
         try:
-            remove(".\\vb\\" + file)
+            remove("./vb/" + file)
         except IOError as err:
-            exception(f"CANNOT DELETE .\\vb\\{file}: {str(err)}")
+            exception(f"CANNOT DELETE ./vb/{file}: {str(err)}")
 
     # Save settings and power down the machine
     session.machine.save_settings()
@@ -185,7 +185,7 @@ def get_attributes() -> list:
     """
 
     # Ensure that results.txt has been moved
-    fname = ".\\results.txt"
+    fname = "./results.txt"
     if not exists(fname):
         return []
 
@@ -325,10 +325,10 @@ def recreate_dirs(files: list) -> None:
     newdirs = []
 
     # Send the list of desired files to the vm
-    with open(".\\files.txt", "w", encoding="utf-8") as f_handle:
+    with open("./files.txt", "w", encoding="utf-8") as f_handle:
         for file in files:
             # Edit file path for the VM file to be the file path for a C folder
-            dirs = ".\\C\\" + "\\".join(file.split("\\\\")[1:-1]) + "\\"
+            dirs = "./C/" + "/".join(file.split("\\\\")[1:-1]) + "/"
             newdirs.append(dirs)
 
             # Add to the list of files. Remove mysterious 21 space characters
@@ -336,16 +336,16 @@ def recreate_dirs(files: list) -> None:
             f_handle.write(file.replace(chr(0), ""))
             f_handle.write("\n")
 
-    copy(".\\files.txt", ".\\vb\\files.txt")
+    copy("./files.txt", "./vb/files.txt")
 
     if args["-debug"] == "off":
-        remove(".\\files.txt")
+        remove("./files.txt")
 
     # Wait for the vm to send back all of the files
-    while not exists(".\\vb\\done.txt"):
+    while not exists("./vb/done.txt"):
         sleep(0.5)
 
-    remove(".\\vb\\files.txt")
+    remove("./vb/files.txt")
 
     # Move files from the shared folder to their new path
     num_files = len(files)
@@ -353,17 +353,17 @@ def recreate_dirs(files: list) -> None:
     for i in range(num_files):
         # The correct path for the new file is just a variant of its name
         file = files[i][4:].replace("\\\\", "__")
-        newpath = f".\\\\C\\\\{files[i][4:]}"
+        newpath = f"./C/{files[i][4:]}"
         newpath = newpath.replace(chr(0), "")
-        sharedfile = f".\\vb\\{file}".replace(chr(0), "")
+        sharedfile = f"./vb/{file}".replace(chr(0), "")
 
         # Write to the list of unsuccessful files if the file doesn't exist
         if not exists(sharedfile):
             info(f"Failure: {newpath}")
             info(" --> [Errno 2] No such file or directory")
 
-            with open(".\\otherpaths.txt", "a", encoding="utf-8") as f_handle:
-                f_handle.write("C:" + newpath.replace("\\\\", "\\")[3:] + "\n")
+            with open("./otherpaths.txt", "a", encoding="utf-8") as f_handle:
+                f_handle.write("C:" + newpath.replace("\\\\", "/")[3:] + "\n")
 
             continue
 
@@ -374,8 +374,8 @@ def recreate_dirs(files: list) -> None:
             info(f"Success: {newpath}")
 
             # Write to the list of successful files
-            with open(".\\finalpaths.txt", "a", encoding="utf-8") as f_handle:
-                f_handle.write("C:" + newpath.replace("\\\\", "\\")[3:] + "\n")
+            with open("./finalpaths.txt", "a", encoding="utf-8") as f_handle:
+                f_handle.write("C:" + newpath.replace("\\\\", "/")[3:] + "\n")
 
             remove(sharedfile)
         except OSError as err:
@@ -384,7 +384,7 @@ def recreate_dirs(files: list) -> None:
             exception(" --> " + str(err))
 
     # Signal to vm that all files have been transferred
-    remove(".\\vb\\done.txt")
+    remove("./vb/done.txt")
 
 
 def main() -> None:
