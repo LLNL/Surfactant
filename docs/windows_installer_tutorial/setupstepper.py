@@ -3,7 +3,7 @@ from json import loads
 from logging import DEBUG, basicConfig, exception, info
 from ntpath import basename
 from os import listdir, remove, system
-from os.path import abspath, exists
+from os.path import exists
 from re import sub
 from shutil import copy, copy2
 from time import sleep
@@ -18,6 +18,12 @@ basicConfig(format="%(message)s", encoding="utf-16", level=DEBUG)
 
 # Disable warnings
 simplefilter("ignore", category=UserWarning)
+
+# Configurable Strings
+DRIVE = "Z:"
+UNFILTERED = "results.txt"
+FILE_LIST = "files.txt"
+FILE_SIGNAL = "done.txt"
 
 # Passed in command line arguments as dictionary (flag: value)
 arguments = {"-path": None, "-debug": "off", "-license": "Stepper"}
@@ -281,26 +287,26 @@ def handle_transfers() -> None:
     """
 
     # Copy each file into the shared folder
-    with open("V:/files.txt", "r", encoding="utf-8") as f_handle:
+    with open(f"{DRIVE}/{FILE_LIST}", "r", encoding="utf-8") as f_handle:
         for line in f_handle.readlines():
             # The name for each file is changed to a variant of its path
             file = line.strip()
-            newname = file[4:].replace("\\\\", "__")
+            newname = file[3:].replace("/", "!SEP!")
 
             try:
-                copy2(file, f"V:/{newname}")
+                copy2(file, f"{DRIVE}/{newname}")
             except IOError as err:
                 exception(err)
 
     # Signal to the host that each file has finished copying
-    with open("./done.txt", "w", encoding="utf-8") as f_handle:
+    with open(FILE_SIGNAL, "w", encoding="utf-8") as f_handle:
         f_handle.write("done")
 
-    copy("./done.txt", "V:/done.txt")
-    remove("./done.txt")
+    copy(FILE_SIGNAL, f"{DRIVE}/{FILE_SIGNAL}")
+    remove(FILE_SIGNAL)
 
     # "Sleep" until the host has finished processing files
-    while exists("V:/done.txt"):
+    while exists(f"{DRIVE}/{FILE_SIGNAL}"):
         sleep(0.5)
 
 
@@ -321,7 +327,7 @@ def handle_file(fname: str) -> None:
         info(f"file: {fname}")
 
     # Handle file transfers
-    if basename(fname) == "files.txt":
+    if basename(fname) == FILE_LIST:
         handle_transfers()
         return
 
@@ -341,14 +347,14 @@ def handle_file(fname: str) -> None:
             # Move results into the shared folder and cleanup
             remove(fname)
             sleep(5)
-            copy("./results.txt", "V:/results.txt")
-            remove("./results.txt")
+            copy(UNFILTERED, f"{DRIVE}/{UNFILTERED}")
+            remove(UNFILTERED)
 
             # Wait for results.txt to transfer
-            while exists("V:\\results.txt"):
+            while exists(f"{DRIVE}/{UNFILTERED}"):
                 sleep(0.5)
 
-            info("results.txt file move complete")
+            info(f"{UNFILTERED} file move complete")
         except OSError as err:
             exception(err)
             sleep(0.5)
@@ -383,20 +389,17 @@ def main() -> None:
 
     while True:
         # Retry if the shared folder doesn't exist
-        if not exists("V:/"):
+        if not exists(f"{DRIVE}/"):
             continue
 
         try:
             # Check for any files in the shared folder
-            files = listdir("V:/")
+            files = listdir(f"{DRIVE}/")
 
             if len(files) == 0:
                 continue
 
-            # Consider the next file in line
-            files[0] = abspath("V:/" + files[0])
-
-            handle_file(files[0])
+            handle_file(f"{DRIVE}/{files[0]}")
         except OSError as err:
             exception(err)
 

@@ -14,9 +14,20 @@ from virtualbox.library_base import VBoxError
 # Configure logging output
 basicConfig(format="%(message)s", encoding="utf-16", level=DEBUG)
 
+# Configurable strings
+SHARED = "vb"
+HOST_SF = getcwd() + f"/{SHARED}"
+UNFILTERED = "results.txt"
+FILTERED = "filtered.txt"
+ARGS_FILE = "args.txt"
+FILE_LIST = "files.txt"
+FILE_SIGNAL = "done.txt"
+NOT_EXTRACTED = "UnextractedFilesList.txt"
+EXTRACTED = "ExtractedFilesList.txt"
+LATEST_SNAPSHOT = "TestState"
+
 # Passed in command line arguments
 args = {"-machine": "WinDev2307Eval", "-path": None, "-debug": "off"}
-args["-sfpath"] = getcwd() + "/vb"
 
 
 def parse_args(vbox: VirtualBox) -> None:
@@ -79,8 +90,8 @@ def prepare_vm(vbox: VirtualBox, session: Session) -> None:
     """
 
     # Create the shared folder on the host machine
-    if not exists(args["-sfpath"]):
-        mkdir(args["-sfpath"])
+    if not exists(HOST_SF):
+        mkdir(HOST_SF)
 
     # Retrieve machine and boot it
     try:
@@ -94,7 +105,7 @@ def prepare_vm(vbox: VirtualBox, session: Session) -> None:
     # Create the shared folder on the guest machine's V: drive
     try:
         s_machine = session.machine
-        s_machine.create_shared_folder("vb", args["-sfpath"], True, True, "V:")
+        s_machine.create_shared_folder(SHARED, HOST_SF, True, True, "Z:")
     except VBoxError as err:
         exception(err)
 
@@ -116,30 +127,30 @@ def deploy_installer() -> None:
 
     try:
         # Insert arguments into shared folder
-        with open("args.txt", "w", encoding="utf-8") as f_handle:
+        with open(ARGS_FILE, "w", encoding="utf-8") as f_handle:
             f_handle.write(dumps(args, separators=(",", ":")))
 
-        copy("args.txt", args["-sfpath"])
-        remove("args.txt")
+        copy(ARGS_FILE, HOST_SF)
+        remove(ARGS_FILE)
     except PermissionError as err:
         exception(err)
         sys.exit("Make sure the files are in the current directory!")
 
     try:
         # Deploy installer
-        copy(args["-path"], args["-sfpath"])
+        copy(args["-path"], HOST_SF)
     except PermissionError as err:
         exception(err)
         sys.exit("Make sure the files are in the current directory!")
 
     # Busy wait until the installer is done
-    while not exists(args["-sfpath"] + "/results.txt"):
+    while not exists(f"{HOST_SF}/{UNFILTERED}"):
         sleep(0.1)
 
     # Retrieve results
     sleep(2)
-    copy(args["-sfpath"] + "\/results.txt", getcwd())
-    remove(args["-sfpath"] + "/results.txt")
+    copy(f"{HOST_SF}/{UNFILTERED}", getcwd())
+    remove(f"{HOST_SF}/{UNFILTERED}")
 
 
 def cleanup(session: Session) -> None:
@@ -155,11 +166,15 @@ def cleanup(session: Session) -> None:
     """
 
     # Cleanup the shared folder
-    for file in listdir("./vb"):
+    for file in listdir(f"./{SHARED}"):
         try:
-            remove("./vb/" + file)
+            remove(f"./{SHARED}/{file}")
         except IOError as err:
-            exception(f"CANNOT DELETE ./vb/{file}: {str(err)}")
+            exception(f"CANNOT DELETE ./{SHARED}/{file}: {str(err)}")
+
+    # Let the user read VM output if debug is on
+    if args["-debug"] == "on":
+        input("ENTER when you are done reading VM output...")
 
     # Save settings and power down the machine
     session.machine.save_settings()
@@ -167,7 +182,7 @@ def cleanup(session: Session) -> None:
     progress.wait_for_completion()
 
     # Get latest snapshot and restore it
-    snapshot = session.machine.find_snapshot("TestState")
+    snapshot = session.machine.find_snapshot(LATEST_SNAPSHOT)
     progress = session.machine.restore_snapshot(snapshot)
     progress.wait_for_completion()
 
@@ -185,11 +200,11 @@ def get_attributes() -> list:
     """
 
     # Ensure that results.txt has been moved
-    fname = "./results.txt"
+    fname = f"./{UNFILTERED}"
     if not exists(fname):
         return []
 
-    info("processing results.txt...")
+    info(f"processing {UNFILTERED}...")
 
     # Load file data
     lines = None
@@ -212,10 +227,10 @@ def get_attributes() -> list:
         ext = str(lines[idx + 2]).strip("[] \t\r\n")
         attr[1][i] = "".join([chr(int(x)) for x in ext.split(", ")])
 
-        # Construct the file name and fix the duplicate extension
+        # Construct the POSIX file name and fix the duplicate extension
         currfname = str(lines[idx + 1]).split(".", 1)[0].strip('" \t\r\n')
         currfname = "BAD:" if len(currfname) == 0 else currfname
-        attr[0][i] = currfname + "." + attr[1][i]
+        attr[0][i] = currfname.replace("\\\\", "/") + "." + attr[1][i]
 
         # Get the rest of the attributes from the file
         exename = str(lines[idx + 3]).rstrip().strip('"')
@@ -228,7 +243,7 @@ def get_attributes() -> list:
 
 
 def analyze_results() -> list:
-    """Analyzes the results.txt file and filters out the irrelevant files.
+    """Analyzes the unfiltered file and filters out the irrelevant files.
     The newly created file lists files that should be extracted from the VM.
     Attribute indices: 0 = filename, 1 = extension, 2 = executable,
     3 = pid, 4 = irp_operation, 5 = change_code
@@ -297,7 +312,7 @@ def analyze_results() -> list:
     # Keep intermediate file for debugging
     nfiles = len(attr[0])
 
-    with open("filtered.txt", "w", encoding="utf-8") as f_handle:
+    with open(FILTERED, "w", encoding="utf-8") as f_handle:
         for i in range(nfiles):
             f_handle.write(f"File {i}:\n")
             f_handle.write(f"Name:     {attr[0][i]}\n")
@@ -325,10 +340,10 @@ def recreate_dirs(files: list) -> None:
     newdirs = []
 
     # Send the list of desired files to the vm
-    with open("./files.txt", "w", encoding="utf-8") as f_handle:
+    with open(FILE_LIST, "w", encoding="utf-8") as f_handle:
         for file in files:
             # Edit file path for the VM file to be the file path for a C folder
-            dirs = "./C/" + "/".join(file.split("\\\\")[1:-1]) + "/"
+            dirs = "./C/" + "/".join(file.split("/")[1:-1]) + "/"
             newdirs.append(dirs)
 
             # Add to the list of files. Remove mysterious 21 space characters
@@ -336,34 +351,34 @@ def recreate_dirs(files: list) -> None:
             f_handle.write(file.replace(chr(0), ""))
             f_handle.write("\n")
 
-    copy("./files.txt", "./vb/files.txt")
+    copy(FILE_LIST, f"./{SHARED}/{FILE_LIST}")
 
     if args["-debug"] == "off":
-        remove("./files.txt")
+        remove(FILE_LIST)
 
     # Wait for the vm to send back all of the files
-    while not exists("./vb/done.txt"):
+    while not exists(f"./{SHARED}/{FILE_SIGNAL}"):
         sleep(0.5)
 
-    remove("./vb/files.txt")
+    remove(f"./{SHARED}/{FILE_LIST}")
 
     # Move files from the shared folder to their new path
     num_files = len(files)
 
     for i in range(num_files):
         # The correct path for the new file is just a variant of its name
-        file = files[i][4:].replace("\\\\", "__")
-        newpath = f"./C/{files[i][4:]}"
+        file = files[i][3:].replace("/", "!SEP!")
+        newpath = f"./C/{files[i][3:]}"
         newpath = newpath.replace(chr(0), "")
-        sharedfile = f"./vb/{file}".replace(chr(0), "")
+        sharedfile = f"./{SHARED}/{file}".replace(chr(0), "")
 
         # Write to the list of unsuccessful files if the file doesn't exist
         if not exists(sharedfile):
             info(f"Failure: {newpath}")
             info(" --> [Errno 2] No such file or directory")
 
-            with open("./otherpaths.txt", "a", encoding="utf-8") as f_handle:
-                f_handle.write("C:" + newpath.replace("\\\\", "/")[3:] + "\n")
+            with open(NOT_EXTRACTED, "a", encoding="utf-8") as f_handle:
+                f_handle.write(f"C:{newpath[3:]}\n")
 
             continue
 
@@ -374,8 +389,8 @@ def recreate_dirs(files: list) -> None:
             info(f"Success: {newpath}")
 
             # Write to the list of successful files
-            with open("./finalpaths.txt", "a", encoding="utf-8") as f_handle:
-                f_handle.write("C:" + newpath.replace("\\\\", "/")[3:] + "\n")
+            with open(EXTRACTED, "a", encoding="utf-8") as f_handle:
+                f_handle.write(f"C:{newpath[3:]}\n")
 
             remove(sharedfile)
         except OSError as err:
@@ -384,7 +399,7 @@ def recreate_dirs(files: list) -> None:
             exception(" --> " + str(err))
 
     # Signal to vm that all files have been transferred
-    remove("./vb/done.txt")
+    remove(f"./{SHARED}/{FILE_SIGNAL}")
 
 
 def main() -> None:
