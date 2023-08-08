@@ -33,7 +33,7 @@ html_theme_options = {
     "badge_branch": "main",
     "fixed_sidebar": "false",
 }
-html_logo = "_static/SurfactantLogo.png"
-html_favicon = "_static/SurfactantLogo.ico"
+# html_logo = "_static/SurfactantLogo.png"
+# html_favicon = "_static/SurfactantLogo.ico"
 html_sidebars = {"**": ["globaltoc.html", "relations.html", "searchbox.html"]}
 html_static_path = ["_static"]
