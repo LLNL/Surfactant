@@ -14,6 +14,7 @@ To install the python API, in an administrator powershell (for Windows hosts) ru
 
 ```shell
 python -m pip install virtualbox
+```
 
 ### Install Windows 11 VM
 
@@ -69,7 +70,7 @@ In the VirtualBox VM manager on the VM, select Settings -> Shared Folders, then 
 
 ### Install Rust
 
-Open Edge, select "Start without your data" and "Continue without this data" and Uncheck the box and "Confirm and continue" and Uncheck the box again and "Confirm and start browsing." Finally, go to https://www.rust-lang.org/tools/install and download Rustup-init.exe as 64-bit. Disconnect from any corporate networks to avoid certificate issues from now on. Open the installer in powershell, type 1, then hit Enter. Once that's done, hit Enter and close
+Open Edge, select "Start without your data" and "Continue without this data" and Uncheck the box and "Confirm and continue" and Uncheck the box again and "Confirm and start browsing." Finally, go to https://www.rust-lang.org/tools/install and download Rustup-init.exe as 64-bit. Disconnect from any corporate networks to avoid certificate issues from now on. Open the installer in powershell, type 1 to select `Proceed with installation (default)`, then hit Enter. Once that's done, hit Enter and close
 the shell.
 
 ### Download the EWDK
