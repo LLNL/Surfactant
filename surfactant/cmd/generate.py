@@ -263,18 +263,21 @@ def sbom(
                             filepath = true_filepath
 
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
-                            entries.append(
-                                get_software_entry(
-                                    pm,
-                                    new_sbom,
-                                    filepath,
-                                    filetype=ftype,
-                                    root_path=epath,
-                                    container_uuid=parent_uuid,
-                                    install_path=install_prefix,
-                                    user_institution_name=recorded_institution,
+                            try:
+                                entries.append(
+                                    get_software_entry(
+                                        pm,
+                                        new_sbom,
+                                        filepath,
+                                        filetype=ftype,
+                                        root_path=epath,
+                                        container_uuid=parent_uuid,
+                                        install_path=install_prefix,
+                                        user_institution_name=recorded_institution,
+                                    )
                                 )
-                            )
+                            except Exception as e:
+                                raise Exception(f"Unable to process: {filepath}") from e
 
                             if file_is_symlink and install_prefix:
                                 # Remove the entry from the list as it'll be processed later anyways
