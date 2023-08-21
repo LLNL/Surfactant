@@ -139,7 +139,7 @@ def extract_pe_info(filename):
         if len(pe_fi) > 0:
             file_details["FileInfo"] = {}
             for fi_entry in pe_fi[0]:
-                if fi_entry.name == "StringFileInfo":
+                if fi_entry.name == "StringFileInfo" and hasattr(fi_entry, "StringTable"):
                     for st in fi_entry.StringTable:
                         for st_entry in st.entries.items():
                             file_details["FileInfo"][st_entry[0].decode()] = st_entry[1].decode()
