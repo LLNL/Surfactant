@@ -23,7 +23,7 @@ def version():
 
 main.add_command(generate)
 main.add_command(version)
-main.add(stat)
+main.add_command(stat)
 
 if __name__ == "__main__":
     main()
