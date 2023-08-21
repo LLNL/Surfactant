@@ -277,7 +277,7 @@ def sbom(
                                     )
                                 )
                             except Exception as e:
-                                raise Exception(f"Unable to process: {filepath}") from e
+                                raise RuntimeError(f"Unable to process: {filepath}") from e
 
                             if file_is_symlink and install_prefix:
                                 # Remove the entry from the list as it'll be processed later anyways
