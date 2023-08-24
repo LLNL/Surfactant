@@ -141,7 +141,7 @@ def create_system_object(sbom, config=None):
     if config:
         system = config["system"]
     # make sure the required fields are present and at least mostly valid
-    if ("UUID" not in system) or not (sbom._is_valid_uuid4(system["UUID"])):
+    if ("UUID" not in system) or not sbom.is_valid_uuid4(system["UUID"]):
         system["UUID"] = str(uuid_module.uuid4())
     if "name" not in system:
         system["name"] = ""

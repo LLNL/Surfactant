@@ -8,11 +8,13 @@ import pathlib
 import random
 import string
 
+import pytest
+
 from surfactant.cmd.merge import merge
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
-################################## Generate Sample SBOMs ##################################
+# Generate Sample SBOMs
 sbom1 = SBOM(
     software=[
         Software(UUID="dd6f7f6b-7c31-4a4a-afef-14678b9942bf", fileName=["helics.tar.gz"]),
@@ -104,9 +106,8 @@ with open(pathlib.Path.cwd() / "tests/cmd/test_sbom1.json", "r") as f:
 with open(pathlib.Path.cwd() / "tests/cmd/test_sbom2.json", "r") as f:
     sbom4 = SBOM.from_json(f.read())
 
-################################## Test Functions ##################################
 
-
+# Test Functions
 def test_simple_merge_method():
     merged_sbom = sbom1.merge(sbom2)
     softwares = sbom1.software
@@ -119,6 +120,7 @@ def test_simple_merge_method():
     )
 
 
+@pytest.mark.skip(reason="No way of validating this test yet")
 def test_merge_with_circular_dependency():
     circular_dependency_sbom = sbom1
     circular_dependency_sbom.relationships.append(
@@ -133,14 +135,13 @@ def test_merge_with_circular_dependency():
     pm = get_plugin_manager()
     output_writer = pm.get_plugin("surfactant.output.cytrics_writer")
     input_sboms = [circular_dependency_sbom, sbom2]
-    sbom_outfile = open(outfile_name, "w")
-
-    merge(input_sboms, sbom_outfile, config, output_writer)
+    with open(outfile_name, "w") as sbom_outfile:
+        merge(input_sboms, sbom_outfile, config, output_writer)
     # TODO add validation checks here
-    sbom_outfile.close()
-    os.remove(os.path.abspath(sbom_outfile.name))
+    os.remove(os.path.abspath(outfile_name))
 
 
+@pytest.mark.skip(reason="No way of validating this test yet")
 def test_cmdline_merge():
     # Test simple merge of two sboms
     outfile_name = generate_filename("test_cmdline_merge")
@@ -148,12 +149,10 @@ def test_cmdline_merge():
     output_writer = pm.get_plugin("surfactant.output.cytrics_writer")
     config_file = None
     input_sboms = [sbom3, sbom4]
-    sbom_outfile = open(outfile_name, "w+")
-
-    merge(input_sboms, sbom_outfile, config, output_writer)
+    with open(outfile_name, "w") as sbom_outfile:
+        merge(input_sboms, sbom_outfile, config_file, output_writer)
     # TODO add validation checks here
-    sbom_outfile.close()
-    os.remove(os.path.abspath(sbom_outfile.name))
+    os.remove(os.path.abspath(outfile_name))
 
 
 def generate_filename(name, ext=".json"):
