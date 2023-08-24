@@ -145,6 +145,11 @@ def sbom(
     recorded_institution,
     output_format,
 ):
+    """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
+
+    An optional INPUT_SBOM can be supplied to use as a base for subsequent operations
+    """
+
     pm = get_plugin_manager()
     output_writer = pm.get_plugin(output_format)
 

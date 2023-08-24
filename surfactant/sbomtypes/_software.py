@@ -11,6 +11,7 @@ import time
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field, fields
+from dataclasses_json import dataclass_json
 from typing import Any, List, Optional
 
 from surfactant.fileinfo import calc_file_hashes, get_file_info
@@ -20,21 +21,21 @@ from ._provenance import SoftwareComponentProvenance, SoftwareProvenance
 
 # pylint: disable=too-many-instance-attributes
 
-
+@dataclass_json
 @dataclass
 class SoftwareComponent:
     name: str
-    captureTime: Optional[int]
-    version: Optional[str]
-    vendor: Optional[List[str]]
-    description: Optional[str]
-    comments: Optional[str]
-    metadata: Optional[List[object]]
-    supplementaryFiles: Optional[List[File]]
-    provenance: Optional[List[SoftwareComponentProvenance]]
-    recordedInstitution: Optional[str]
+    captureTime: Optional[int] = None
+    version: Optional[str] = None
+    vendor: Optional[List[str]] = None
+    description: Optional[str] = None
+    comments: Optional[str] = None
+    metadata: Optional[List[object]] = None
+    supplementaryFiles: Optional[List[File]] = None
+    provenance: Optional[List[SoftwareComponentProvenance]] = None 
+    recordedInstitution: Optional[str] = None
 
-
+@dataclass_json
 @dataclass
 class Software:
     UUID: str = field(default_factory=lambda: str(uuid.uuid4()))
