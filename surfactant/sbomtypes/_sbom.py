@@ -177,7 +177,7 @@ class SBOM:
                 if rel.xUUID in uuid_updates:
                     rel.xUUID = uuid_updates[rel.xUUID]
                 if rel.yUUID in uuid_updates:
-                    rel.yUUID = uuid_updates[rel.yUUID] 
+                    rel.yUUID = uuid_updates[rel.yUUID]
                 if existing_rel := self._find_relationship_entry(
                     merged_sbom,
                     xUUID=rel.xUUID,
@@ -240,7 +240,7 @@ class SBOM:
                 if rel.xUUID in uuid_updates:
                     rel.xUUID = uuid_updates[rel.xUUID]
                 if rel.yUUID in uuid_updates:
-                    rel.yUUID = uuid_updates[rel.yUUID]  
+                    rel.yUUID = uuid_updates[rel.yUUID]
                 if existing_rel := self._find_star_relationship_entry(
                     merged_sbom,
                     xUUID=rel.xUUID,
