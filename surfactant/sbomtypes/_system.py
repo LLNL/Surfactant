@@ -3,8 +3,9 @@
 #
 # SPDX-License-Identifier: MIT
 import uuid
-from dataclasses import dataclass, field
-from typing import List, Optional
+from collections.abc import Iterable
+from dataclasses import dataclass, field, fields
+from typing import Any, List, Optional
 
 from ._provenance import SystemProvenance
 
@@ -21,3 +22,36 @@ class System:
     vendor: Optional[List[str]] = None
     description: Optional[str] = None
     provenance: Optional[List[SystemProvenance]] = None
+
+    def merge(self, sy):
+        if sy and self != sy:
+            # leave UUID and captureTime the same
+            single_value_fields = [
+                "captureStart",
+                "captureEnd",
+                "name",
+                "officialName",
+                "description",
+            ]
+            array_fields = ["vendor", "provenance"]
+            for fld in fields(self):
+                if fld.name in single_value_fields:
+                    current_value = getattr(self, fld.name)
+                    new_value = getattr(sy, fld.name)
+                    if current_value != new_value:
+                        self._update_field(fld.name, new_value)
+                # for lists, append new values that we don't currently have
+                if fld.name in array_fields:
+                    current_arr = getattr(self, fld.name)
+                    new_arr = getattr(sy, fld.name)
+                    # if the multi-value fields differ, the one with new values *must* be Iterable
+                    if current_arr != new_arr and isinstance(new_arr, Iterable):
+                        # if our field is not iterable, initialize it as a new list
+                        if current_arr is None:
+                            setattr(self, fld.name, [])
+                            current_arr = getattr(self, fld.name)
+                        for new_value in new_arr:
+                            # special case, UUID in containerPaths need updating to match our UUID
+                            if new_value not in current_arr:
+                                current_arr.append(new_value)
+        return self.UUID, sy.UUID

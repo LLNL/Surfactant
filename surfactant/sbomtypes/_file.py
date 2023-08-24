@@ -16,4 +16,4 @@ class File:
     capturedBy: str
     captureTime: str
     source: str
-    methodOfAcquisition: Optional[List[str]]
+    methodOfAcquisition: Optional[List[str]] = None
