@@ -210,7 +210,7 @@ class SBOM:
                 for idx, path in enumerate(sw.containerPath):
                     u = path[:36]
                     # if container path starts with an invalid uuid4, sbom might not be valid
-                    if self._is_valid_uuid4(u):
+                    if self.is_valid_uuid4(u):
                         if u in uuid_updates:
                             updated_path = path.replace(u, uuid_updates[u], 1)
                             sw.containerPath[idx] = updated_path
@@ -372,7 +372,7 @@ class SBOM:
                 return rel
         return None
 
-    def _is_valid_uuid4(self, u):
+    def is_valid_uuid4(self, u):
         """Merge helper function to check if a uuid is valid.
 
         Positional arguments:

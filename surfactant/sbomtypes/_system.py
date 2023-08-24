@@ -5,7 +5,7 @@
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field, fields
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from ._provenance import SystemProvenance
 
