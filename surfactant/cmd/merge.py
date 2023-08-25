@@ -135,7 +135,7 @@ def create_system_object(sbom: SBOM, config=None) -> System:
     Positional arguments:
         sbom (SBOM): The SBOM the system object is being created for.
         config: The user specified config json (Optional).
-        
+
     Returns:
         System: The created system object.
     """
