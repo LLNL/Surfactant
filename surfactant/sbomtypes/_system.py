@@ -23,7 +23,7 @@ class System:
     description: Optional[str] = None
     provenance: Optional[List[SystemProvenance]] = None
 
-    def merge(self, sy):
+    def merge(self, sy: System):
         if sy and self != sy:
             # leave UUID and captureTime the same
             single_value_fields = [

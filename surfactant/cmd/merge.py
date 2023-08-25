@@ -55,11 +55,11 @@ def merge(input_sboms, sbom_outfile, config, output_writer):
     output_writer.write_sbom(merged_sbom, sbom_outfile)
 
 
-def construct_relationship_graph(sbom):
+def construct_relationship_graph(sbom: SBOM):
     """Function to get create a relationship graph of systems and software within an sbom
 
-    Positional arguments:
-    sbom -- the sbom to generate relationship graph from
+    Args:
+        sbom (SBOM): The sbom to generate relationship graph from.
     """
     # construct a graph for adding a system relationship to all root software entries
     rel_graph = {}
@@ -84,8 +84,8 @@ def construct_relationship_graph(sbom):
 def get_roots_check_cycles(rel_graph):
     """Function to get roots of the sbom and check for circular dependencies
 
-    Positional arguments:
-    rel_graph -- the relationship graph for an sbom
+    Args:
+        rel_graph: The relationship graph for an sbom.
     """
     visited = set()
     roots = set()
@@ -129,12 +129,15 @@ def get_roots_check_cycles(rel_graph):
     return roots
 
 
-def create_system_object(sbom, config=None):
+def create_system_object(sbom: SBOM, config=None) -> System:
     """Function to create an accurate system object
 
     Positional arguments:
-    sbom -- the SBOM the system object is being created for
-    config -- (Optional) the user specified config json
+        sbom (SBOM): The SBOM the system object is being created for.
+        config: The user specified config json (Optional).
+        
+    Returns:
+        System: The created system object.
     """
 
     system = {}
