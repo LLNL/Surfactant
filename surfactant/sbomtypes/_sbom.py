@@ -115,7 +115,7 @@ class SBOM:
         self.software.append(sw)
         return sw
 
-    def merge(self, sbom_m: "SBOM"):
+    def merge(self, sbom_m: SBOM) -> SBOM:
         merged_sbom = SBOM()
         # merged/old to new UUID map
         uuid_updates = {}
@@ -268,14 +268,17 @@ class SBOM:
                     merged_sbom.starRelationships.append(rel)
         return merged_sbom
 
-    def _find_systems_entry(self, sbom, uuid=None, name=None):
+    def _find_systems_entry(self, sbom: SBOM, uuid: Optional[str] = None, name: Optional[str] = None) -> Optional[System]:
         """Merge helper function to find and return
         the matching system entry in the provided sbom.
 
-        Positional arguments:
-        sbom -- the merged sbom
-        uuid -- the uuid of the desired system entry
-        name -- the name of the desired system entry
+        Args:
+            sbom (SBOM): The sbom to search.
+            uuid (Optional[str]): The uuid of the desired system entry.
+            name (Optional[str]): The name of the desired system entry.
+        
+        Returns:
+            Optional[System]: The system found that matches the given criteria, otherwise None.
         """
         for system in sbom.systems:
             all_match = True
@@ -289,16 +292,19 @@ class SBOM:
                 return system
         return None
 
-    def _find_software_entry(self, sbom, uuid, sha256=None, md5=None, sha1=None):
+    def _find_software_entry(self, sbom: SBOM, uuid: Optional[str] = None, sha256: Optional[str] = None, md5: Optional[str] = None, sha1: Optional[str] = None) -> Optional[Software]:
         """Merge helper function to find and return
         the matching software entry in the provided sbom.
 
-        Positional arguments:
-        sbom -- the merged sbom
-        uuid -- the uuid of the desired software entry
-        sha256 -- the sha256 of the desired software entry
-        md5 -- the md5 of the desired software entry
-        sha1 -- the sha1 of the desired software entry
+        Args:
+            sbom (SBOM): The sbom to search.
+            uuid (Optional[str]): The uuid of the desired software entry to match against if no hashes were provided.
+            sha256 (Optional[str]): The sha256 of the desired software entry.
+            md5 (Optional[str]): The md5 of the desired software entry.
+            sha1 (Optional[str]): The sha1 of the desired software entry.
+        
+        Returns:
+            Optional[Software]: The software entry found that matches the given criteria, otherwise None.
         """
         for sw in sbom.software:
             match = False
@@ -322,15 +328,18 @@ class SBOM:
                 return sw
         return None
 
-    def _find_relationship_entry(self, sbom, xUUID=None, yUUID=None, relationship=None):
+    def _find_relationship_entry(self, sbom, xUUID: Optional[str] = None, yUUID: Optional[str] = None, relationship: Optional[str] = None) -> Optional[Relationship]:
         """Merge helper function to find and return
         the matching relationship entry in the provided sbom.
 
-        Positional arguments:
-        sbom -- the merged sbom
-        xUUID -- the xUUID of the desired relationship entry
-        yUUID -- the shyUUIDa256 of the desired relationship entry
-        relationship -- the relationship type of the desired relationship entry
+        Args:
+            sbom (SBOM): The sbom to search.
+            xUUID (Optional[str]): The xUUID of the desired relationship entry.
+            yUUID (Optional[str]): The yUUID of the desired relationship entry.
+            relationship (Optional[str]): The relationship type of the desired relationship entry.
+            
+        Returns:
+            Optional[Relationship]: The relationship entry found that matches the given criteria, otherwise None.
         """
         for rel in sbom.relationships:
             all_match = True
@@ -347,15 +356,18 @@ class SBOM:
                 return rel
         return None
 
-    def _find_star_relationship_entry(self, sbom, xUUID=None, yUUID=None, relationship=None):
+    def _find_star_relationship_entry(self, sbom: SBOM, xUUID: Optional[str] = None, yUUID: Optional[str] = None, relationship: Optional[str] = None) -> Optional[StarRelationship]:
         """Merge helper function to find and return
         the matching star relationship entry in the provided sbom.
 
-        Positional arguments:
-        sbom -- the merged sbom
-        xUUID -- the xUUID of the desired relationship entry
-        yUUID -- the shyUUIDa256 of the desired relationship entry
-        relationship -- the relationship type of the desired relationship entry
+        Args:
+            sbom (SBOM): The sbom to search.
+            xUUID (Optional[str]): The xUUID of the desired relationship entry.
+            yUUID (Optional[str]): The yUUID of the desired relationship entry.
+            relationship (Optional[str]): The relationship type of the desired relationship entry.
+        
+        Returns:
+            Optional[StarRelationship]: The star relationship found that matches the given criteria, otherwise None.
         """
         for rel in sbom.starRelationships:
             all_match = True
@@ -372,11 +384,14 @@ class SBOM:
                 return rel
         return None
 
-    def is_valid_uuid4(self, u):
+    def is_valid_uuid4(self, u: str) -> bool:
         """Merge helper function to check if a uuid is valid.
 
-        Positional arguments:
-        u -- the uuid to check
+        Args:
+            u (str):  The UUID to check.
+            
+        Returns:
+            bool: True if the UUID is valid, otherwise False.
         """
         try:
             u_test = uuid_module.UUID(u, version=4)
