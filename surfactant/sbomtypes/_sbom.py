@@ -268,7 +268,9 @@ class SBOM:
                     merged_sbom.starRelationships.append(rel)
         return merged_sbom
 
-    def _find_systems_entry(self, sbom: SBOM, uuid: Optional[str] = None, name: Optional[str] = None) -> Optional[System]:
+    def _find_systems_entry(
+        self, sbom: SBOM, uuid: Optional[str] = None, name: Optional[str] = None
+    ) -> Optional[System]:
         """Merge helper function to find and return
         the matching system entry in the provided sbom.
 
@@ -276,7 +278,7 @@ class SBOM:
             sbom (SBOM): The sbom to search.
             uuid (Optional[str]): The uuid of the desired system entry.
             name (Optional[str]): The name of the desired system entry.
-        
+
         Returns:
             Optional[System]: The system found that matches the given criteria, otherwise None.
         """
@@ -292,7 +294,14 @@ class SBOM:
                 return system
         return None
 
-    def _find_software_entry(self, sbom: SBOM, uuid: Optional[str] = None, sha256: Optional[str] = None, md5: Optional[str] = None, sha1: Optional[str] = None) -> Optional[Software]:
+    def _find_software_entry(
+        self,
+        sbom: SBOM,
+        uuid: Optional[str] = None,
+        sha256: Optional[str] = None,
+        md5: Optional[str] = None,
+        sha1: Optional[str] = None,
+    ) -> Optional[Software]:
         """Merge helper function to find and return
         the matching software entry in the provided sbom.
 
@@ -302,7 +311,7 @@ class SBOM:
             sha256 (Optional[str]): The sha256 of the desired software entry.
             md5 (Optional[str]): The md5 of the desired software entry.
             sha1 (Optional[str]): The sha1 of the desired software entry.
-        
+
         Returns:
             Optional[Software]: The software entry found that matches the given criteria, otherwise None.
         """
@@ -328,7 +337,13 @@ class SBOM:
                 return sw
         return None
 
-    def _find_relationship_entry(self, sbom, xUUID: Optional[str] = None, yUUID: Optional[str] = None, relationship: Optional[str] = None) -> Optional[Relationship]:
+    def _find_relationship_entry(
+        self,
+        sbom,
+        xUUID: Optional[str] = None,
+        yUUID: Optional[str] = None,
+        relationship: Optional[str] = None,
+    ) -> Optional[Relationship]:
         """Merge helper function to find and return
         the matching relationship entry in the provided sbom.
 
@@ -337,7 +352,7 @@ class SBOM:
             xUUID (Optional[str]): The xUUID of the desired relationship entry.
             yUUID (Optional[str]): The yUUID of the desired relationship entry.
             relationship (Optional[str]): The relationship type of the desired relationship entry.
-            
+
         Returns:
             Optional[Relationship]: The relationship entry found that matches the given criteria, otherwise None.
         """
@@ -356,7 +371,13 @@ class SBOM:
                 return rel
         return None
 
-    def _find_star_relationship_entry(self, sbom: SBOM, xUUID: Optional[str] = None, yUUID: Optional[str] = None, relationship: Optional[str] = None) -> Optional[StarRelationship]:
+    def _find_star_relationship_entry(
+        self,
+        sbom: SBOM,
+        xUUID: Optional[str] = None,
+        yUUID: Optional[str] = None,
+        relationship: Optional[str] = None,
+    ) -> Optional[StarRelationship]:
         """Merge helper function to find and return
         the matching star relationship entry in the provided sbom.
 
@@ -365,7 +386,7 @@ class SBOM:
             xUUID (Optional[str]): The xUUID of the desired relationship entry.
             yUUID (Optional[str]): The yUUID of the desired relationship entry.
             relationship (Optional[str]): The relationship type of the desired relationship entry.
-        
+
         Returns:
             Optional[StarRelationship]: The star relationship found that matches the given criteria, otherwise None.
         """
@@ -389,7 +410,7 @@ class SBOM:
 
         Args:
             u (str):  The UUID to check.
-            
+
         Returns:
             bool: True if the UUID is valid, otherwise False.
         """
