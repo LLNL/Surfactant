@@ -9,20 +9,19 @@ import string
 import sys
 import uuid
 from collections.abc import Iterable
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
-import spdx.utils
-import spdx.writers.json as jsonwriter
-import spdx.writers.tagvalue as tvwriter
-from spdx.checksum import Checksum, ChecksumAlgorithm
-from spdx.creationinfo import Organization, Tool
-from spdx.document import Document
-from spdx.file import File, FileType
-from spdx.license import License
-from spdx.package import Package
-from spdx.relationship import Relationship, RelationshipType
-from spdx.utils import NoAssert
-from spdx.version import Version
+import spdx_tools.spdx.writer.json.json_writer as jsonwriter
+import spdx_tools.spdx.writer.tagvalue.tagvalue_writer as tvwriter
+from spdx_tools.spdx.model.actor import Actor, ActorType
+from spdx_tools.spdx.model.checksum import Checksum, ChecksumAlgorithm
+from spdx_tools.spdx.model.document import CreationInfo, Document
+from spdx_tools.spdx.model.file import File, FileType
+from spdx_tools.spdx.model.package import Package
+from spdx_tools.spdx.model.relationship import Relationship, RelationshipType
+from spdx_tools.spdx.model.spdx_no_assertion import SpdxNoAssertion
+from spdx_tools.spdx.spdx_element_utils import calculate_package_verification_code
 
 import surfactant.plugin
 from surfactant import __version__ as surfactant_version
@@ -57,8 +56,8 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
     # Add SPDX packages for systems
     for system in sbom.systems:
-        system_uuid, pkg = convert_system_to_spdx_packages(system)
-        spdx_doc.add_package(pkg)
+        system_uuid, pkg = convert_system_to_spdx_package(system)
+        spdx_doc.packages = spdx_doc.packages + [pkg]
         if system_uuid not in uuid_to_spdxid:
             uuid_to_spdxid[system_uuid] = []
         uuid_to_spdxid[system_uuid].append(pkg.spdx_id)
@@ -75,20 +74,29 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         if sbom.has_relationship(xUUID=software.UUID, relationship="Contains"):
             software_uuid, pkgs = convert_software_to_spdx_packages(software)
             for pkg in pkgs:
-                spdx_doc.add_package(pkg)
+                spdx_doc.packages = spdx_doc.packages + [pkg]
                 if software_uuid not in uuid_to_spdxid:
                     uuid_to_spdxid[software_uuid] = []
                 uuid_to_spdxid[software_uuid].append(pkg.spdx_id)
         # Add all other software entries as SPDX Files
         else:
             for parent_uuid, software_uuid, file in convert_software_to_spdx_files(software):
-                spdx_doc.add_file(file)
+                spdx_doc.files = spdx_doc.files + [file]
                 if parent_uuid:
                     container_path_relationships[file.spdx_id] = parent_uuid
                 if software_uuid:
                     if software_uuid not in uuid_to_spdxid:
                         uuid_to_spdxid[software_uuid] = []
                     uuid_to_spdxid[software_uuid].append(file.spdx_id)
+
+    # Add describes relationship between SPDX Document and Packages
+    for pkg in spdx_doc.packages:
+        spdx_rel = Relationship(
+            spdx_element_id=spdx_doc.creation_info.spdx_id,
+            relationship_type=RelationshipType.DESCRIBES,
+            related_spdx_element_id=pkg.spdx_id,
+        )
+        spdx_doc.relationships = spdx_doc.relationships + [spdx_rel]
 
     # Convert relationships into SPDX Relationships
     for rel in sbom.relationships:
@@ -114,24 +122,46 @@ def write_sbom(sbom: SBOM, outfile) -> None:
                         # Use type "OTHER" and a comment if SPDX doesn't define the relationship type
                         rel_comment = f"Type: {rel_type}"
                         rel_type = "OTHER"
-                    spdx_rel = Relationship(f"{x_spdxid} {rel_type} {y_spdxid}", rel_comment)
-                    spdx_doc.add_relationship(spdx_rel)
+                    spdx_rel = Relationship(
+                        spdx_element_id=x_spdxid,
+                        relationship_type=RelationshipType[rel_type],
+                        related_spdx_element_id=y_spdxid,
+                        comment=rel_comment,
+                    )
+                    spdx_doc.relationships = spdx_doc.relationships + [spdx_rel]
+
+    print(spdx_doc.relationships)
 
     # Add package verification codes
     for pkg in spdx_doc.packages:
-        files = spdx.utils.get_files_in_package(pkg, spdx_doc.files, spdx_doc.relationships)
-        pkg.verif_code = spdx.utils.calc_verif_code(files)
+        files = []
+        for file in spdx_doc.files:
+            pkg_contains_relationships = {
+                relationship.related_spdx_element
+                for relationship in spdx_doc.relationships
+                if relationship.relationship_type == "CONTAINS"
+                and relationship.spdx_element_id == pkg.spdx_id
+            }
+            pkg_contained_by_relationships = {
+                relationship.spdx_element_id
+                for relationship in spdx_doc.relationships
+                if relationship.relationship_type == "CONTAINED_BY"
+                and relationship.related_spdx_element == pkg.spdx_id
+            }
+            if file.spdx_id in pkg_contains_relationships | pkg_contained_by_relationships:
+                files.append(file)
+        pkg.verification_code = calculate_package_verification_code(files)
 
     if outformat == "json":
         try:
-            jsonwriter.write_document(spdx_doc, outfile)
-        except jsonwriter.InvalidDocumentError as e:
-            sys.stderr.write(e)
+            jsonwriter.write_document_to_stream(spdx_doc, outfile)
+        except ValueError as e:
+            sys.stderr.write(str(e))
     elif outformat == "tagvalue":
         try:
-            tvwriter.write_document(spdx_doc, outfile)
-        except tvwriter.InvalidDocumentError as e:
-            sys.stderr.write(e)
+            tvwriter.write_document_to_stream(spdx_doc, outfile)
+        except ValueError as e:
+            sys.stderr.write(str(e))
 
 
 @surfactant.plugin.hookimpl
@@ -139,7 +169,7 @@ def short_name() -> Optional[str]:
     return "spdx"
 
 
-def convert_system_to_spdx_packages(system: System) -> Tuple[str, Package]:
+def convert_system_to_spdx_package(system: System) -> Tuple[str, Package]:
     """Converts a system entry in the SBOM to a SPDX Package.
 
     If a system entry has multiple vendors, only the first one is chosen as the
@@ -161,7 +191,7 @@ def convert_system_to_spdx_packages(system: System) -> Tuple[str, Package]:
     supplier = None
     if system.vendor:
         # assume Organization, not enough info to distinguish People
-        supplier = Organization(system.vendor[0])
+        supplier = Actor(name=system.vendor[0], actor_type=ActorType.ORGANIZATION)
 
     return system.UUID, create_spdx_package(name, system.description, supplier)
 
@@ -190,7 +220,7 @@ def convert_software_to_spdx_packages(software: Software) -> Tuple[str, List[Pac
         supplier = None
         if software.vendor:
             # assume Organization, not enough info to distinguish People
-            supplier = Organization(software.vendor[0])
+            supplier = Actor(name=software.vendor[0], actor_type=ActorType.ORGANIZATION)
         packages.append(
             create_spdx_package(
                 name,
@@ -251,28 +281,23 @@ def create_spdx_doc() -> Document:
     Returns:
         Document: The SPDX Document that was created.
     """
-    spdx_doc = Document()
-    # Document fields set here are mandatory
-    spdx_doc.version = Version(2, 2)
-    spdx_doc.data_license = License.from_identifier(
-        "CC0-1.0"
-    )  # SPDX spec requires this to be CC0-1.0
-    spdx_doc.spdx_id = "SPDXRef-DOCUMENT"
-    spdx_doc.name = "SBOM - DRAFT"  # document name, as designated by the creator
-
-    # NOTE: The URI does not have to be accessible. It is only intended to provide a unique ID.
+    # NOTE: The document namespace URI does not have to be accessible, it just provides a unique ID.
     # Format is: https://[CreatorWebsite]/[pathToSpdx]/[DocumentName]-[UUID]
     # spdx.org/spdxdocs can be used if the creator does not own their own website.
-    spdx_doc.namespace = f"https://spdx.org/spdxdocs/{spdx_doc.name}-{str(uuid.uuid4())}"
-
-    # For including refs to external SPDX Documents: spdx_doc.add_ext_document_reference()
-
-    # Organization or Person can also be added as creators (may use "anonymous")
-    spdx_doc.creation_info.add_creator(Tool(f"Surfactant-{surfactant_version}"))
-    spdx_doc.creation_info.set_created_now()
-
-    # Optional Document fields
-    spdx_doc.comment = "DRAFT SBOM - INCOMPLETE"
+    doc_name = "SBOM - DRAFT"  # document name, as designated by the creator
+    spdx_creationinfo = CreationInfo(
+        spdx_version="SPDX-2.3",
+        spdx_id="SPDXRef-DOCUMENT",
+        name=doc_name,
+        document_namespace=f"https://spdx.org/spdxdocs/{doc_name}-{str(uuid.uuid4())}",  # unique URI for this SPDX Document
+        creators=[
+            Actor(name=f"Surfactant-{surfactant_version}", actor_type=ActorType.TOOL)
+        ],  # Organization or Person can also be added as creators (may use "anonymous")
+        created=datetime.utcnow().replace(microsecond=0),
+        creator_comment="This SPDX document was created by using Surfactant.",
+        document_comment="This is a DRAFT SPDX document, and is incomplete.",
+    )
+    spdx_doc = Document(creation_info=spdx_creationinfo)
     return spdx_doc
 
 
@@ -289,33 +314,33 @@ def create_spdx_file(idstring: str, file_path: str, software: Software) -> File:
     Returns:
         File: A SPDX File with information filled in based on the provided software entry.
     """
-    file = File(file_path)
-
-    # Required File fields
-    file.spdx_id = f"SPDXRef-{idstring}"
-    file.set_checksum(
+    sw_checksums = [
         Checksum(ChecksumAlgorithm.SHA1, software.sha1.lower())
-    )  # SHA1 required, should probably error if doesn't exist
+    ]  # SHA1 required, should probably error if doesn't exist
     if software.sha256:
-        file.set_checksum(Checksum(ChecksumAlgorithm.SHA256, software.sha256.lower()))
+        sw_checksums.append(Checksum(ChecksumAlgorithm.SHA256, software.sha256.lower()))
     if software.md5:
-        file.set_checksum(Checksum(ChecksumAlgorithm.MD5, software.md5.lower()))
-    file.conc_lics = (
-        NoAssert()
-    )  # SPDXNone if no license available for file, NoAssert if can't determine
-    file.add_lics(
-        NoAssert()
-    )  # info in actual file (e.g. header, not external such as COPYING.txt); None for nothing, NoAssert for did not look
-    if cr_text := get_fileinfo_metadata(software, "LegalCopyright"):
-        file.copyright = cr_text  # free-form text field extracted from actual file identifying copyright holder and any dates present
-    else:
-        file.copyright = (
-            NoAssert()
-        )  # SPDXNone for nothing present, NoAssert for no attempt to determine
+        sw_checksums.append(Checksum(ChecksumAlgorithm.MD5, software.md5.lower()))
 
-    # Optional File fields
-    # One or more of: SOURCE | BINARY | ARCHIVE | APPLICATION | AUDIO | IMAGE | TEXT | VIDEO | DOCUMENTATION | SPDX | OTHER
-    file.file_types.append(FileType.BINARY)
+    sw_copyright = (
+        SpdxNoAssertion()
+    )  # SPDXNone for nothing present, SpdxNoAssertion for no attempt to determine
+    if cr_text := get_fileinfo_metadata(software, "LegalCopyright"):
+        sw_copyright = cr_text  # free-form text field extracted from actual file identifying copyright holder and any dates present
+
+    file = File(
+        name=file_path,
+        spdx_id=f"SPDXRef-{idstring}",
+        checksums=sw_checksums,
+        file_types=[
+            FileType.BINARY
+        ],  # One or more of: SOURCE | BINARY | ARCHIVE | APPLICATION | AUDIO | IMAGE | TEXT | VIDEO | DOCUMENTATION | SPDX | OTHER
+        license_concluded=SpdxNoAssertion(),  # SPDXNone if no license available for file, SpdxNoAssertion if can't determine
+        license_info_in_file=[
+            SpdxNoAssertion()
+        ],  # info in actual file (e.g. header, not external such as COPYING.txt); None for nothing, SpdxNoAssertion for did not look
+        copyright_text=sw_copyright,
+    )
 
     return file
 
@@ -347,48 +372,40 @@ def create_spdx_package(
     Returns:
         Package: A SPDX Package with information filled in based on the provided information.
     """
-    pkg = Package()
-    # Required Package fields
-    pkg.name = name
-    idstring = generate_package_idstring(name, version, file_name)
-    pkg.spdx_id = f"SPDXRef-{idstring}"
-    pkg.download_location = (
-        NoAssert()
-    )  # SPDXNone if there is no location whatsoever, not just that we "failed" or didn't try to locate one
-    pkg.conc_lics = (
-        NoAssert()
-    )  # if different from declared license, must explain in comments why; NoAssert prefer to have comment
-    # pkg.license_comment # any relevant info on analysis that led to concluded license
-    pkg.add_lics_from_file(
-        NoAssert()
-    )  # SPDXNone if no license info detected, NoAssert if didn't try to determine
-    pkg.license_declared = (
-        NoAssert()
-    )  # licenses declared by authors of package, not 3rd party repo; NoAssert since didn't attempt to determine
-    pkg.cr_text = (
-        NoAssert()
-    )  # SPDXNone if no copyright info, NoAssert if didn't try to determine; use any Cr text even if incomplete
-
-    # Optional Package fields
-    if version:
-        pkg.version = version
-    if file_name:
-        pkg.file_name = file_name  # actual file name, or path to directory treated as package (subdirectory is denoted with ./)
-    # NOTE spdx does not be able to handle packages with multiple vendors listed
-    pkg.supplier = supplier if supplier else NoAssert()  # NoAssertion if can't determine
-    pkg.originator = (
-        NoAssert()
-    )  # 3rd party who distributed package is different than the supplier/vendor
+    pkg_checksums = []
     if sha1:
-        pkg.set_checksum(Checksum(ChecksumAlgorithm.SHA1, sha1.lower()))
+        pkg_checksums.append(Checksum(ChecksumAlgorithm.SHA1, sha1.lower()))
     if sha256:
-        pkg.set_checksum(Checksum(ChecksumAlgorithm.SHA256, sha256.lower()))
+        pkg_checksums.append(Checksum(ChecksumAlgorithm.SHA256, sha256.lower()))
     if md5:
-        pkg.set_checksum(Checksum(ChecksumAlgorithm.MD5, md5.lower()))
-    if summary:
-        pkg.summary = summary  # concise info on the function or use of package, without having to parse source code
-    pkg.homepage = NoAssert()  # SPDXNone if none exists, NoAssert if didn't try to find a homepage
-    # pkg.primary_package_purpose can be: APPLICATION | FRAMEWORK | LIBRARY | CONTAINER | OPERATING - SYSTEM |
+        pkg_checksums.append(Checksum(ChecksumAlgorithm.MD5, md5.lower()))
+
+    idstring = generate_package_idstring(name, version, file_name)
+    pkg = Package(
+        spdx_id=f"SPDXRef-{idstring}",
+        name=name,
+        download_location=SpdxNoAssertion(),  # SPDXNone if there is no location whatsoever, not just that we "failed" or didn't try to locate one
+        license_concluded=SpdxNoAssertion(),  # if different from declared license, must explain in comments why; SpdxNoAssertion prefer to have comment
+        license_declared=SpdxNoAssertion(),  # licenses declared by authors of package, not 3rd party repo; SpdxNoAssertion since didn't attempt to determine
+        license_info_from_files=[
+            SpdxNoAssertion()
+        ],  # SPDXNone if no license info detected, SpdxNoAssertion if didn't try to determine
+        copyright_text=SpdxNoAssertion(),  # SPDXNone if no copyright info, SpdxNoAssertion if didn't try to determine; use any Cr text even if incomplete
+        version=version if version else None,
+        file_name=file_name
+        if file_name
+        else None,  # actual file name, or path to directory treated as package (subdirectory is denoted with ./)
+        supplier=supplier
+        if supplier
+        else SpdxNoAssertion(),  # SpdxNoAssertion if can't determine (SPDX can't handle multiple vendors)
+        originator=SpdxNoAssertion(),  # 3rd party who distributed package is different than the supplier/vendor
+        checksums=pkg_checksums,
+        summary=summary
+        if summary
+        else None,  # concise info on the function or use of package, without having to parse source code
+        homepage=SpdxNoAssertion(),  # SPDXNone if none exists, SpdxNoAssertion if didn't try to find a homepage
+    )
+    # primary_package_purpose can be: APPLICATION | FRAMEWORK | LIBRARY | CONTAINER | OPERATING - SYSTEM |
     # DEVICE | FIRMWARE | SOURCE | ARCHIVE | FILE | INSTALL | OTHER
 
     return pkg
