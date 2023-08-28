@@ -38,8 +38,15 @@ class System:
                 if fld.name in single_value_fields:
                     current_value = getattr(self, fld.name)
                     new_value = getattr(sy, fld.name)
-                    if current_value != new_value:
-                        self._update_field(fld.name, new_value)
+                    update = None
+                    # If field is captureStart or captureEnd, replace if increasing time bounds
+                    if fld.name == "captureStart":
+                        update = new_value if new_value < current_value else current_value
+                    elif fld.name == "captureEnd":
+                        update = new_value if new_value > current_value else current_value
+                    else:
+                        update = new_value if new_value != current_value else current_value
+                    self._update_field(fld.name, update)
                 # for lists, append new values that we don't currently have
                 if fld.name in array_fields:
                     current_arr = getattr(self, fld.name)
