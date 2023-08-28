@@ -96,14 +96,14 @@ config = {
         "UUID": "6a0ee431-842f-4963-8867-ef0ef6998003",
         "name": "",
         "vendor": None,
-        "captureStart": None,
-        "captureEnd": None,
+        "captureStart": 1689186140,
+        "captureEnd": 1689186150,
     }
 }
 
-with open(pathlib.Path.cwd() / "tests/cmd/test_sbom1.json", "r") as f:
+with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_binaries_sbom.json", "r") as f:
     sbom3 = SBOM.from_json(f.read())
-with open(pathlib.Path.cwd() / "tests/cmd/test_sbom2.json", "r") as f:
+with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_libs_sbom.json", "r") as f:
     sbom4 = SBOM.from_json(f.read())
 
 
