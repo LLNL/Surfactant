@@ -37,10 +37,10 @@ def merge_command(input_sboms, sbom_outfile, config_file, output_format):
 
 
 def merge(input_sboms, sbom_outfile, config, output_writer):
-    """Merge two SBOMs."""
+    """Merge two or more SBOMs."""
     merged_sbom = input_sboms[0]
     for sbom_m in input_sboms[1:]:
-        merged_sbom = merged_sbom.merge(sbom_m)
+        merged_sbom.merge(sbom_m)
 
     rel_graph = construct_relationship_graph(merged_sbom)
     roots = get_roots_check_cycles(rel_graph)
