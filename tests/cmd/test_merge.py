@@ -101,7 +101,9 @@ config = {
     }
 }
 
-with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_binaries_sbom.json", "r") as f:
+with open(
+    pathlib.Path(__file__).parent / "../data/sample_sboms/helics_binaries_sbom.json", "r"
+) as f:
     sbom3 = SBOM.from_json(f.read())
 with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_libs_sbom.json", "r") as f:
     sbom4 = SBOM.from_json(f.read())

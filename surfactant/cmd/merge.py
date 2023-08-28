@@ -7,6 +7,7 @@ import click
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
+from surfactant.sbomtypes._system import System
 
 
 @click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
