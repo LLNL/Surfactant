@@ -117,77 +117,36 @@ class SBOM:
         return sw
 
     def merge(self, sbom_m: SBOM) -> SBOM:
-        merged_sbom = SBOM()
+        # merged_sbom = SBOM()
         # merged/old to new UUID map
         uuid_updates = {}
 
         # merge systems entries
-        if self.systems:
-            for system in self.systems:
-                # check for duplicate UUID/name, merge with existing entry
-                if existing_system := self._find_systems_entry(
-                    merged_sbom, uuid=system.UUID, name=system.name
-                ):
-                    # merge system entries
-                    u1, u2 = existing_system.merge(system)
-                    print(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
-                    uuid_updates[u2] = u1
-                else:
-                    merged_sbom.systems.append(system)
         if sbom_m.systems:
             for system in sbom_m.systems:
                 # check for duplicate UUID/name, merge with existing entry
-                if existing_system := self._find_systems_entry(
-                    merged_sbom, uuid=system.UUID, name=system.name
-                ):
+                if existing_system := self._find_systems_entry(uuid=system.UUID, name=system.name):
                     # merge system entries
                     u1, u2 = existing_system.merge(system)
                     print(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
                     uuid_updates[u2] = u1
                 else:
-                    merged_sbom.systems.append(system)
+                    self.systems.append(system)
 
         # merge software entries
-        if self.software:
-            for sw in self.software:
-                # check for a duplicate hash, and merge with the existing entry
-                if existing_sw := self._find_software_entry(
-                    merged_sbom, uuid=sw.UUID, sha256=sw.sha256, md5=sw.md5, sha1=sw.sha1
-                ):
-                    u1, u2 = existing_sw.merge(sw)
-                    print(f"MERGE_DUPLICATE: uuid1={u1}, uuid2={u2}")
-                    uuid_updates[u2] = u1
-                else:
-                    merged_sbom.software.append(sw)
         if sbom_m.software:
             for sw in sbom_m.software:
                 # NOTE: Do we want to pass in teh UUID here? What if we have two different UUIDs for the same file? Should hashes be required?
                 if existing_sw := self._find_software_entry(
-                    merged_sbom, uuid=sw.UUID, sha256=sw.sha256, md5=sw.md5, sha1=sw.sha1
+                    uuid=sw.UUID, sha256=sw.sha256, md5=sw.md5, sha1=sw.sha1
                 ):
                     u1, u2 = existing_sw.merge(sw)
                     print(f"MERGE DUPLICATE: uuid1={u1}, uuid2={u2}")
                     uuid_updates[u2] = u1
                 else:
-                    merged_sbom.software.append(sw)
+                    self.software.append(sw)
 
         # merge relationships
-        if self.relationships:
-            for rel in self.relationships:
-                # rewrite UUIDs before doing the search
-                if rel.xUUID in uuid_updates:
-                    rel.xUUID = uuid_updates[rel.xUUID]
-                if rel.yUUID in uuid_updates:
-                    rel.yUUID = uuid_updates[rel.yUUID]
-                if existing_rel := self._find_relationship_entry(
-                    merged_sbom,
-                    xUUID=rel.xUUID,
-                    yUUID=rel.yUUID,
-                    relationship=rel.relationship,
-                ):
-                    print("DUPLICATE RELATIONSHIP: {existing_rel}")
-                else:
-                    merged_sbom.relationships.append(rel)
         if sbom_m.relationships:
             for rel in sbom_m.relationships:
                 # rewrite UUIDs before doing the search
@@ -196,17 +155,16 @@ class SBOM:
                 if rel.yUUID in uuid_updates:
                     rel.yUUID = uuid_updates[rel.yUUID]
                 if existing_rel := self._find_relationship_entry(
-                    merged_sbom,
                     xUUID=rel.xUUID,
                     yUUID=rel.yUUID,
                     relationship=rel.relationship,
                 ):
                     print(f"DUPLICATE RELATIONSHIP: {existing_rel}")
                 else:
-                    merged_sbom.relationships.append(rel)
+                    self.relationships.append(rel)
 
         # rewrite container path UUIDs using rewrite map/list
-        for sw in merged_sbom.software:
+        for sw in self.software:
             if sw.containerPath:
                 for idx, path in enumerate(sw.containerPath):
                     u = path[:36]
@@ -219,38 +177,14 @@ class SBOM:
                 sw.containerPath = [*set(sw.containerPath)]
         print(f"UUID UPDATES: {uuid_updates}")
         # merge analysisData
-        if self.analysisData:
-            for analysisData in self.analysisData:
-                # checks for duplicates might be nice, but unlikely to encounter often as these are added manually
-                merged_sbom.analysisData.append(analysisData)
         if sbom_m.analysisData:
             for analysisData in sbom_m.analysisData:
-                merged_sbom.analysisData.append(analysisData)
+                self.analysisData.append(analysisData)
         # merge observations
-        if self.observations:
-            for observation in self.observations:
-                # checks for duplicates might be nice, but unlikely to encounter often as these are added manually
-                merged_sbom.observations.append(observation)
         if sbom_m.observations:
             for observation in sbom_m.observations:
-                merged_sbom.observations.append(observation)
+                self.observations.append(observation)
         # merge starRelationships
-        if self.starRelationships:
-            for rel in self.starRelationships:
-                # rewrite UUIDs before doing the search
-                if rel.xUUID in uuid_updates:
-                    rel.xUUID = uuid_updates[rel.xUUID]
-                if rel.yUUID in uuid_updates:
-                    rel.yUUID = uuid_updates[rel.yUUID]
-                if existing_rel := self._find_star_relationship_entry(
-                    merged_sbom,
-                    xUUID=rel.xUUID,
-                    yUUID=rel.yUUID,
-                    relationship=rel.relationship,
-                ):
-                    print(f"DUPLICATE STAR RELATIONSHIP: {existing_rel}")
-                else:
-                    merged_sbom.starRelationships.append(rel)
         if sbom_m.starRelationships:
             for rel in self.starRelationships:
                 # rewrite UUIDs before doing the search
@@ -259,31 +193,28 @@ class SBOM:
                 if rel.yUUID in uuid_updates:
                     rel.yUUID = uuid_updates[rel.yUUID]
                 if existing_rel := self._find_star_relationship_entry(
-                    merged_sbom,
                     xUUID=rel.xUUID,
                     yUUID=rel.yUUID,
                     relationship=rel.relationship,
                 ):
                     print(f"DUPLICATE STAR RELATIONSHIP: {existing_rel}")
                 else:
-                    merged_sbom.starRelationships.append(rel)
-        return merged_sbom
+                    self.starRelationships.append(rel)
 
     def _find_systems_entry(
-        self, sbom: SBOM, uuid: Optional[str] = None, name: Optional[str] = None
+        self, uuid: Optional[str] = None, name: Optional[str] = None
     ) -> Optional[System]:
         """Merge helper function to find and return
         the matching system entry in the provided sbom.
 
         Args:
-            sbom (SBOM): The sbom to search.
             uuid (Optional[str]): The uuid of the desired system entry.
             name (Optional[str]): The name of the desired system entry.
 
         Returns:
             Optional[System]: The system found that matches the given criteria, otherwise None.
         """
-        for system in sbom.systems:
+        for system in self.systems:
             all_match = True
             if uuid:
                 if system.UUID != uuid:
@@ -297,7 +228,6 @@ class SBOM:
 
     def _find_software_entry(
         self,
-        sbom: SBOM,
         uuid: Optional[str] = None,
         sha256: Optional[str] = None,
         md5: Optional[str] = None,
@@ -307,7 +237,6 @@ class SBOM:
         the matching software entry in the provided sbom.
 
         Args:
-            sbom (SBOM): The sbom to search.
             uuid (Optional[str]): The uuid of the desired software entry to match against if no hashes were provided.
             sha256 (Optional[str]): The sha256 of the desired software entry.
             md5 (Optional[str]): The md5 of the desired software entry.
@@ -316,7 +245,7 @@ class SBOM:
         Returns:
             Optional[Software]: The software entry found that matches the given criteria, otherwise None.
         """
-        for sw in sbom.software:
+        for sw in self.software:
             match = False
             # If we have hashes to check
             if sha256 or md5 or sha1:
@@ -340,7 +269,6 @@ class SBOM:
 
     def _find_relationship_entry(
         self,
-        sbom,
         xUUID: Optional[str] = None,
         yUUID: Optional[str] = None,
         relationship: Optional[str] = None,
@@ -349,7 +277,6 @@ class SBOM:
         the matching relationship entry in the provided sbom.
 
         Args:
-            sbom (SBOM): The sbom to search.
             xUUID (Optional[str]): The xUUID of the desired relationship entry.
             yUUID (Optional[str]): The yUUID of the desired relationship entry.
             relationship (Optional[str]): The relationship type of the desired relationship entry.
@@ -357,7 +284,7 @@ class SBOM:
         Returns:
             Optional[Relationship]: The relationship entry found that matches the given criteria, otherwise None.
         """
-        for rel in sbom.relationships:
+        for rel in self.relationships:
             all_match = True
             if xUUID:
                 if rel.xUUID != xUUID:
@@ -374,7 +301,6 @@ class SBOM:
 
     def _find_star_relationship_entry(
         self,
-        sbom: SBOM,
         xUUID: Optional[str] = None,
         yUUID: Optional[str] = None,
         relationship: Optional[str] = None,
@@ -383,7 +309,6 @@ class SBOM:
         the matching star relationship entry in the provided sbom.
 
         Args:
-            sbom (SBOM): The sbom to search.
             xUUID (Optional[str]): The xUUID of the desired relationship entry.
             yUUID (Optional[str]): The yUUID of the desired relationship entry.
             relationship (Optional[str]): The relationship type of the desired relationship entry.
@@ -391,7 +316,7 @@ class SBOM:
         Returns:
             Optional[StarRelationship]: The star relationship found that matches the given criteria, otherwise None.
         """
-        for rel in sbom.starRelationships:
+        for rel in self.starRelationships:
             all_match = True
             if xUUID:
                 if rel.xUUID != xUUID:
