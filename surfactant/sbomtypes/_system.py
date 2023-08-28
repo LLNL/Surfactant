@@ -2,10 +2,13 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+from __future__ import annotations
+
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass, field, fields
 from typing import List, Optional
+
 
 from ._provenance import SystemProvenance
 
