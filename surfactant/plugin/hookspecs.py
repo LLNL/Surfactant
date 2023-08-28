@@ -80,14 +80,19 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 @hookspec
 def short_name() -> Optional[str]:
     """A short name to register the hook as.
-    
+
     Returns:
         Optional[str]: The name to register the hook with.
     """
 
 
 @hookspec
-def extract_child_info(sbom: SBOM, software: Software, filename: str, filetype: str,) -> List[Software]:
+def extract_child_info(
+    sbom: SBOM,
+    software: Software,
+    filename: str,
+    filetype: str,
+) -> List[Software]:
     """Extracts information from the given file to add to the given software entry. Returns a list of
     software objects that were contained in that file. Will also provide relationship data so
     relationships can be built.

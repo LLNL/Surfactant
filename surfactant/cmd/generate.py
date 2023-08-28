@@ -46,7 +46,10 @@ def get_software_entry(
     )
 
     sw_list = pluginmanager.hook.extract_child_info(
-        sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype,
+        sbom=parent_sbom,
+        software=sw_entry,
+        filename=filepath,
+        filetype=filetype,
     )
 
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
@@ -273,18 +276,18 @@ def sbom(
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
                             try:
                                 sw_list = get_software_entry(
-                                        pm,
-                                        new_sbom,
-                                        filepath,
-                                        filetype=ftype,
-                                        root_path=epath,
-                                        container_uuid=parent_uuid,
-                                        install_path=install_prefix,
-                                        user_institution_name=recorded_institution,
-                                    )
+                                    pm,
+                                    new_sbom,
+                                    filepath,
+                                    filetype=ftype,
+                                    root_path=epath,
+                                    container_uuid=parent_uuid,
+                                    install_path=install_prefix,
+                                    user_institution_name=recorded_institution,
+                                )
                             except Exception as e:
                                 raise RuntimeError(f"Unable to process: {filepath}") from e
-                            
+
                             for sw in sw_list[0]:
                                 entries.append(sw)
 
