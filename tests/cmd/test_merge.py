@@ -7,8 +7,9 @@ import os
 import pathlib
 import random
 import string
-
+from jsondiff import diff
 import pytest
+import json
 
 from surfactant.cmd.merge import merge
 from surfactant.plugin.manager import get_plugin_manager
@@ -96,8 +97,8 @@ config = {
         "UUID": "6a0ee431-842f-4963-8867-ef0ef6998003",
         "name": "",
         "vendor": None,
-        "captureStart": 1689186140,
-        "captureEnd": 1689186150,
+        "captureStart": 1689186121,
+        "captureEnd": 1689186146,
     }
 }
 
@@ -121,7 +122,6 @@ def test_simple_merge_method():
         key=lambda x: x.xUUID
     )
 
-
 @pytest.mark.skip(reason="No way of validating this test yet")
 def test_merge_with_circular_dependency():
     circular_dependency_sbom = sbom1
@@ -143,18 +143,25 @@ def test_merge_with_circular_dependency():
     os.remove(os.path.abspath(outfile_name))
 
 
-@pytest.mark.skip(reason="No way of validating this test yet")
+@pytest.mark.skip(reason="No way of properly validating this test yet")
 def test_cmdline_merge():
     # Test simple merge of two sboms
     outfile_name = generate_filename("test_cmdline_merge")
     pm = get_plugin_manager()
     output_writer = pm.get_plugin("surfactant.output.cytrics_writer")
-    config_file = None
+    config_file = config
     input_sboms = [sbom3, sbom4]
     with open(outfile_name, "w") as sbom_outfile:
         merge(input_sboms, sbom_outfile, config_file, output_writer)
-    # TODO add validation checks here
+    
+    # Validation
+    with open(outfile_name, "r") as f:
+        sbom1 = json.loads(f.read())
+    with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_sbom.json", "r") as f:
+        sbom2 = json.loads(f.read())
     os.remove(os.path.abspath(outfile_name))
+    assert(diff(sbom1, sbom2) == {})
+    
 
 
 def generate_filename(name, ext=".json"):

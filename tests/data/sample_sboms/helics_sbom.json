@@ -3,6 +3,7 @@
     {
       "UUID": "6a0ee431-842f-4963-8867-ef0ef6998003",
       "name": "",
+      "vendor": null,
       "captureStart": 1689186121,
       "captureEnd": 1689186146
     }
@@ -10,7 +11,7 @@
   "hardware": [],
   "software": [
     {
-      "UUID": "8783321a-9a12-43bd-9e64-9d01565906f5",
+      "UUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
       "name": null,
       "size": 16367492,
       "fileName": [
@@ -51,7 +52,7 @@
       ],
       "installPath": [],
       "containerPath": [
-        "8783321a-9a12-43bd-9e64-9d01565906f5/helics_player"
+        "477da45b-bb38-450e-93f7-e525aaaa6862/helics_player"
       ],
       "captureTime": 1689186121,
       "version": "",
@@ -143,7 +144,7 @@
       ],
       "installPath": [],
       "containerPath": [
-        "8783321a-9a12-43bd-9e64-9d01565906f5/helics_app"
+        "477da45b-bb38-450e-93f7-e525aaaa6862/helics_app"
       ],
       "captureTime": 1689186121,
       "version": "",
@@ -235,7 +236,7 @@
       ],
       "installPath": [],
       "containerPath": [
-        "8783321a-9a12-43bd-9e64-9d01565906f5/helics_broker_server"
+        "477da45b-bb38-450e-93f7-e525aaaa6862/helics_broker_server"
       ],
       "captureTime": 1689186121,
       "version": "",
@@ -327,7 +328,7 @@
       ],
       "installPath": [],
       "containerPath": [
-        "8783321a-9a12-43bd-9e64-9d01565906f5/helics_broker"
+        "477da45b-bb38-450e-93f7-e525aaaa6862/helics_broker"
       ],
       "captureTime": 1689186121,
       "version": "",
@@ -419,7 +420,7 @@
       ],
       "installPath": [],
       "containerPath": [
-        "8783321a-9a12-43bd-9e64-9d01565906f5/helics_recorder"
+        "477da45b-bb38-450e-93f7-e525aaaa6862/helics_recorder"
       ],
       "captureTime": 1689186122,
       "version": "",
@@ -513,9 +514,9 @@
       ],
       "installPath": [],
       "containerPath": [
-        "8783321a-9a12-43bd-9e64-9d01565906f5/libzmq.so.5.2.4",
-        "8783321a-9a12-43bd-9e64-9d01565906f5/libzmq.so.5",
-        "8783321a-9a12-43bd-9e64-9d01565906f5/libzmq.so"
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libzmq.so",
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libzmq.so.5.2.4",
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libzmq.so.5"
       ],
       "captureTime": 1689186146,
       "version": "",
@@ -601,9 +602,9 @@
       ],
       "installPath": [],
       "containerPath": [
-        "8783321a-9a12-43bd-9e64-9d01565906f5/libhelics.so.3.4.0",
-        "8783321a-9a12-43bd-9e64-9d01565906f5/libhelics.so",
-        "8783321a-9a12-43bd-9e64-9d01565906f5/libhelics.so.3"
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libhelics.so.3.4.0",
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libhelics.so",
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libhelics.so.3"
       ],
       "captureTime": 1689186146,
       "version": "",
@@ -682,43 +683,43 @@
   ],
   "relationships": [
     {
-      "xUUID": "8783321a-9a12-43bd-9e64-9d01565906f5",
+      "xUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
       "yUUID": "c9cbcafa-aa58-41d8-aa04-f5f01ec49eca",
       "relationship": "Contains"
     },
     {
-      "xUUID": "8783321a-9a12-43bd-9e64-9d01565906f5",
+      "xUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
       "yUUID": "455341bb-2739-4918-9805-e1a93e27e2a4",
       "relationship": "Contains"
     },
     {
-      "xUUID": "8783321a-9a12-43bd-9e64-9d01565906f5",
+      "xUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
       "yUUID": "e286a415-6c6b-427d-9fe6-d7dbb0486f7d",
       "relationship": "Contains"
     },
     {
-      "xUUID": "8783321a-9a12-43bd-9e64-9d01565906f5",
+      "xUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
       "yUUID": "db11028f-31ad-4b98-8703-883350e97c49",
       "relationship": "Contains"
     },
     {
-      "xUUID": "8783321a-9a12-43bd-9e64-9d01565906f5",
+      "xUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
       "yUUID": "b198b272-c752-4b24-ae1b-98a44c9c16e8",
       "relationship": "Contains"
     },
     {
-      "xUUID": "8783321a-9a12-43bd-9e64-9d01565906f5",
+      "xUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
       "yUUID": "4c9a7915-7f5a-440b-97b6-60b13942f739",
       "relationship": "Contains"
     },
     {
-      "xUUID": "8783321a-9a12-43bd-9e64-9d01565906f5",
+      "xUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
       "yUUID": "7465416c-4f7b-4958-9842-c18609b0b2ab",
       "relationship": "Contains"
     },
     {
       "xUUID": "6a0ee431-842f-4963-8867-ef0ef6998003",
-      "yUUID": "8783321a-9a12-43bd-9e64-9d01565906f5",
+      "yUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
       "relationship": "Includes"
     }
   ],
