@@ -2,11 +2,11 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+from __future__ import annotations
 
 import uuid as uuid_module
 from dataclasses import dataclass, field
 from typing import List, Optional
-
 from dataclasses_json import dataclass_json
 
 from ._analysisdata import AnalysisData
