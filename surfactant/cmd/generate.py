@@ -121,6 +121,13 @@ def print_output_formats(ctx, _, value):
     help="Skip adding relationships based on Linux/Windows/etc metadata",
 )
 @click.option(
+    "--skip_install_path",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Skip including install path information"
+)
+@click.option(
     "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
 )
 @click.option(
@@ -143,6 +150,7 @@ def sbom(
     input_sbom,
     skip_gather,
     skip_relationships,
+    skip_install_path,
     recorded_institution,
     output_format,
 ):
