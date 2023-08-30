@@ -125,7 +125,7 @@ def print_output_formats(ctx, _, value):
     is_flag=True,
     default=False,
     required=False,
-    help="Skip including install path information"
+    help="Skip including install path information if not given by configuration"
 )
 @click.option(
     "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
@@ -279,6 +279,14 @@ def sbom(
                             # We need get_software_entry to look at the true filepath
                             filepath = true_filepath
 
+                        if install_prefix is not None:
+                            install_path = install_prefix
+                        elif not skip_install_path:
+                            # epath is guaranteed to not have an ending slash due to formatting above
+                            install_path = epath + "/"
+                        else:
+                            install_path = None
+
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
                             try:
                                 entries.append(
@@ -289,7 +297,7 @@ def sbom(
                                         filetype=ftype,
                                         root_path=epath,
                                         container_uuid=parent_uuid,
-                                        install_path=install_prefix,
+                                        install_path=install_path,
                                         user_institution_name=recorded_institution,
                                     )
                                 )
