@@ -83,13 +83,13 @@ The resulting SBOM would be structured like this:
         {
           "UUID": "abc1",
           "fileName": ["helics_binary"],
-          "installPath": "/home/samples/helics/bin",
+          "installPath": ["/home/samples/helics/bin/helics_binary"],
           "containerPath": null
         },
         {
           "UUID": "abc2",
           "fileName": ["lib1.so"],
-          "installPath": "/home/samples/helics/bin",
+          "installPath": ["/home/samples/helics/bin/lib1.so"],
           "containerPath": null
         }
 
