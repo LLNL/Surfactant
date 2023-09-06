@@ -125,7 +125,7 @@ def print_output_formats(ctx, _, value):
     is_flag=True,
     default=False,
     required=False,
-    help="Skip including install path information if not given by configuration"
+    help="Skip including install path information if not given by configuration",
 )
 @click.option(
     "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
