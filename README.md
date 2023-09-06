@@ -60,7 +60,7 @@ A configuration file contains the information about the sample to gather informa
 
 **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file (Note that even on Windows, Unix style `/` directory separators should be used in paths)\
 **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
-**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc (Note that even on Windows, Unix style `/` directory separators should be used in the path)
+**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc (Note that even on Windows, Unix style `/` directory separators should be used in the path). If not given then the **extractPaths** will be used as the install paths
 
 #### Example configuration file
 Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
@@ -83,18 +83,24 @@ The resulting SBOM would be structured like this:
         {
           "UUID": "abc1",
           "fileName": ["helics_binary"],
-          "installPath": null,
+          "installPath": "/home/samples/helics/bin",
           "containerPath": null
         },
         {
           "UUID": "abc2",
           "fileName": ["lib1.so"],
-          "installPath": null,
+          "installPath": "/home/samples/helics/bin",
           "containerPath": null
         }
 
     ],
-    "relationships": []
+    "relationships": [
+        {
+          "xUUID": "abc1",
+          "yUUID": "abc2",
+          "relationship": "Uses"
+        }
+    ]
 }
 ```
 ##### Example 2: Detailed Configuration File
@@ -264,6 +270,7 @@ $  surfactant generate [OPTIONS] CONFIG_FILE SBOM_OUTFILE [INPUT_SBOM]
 **INPUT_SBOM**: (optional) a base sbom, should be used with care as relationships could be messed up when files are installed on different systems\
 **--skip_gather**: (optional) skips the gathering of information on files and adding software entires\
 **--skip_relationships**: (optional) skips the adding of relationships based on metadata\
+**--skip_install_path**: (optional) skips including an install path for the files discovered. This may cause "Uses" relationships to also not be generated\
 **--recorded_institution**: (optional) the name of the institution collecting the SBOM data (default: LLNL)\
 **--output_format**: (optional) changes the output format for the SBOM (given as full module name of a surfactant plugin implementing the `write_sbom` hook)\
 **--help**: (optional) show the help message and exit
