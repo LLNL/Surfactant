@@ -92,7 +92,7 @@ def extract_child_info(
     software: Software,
     filename: str,
     filetype: str,
-) -> List[Software]:
+) -> Optional[List[Software]]:
     """Extracts information from the given file to add to the given software entry. Returns a list of
     software objects that were contained in that file. Will also provide relationship data so
     relationships can be built.
@@ -104,5 +104,5 @@ def extract_child_info(
         filetype (str): File type information based on magic bytes.
 
     Returns:
-        object: An object to be added to the metadata field for the software entry. May be `None` to add no metadata.
+        Optional[List[Software]]: A list of child Software objects to be added to the SBOM. May be `None` to add none.
     """

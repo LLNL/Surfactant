@@ -11,7 +11,7 @@ from surfactant.sbomtypes import SBOM, Relationship, Software
 @surfactant.plugin.hookimpl
 def extract_child_info(
     sbom: SBOM, software: Software, filename: str, filetype: str
-) -> List[Software]:
+) -> Optional[List[Software]]:
     pm = get_plugin_manager()
     # Change to properly filter filetypes, add to if statement for filetypes syft should run for
     if filetype == "TAR":
@@ -52,8 +52,7 @@ def extract_child_info(
             sw_list.append(sw_entry)
         gather_relationship_data(software, data, sw_list)
         return sw_list
-    else:
-        return None
+    return None
 
 
 @surfactant.plugin.hookimpl
@@ -97,4 +96,3 @@ def gather_relationship_data(image_sw: Software, data: str, sw_list: object):
                 sw.metadata.append({})
                 sw.metadata[-1]["syftRelationships"] = relationship_list
             relationship_list.append([parent_info[1], child_info[1], rel["type"]])
-    return

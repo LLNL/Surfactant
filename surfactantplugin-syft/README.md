@@ -1,4 +1,4 @@
-# checksec.py Plugin for SBOM Surfactant
+# Syft Plugin for SBOM Surfactant
 
 A plugin for Surfactant that uses Anchore Syft(https://github.com/anchore/syft) version 0.76 to gather information about software contained in disk images.
 

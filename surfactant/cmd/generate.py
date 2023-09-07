@@ -30,8 +30,7 @@ def get_software_entry(
     root_path=None,
     install_path=None,
     user_institution_name="",
-) -> List[Software]:
-    sw_list = List[Software]
+) -> Tuple[Software, List[Software]]:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path and install_path:
         sw_entry.installPath = [real_path_to_install_path(root_path, install_path, filepath)]
@@ -81,11 +80,7 @@ def get_software_entry(
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
-    if len(sw_list) > 0:
-        sw_list[0].append(sw_entry)
-        return sw_list
-    else:
-        return [[sw_entry]]
+    return (sw_entry, sum(sw_list, []) if sw_list is not None else None)
 
 
 def validate_config(config):
@@ -275,7 +270,7 @@ def sbom(
 
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
                             try:
-                                sw_list = get_software_entry(
+                                sw_parent, sw_children = get_software_entry(
                                     pm,
                                     new_sbom,
                                     filepath,
@@ -288,7 +283,8 @@ def sbom(
                             except Exception as e:
                                 raise RuntimeError(f"Unable to process: {filepath}") from e
 
-                            for sw in sw_list[0]:
+                            entries.append(sw_parent)
+                            for sw in sw_children:
                                 entries.append(sw)
 
                             if file_is_symlink and install_prefix:
