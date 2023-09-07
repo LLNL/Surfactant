@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "surfactantplugin-syft"
 authors = [
     {name = "Ryan Mast", email = "mast9@llnl.gov"},
+    {name = "Noah Ross", email = "ross63@llnl.gov"},
 ]
 description = "Surfactant syft"
 readme = "README.md"
