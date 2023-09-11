@@ -6,13 +6,13 @@ from collections.abc import Iterable
 
 from surfactant.sbomtypes import SBOM
 
+from loguru import logger
 
 # TODO for an intermediate SBOM format, have ability to search more efficiently by hashes/filepath/filename
 # currently, establishing relationships is something around O(n^2) due to searching entire sbom for matches
 def parse_relationships(pluginmanager, sbom: SBOM):
-    print("Determining relationships", end="")
-    for sw in sbom.software:
-        print(".", end="")
+    for i, sw in enumerate(sbom.software):
+        logger.info(f"Determining relationship {i + 1}/{len(sbom.software)}")
         # Skip for temporary files/installer that don't have any installPath or metadata to find dependencies with
         if sw.installPath is None or sw.metadata is None:
             continue
@@ -27,4 +27,3 @@ def parse_relationships(pluginmanager, sbom: SBOM):
                     for r in relationships:
                         if not sbom.find_relationship_object(r):
                             sbom.add_relationship(r)
-    print(end="\n")
