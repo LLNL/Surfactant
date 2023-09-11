@@ -9,14 +9,20 @@ import importlib.metadata
 import sys
 
 import click
+from loguru import logger
 
 from surfactant.cmd.generate import sbom as generate
 from surfactant.cmd.stat import stat
 
-from loguru import logger
 
 @click.group()
-@click.option("--log-level", type=click.Choice(["TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False), default="info")
+@click.option(
+    "--log-level",
+    type=click.Choice(
+        ["TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
+    ),
+    default="info",
+)
 def main(log_level):
     # Can't change the logging level; need to remove and add a new logger with the desired log level
     logger.remove()
