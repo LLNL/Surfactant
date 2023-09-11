@@ -21,7 +21,7 @@ from surfactant.cmd.stat import stat
     type=click.Choice(
         ["TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
     ),
-    default="info",
+    default="INFO",
 )
 def main(log_level):
     # Can't change the logging level; need to remove and add a new logger with the desired log level
@@ -41,4 +41,4 @@ main.add_command(version)
 main.add_command(stat)
 
 if __name__ == "__main__":
-    main()
+    main(log_level="INFO")
