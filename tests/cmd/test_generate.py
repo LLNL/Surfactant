@@ -30,9 +30,7 @@ def test_generate_no_install_prefix(tmp_path):
     assert expected_software_names == actual_software_names
 
     for software in generated_sbom["software"]:
-        assert (
-            software["installPath"] == []
-        )
+        assert software["installPath"] == []
 
     assert len(generated_sbom["relationships"]) == 0
 
