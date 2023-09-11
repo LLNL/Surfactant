@@ -4,9 +4,10 @@
 # SPDX-License-Identifier: MIT
 from collections.abc import Iterable
 
+from loguru import logger
+
 from surfactant.sbomtypes import SBOM
 
-from loguru import logger
 
 # TODO for an intermediate SBOM format, have ability to search more efficiently by hashes/filepath/filename
 # currently, establishing relationships is something around O(n^2) due to searching entire sbom for matches

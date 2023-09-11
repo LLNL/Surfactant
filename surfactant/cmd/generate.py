@@ -10,7 +10,6 @@ import sys
 from typing import Dict, List, Tuple, Union
 
 import click
-
 from loguru import logger
 
 from surfactant.plugin.manager import get_plugin_manager
