@@ -34,10 +34,7 @@ def test_generate_no_install_prefix(tmp_path):
         "testlib.dll": extract_path + "/testlib.dll",
     }
     for software in generated_sbom["software"]:
-        assert (
-            software["installPath"][0]
-            == expected_install_paths[software["fileName"][0]]
-        )
+        assert software["installPath"][0] == expected_install_paths[software["fileName"][0]]
 
     uuids = {software["fileName"][0]: software["UUID"] for software in generated_sbom["software"]}
     assert len(generated_sbom["relationships"]) == 1
@@ -76,10 +73,7 @@ def test_generate_with_install_prefix(tmp_path):
         "testlib.dll": "test_prefix/testlib.dll",
     }
     for software in generated_sbom["software"]:
-        assert (
-            software["installPath"][0]
-            == expected_install_paths[software["fileName"][0]]
-        )
+        assert software["installPath"][0] == expected_install_paths[software["fileName"][0]]
 
     uuids = {software["fileName"][0]: software["UUID"] for software in generated_sbom["software"]}
     assert len(generated_sbom["relationships"]) == 1
