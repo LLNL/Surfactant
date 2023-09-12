@@ -243,7 +243,9 @@ def sbom(
 
                     entries: List[Software] = []
                     for f in files:
-                        filepath = os.path.join(cdir, f)
+                        # os.path.join will insert an OS specific separator between cdir and f
+                        # need to make sure that separator is a / and not a \ on windows
+                        filepath = pathlib.Path(cdir, f).as_posix()
                         file_is_symlink = False
                         if os.path.islink(filepath):
                             true_filepath = resolve_link(filepath, cdir, epath)
