@@ -64,7 +64,7 @@ def test_generate_with_install_prefix(tmp_path):
     }
     for software in generated_sbom["software"]:
         assert (
-            software["installPath"][0].replace("\\", "/")
+            software["installPath"][0]
             == expected_install_paths[software["fileName"][0]]
         )
 
