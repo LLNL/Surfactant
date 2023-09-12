@@ -7,6 +7,7 @@ from __future__ import annotations
 import uuid as uuid_module
 from dataclasses import dataclass, field
 from typing import List, Optional
+from loguru import logger
 
 from dataclasses_json import dataclass_json
 
@@ -128,7 +129,7 @@ class SBOM:
                 if existing_system := self._find_systems_entry(uuid=system.UUID, name=system.name):
                     # merge system entries
                     u1, u2 = existing_system.merge(system)
-                    print(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
+                    logger.info(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
                     uuid_updates[u2] = u1
                 else:
                     self.systems.append(system)
@@ -141,7 +142,7 @@ class SBOM:
                     uuid=sw.UUID, sha256=sw.sha256, md5=sw.md5, sha1=sw.sha1
                 ):
                     u1, u2 = existing_sw.merge(sw)
-                    print(f"MERGE DUPLICATE: uuid1={u1}, uuid2={u2}")
+                    logger.info(f"MERGE DUPLICATE: uuid1={u1}, uuid2={u2}")
                     uuid_updates[u2] = u1
                 else:
                     self.software.append(sw)
@@ -159,7 +160,7 @@ class SBOM:
                     yUUID=rel.yUUID,
                     relationship=rel.relationship,
                 ):
-                    print(f"DUPLICATE RELATIONSHIP: {existing_rel}")
+                    logger.info(f"DUPLICATE RELATIONSHIP: {existing_rel}")
                 else:
                     self.relationships.append(rel)
 
@@ -175,7 +176,7 @@ class SBOM:
                             sw.containerPath[idx] = updated_path
                 # remove duplicates
                 sw.containerPath = [*set(sw.containerPath)]
-        print(f"UUID UPDATES: {uuid_updates}")
+        logger.info(f"UUID UPDATES: {uuid_updates}")
         # merge analysisData
         if sbom_m.analysisData:
             for analysisData in sbom_m.analysisData:
@@ -197,7 +198,7 @@ class SBOM:
                     yUUID=rel.yUUID,
                     relationship=rel.relationship,
                 ):
-                    print(f"DUPLICATE STAR RELATIONSHIP: {existing_rel}")
+                    logger.info(f"DUPLICATE STAR RELATIONSHIP: {existing_rel}")
                 else:
                     self.starRelationships.append(rel)
 

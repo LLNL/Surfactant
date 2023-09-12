@@ -3,6 +3,7 @@ import uuid as uuid_module
 from collections import deque
 
 import click
+from loguru import logger
 
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.sbomtypes._relationship import Relationship
@@ -73,8 +74,8 @@ def construct_relationship_graph(sbom: SBOM):
     for rel in sbom.relationships:
         # check case where xUUID doesn't exist (and error if yUUID doesn't exist) in the graph
         if rel.xUUID not in rel_graph or rel.yUUID not in rel_graph:
-            print("====ERROR xUUID or yUUID doesn't exist====")
-            print(rel)
+            logger.error("====ERROR xUUID or yUUID doesn't exist====")
+            logger.error(f"{rel = }")
             continue
         # consider also including relationship type for the edge
         # treat as directed graph, with inverted edges (pointing to parents) so dfs will eventually lead to the root parent node for a (sub)graph
@@ -112,13 +113,13 @@ def get_roots_check_cycles(rel_graph):
         for parent in rel_graph[rel]:
             # detect cycles
             if parent in recursionStack:
-                print(f"CYCLE DETECTED: {parent} {rel}")
+                logger.info(f"CYCLE DETECTED: {parent} {rel}")
                 cycle = True
             if dfs(parent):
                 rootFound.add(rel)
         # if there was a cycle, and none of the parents led to a definite root node
         if cycle and rel not in rootFound:
-            print(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
+            logger.info(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
             roots.add(rel)
             rootFound.add(rel)
         recursionStack.pop()
@@ -126,7 +127,7 @@ def get_roots_check_cycles(rel_graph):
 
     for rel in rel_graph:
         dfs(rel)
-    print(f"ROOTS: {roots}")
+    logger.info(f"ROOTS: {roots}")
     return roots
 
 
