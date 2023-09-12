@@ -129,7 +129,11 @@ class SBOM:
                 if existing_system := self._find_systems_entry(uuid=system.UUID, name=system.name):
                     # merge system entries
                     u1, u2 = existing_system.merge(system)
+<<<<<<< HEAD
                     logger.info(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
+=======
+                    print(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
+>>>>>>> 9bbbd6cafd62092515ddbe28d27656dc08a5a558
                     uuid_updates[u2] = u1
                 else:
                     self.systems.append(system)
@@ -142,7 +146,11 @@ class SBOM:
                     uuid=sw.UUID, sha256=sw.sha256, md5=sw.md5, sha1=sw.sha1
                 ):
                     u1, u2 = existing_sw.merge(sw)
+<<<<<<< HEAD
                     logger.info(f"MERGE DUPLICATE: uuid1={u1}, uuid2={u2}")
+=======
+                    print(f"MERGE DUPLICATE: uuid1={u1}, uuid2={u2}")
+>>>>>>> 9bbbd6cafd62092515ddbe28d27656dc08a5a558
                     uuid_updates[u2] = u1
                 else:
                     self.software.append(sw)
@@ -160,7 +168,11 @@ class SBOM:
                     yUUID=rel.yUUID,
                     relationship=rel.relationship,
                 ):
+<<<<<<< HEAD
                     logger.info(f"DUPLICATE RELATIONSHIP: {existing_rel}")
+=======
+                    print(f"DUPLICATE RELATIONSHIP: {existing_rel}")
+>>>>>>> 9bbbd6cafd62092515ddbe28d27656dc08a5a558
                 else:
                     self.relationships.append(rel)
 
@@ -176,7 +188,11 @@ class SBOM:
                             sw.containerPath[idx] = updated_path
                 # remove duplicates
                 sw.containerPath = [*set(sw.containerPath)]
+<<<<<<< HEAD
         logger.info(f"UUID UPDATES: {uuid_updates}")
+=======
+        print(f"UUID UPDATES: {uuid_updates}")
+>>>>>>> 9bbbd6cafd62092515ddbe28d27656dc08a5a558
         # merge analysisData
         if sbom_m.analysisData:
             for analysisData in sbom_m.analysisData:
@@ -198,7 +214,11 @@ class SBOM:
                     yUUID=rel.yUUID,
                     relationship=rel.relationship,
                 ):
+<<<<<<< HEAD
                     logger.info(f"DUPLICATE STAR RELATIONSHIP: {existing_rel}")
+=======
+                    print(f"DUPLICATE STAR RELATIONSHIP: {existing_rel}")
+>>>>>>> 9bbbd6cafd62092515ddbe28d27656dc08a5a558
                 else:
                     self.starRelationships.append(rel)
 
