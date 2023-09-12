@@ -7,9 +7,9 @@ from __future__ import annotations
 import uuid as uuid_module
 from dataclasses import dataclass, field
 from typing import List, Optional
-from loguru import logger
 
 from dataclasses_json import dataclass_json
+from loguru import logger
 
 from ._analysisdata import AnalysisData
 from ._file import File
