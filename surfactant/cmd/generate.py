@@ -10,6 +10,7 @@ import sys
 from typing import Dict, List, Tuple, Union
 
 import click
+from loguru import logger
 
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.relationships import parse_relationships
@@ -64,7 +65,7 @@ def get_software_entry(
 
         # less common: OLE file metadata that might be relevant
         if filetype == "OLE":
-            print("-----------OLE--------------")
+            logger.trace("-----------OLE--------------")
             if "subject" in file_details["ole"]:
                 sw_entry.name = file_details["ole"]["subject"]
             if "revision_number" in file_details["ole"]:
@@ -83,7 +84,7 @@ def validate_config(config):
         for pth in extract_path:
             extract_path_convert = pathlib.Path(pth)
             if not extract_path_convert.exists():
-                print("invalid path: " + str(pth))
+                logger.error("invalid path: " + str(pth))
                 return False
     return True
 
@@ -160,7 +161,8 @@ def sbom(
                 pass
 
     if output_writer is None:
-        sys.exit(f'No output format "{output_format}" found')
+        logger.error(f'No output format "{output_format}" found')
+        sys.exit(1)
 
     if pathlib.Path(config_file).is_file():
         with click.open_file(config_file) as f:
@@ -189,7 +191,7 @@ def sbom(
         file_symlinks: Dict[str, List[str]] = {}
         for entry in config:
             if "archive" in entry:
-                print("Processing parent container " + str(entry["archive"]))
+                logger.info("Processing parent container " + str(entry["archive"]))
                 parent_entry = get_software_entry(
                     pm, new_sbom, entry["archive"], user_institution_name=recorded_institution
                 )
@@ -207,7 +209,7 @@ def sbom(
                 install_prefix = entry["installPrefix"]
                 # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
                 if install_prefix and not install_prefix.endswith(("/", "\\")):
-                    print("Fixing install path")
+                    logger.warning("Fixing install path")
                     install_prefix += "/"
             else:
                 install_prefix = None
@@ -216,9 +218,9 @@ def sbom(
                 # extractPath should not end with "/" (Windows-style backslash paths shouldn't be used at all)
                 if epath.endswith("/"):
                     epath = epath[:-1]
-                print("Extracted Path: " + str(epath))
+                logger.trace("Extracted Path: " + str(epath))
                 for cdir, dirs, files in os.walk(epath):
-                    print("Processing " + str(cdir))
+                    logger.info("Processing " + str(cdir))
 
                     if install_prefix:
                         for dir_ in dirs:
@@ -343,13 +345,13 @@ def sbom(
                             paths_to_add.append(path.replace(link_dest, link_source, 1))
                 paths += paths_to_add
     else:
-        print("Skipping gathering file metadata and adding software entries")
+        logger.info("Skipping gathering file metadata and adding software entries")
 
     # add "Uses" relationships based on gathered metadata for software entries
     if not skip_relationships:
         parse_relationships(pm, new_sbom)
     else:
-        print("Skipping relationships based on imports metadata")
+        logger.info("Skipping relationships based on imports metadata")
 
     # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
     output_writer.write_sbom(new_sbom, sbom_outfile)
