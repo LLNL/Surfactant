@@ -7,7 +7,7 @@ testing_data = Path(Path(__file__).parent.parent, "data")
 
 
 def test_generate_no_install_prefix(tmp_path):
-    extract_path = str(Path(testing_data, "Windows_dll_test_no1")).replace("\\", "/")
+    extract_path = Path(testing_data, "Windows_dll_test_no1").as_posix()
     config_data = f'[{{"extractPaths": ["{extract_path}"]}}]'
     config_path = str(Path(tmp_path, "config.json"))
     output_path = str(Path(tmp_path, "out.json"))
@@ -36,7 +36,7 @@ def test_generate_no_install_prefix(tmp_path):
 
 
 def test_generate_with_install_prefix(tmp_path):
-    extract_path = str(Path(testing_data, "Windows_dll_test_no1")).replace("\\", "/")
+    extract_path = Path(testing_data, "Windows_dll_test_no1").as_posix()
     config_data = f'[{{"extractPaths": ["{extract_path}"], "installPrefix": "test_prefix/"}}]'
     config_path = str(Path(tmp_path, "config.json"))
     output_path = str(Path(tmp_path, "out.json"))
