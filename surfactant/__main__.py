@@ -12,6 +12,7 @@ import click
 from loguru import logger
 
 from surfactant.cmd.generate import sbom as generate
+from surfactant.cmd.merge import merge_command
 from surfactant.cmd.stat import stat
 
 
@@ -39,6 +40,7 @@ def version():
 main.add_command(generate)
 main.add_command(version)
 main.add_command(stat)
+main.add_command(merge_command)
 
 if __name__ == "__main__":
     main(log_level="INFO")
