@@ -167,6 +167,11 @@ def extract_pe_info(filename):
                 for ar_info in assemblyref_info:
                     assembly_refs.append(get_assemblyref_info(ar_info))
                 file_details["dotnetAssemblyRef"] = assembly_refs
+            if implmap_info := getattr(dnet_mdtables, "ImplMap", None):
+                imp_methods = []
+                for im_info in implmap_info:
+                    imp_methods.append(get_unmanaged_imports_info(im_info))
+                file_details["dotnetImplMap"] = imp_methods
 
     # TODO for a custom intermediate SBOM format, the information read from the manifest and app config files
     # should be tied to a specific "<install path>/<file name>", in case the same file appears in separate
@@ -217,6 +222,11 @@ def add_assembly_flags_info(asm_dict, asm_info):
         }
 
 
+def add_unmanaged_import_info(unmanaged_imp, im_info):
+    unmanaged_imp["ImportScope"] = im_info.ImportScope.row.Name
+    unmanaged_imp["ImportName"] = im_info.ImportName
+
+
 def get_assembly_info(asm_info):
     asm: Dict[str, Any] = {}
     add_core_assembly_info(asm, asm_info)
@@ -231,6 +241,12 @@ def get_assemblyref_info(asmref_info):
     asmref["HashValue"] = asmref_info.HashValue.hex()
     add_assembly_flags_info(asmref, asmref_info)
     return asmref
+
+
+def get_unmanaged_imports_info(im_info):
+    unmanaged_imp: Dict[str, Any] = {}
+    add_unmanaged_import_info(unmanaged_imp, im_info)
+    return unmanaged_imp
 
 
 def get_xmlns_and_tag(uri):
