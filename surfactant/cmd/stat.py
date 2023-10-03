@@ -5,8 +5,6 @@ from surfactant.sbomtypes import SBOM
 
 def stat(input_sbom):
     click.echo("Running stat command") 
-    #print(SBOM.from_json(input_sbom)) 
-    #f = open(input_sbom) 
     data = SBOM.from_json(input_sbom.read()) 
     elfIsLib = 0 
     elfIsExe = 0 
