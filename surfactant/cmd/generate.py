@@ -7,7 +7,7 @@ import os
 import pathlib
 import re
 import sys
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
@@ -114,10 +114,17 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
         collision = True
     elif soft1.md5 == soft2.md5 and (soft1.sha256 != soft2.sha256 or soft1.sha1 != soft2.sha1):
         collision = True
-    elif soft1.sha256 == soft2.sha256 and soft1.sha1 == soft2.sha1 and soft1.md5 == soft2.md5 and soft1.size != soft2.size:
+    elif (
+        soft1.sha256 == soft2.sha256
+        and soft1.sha1 == soft2.sha1
+        and soft1.md5 == soft2.md5
+        and soft1.size != soft2.size
+    ):
         collision = True
     if collision:
-        logger.warn(f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur")
+        logger.warn(
+            f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur"
+        )
 
 
 @click.command("generate")
