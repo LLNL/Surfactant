@@ -35,7 +35,7 @@ def stat(input_sbom):
                     if md[n]["peIsExe"]:
                         clrExe += 1
                     else:
-                        clrDll += 1 
+                        clrDll += 1
     num_pe_exe_str = (
         "Number of PE Executables: " + str(peIsExe) + " with " + str(clrExe) + " using .NET/CLR"
     )
