@@ -11,10 +11,10 @@ import sys
 import click
 from loguru import logger
 
+from surfactant.cmd.createconfig import create_config
 from surfactant.cmd.generate import sbom as generate
 from surfactant.cmd.merge import merge_command
 from surfactant.cmd.stat import stat
-from surfactant.cmd.createconfig import create_config
 
 
 @click.group()

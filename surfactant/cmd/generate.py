@@ -73,7 +73,7 @@ def get_software_entry(
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
-    pluginmanager.hook.extract_strings(filename=filepath, hash=str(sw_entry.md5),filetype=filetype)
+    pluginmanager.hook.extract_strings(filename=filepath, hash=str(sw_entry.md5), filetype=filetype)
     return sw_entry
 
 
