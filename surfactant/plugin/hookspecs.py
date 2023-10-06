@@ -76,6 +76,13 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         outfile: The output file handle to write the SBOM to.
     """
 
+@hookspec
+def extract_strings(filename: str, hash: str,filetype: str, min_len=4) -> None:
+    """
+    Extract ASCII strings from a binary file using binary2strings.
+    :param file_path: Path to the binary file.
+    :param min_len: Minimum length of strings to be considered valid.
+    """
 
 @hookspec
 def short_name() -> Optional[str]:
