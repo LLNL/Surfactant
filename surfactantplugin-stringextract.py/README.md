@@ -13,7 +13,8 @@ After installing the plugin, run Surfactant to generate an SBOM as usual and ent
 and PE files will generate additional json files in the working directory that contain the strings of those files.
 If there are duplicate hashed files the extractor will skip the entry.
 Example:
-Output Filename: $(md5hash)_$(filename).json
+
+`Output Filename: $(md5hash)_$(filename).json`
 
 ```json
 {
