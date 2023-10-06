@@ -2,12 +2,13 @@ import json
 import click
 from pathlib import Path
 
+
 @click.command()
 @click.argument("directory", type=click.Path(exists=True))
 @click.option("-o", "--output", type=str, help="Output JSON file name, defaults to end of directory string passed as input")
 def create_config(directory, output):
     """Create surfactant input configuration file based on input directory passed as a command line argument."""
-    
+
     # Use the provided starting directory path
     starting_directory = Path(directory)
 
@@ -36,6 +37,7 @@ def create_config(directory, output):
         json.dump(config_out, json_file, indent=4)
 
     click.echo(f"Data written to {output_file_name}")
+
 
 if __name__ == "__main__":
     create_config()
