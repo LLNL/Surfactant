@@ -182,7 +182,7 @@ def extract_pe_info(filename):
                     assembly_refs.append(get_assemblyref_info(ar_info))
                 file_details["dotnetAssemblyRef"] = assembly_refs
             if implmap_info := getattr(dnet_mdtables, "ImplMap", None):
-                imp_modules = {}
+                imp_modules = []
                 for im_info in implmap_info:
                     get_implmap_info(im_info, imp_modules)
                 file_details["dotnetImplMap"] = imp_modules
@@ -256,7 +256,11 @@ def get_implmap_info(im_info, imp_modules):
     dllName = im_info.ImportScope.row.Name
     methodName = im_info.ImportName
     if dllName:
-        imp_modules.setdefault(dllName, []).append(methodName)
+        for imp_module in imp_modules:
+            if imp_module["Name"] == dllName:
+                imp_module["Functions"].append(methodName)
+                return
+        imp_modules.append({"Name": dllName, "Functions": [methodName]})
 
 
 def get_xmlns_and_tag(uri):
