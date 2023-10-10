@@ -9,17 +9,20 @@ TODO: Once plugins are configurable, insert documentation on how to specify plug
 In order to create a plugin, you will need to write your implementation for one or more of the functions in the [hookspec.py](surfactant/plugin/hookspecs.py) file. Which functions you implement will depend on the goals of your plugin.
 
 #### Brief overview of functions
-[identify_file_type](surfactant/plugin/hookspecs.py#L11)
+[identify_file_type](surfactant/plugin/hookspecs.py#L15)
 - Return a string representation of the type of file passed in
 
-[extract_file_info](surfactant/plugin/hookspecs.py#L22)
+[extract_file_info](surfactant/plugin/hookspecs.py#L29)
 - Determine how file info is supposed to be extracted
 
-[establish_relationships](surfactant/plugin/hookspecs.py#L37)
+[establish_relationships](surfactant/plugin/hookspecs.py#L47)
 - Determines how to establish relationships between the software/metadata that has been passed to it
 
-[write_sbom](surfactant/plugin/hookspecs.py#L57)
+[write_sbom](surfactant/plugin/hookspecs.py#L70)
 - Determine what format to write the SBOM to file
+
+[read_sbom](surfactant/plugin/hookspecs.py#L80)
+- If reading from input SBOMs, specifies what format the input SBOMs are
 
 ### Step 2. Write .toml File
 Once you have written your plugin, you will need to write a pyproject.toml file. Include any relevant project metadata/dependencies for your plugin, as well as an entry-point specification (example below) to make the plugin discoverable by surfactant. Once you write your .toml file, you can `pip install .` your plugin.

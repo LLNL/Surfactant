@@ -2,7 +2,10 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+import sys
+
 import pluggy
+from loguru import logger
 
 from surfactant.plugin import hookspecs
 
@@ -19,6 +22,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         ole_file,
         pe_file,
     )
+    from surfactant.input_readers import cytrics_reader
     from surfactant.output import csv_writer, cytrics_writer, spdx_writer
     from surfactant.relationships import (
         dotnet_relationship,
@@ -43,6 +47,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         csv_writer,
         cytrics_writer,
         spdx_writer,
+        cytrics_reader,
     )
     for plugin in internal_plugins:
         pm.register(plugin)
@@ -64,3 +69,24 @@ def print_plugins(pm: pluggy.PluginManager):
         print("-------")
         print("canonical name: " + pm.get_canonical_name(p))
         print("name: " + pm.get_name(p))
+
+
+def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):
+    found_plugin = pm.get_plugin(io_format)
+
+    if found_plugin is None:
+        for plugin in pm.get_plugins():
+            try:
+                if plugin.short_name().lower() == io_format.lower() and hasattr(
+                    plugin, function_name
+                ):
+                    found_plugin = plugin
+                    break
+            except AttributeError:
+                pass
+
+    if found_plugin is None:
+        logger.error(f'No "{function_name}" plugin for format "{io_format}" found')
+        sys.exit(1)
+
+    return found_plugin
