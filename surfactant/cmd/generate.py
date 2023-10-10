@@ -101,6 +101,18 @@ def print_output_formats(ctx, _, value):
                 print(pm.get_canonical_name(plugin))
     ctx.exit()
 
+def print_input_formats(ctx, _, value):
+    if not value or ctx.resilient_parsing:
+        return
+    pm = get_plugin_manager()
+    for plugin in pm.get_plugins():
+        if hasattr(plugin, "read_sbom"):
+            if hasattr(plugin, "short_name"):
+                print(plugin.short_name())
+            else:
+                print(pm.get_canonical_name(plugin))
+    ctx.exit()
+
 
 @click.command("generate")
 @click.argument("config_file", envvar="CONFIG_FILE", type=click.Path(exists=True), required=True)
@@ -137,6 +149,20 @@ def print_output_formats(ctx, _, value):
     is_eager=True,
     help="List supported output formats",
 )
+@click.option(
+    "--input_format",
+    is_flag=False,
+    default="surfactant.input_readers.cytrics_reader",
+    help="Input SBOM format, see --list-input-formats for list of options; default is CyTRICS",
+)
+@click.option(
+    "--list-input-formats",
+    is_flag=True,
+    callback=print_input_formats,
+    expose_value=False,
+    is_eager=True,
+    help="List supported input formats",
+)
 def sbom(
     config_file,
     sbom_outfile,
@@ -145,6 +171,7 @@ def sbom(
     skip_relationships,
     recorded_institution,
     output_format,
+    input_format,
 ):
     """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
 
@@ -168,6 +195,24 @@ def sbom(
     if output_writer is None:
         logger.error(f'No output format "{output_format}" found')
         sys.exit(1)
+    
+
+    input_reader = pm.get_plugin(input_format)
+
+    if input_reader is None:
+        for plugin in pm.get_plugins():
+            try:
+                if plugin.short_name().lower() == input_format.lower() and hasattr(
+                    plugin, "read_sbom"
+                ):
+                    input_reader = plugin
+                    break
+            except AttributeError:
+                pass
+
+    if input_reader is None:
+        logger.error(f'No output format "{input_format}" found')
+        sys.exit(1)
 
     if pathlib.Path(config_file).is_file():
         with click.open_file(config_file) as f:
@@ -186,7 +231,7 @@ def sbom(
     if not input_sbom:
         new_sbom = SBOM()
     else:
-        new_sbom = SBOM.from_json(input_sbom.read())
+        new_sbom = input_reader.read_sbom(input_sbom)
 
     # gather metadata for files and add/augment software entries in the sbom
     if not skip_gather:
