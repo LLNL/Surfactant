@@ -76,6 +76,7 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         outfile: The output file handle to write the SBOM to.
     """
 
+
 @hookspec
 def read_sbom(infile) -> SBOM:
     """Reads the contents of the input SBOM from the given input SBOM file.
@@ -85,6 +86,7 @@ def read_sbom(infile) -> SBOM:
     Args:
         infile: The output file handle to write the SBOM to.
     """
+
 
 @hookspec
 def short_name() -> Optional[str]:
