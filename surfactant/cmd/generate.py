@@ -73,7 +73,17 @@ def get_software_entry(
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
-    pluginmanager.hook.extract_strings(filename=filepath, hash=str(sw_entry.md5),filetype=filetype)
+    string_info = None
+    import_info = None
+    string_info = pluginmanager.hook.extract_strings(filename=filepath, hash=str(sw_entry.md5), filetype=filetype)
+
+    if string_info:
+        import_info = pluginmanager.hook.angrimport_finder(filename=filepath, filetype=filetype, metadata=string_info[0])
+    if import_info:
+        out_name = pathlib.Path(filepath)
+        output_path = pathlib.Path.cwd() / f"{str(sw_entry.md5)}_{out_name.stem}.json"
+        with open(output_path, 'w') as f:
+            json.dump(import_info[0], f, indent=4)
     return sw_entry
 
 
