@@ -11,7 +11,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 @surfactant.plugin.hookimpl
-def extract_strings(filename: str, hash: str, filetype: str, min_len=4):
+def extract_strings(filename: str, hash: str, filetype: str, metadata: dict, min_len=4):
     """
     Extract ASCII strings from a binary file using binary2strings.
     :param filename (str): The full path to the file to extract information from.
@@ -37,9 +37,8 @@ def extract_strings(filename: str, hash: str, filetype: str, min_len=4):
             # Validate the file path
             if not filename.exists():
                 raise FileNotFoundError(f"No such file: '{filename}'")
-
-            # Extract filename without extension
             string_dict = {}
+            # Extract filename without extension
             string_dict["md5hash"] = hash
             string_dict["filename"] = filename.name
             string_dict["strings"] = []
@@ -53,6 +52,6 @@ def extract_strings(filename: str, hash: str, filetype: str, min_len=4):
                     if len(string) >= min_len:
                         string_dict["strings"].append(string)
 
-            return string_dict
+            return metadata.metadata.append(string_dict)
         except Exception as e:
             print("String Extract Error\nFile:{} Caused error:{}".format(filename, e))

@@ -2,7 +2,6 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import json
 from pathlib import Path
 import angr
 import surfactant.plugin
@@ -23,15 +22,18 @@ def angrimport_finder(filename: str, filetype: str, metadata:dict):
 
     if not filename.exists():
         raise FileNotFoundError(f"No such file: '{filename}'")
+    try:
+        import_dict = {}
+        import_dict["imported functions"] = []
 
-    metadata["imported functions"] = []
+        # Create an angr project
+        project = angr.Project(filename._str, auto_load_libs=False)
 
-    # Create an angr project
-    project = angr.Project(filename._str, auto_load_libs=False)
+        # Get the imported functions using symbol information
+        for symbol in project.loader.main_object.symbols:
+            if symbol.is_function:
+                import_dict["imported functions"].append(symbol.name)
 
-    # Get the imported functions using symbol information
-    for symbol in project.loader.main_object.symbols:
-        if symbol.is_function:
-            metadata["imported functions"].append(symbol.name)
-
-    return metadata
+        return metadata.metadata.append(import_dict)
+    except Exception as e:
+        print("Angr Error {} {}".format(filename._str, e))
