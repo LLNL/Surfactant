@@ -72,7 +72,7 @@ A configuration file contains the information about the sample to gather informa
 
 **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file (Note that even on Windows, Unix style `/` directory separators should be used in paths)\
 **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
-**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc (Note that even on Windows, Unix style `/` directory separators should be used in the path)
+**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc (Note that even on Windows, Unix style `/` directory separators should be used in the path). If not given then the **extractPaths** will be used as the install paths
 
 #### Create config command
 
@@ -102,6 +102,7 @@ The resulting SBOM would be structured like this:
 
 ```json
 {
+plugin-angr
   "software": [
     {
       "UUID": "abc1",
@@ -117,6 +118,30 @@ The resulting SBOM would be structured like this:
     }
   ],
   "relationships": []
+}
+
+    "software": [
+        {
+          "UUID": "abc1",
+          "fileName": ["helics_binary"],
+          "installPath": ["/home/samples/helics/bin/helics_binary"],
+          "containerPath": null
+        },
+        {
+          "UUID": "abc2",
+          "fileName": ["lib1.so"],
+          "installPath": ["/home/samples/helics/lib64/lib1.so"],
+          "containerPath": null
+        }
+
+    ],
+    "relationships": [
+        {
+          "xUUID": "abc1",
+          "yUUID": "abc2",
+          "relationship": "Uses"
+        }
+    ]
 }
 ```
 
@@ -292,6 +317,7 @@ $  surfactant generate [OPTIONS] CONFIG_FILE SBOM_OUTFILE [INPUT_SBOM]
 **INPUT_SBOM**: (optional) a base sbom, should be used with care as relationships could be messed up when files are installed on different systems\
 **--skip_gather**: (optional) skips the gathering of information on files and adding software entires\
 **--skip_relationships**: (optional) skips the adding of relationships based on metadata\
+**--skip_install_path**: (optional) skips including an install path for the files discovered. This may cause "Uses" relationships to also not be generated\
 **--recorded_institution**: (optional) the name of the institution collecting the SBOM data (default: LLNL)\
 **--output_format**: (optional) changes the output format for the SBOM (given as full module name of a surfactant plugin implementing the `write_sbom` hook)\
 **--help**: (optional) show the help message and exit
