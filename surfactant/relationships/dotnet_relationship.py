@@ -67,6 +67,36 @@ def establish_relationships(
                                 pathlib.PureWindowsPath(path).as_posix()
                             )
 
+    # https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/loading-unmanaged
+    # 1. Check the active AssemblyLoadContext cache
+    # 2. Calling the import resolver set by the setDllImportResolver function
+    #    - a. Example using SetDllImportResolver: https://learn.microsoft.com/en-us/dotnet/standard/native-interop/native-library-loading
+    #    - b. Checks PInvoke's or Assembly's DefaultDllImportSearchPathsAttribute, then the assembly's directory, then LoadLibraryEx with LOAD_WITH_ALTERED_SEARCH_PATH flag
+    #       - This attribute has no effect on non-Windows platforms / Mono runtime
+    #       - https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.defaultdllimportsearchpathsattribute?view=net-7.0
+    # 3. The active AssemblyLoadContext calls its LoadUnmanagedDll function (Default behavior is the same as AssemblyRef probing?)
+    #    - a. Can be overridden, but the default implementation returns IntPtr.Zero, which tells the runtime to load with its default policy.
+    #    - b. https://learn.microsoft.com/en-us/dotnet/api/system.runtime.loader.assemblyloadcontext.loadunmanageddll?view=net-7.0
+    # 4. Run default unmanaged library probing logic by parsing *.deps.json probing properties
+    #    - a. If the json file isn't present, assume the calling assembly's directory contains the library
+    #    - b. https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing#unmanaged-native-library-probing
+    if "dotnetImplMap" in metadata:
+        for asmRef in metadata["dotnetImplMap"]:
+            refName = None
+            refCulture = None
+            if "Name" in asmRef:
+                refName = asmRef["Name"]
+
+            # Aside from .deps.json, the assembly's install directory is searched
+            probedirs = get_dotnet_probedirs(
+                software, refCulture, refName, dnProbingPaths
+            )
+            for e in find_installed_software(sbom, probedirs, refName + ".dll"):
+                dependency_uuid = e.UUID
+                relationships.append(
+                    Relationship(dependent_uuid, dependency_uuid, "Uses")
+                )
+
     # https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies
     # 1. Determine correct assembly version using configuration files (binding redirects, code location, etc)
     # 2. Check if assembly name bound before; if it is use previously loaded assembly
@@ -77,30 +107,8 @@ def establish_relationships(
     #    - application base + culture + assembly name directories
     #    - privatePath directories from a probing element, combined with culture/appbase/assemblyname (done before the standard probing directories)
     #    - the location of the calling assembly may be used as a hint for where to find the referenced assembly
-    def chained_lists(*it):
-        for iterab in it:
-            yield from iterab
-
     if "dotnetAssemblyRef" in metadata:
-        combinedRefs = [metadata["dotnetAssemblyRef"]]
-
-        # https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/loading-unmanaged
-        # 1. Check the active AssemblyLoadContext cache
-        # 2. Calling the import resolver set by the setDllImportResolver function
-        #    - a. Example using SetDllImportResolver: https://learn.microsoft.com/en-us/dotnet/standard/native-interop/native-library-loading
-        #    - b. Checks PInvoke's or Assembly's DefaultDllImportSearchPathsAttribute, then the assembly's directory, then LoadLibraryEx with LOAD_WITH_ALTERED_SEARCH_PATH flag
-        #       - This attribute has no effect on non-Windows platforms / Mono runtime
-        #       - https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.defaultdllimportsearchpathsattribute?view=net-7.0
-        # 3. The active AssemblyLoadContext calls its LoadUnmanagedDll function (Default behavior is the same as AssemblyRef probing?)
-        #    - a. Can be overridden, but the default implementation returns IntPtr.Zero, which tells the runtime to load with its default policy.
-        #    - b. https://learn.microsoft.com/en-us/dotnet/api/system.runtime.loader.assemblyloadcontext.loadunmanageddll?view=net-7.0
-        # 4. Run default unmanaged library probing logic by parsing *.deps.json probing properties
-        #    - a. If the json file isn't present, assume the calling assembly's directory contains the library
-        #    - b. https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing#unmanaged-native-library-probing
-        if "dotnetImplMap" in metadata:
-            combinedRefs.append(metadata["dotnetImplMap"])
-
-        for asmRef in chained_lists(*combinedRefs):
+        for asmRef in metadata["dotnetAssemblyRef"]:
             refName = None
             refVersion = None
             refCulture = None
