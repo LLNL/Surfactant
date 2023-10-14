@@ -24,7 +24,9 @@ def supports_file(filetype) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(
+    sbom: SBOM, software: Software, filename: str, filetype: str
+) -> object:
     if not supports_file(filetype):
         return None
     return extract_pe_info(filename)
@@ -100,10 +102,14 @@ def extract_pe_info(filename):
             "peSubsystemVersion"
         ] = f"{pe.OPTIONAL_HEADER.MajorSubsystemVersion}.{pe.OPTIONAL_HEADER.MinorSubsystemVersion}"
         if pe.OPTIONAL_HEADER.Subsystem in pe_subsystem_types:
-            file_details["peSubsystem"] = pe_subsystem_types[pe.OPTIONAL_HEADER.Subsystem]
+            file_details["peSubsystem"] = pe_subsystem_types[
+                pe.OPTIONAL_HEADER.Subsystem
+            ]
         else:
             file_details["peSubsystem"] = pe.OPTIONAL_HEADER.Subsystem
-            print("[WARNING] Unknown Windows Subsystem type encountered in PE file header")
+            print(
+                "[WARNING] Unknown Windows Subsystem type encountered in PE file header"
+            )
         file_details[
             "peLinkerVersion"
         ] = f"{pe.OPTIONAL_HEADER.MajorLinkerVersion}.{pe.OPTIONAL_HEADER.MinorLinkerVersion}"
@@ -131,18 +137,26 @@ def extract_pe_info(filename):
     if opt_hdr := getattr(pe, "OPTIONAL_HEADER", None):
         if opt_hdr_data_dir := getattr(opt_hdr, "DATA_DIRECTORY", None):
             # COM Descriptor, used to identify CLR/.NET binaries
-            com_desc_dir_num = dnfile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR"]
+            com_desc_dir_num = dnfile.DIRECTORY_ENTRY[
+                "IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR"
+            ]
             com_desc_dir = opt_hdr_data_dir[com_desc_dir_num]
-            file_details["peIsClr"] = (com_desc_dir.VirtualAddress > 0) and (com_desc_dir.Size > 0)
+            file_details["peIsClr"] = (com_desc_dir.VirtualAddress > 0) and (
+                com_desc_dir.Size > 0
+            )
 
     if pe_fi := getattr(pe, "FileInfo", None):
         if len(pe_fi) > 0:
             file_details["FileInfo"] = {}
             for fi_entry in pe_fi[0]:
-                if fi_entry.name == "StringFileInfo" and hasattr(fi_entry, "StringTable"):
+                if fi_entry.name == "StringFileInfo" and hasattr(
+                    fi_entry, "StringTable"
+                ):
                     for st in fi_entry.StringTable:
                         for st_entry in st.entries.items():
-                            file_details["FileInfo"][st_entry[0].decode()] = st_entry[1].decode()
+                            file_details["FileInfo"][st_entry[0].decode()] = st_entry[
+                                1
+                            ].decode()
 
     # If this is a .NET assembly, extract information about it from the headers
     if dnet := getattr(pe, "net", None):
@@ -170,7 +184,7 @@ def extract_pe_info(filename):
             if implmap_info := getattr(dnet_mdtables, "ImplMap", None):
                 imp_modules = []
                 for im_info in implmap_info:
-                    get_implmap_info(im_info, imp_modules)
+                    insert_implmap_info(im_info, imp_modules)
                 file_details["dotnetImplMap"] = imp_modules
 
     # TODO for a custom intermediate SBOM format, the information read from the manifest and app config files
@@ -238,7 +252,7 @@ def get_assemblyref_info(asmref_info):
     return asmref
 
 
-def get_implmap_info(im_info, imp_modules):
+def insert_implmap_info(im_info, imp_modules):
     dllName = im_info.ImportScope.row.Name
     methodName = im_info.ImportName
     if dllName:
@@ -262,7 +276,9 @@ def get_xmlns_and_tag(uri):
 # return any info that could be useful for establishing "Uses" relationships later
 def get_windows_manifest_info(filename):
     binary_filepath = pathlib.Path(filename)
-    manifest_filepath = binary_filepath.with_suffix(binary_filepath.suffix + ".manifest")
+    manifest_filepath = binary_filepath.with_suffix(
+        binary_filepath.suffix + ".manifest"
+    )
     if manifest_filepath.exists():
         print("Found application manifest file for " + filename)
         et = defusedxml.ElementTree.parse(manifest_filepath)
@@ -309,7 +325,9 @@ def get_windows_manifest_info(filename):
 def get_dependentAssembly_info(da_et, config_filepath=""):
     daet_xmlns, daet_tag = get_xmlns_and_tag(da_et)
     if daet_tag != "dependentAssembly":
-        print("[WARNING] element tree given was not for a dependentAssembly element tag")
+        print(
+            "[WARNING] element tree given was not for a dependentAssembly element tag"
+        )
     da_info = {}
     for da_e in da_et:
         da_xmlns, da_tag = get_xmlns_and_tag(da_e)
@@ -386,7 +404,9 @@ def get_assemblyBinding_info(ab_et, config_filepath=""):
         if ab_tag == "dependentAssembly":
             if "dependentAssembly" not in ab_info:
                 ab_info["dependentAssembly"] = []
-            ab_info["dependentAssembly"].append(get_dependentAssembly_info(ab_e, config_filepath))
+            ab_info["dependentAssembly"].append(
+                get_dependentAssembly_info(ab_e, config_filepath)
+            )
 
         # <qualifyAssembly>
         # replaces partial name in Assembly.Load with full name
@@ -438,7 +458,9 @@ def get_windows_application_config_info(filename):
         # - includes assembly config file contents here, similar to #include
         linkedConfiguration = et.find("./assemblyBinding/linkedConfiguration")
         if (linkedConfiguration is not None) and linkedConfiguration.attrib:
-            app_config_info["assemblyBinding"] = {"linkedConfiguration": linkedConfiguration.attrib}
+            app_config_info["assemblyBinding"] = {
+                "linkedConfiguration": linkedConfiguration.attrib
+            }
 
         # The following appear within a <windows> element:
         # <probing privatePath="bin;..\bin2\subbin;bin3"/>
@@ -477,14 +499,18 @@ def get_windows_application_config_info(filename):
                             + str(config_filepath)
                         )
                     if "privatePath" in win_child.attrib:
-                        windows_info["probing"] = {"privatePath": win_child.attrib["privatePath"]}
+                        windows_info["probing"] = {
+                            "privatePath": win_child.attrib["privatePath"]
+                        }
                     else:
                         print(
                             "[WARNING] windows/probing element missing privatePath attribute in app config file: "
                             + str(config_filepath)
                         )
                 if tag == "assemblyBinding":
-                    windows_info["assemblyBinding"] = get_assemblyBinding_info(win_child)
+                    windows_info["assemblyBinding"] = get_assemblyBinding_info(
+                        win_child
+                    )
                 if tag == "dependency":
                     dependency_info: Dict[str, Any] = {}
                     for dependency in win_child:
@@ -515,7 +541,9 @@ def get_windows_application_config_info(filename):
                         )
                     if "developerInstallation" in rt_child.attrib:
                         runtime_info["developmentMode"] = {
-                            "developerInstallation": rt_child.attrib["developerInstallation"]
+                            "developerInstallation": rt_child.attrib[
+                                "developerInstallation"
+                            ]
                         }
                     else:
                         print(
