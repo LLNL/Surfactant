@@ -72,6 +72,8 @@ def establish_relationships(
     #    - b. Checks PInvoke's or Assembly's DefaultDllImportSearchPathsAttribute, then the assembly's directory, then LoadLibraryEx with LOAD_WITH_ALTERED_SEARCH_PATH flag
     #       - This attribute has no effect on non-Windows platforms / Mono runtime
     #       - https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.defaultdllimportsearchpathsattribute?view=net-7.0
+    #       - i. This has a "Paths" property which is a bitwise combination of paths specified in ii:
+    #       - ii. https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=net-7.0
     # 3. The active AssemblyLoadContext calls its LoadUnmanagedDll function (Default behavior is the same as AssemblyRef probing?)
     #    - a. Can be overridden, but the default implementation returns IntPtr.Zero, which tells the runtime to load with its default policy.
     #    - b. https://learn.microsoft.com/en-us/dotnet/api/system.runtime.loader.assemblyloadcontext.loadunmanageddll?view=net-7.0
