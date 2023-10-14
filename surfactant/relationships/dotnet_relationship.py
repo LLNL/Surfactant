@@ -86,14 +86,10 @@ def establish_relationships(
                 refName = asmRef["Name"]
 
             # Aside from .deps.json, the assembly's install directory is searched
-            probedirs = get_dotnet_probedirs(
-                software, refCulture, refName, dnProbingPaths
-            )
+            probedirs = get_dotnet_probedirs(software, refCulture, refName, dnProbingPaths)
             for e in find_installed_software(sbom, probedirs, refName + ".dll"):
                 dependency_uuid = e.UUID
-                relationships.append(
-                    Relationship(dependent_uuid, dependency_uuid, "Uses")
-                )
+                relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
 
     # https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies
     # 1. Determine correct assembly version using configuration files (binding redirects, code location, etc)
