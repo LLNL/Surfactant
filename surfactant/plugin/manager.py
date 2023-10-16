@@ -2,7 +2,9 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+import sys
 import pluggy
+from loguru import logger
 
 from surfactant.plugin import hookspecs
 
@@ -66,3 +68,24 @@ def print_plugins(pm: pluggy.PluginManager):
         print("-------")
         print("canonical name: " + pm.get_canonical_name(p))
         print("name: " + pm.get_name(p))
+
+
+def find_io_plugin(pm: pluggy.PluginManager, format: str, function_name: str):
+    found_plugin = pm.get_plugin(format)
+
+    if found_plugin is None:
+        for plugin in pm.get_plugins():
+            try:
+                if plugin.short_name().lower() == format.lower() and hasattr(
+                    plugin, function_name
+                ):
+                    found_plugin = plugin
+                    break
+            except AttributeError:
+                pass
+
+    if found_plugin is None:
+        logger.error(f'No "{function_name}" plugin for format "{format}" found')
+        sys.exit(1)
+    
+    return found_plugin

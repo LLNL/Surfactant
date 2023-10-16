@@ -6,7 +6,7 @@ from collections import deque
 import click
 from loguru import logger
 
-from surfactant.plugin.manager import get_plugin_manager
+from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
 from surfactant.sbomtypes._system import System
@@ -34,22 +34,8 @@ def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_f
     An optional CONFIG_FILE can be supplied to specify a root system entry
     """
     pm = get_plugin_manager()
-    output_writer = pm.get_plugin(output_format)
-    input_reader = pm.get_plugin(input_format)
-    if input_reader is None:
-        for plugin in pm.get_plugins():
-            try:
-                if plugin.short_name().lower() == input_format.lower() and hasattr(
-                    plugin, "read_sbom"
-                ):
-                    input_reader = plugin
-                    break
-            except AttributeError:
-                pass
-
-    if input_reader is None:
-        logger.error(f'No input reader plugin for format "{input_format}" found')
-        sys.exit(1)
+    output_writer = find_io_plugin(pm, output_format, "write_sbom")
+    input_reader = find_io_plugin(pm, input_format, "read_sbom")
         
     sboms = []
     for sbom in input_sboms:

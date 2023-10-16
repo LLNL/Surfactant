@@ -12,7 +12,7 @@ from typing import Dict, List, Tuple, Union
 import click
 from loguru import logger
 
-from surfactant.plugin.manager import get_plugin_manager
+from surfactant.plugin.manager import get_plugin_manager, find_io_plugin
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 
@@ -180,39 +180,8 @@ def sbom(
     """
 
     pm = get_plugin_manager()
-    output_writer = pm.get_plugin(output_format)
-
-    if output_writer is None:
-        for plugin in pm.get_plugins():
-            try:
-                if plugin.short_name().lower() == output_format.lower() and hasattr(
-                    plugin, "write_sbom"
-                ):
-                    output_writer = plugin
-                    break
-            except AttributeError:
-                pass
-
-    if output_writer is None:
-        logger.error(f'No output format "{output_format}" found')
-        sys.exit(1)
-
-    input_reader = pm.get_plugin(input_format)
-
-    if input_reader is None:
-        for plugin in pm.get_plugins():
-            try:
-                if plugin.short_name().lower() == input_format.lower() and hasattr(
-                    plugin, "read_sbom"
-                ):
-                    input_reader = plugin
-                    break
-            except AttributeError:
-                pass
-
-    if input_reader is None:
-        logger.error(f'No input reader plugin for format "{input_format}" found')
-        sys.exit(1)
+    output_writer = find_io_plugin(pm, output_format, "write_sbom")
+    input_reader = find_io_plugin(pm, input_format, "read_sbom")
 
     if pathlib.Path(config_file).is_file():
         with click.open_file(config_file) as f:
