@@ -71,20 +71,20 @@ def print_plugins(pm: pluggy.PluginManager):
         print("name: " + pm.get_name(p))
 
 
-def find_io_plugin(pm: pluggy.PluginManager, format: str, function_name: str):
-    found_plugin = pm.get_plugin(format)
+def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):
+    found_plugin = pm.get_plugin(io_format)
 
     if found_plugin is None:
         for plugin in pm.get_plugins():
             try:
-                if plugin.short_name().lower() == format.lower() and hasattr(plugin, function_name):
+                if plugin.short_name().lower() == io_format.lower() and hasattr(plugin, function_name):
                     found_plugin = plugin
                     break
             except AttributeError:
                 pass
 
     if found_plugin is None:
-        logger.error(f'No "{function_name}" plugin for format "{format}" found')
+        logger.error(f'No "{function_name}" plugin for format "{io_format}" found')
         sys.exit(1)
 
     return found_plugin
