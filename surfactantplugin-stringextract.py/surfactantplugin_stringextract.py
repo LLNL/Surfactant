@@ -11,7 +11,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 @surfactant.plugin.hookimpl
-def extract_strings(filename: str, hash: str, filetype: str, metadata: dict, min_len=4):
+def extract_strings(filename: str, hash: str, filetype: str, min_len=4):
     """
     Extract ASCII strings from a binary file using binary2strings.
     :param filename (str): The full path to the file to extract information from.
@@ -25,7 +25,6 @@ def extract_strings(filename: str, hash: str, filetype: str, metadata: dict, min
 
     filename = Path(filename)
     flist = []
-
     # Performing check to see if file has been analyzed already
     for f in Path.cwd().glob("*.json"):
         flist.append((f.stem).split("_")[0])
@@ -52,6 +51,6 @@ def extract_strings(filename: str, hash: str, filetype: str, metadata: dict, min
                     if len(string) >= min_len:
                         string_dict["strings"].append(string)
 
-            return metadata.metadata.append(string_dict)
+            return string_dict
         except Exception as e:
             print("String Extract Error\nFile:{} Caused error:{}".format(filename, e))

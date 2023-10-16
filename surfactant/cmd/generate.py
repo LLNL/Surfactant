@@ -22,6 +22,41 @@ def real_path_to_install_path(root_path: str, install_path: str, filepath: str) 
     return re.sub("^" + root_path + "/", install_path, filepath)
 
 
+def metadata_plugins(pluginmanager, filepath, filehash, filetype):
+    try:
+        additional_metadata = pluginmanager.hook.extract_strings(filename=filepath, hash=filehash, filetype=filetype)
+    except Exception as e:
+        print("String Exception {}".format(e))
+        pass
+
+    try:
+        if additional_metadata:
+            import_info = pluginmanager.hook.angrimport_finder(filename=filepath, filetype=filetype, metadata=additional_metadata[0])
+    except Exception as e:
+        print("Angr Exception {}".format(e))
+        import_info = None
+        pass
+
+    try:
+        if import_info:
+            out_name = pathlib.Path(filepath)
+            output_path = pathlib.Path.cwd() / f"{filehash}_{out_name.stem}.json"
+            with open(output_path, 'w') as f:
+                json.dump(import_info, f, indent=4)
+        elif additional_metadata:
+            out_name = pathlib.Path(filepath)
+            output_path = pathlib.Path.cwd() / f"{filehash}_{out_name.stem}.json"
+            with open(output_path, 'w') as f:
+                json.dump(additional_metadata, f, indent=4)
+        else:
+            print("Nothing to be found")
+            pass
+    except Exception as e:
+        print("Output Exception {}".format(e))
+        pass
+
+
+
 def get_software_entry(
     pluginmanager,
     parent_sbom: SBOM,
@@ -73,24 +108,7 @@ def get_software_entry(
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
-    try:
-        pluginmanager.hook.extract_strings(filename=filepath, hash=str(sw_entry.md5), filetype=filetype, metadata=sw_entry)
-    except Exception as e:
-        pass
-    try:
-        print("going into angr export")
-        pluginmanager.hook.angrimport_finder(filename=filepath, filetype=filetype, metadata=sw_entry)
-    except Exception as e:
-        print("Angr Exception {}".format(e))
-        pass
-    '''
-    if import_info:
-        out_name = pathlib.Path(filepath)
-        output_path = pathlib.Path.cwd() / f"{str(sw_entry.md5)}_{out_name.stem}.json"
-        with open(output_path, 'w') as f:
-            json.dump(import_info[0], f, indent=4)
-    '''
-    
+    metadata_plugins(pluginmanager, filepath, str(sw_entry.md5), filetype)
     return sw_entry
 
 

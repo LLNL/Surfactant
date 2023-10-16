@@ -17,14 +17,11 @@ def angrimport_finder(filename: str, filetype: str, metadata:dict):
     if filetype not in ["ELF", "PE"]:
         pass
 
-    print("angr import extraction {}".format(filename))
     filename = Path(filename)
-
     if not filename.exists():
         raise FileNotFoundError(f"No such file: '{filename}'")
     try:
-        import_dict = {}
-        import_dict["imported functions"] = []
+        metadata["imported functions"] = []
 
         # Create an angr project
         project = angr.Project(filename._str, auto_load_libs=False)
@@ -32,8 +29,8 @@ def angrimport_finder(filename: str, filetype: str, metadata:dict):
         # Get the imported functions using symbol information
         for symbol in project.loader.main_object.symbols:
             if symbol.is_function:
-                import_dict["imported functions"].append(symbol.name)
+                metadata["imported functions"].append(symbol.name)
 
-        return metadata.metadata.append(import_dict)
+        return metadata
     except Exception as e:
         print("Angr Error {} {}".format(filename._str, e))

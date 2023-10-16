@@ -78,7 +78,7 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
 
 @hookspec
-def extract_strings(filename: str, hash: str, filetype: str, metadata: dict, min_len=4) -> object:
+def extract_strings(filename: str, hash: str, filetype: str, min_len=4) -> object:
     """
     Extract ASCII strings from a binary file using binary2strings.
     :param file_path: Path to the binary file.
