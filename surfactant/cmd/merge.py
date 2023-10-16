@@ -25,7 +25,7 @@ from surfactant.sbomtypes._system import System
     "--input_format",
     is_flag=False,
     default="surfactant.input_readers.cytrics_reader",
-    help="SBOM input format, assumes that all input SBOMs have the same format, options=surfactant.input_readers.[cytrics|cyclonedx|spdx]_reader",
+    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=surfactant.input_readers.[cytrics|cyclonedx|spdx]_reader",
 )
 @click.command("merge")
 def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_format):
