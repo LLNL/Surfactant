@@ -13,6 +13,7 @@ from surfactant.sbomtypes import SBOM
 def read_sbom(infile) -> SBOM:
     return SBOM.from_json(infile.read())
 
+
 @surfactant.plugin.hookimpl
 def short_name() -> Optional[str]:
     return "cytrics"

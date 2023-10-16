@@ -101,6 +101,7 @@ def print_output_formats(ctx, _, value):
                 print(pm.get_canonical_name(plugin))
     ctx.exit()
 
+
 def print_input_formats(ctx, _, value):
     if not value or ctx.resilient_parsing:
         return
@@ -195,7 +196,6 @@ def sbom(
     if output_writer is None:
         logger.error(f'No output format "{output_format}" found')
         sys.exit(1)
-    
 
     input_reader = pm.get_plugin(input_format)
 
