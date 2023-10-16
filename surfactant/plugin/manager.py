@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 import sys
+
 import pluggy
 from loguru import logger
 
@@ -76,9 +77,7 @@ def find_io_plugin(pm: pluggy.PluginManager, format: str, function_name: str):
     if found_plugin is None:
         for plugin in pm.get_plugins():
             try:
-                if plugin.short_name().lower() == format.lower() and hasattr(
-                    plugin, function_name
-                ):
+                if plugin.short_name().lower() == format.lower() and hasattr(plugin, function_name):
                     found_plugin = plugin
                     break
             except AttributeError:
@@ -87,5 +86,5 @@ def find_io_plugin(pm: pluggy.PluginManager, format: str, function_name: str):
     if found_plugin is None:
         logger.error(f'No "{function_name}" plugin for format "{format}" found')
         sys.exit(1)
-    
+
     return found_plugin

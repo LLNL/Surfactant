@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import click
 from loguru import logger
 
-from surfactant.plugin.manager import get_plugin_manager, find_io_plugin
+from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 
@@ -101,6 +101,7 @@ def print_output_formats(ctx, _, value):
                 print(pm.get_canonical_name(plugin))
     ctx.exit()
 
+
 def print_input_formats(ctx, _, value):
     if not value or ctx.resilient_parsing:
         return
@@ -112,7 +113,8 @@ def print_input_formats(ctx, _, value):
             else:
                 print(pm.get_canonical_name(plugin))
     ctx.exit()
-    
+
+
 def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software]):
     if not soft1 or not soft2:
         return
