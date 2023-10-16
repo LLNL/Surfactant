@@ -211,7 +211,7 @@ def sbom(
                 pass
 
     if input_reader is None:
-        logger.error(f'No output format "{input_format}" found')
+        logger.error(f'No input reader plugin for format "{input_format}" found')
         sys.exit(1)
 
     if pathlib.Path(config_file).is_file():

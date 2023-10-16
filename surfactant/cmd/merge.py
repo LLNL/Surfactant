@@ -48,7 +48,7 @@ def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_f
                 pass
 
     if input_reader is None:
-        logger.error(f'No output format "{input_format}" found')
+        logger.error(f'No input reader plugin for format "{input_format}" found')
         sys.exit(1)
         
     sboms = []
