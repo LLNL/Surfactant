@@ -7,7 +7,7 @@ import os
 import pathlib
 import re
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
