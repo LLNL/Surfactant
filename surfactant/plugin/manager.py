@@ -77,7 +77,9 @@ def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str)
     if found_plugin is None:
         for plugin in pm.get_plugins():
             try:
-                if plugin.short_name().lower() == io_format.lower() and hasattr(plugin, function_name):
+                if plugin.short_name().lower() == io_format.lower() and hasattr(
+                    plugin, function_name
+                ):
                     found_plugin = plugin
                     break
             except AttributeError:
