@@ -7,7 +7,7 @@ import os
 import pathlib
 import re
 import sys
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
@@ -100,6 +100,28 @@ def print_output_formats(ctx, _, value):
             else:
                 print(pm.get_canonical_name(plugin))
     ctx.exit()
+
+
+def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software]):
+    if not soft1 or not soft2:
+        return
+    # A hash collision occurs if one or more but less than all hashes match or
+    # any hash matches but the filesize is different
+    collision = False
+    if soft1.sha256 == soft2.sha256 or soft1.sha1 == soft2.sha1 or soft1.md5 == soft2.md5:
+        # Hashes can be None; make sure they aren't before checking for inequality
+        if soft1.sha256 and soft2.sha256 and soft1.sha256 != soft2.sha256:
+            collision = True
+        elif soft1.sha1 and soft2.sha1 and soft1.sha1 != soft2.sha1:
+            collision = True
+        elif soft1.md5 and soft2.md5 and soft1.md5 != soft2.md5:
+            collision = True
+        elif soft1.size != soft2.size:
+            collision = True
+    if collision:
+        logger.warn(
+            f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur"
+        )
 
 
 @click.command("generate")
@@ -209,6 +231,7 @@ def sbom(
                     pm, new_sbom, entry["archive"], user_institution_name=recorded_institution
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
+                warn_if_hash_collision(archive_entry, parent_entry)
                 if archive_entry:
                     parent_entry = archive_entry
                 else:
@@ -315,6 +338,7 @@ def sbom(
                         # if a software entry already exists with a matching file hash, augment the info in the existing entry
                         for e in entries:
                             existing_sw = new_sbom.find_software(e.sha256)
+                            warn_if_hash_collision(existing_sw, e)
                             if not existing_sw:
                                 new_sbom.add_software(e)
                                 # if the config file specified a parent/container for the file, add the new entry as a "Contains" relationship
