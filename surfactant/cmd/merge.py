@@ -36,7 +36,7 @@ def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_f
     pm = get_plugin_manager()
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
-        
+
     sboms = []
     for sbom in input_sboms:
         sboms.append(input_reader.read_sbom(sbom))
