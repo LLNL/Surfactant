@@ -84,7 +84,7 @@ def read_sbom(infile) -> SBOM:
     Returns a SBOM object containing the input SBOM, which can be added to.
 
     Args:
-        infile: The output file handle to write the SBOM to.
+        infile: The input file handle to read the SBOM from.
     """
 
 
