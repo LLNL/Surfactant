@@ -6,7 +6,7 @@ import json
 import os
 import pathlib
 import re
-import sys
+
 from typing import Dict, List, Tuple, Union
 
 import click
