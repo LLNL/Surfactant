@@ -1,8 +1,8 @@
 import json
-from loguru import logger
 from pathlib import Path
 
 import click
+from loguru import logger
 
 
 @click.command()
