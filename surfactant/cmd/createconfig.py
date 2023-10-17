@@ -34,4 +34,4 @@ def create_config(directory, output):
     with open(output_file_name, "w") as json_file:
         json.dump(config_out, json_file, indent=4)
 
-    click.echo(f"Data written to {output_file_name}")
+    logger.info(f"Data written to {output_file_name}")
