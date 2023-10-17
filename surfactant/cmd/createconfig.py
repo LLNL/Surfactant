@@ -24,7 +24,7 @@ def create_config(directory, output):
         # If there are no files, add the immediate subdirectories
         for item in starting_directory.iterdir():
             if item.is_dir():
-                extract_paths.append(str(item).replace("\\", "/"))
+                extract_paths.append(item.as_posix())
 
     config_dict = {"extractPaths": extract_paths, "installPrefix": "/"}
     config_out = [config_dict]
