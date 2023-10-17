@@ -13,6 +13,7 @@ __pycache__/
 
 # C extensions
 *.so
+cytrics_venv
 
 # Distribution / packaging
 .Python
