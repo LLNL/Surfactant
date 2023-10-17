@@ -13,7 +13,6 @@ __pycache__/
 
 # C extensions
 *.so
-cytrics_venv
 
 # Distribution / packaging
 .Python
@@ -136,6 +135,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+cytrics_venv
 
 # Spyder project settings
 .spyderproject

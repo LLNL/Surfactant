@@ -82,6 +82,12 @@ A basic configuration file can be easily built using the `create-config` command
 $  surfactant create-config [INPUT_PATH]
 ```
 
+The --output flag can be used to specify the configuration output name. The --install-prefix can be used to specify the install prefix, the default is '/'.
+
+```bash
+$  surfactant create-config [INPUT_PATH] --output new_output.json --install-prefix 'C:/'
+```
+
 #### Example configuration file
 
 Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
