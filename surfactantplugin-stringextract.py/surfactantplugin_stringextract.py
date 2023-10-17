@@ -43,6 +43,9 @@ def extract_strings(filename: str, hash: str, filetype: str, min_len=4):
         else:
             logger.info(f"Found existing JSON file for {filename.name} but without 'strings' key. Proceeding with extraction.")
             # Add your extraction code here.
+            if filename.name not in existing_data["filename"]:
+                existing_data["filename"].append(filename.name)
+
             existing_data["strings"] = []
             # Extract and write strings using binary2strings
             with open(filename, 'rb') as f_bin:
@@ -61,10 +64,10 @@ def extract_strings(filename: str, hash: str, filetype: str, min_len=4):
                 raise FileNotFoundError(f"No such file: '{filename}'")
 
             # Extract filename without extension
-            output_path = Path.cwd() / f"{hash}_{filename.stem}.json"
+            output_path = Path.cwd() / f"{hash}_additional_metadata.json"
             string_dict = {}
             string_dict["md5hash"] = hash
-            string_dict["filename"] = filename.name
+            string_dict["filename"] = [filename.name]
             string_dict["strings"] = []
 
             # Extract and write strings using binary2strings
