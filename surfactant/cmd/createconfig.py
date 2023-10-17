@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
+
 import click
 from loguru import logger
+
 
 @click.command()
 @click.argument("directory", type=click.Path(exists=True))
@@ -34,7 +36,7 @@ def create_config(directory, output, install_prefix):
     config_dict = {"extractPaths": extract_paths, "installPrefix": install_prefix}
     config_out = [config_dict]
 
-    output_file_name = output or starting_directory.stem +".json"
+    output_file_name = output or starting_directory.stem + ".json"
 
     with open(output_file_name, "w") as json_file:
         json.dump(config_out, json_file, indent=4)
