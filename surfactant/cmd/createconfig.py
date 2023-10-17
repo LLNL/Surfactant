@@ -19,7 +19,7 @@ def create_config(directory, output):
 
     # Check if there are any files in the directory
     if any(item.is_file() for item in starting_directory.iterdir()):
-        extract_paths.append(str(starting_directory).replace("\\", "/"))
+        extract_paths.append(starting_directory.as_posix())
     else:
         # If there are no files, add the immediate subdirectories
         for item in starting_directory.iterdir():
