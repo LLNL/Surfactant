@@ -29,7 +29,7 @@ def create_config(directory, output):
     config_dict = {"extractPaths": extract_paths, "installPrefix": "/"}
     config_out = [config_dict]
 
-    output_file_name = output or starting_directory.stem + ".json"
+    output_file_name = output or starting_directory.with_suffix(".json")
 
     with open(output_file_name, "w") as json_file:
         json.dump(config_out, json_file, indent=4)
