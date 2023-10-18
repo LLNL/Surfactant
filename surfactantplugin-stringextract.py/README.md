@@ -14,13 +14,14 @@ and PE files will generate additional json files in the working directory that c
 If there are duplicate hashed files the extractor will skip the entry.
 Example:
 Output Filename: `$(md5hash)_additional_metadata.json`
-'''json
+
+```json
 {
-"md5hash":"",
-"filename":"",
-"strings":[]
+  "md5hash": "",
+  "filename": [],
+  "strings": []
 }
-'''
+```
 
 Surfactant features for controlling which plugins are enabled/disabled can be used to control
 whether or not this plugin will run using the plugin name `surfactantplugin_stringextract.py` (the name given in
