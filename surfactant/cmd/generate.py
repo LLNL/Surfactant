@@ -23,39 +23,7 @@ def real_path_to_install_path(root_path: str, install_path: str, filepath: str) 
 
 
 def metadata_plugins(pluginmanager, filepath, filehash, filetype):
-    try:
-        additional_metadata = pluginmanager.hook.extract_strings(filename=filepath, hash=filehash, filetype=filetype)
-    except Exception as e:
-        print("String Exception {}".format(e))
-        pass
-
-    try:
-        if additional_metadata:
-            import_info = pluginmanager.hook.angrimport_finder(filename=filepath, filetype=filetype, metadata=additional_metadata[0])
-    except Exception as e:
-        print("Angr Exception {}".format(e))
-        import_info = None
-        pass
-
-    try:
-        if import_info:
-            out_name = pathlib.Path(filepath)
-            output_path = pathlib.Path.cwd() / f"{filehash}_{out_name.stem}.json"
-            with open(output_path, 'w') as f:
-                json.dump(import_info, f, indent=4)
-        elif additional_metadata:
-            out_name = pathlib.Path(filepath)
-            output_path = pathlib.Path.cwd() / f"{filehash}_{out_name.stem}.json"
-            with open(output_path, 'w') as f:
-                json.dump(additional_metadata, f, indent=4)
-        else:
-            print("Nothing to be found")
-            pass
-    except Exception as e:
-        print("Output Exception {}".format(e))
-        pass
-
-
+    pluginmanager.hook.angrimport_finder(filename=filepath, filetype=filetype, filehash=filehash)
 
 def get_software_entry(
     pluginmanager,
