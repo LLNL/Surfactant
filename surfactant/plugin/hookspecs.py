@@ -86,11 +86,12 @@ def extract_strings(filename: str, hash: str, filetype: str, min_len=4) -> objec
     """
 
 @hookspec
-def angrimport_finder(filename: str, filetype: str, metadata: dict) -> object:
+def angrimport_finder(filename: str, filetype: str, filehash: str) -> object:
     """
-    Extract list of imported function from a binary file using radare2.
+    Extract list of imported function from a binary file using angr.
     :param filename (str): The full path to the file.
     :param filetype (str): File type information based on magic bytes.
+    :param filehash (str): MD5 hash of the file.
     """
 
 @hookspec
