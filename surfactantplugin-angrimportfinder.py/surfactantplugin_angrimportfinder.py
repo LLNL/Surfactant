@@ -68,7 +68,7 @@ def angrimport_finder(filename: str, filetype: str, filehash:str):
                 raise FileNotFoundError(f"No such file: '{filename}'")
 
             # Extract filename without extension
-            output_path = Path.cwd() / f"{hash}_additional_metadata.json"
+            output_path = Path.cwd() / f"{filehash}_additional_metadata.json"
             metadata = {}
             metadata["md5hash"] = filehash
             metadata["filename"] = [filename.name]

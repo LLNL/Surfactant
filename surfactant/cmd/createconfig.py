@@ -1,12 +1,8 @@
 import json
 from pathlib import Path
-<<<<<<< HEAD
-import click
-=======
 
 import click
 from loguru import logger
->>>>>>> main
 
 
 @click.command()
