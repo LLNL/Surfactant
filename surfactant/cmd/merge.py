@@ -5,7 +5,7 @@ from collections import deque
 import click
 from loguru import logger
 
-from surfactant.plugin.manager import get_plugin_manager
+from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
 from surfactant.sbomtypes._system import System
@@ -20,17 +20,25 @@ from surfactant.sbomtypes._system import System
     default="surfactant.output.cytrics_writer",
     help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx]_writer",
 )
+@click.option(
+    "--input_format",
+    is_flag=False,
+    default="surfactant.input_readers.cytrics_reader",
+    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=surfactant.input_readers.[cytrics|cyclonedx|spdx]_reader",
+)
 @click.command("merge")
-def merge_command(input_sboms, sbom_outfile, config_file, output_format):
+def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_format):
     """Merge two or more INPUT_SBOMS together into SBOM_OUTFILE.
 
     An optional CONFIG_FILE can be supplied to specify a root system entry
     """
     pm = get_plugin_manager()
-    output_writer = pm.get_plugin(output_format)
+    output_writer = find_io_plugin(pm, output_format, "write_sbom")
+    input_reader = find_io_plugin(pm, input_format, "read_sbom")
+
     sboms = []
     for sbom in input_sboms:
-        sboms.append(SBOM.from_json(sbom.read()))
+        sboms.append(input_reader.read_sbom(sbom))
     config = None
     if config_file:
         config = json.load(config_file)

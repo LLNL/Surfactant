@@ -78,12 +78,28 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
 
 @hookspec
+<<<<<<< HEAD
 def extract_strings(filename: str, hash: str, filetype: str, min_len=4) -> object:
     """
     Extract ASCII strings from a binary file using binary2strings.
     :param file_path: Path to the binary file.
     :param min_len: Minimum length of strings to be considered valid.
     """
+=======
+def read_sbom(infile) -> SBOM:
+    """Reads the contents of the input SBOM from the given input SBOM file.
+
+    Returns a SBOM object containing the input SBOM, which can be added to.
+
+    Args:
+        infile: The input file handle to read the SBOM from.
+    """
+
+>>>>>>> main
+
+@hookspec
+def short_name() -> Optional[str]:
+    """A short name to register the hook as"""
 
 @hookspec
 def angrimport_finder(filename: str, filetype: str, filehash: str) -> object:
@@ -93,7 +109,3 @@ def angrimport_finder(filename: str, filetype: str, filehash: str) -> object:
     :param filetype (str): File type information based on magic bytes.
     :param filehash (str): MD5 hash of the file.
     """
-
-@hookspec
-def short_name() -> Optional[str]:
-    """A short name to register the hook as"""

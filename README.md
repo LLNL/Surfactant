@@ -82,6 +82,12 @@ A basic configuration file can be easily built using the `create-config` command
 $  surfactant create-config [INPUT_PATH]
 ```
 
+The --output flag can be used to specify the configuration output name. The --install-prefix can be used to specify the install prefix, the default is '/'.
+
+```bash
+$  surfactant create-config [INPUT_PATH] --output new_output.json --install-prefix 'C:/'
+```
+
 #### Example configuration file
 
 Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
@@ -102,46 +108,27 @@ The resulting SBOM would be structured like this:
 
 ```json
 {
-plugin-angr
   "software": [
     {
       "UUID": "abc1",
       "fileName": ["helics_binary"],
-      "installPath": null,
+      "installPath": ["/home/samples/helics/bin/helics_binary"],
       "containerPath": null
     },
     {
       "UUID": "abc2",
       "fileName": ["lib1.so"],
-      "installPath": null,
+      "installPath": ["/home/samples/helics/lib64/lib1.so"],
       "containerPath": null
     }
   ],
-  "relationships": []
-}
-
-    "software": [
-        {
-          "UUID": "abc1",
-          "fileName": ["helics_binary"],
-          "installPath": ["/home/samples/helics/bin/helics_binary"],
-          "containerPath": null
-        },
-        {
-          "UUID": "abc2",
-          "fileName": ["lib1.so"],
-          "installPath": ["/home/samples/helics/lib64/lib1.so"],
-          "containerPath": null
-        }
-
-    ],
-    "relationships": [
-        {
-          "xUUID": "abc1",
-          "yUUID": "abc2",
-          "relationship": "Uses"
-        }
-    ]
+  "relationships": [
+    {
+      "xUUID": "abc1",
+      "yUUID": "abc2",
+      "relationship": "Uses"
+    }
+  ]
 }
 ```
 
@@ -320,6 +307,7 @@ $  surfactant generate [OPTIONS] CONFIG_FILE SBOM_OUTFILE [INPUT_SBOM]
 **--skip_install_path**: (optional) skips including an install path for the files discovered. This may cause "Uses" relationships to also not be generated\
 **--recorded_institution**: (optional) the name of the institution collecting the SBOM data (default: LLNL)\
 **--output_format**: (optional) changes the output format for the SBOM (given as full module name of a surfactant plugin implementing the `write_sbom` hook)\
+**--input_format**: (optional) specifies the format of the input SBOM if one is being used (default: cytrics) (given as full module name of a surfactant plugin implementing the `read_sbom` hook)\
 **--help**: (optional) show the help message and exit
 
 ## Understanding the SBOM Output
