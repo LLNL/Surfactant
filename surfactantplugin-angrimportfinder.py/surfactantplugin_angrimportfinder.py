@@ -2,15 +2,17 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-from pathlib import Path
-import angr
-import surfactant.plugin
 import json
+from pathlib import Path
+
+import angr
 from loguru import logger
+
+import surfactant.plugin
 
 
 @surfactant.plugin.hookimpl
-def angrimport_finder(filename: str, filetype: str, filehash:str):
+def angrimport_finder(filename: str, filetype: str, filehash: str):
     """
     Extract list of imported function names from a binary file using angr.
     :param filename (str): The full path to the file.
@@ -18,7 +20,7 @@ def angrimport_finder(filename: str, filetype: str, filehash:str):
     :param filehash (str): MD5 hash of the file.
     """
 
-   # Only parsing executable files
+    # Only parsing executable files
     if filetype not in ["ELF", "PE"]:
         pass
 

@@ -24,6 +24,7 @@ def real_path_to_install_path(root_path: str, install_path: str, filepath: str) 
 def metadata_plugins(pluginmanager, filepath, filehash, filetype):
     pluginmanager.hook.angrimport_finder(filename=filepath, filetype=filetype, filehash=filehash)
 
+
 def get_software_entry(
     pluginmanager,
     parent_sbom: SBOM,

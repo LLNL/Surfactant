@@ -92,6 +92,7 @@ def read_sbom(infile) -> SBOM:
 def short_name() -> Optional[str]:
     """A short name to register the hook as"""
 
+
 @hookspec
 def angrimport_finder(filename: str, filetype: str, filehash: str) -> object:
     """
