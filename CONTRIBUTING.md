@@ -43,6 +43,6 @@ To install optional dependencies required for running pytest and pre-commit:
 pip install -e ".[test,dev]"
 ```
 
-## CODE OF CONDUCT
+## Code of Conduct
 
-https://www.contributor-covenant.org/version/2/1/code_of_conduct/
+All participants in the Surfactant community are expected to follow our [Code of Conduct](./.github/CODE_OF_CONDUCT.md).
