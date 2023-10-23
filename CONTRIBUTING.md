@@ -4,7 +4,8 @@ Thank you for considering contributing to our project! We appreciate your help.
 
 ## Reporting Issues
 
-If you find a bug or have a feature request, please [open a new issue](https://github.com/LLNL/Surfactant/issues) and provide detailed information about the problem.
+1. If you find a bug or have a feature request, please [open a new issue](https://github.com/LLNL/Surfactant/issues) and provide detailed information about the problem.
+2. If you find security issues or vulnerabilities, please [report here](https://github.com/LLNL/Surfactant/security)
 
 ## Making Contributions
 
@@ -39,3 +40,7 @@ To install optional dependencies required for running pytest and pre-commit:
 ```bash
 pip install -e ".[test,dev]"
 ```
+
+## CODE OF CONDUCT
+
+https://www.contributor-covenant.org/version/2/1/code_of_conduct/
