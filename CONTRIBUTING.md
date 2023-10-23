@@ -46,7 +46,7 @@ We will then take care of the issue as soon as possible.
 ## I Want To Contribute
 
 
-> ### Legal Notice 
+> ### Legal Notice
 > When contributing to Surfactant, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the Surfactant license.
 
 
@@ -109,6 +109,5 @@ Enhancement suggestions are tracked as [GitHub issues](/issues).
 - Use a **clear and descriptive title** for the issue to identify the suggestion.
 - Provide a **step-by-step description of the suggested enhancement** in as many details as possible.
 - **Describe the current behavior** and **explain which behavior you expected to see instead** and why. At this point you can also tell which alternatives do not work for you.
-- You may want to **include screenshots and animated GIFs** which help you demonstrate the steps or point out the part which the suggestion is related to.  
+- You may want to **include screenshots and animated GIFs** which help you demonstrate the steps or point out the part which the suggestion is related to.
 - **Explain why this enhancement would be useful** to most CONTRIBUTING.md users.
-
