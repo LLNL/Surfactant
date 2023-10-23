@@ -1,4 +1,4 @@
-# Contributing Guidelines
+# Contributing to Surfactant
 
 Thank you for considering contributing to our project! We appreciate your help.
 
@@ -13,6 +13,8 @@ We welcome contributions from the community. To contribute to this project, foll
 
 1. Fork the repository on GitHub.
 2. Clone your forked repository to your local machine.
+
+All contributions to Surfactant are made under the MIT license (MIT).
 
 ### For Developers:
 
