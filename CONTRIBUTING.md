@@ -45,4 +45,4 @@ pip install -e ".[test,dev]"
 
 ## Code of Conduct
 
-All participants in the Surfactant community are expected to follow our [Code of Conduct](./.github/CODE_OF_CONDUCT.md).
+All participants in the Surfactant community are expected to follow our [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html).
