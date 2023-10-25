@@ -152,6 +152,14 @@ def identify_file_type(filepath: str) -> Optional[str]:
             # https://web.archive.org/web/20160305114748/http://h41361.www4.hp.com/docs/base_doc/DOCUMENTATION/V50A_ACRO_SUP/OBJSPEC.PDF
             if magic_bytes[:2] in ("\x83\x01", "\x88\x01", "\x8F\x01"):
                 return "ECOFF"
+            # AR:
+            # https://www.garykessler.net/library/file_sigs.html
+            if magic_bytes[:8] == b"!<arch>\n":
+                return "AR_LIB"
+            # OMF:
+            # https://github.com/file/file/blob/c8bba134ac1f3c9f5/magic/Magdir/msvc#L22
+            if (int.from_bytes(magic_bytes[0:4], byteorder='big', signed=False) & 0xFF0F80FF) == 0xF00D0000:
+                return "OMF_LIB"
             return None
     except FileNotFoundError:
         return None
