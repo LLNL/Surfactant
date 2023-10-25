@@ -147,7 +147,7 @@ def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
 
 def replace_dst(origstr, dvar, newval) -> str:
    """Implement structure to replace characters. Gets the values
-      like origstr, dvar, newval and returns the new sanitized value."""
+   like origstr, dvar, newval and returns the new sanitized value."""
     return origstr.replace("$" + dvar, newval).replace("${" + dvar + "}", newval)
 
 
