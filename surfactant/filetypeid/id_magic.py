@@ -158,7 +158,9 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 return "AR_LIB"
             # OMF:
             # https://github.com/file/file/blob/c8bba134ac1f3c9f5/magic/Magdir/msvc#L22
-            if (int.from_bytes(magic_bytes[0:4], byteorder='big', signed=False) & 0xFF0F80FF) == 0xF00D0000:
+            if (
+                int.from_bytes(magic_bytes[0:4], byteorder="big", signed=False) & 0xFF0F80FF
+            ) == 0xF00D0000:
                 return "OMF_LIB"
             return None
     except FileNotFoundError:
