@@ -46,4 +46,3 @@ def stat(input_sbom):
     print(num_dll_str)
     print(num_elf_bin_str)
     print(num_elf_shared_lib_str)
-    return
