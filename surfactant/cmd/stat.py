@@ -14,25 +14,23 @@ def stat(input_sbom):
     peIsdll = 0
     clrExe = 0
     clrDll = 0
-    sw = data.software
-    for i in range(len(sw)):
-        md = sw[i].metadata
-        for n in range(len(md)):
-            if "elfIsLib" in md[n]:
-                if md[n]["elfIsLib"]:
+    for sw in data.software:
+        for md in sw.metadata:
+            if "elfIsLib" in md:
+                if md["elfIsLib"]:
                     elfIsLib += 1
-            if "elfIsExe" in md[n]:
-                if md[n]["elfIsExe"]:
+            if "elfIsExe" in md:
+                if md["elfIsExe"]:
                     elfIsExe += 1
-            if "peIsExe" in md[n]:
-                if md[n]["peIsExe"]:
+            if "peIsExe" in md:
+                if md["peIsExe"]:
                     peIsExe += 1
-            if "peIsDll" in md[n]:
-                if md[n]["peIsDll"]:
+            if "peIsDll" in md:
+                if md["peIsDll"]:
                     peIsdll += 1
-            if "peIsClr" in md[n]:
-                if md[n]["peisClr"]:
-                    if md[n]["peIsExe"]:
+            if "peIsClr" in md:
+                if md["peisClr"]:
+                    if md["peIsExe"]:
                         clrExe += 1
                     else:
                         clrDll += 1
