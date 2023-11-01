@@ -34,10 +34,10 @@ def stat(input_sbom):
                         clrExe += 1
                     else:
                         clrDll += 1
-    num_pe_exe_str = f"Number of PE Executables: {str(peIsExe)} with {str(clrExe)} using .NET/CLR"
-    num_dll_str = f"Number of DLLs: {str(peIsdll)} with {str(clrDll)} using .NET/CLR"
-    num_elf_bin_str = f"Number of ELF Binaries: {str(elfIsExe)}"
-    num_elf_shared_lib_str = f"Number of ELF shared libraries: {str(elfIsLib)}"
+    num_pe_exe_str = f"Number of PE Executables: {peIsExe} with {clrExe} using .NET/CLR"
+    num_dll_str = f"Number of DLLs: {peIsdll} with {clrDll} using .NET/CLR"
+    num_elf_bin_str = f"Number of ELF Binaries: {elfIsExe}"
+    num_elf_shared_lib_str = f"Number of ELF shared libraries: {elfIsLib}"
     print(num_pe_exe_str)
     print(num_dll_str)
     print(num_elf_bin_str)
