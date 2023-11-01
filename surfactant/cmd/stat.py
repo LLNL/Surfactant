@@ -29,8 +29,8 @@ def stat(input_sbom):
                 if md["peIsDll"]:
                     peIsdll += 1
             if "peIsClr" in md:
-                if md["peisClr"]:
-                    if md["peisExe"]:
+                if md["peIsClr"]:
+                    if md["peIsExe"]:
                         clrExe += 1
                     else:
                         clrDll += 1
