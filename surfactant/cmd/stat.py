@@ -6,7 +6,6 @@ from surfactant.sbomtypes import SBOM
 @click.command("stat")
 @click.argument("input_sbom", type=click.File("r"), required=True)
 def stat(input_sbom):
-    click.echo("Running stat command")
     data = SBOM.from_json(input_sbom.read())
     elfIsLib = 0
     elfIsExe = 0
@@ -15,6 +14,8 @@ def stat(input_sbom):
     clrExe = 0
     clrDll = 0
     for sw in data.software:
+        if not sw.metadata:
+            continue
         for md in sw.metadata:
             if "elfIsLib" in md:
                 if md["elfIsLib"]:
