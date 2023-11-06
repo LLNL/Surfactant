@@ -78,5 +78,16 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
 
 @hookspec
+def read_sbom(infile) -> SBOM:
+    """Reads the contents of the input SBOM from the given input SBOM file.
+
+    Returns a SBOM object containing the input SBOM, which can be added to.
+
+    Args:
+        infile: The input file handle to read the SBOM from.
+    """
+
+
+@hookspec
 def short_name() -> Optional[str]:
     """A short name to register the hook as"""
