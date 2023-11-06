@@ -92,7 +92,6 @@ def establish_relationships(
             probedirs = get_dotnet_probedirs(
                 software, refCulture, refName, dnProbingPaths
             )
-            probedirs.extend(get_dotnet_system_probedirs(refName))
             for e in find_installed_software(sbom, probedirs, refName + ".dll"):
                 dependency_uuid = e.UUID
                 relationships.append(
@@ -175,42 +174,6 @@ def establish_relationships(
                 )
                 # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
     return relationships
-
-
-def get_dotnet_system_probedirs(refName):
-    probedirs = []
-    # Prepare system directories
-    windirs = ["Windows/System32", "Windows/SysWOW64"]
-    progfiles = ["Program Files (x86)", "Program Files"]
-    dotnetpath = "Reference Assemblies/Microsoft/Framework"
-    # Prepare list of mounted drives
-    drives = []
-    mnt = pathlib.Path("/mnt")
-    if mnt.exists():
-        for drive in mnt.iterdir():
-            if drive.name != "wsl":
-                drives.append(drive)
-    # Construct list of probe directories
-    for drive in drives:
-        for windir in windirs:
-            if pathlib.Path(drive, windir).exists():
-                probedirs.append(
-                    pathlib.PureWindowsPath(drive, windir, refName).as_posix()
-                )
-        for progfile in progfiles:
-            frameworkdir = pathlib.Path(drive, progfile, dotnetpath)
-            dotnetframeworkdir = pathlib.Path(frameworkdir, ".NETFramework")
-            fulldotnetpaths = []
-            if frameworkdir.exists():
-                fulldotnetpaths.extend(frameworkdir.iterdir())
-            if dotnetframeworkdir.exists():
-                fulldotnetpaths.extend(dotnetframeworkdir.iterdir())
-            for version in fulldotnetpaths:
-                if version.name.startswith("v"):
-                    probedirs.append(
-                        pathlib.PureWindowsPath(version, refName).as_posix()
-                    )
-    return probedirs
 
 
 # construct a list of directories to probe for establishing dotnet relationships
