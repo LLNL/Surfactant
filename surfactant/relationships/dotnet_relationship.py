@@ -10,6 +10,7 @@ import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
 from ._internal.windows_utils import find_installed_software
+from pe_relationship.py import get_windows_pe_dependencies
 
 
 def has_required_fields(metadata) -> bool:
@@ -84,15 +85,21 @@ def establish_relationships(
     #    - b. https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing#unmanaged-native-library-probing
     if "dotnetImplMap" in metadata:
         for asmRef in metadata["dotnetImplMap"]:
-            refName = None
-            refCulture = None
-            if "Name" in asmRef:
-                refName = asmRef["Name"]
-            # Aside from .deps.json, the assembly's install directory is searched
-            probedirs = get_dotnet_probedirs(
-                software, refCulture, refName, dnProbingPaths
-            )
-            for e in find_installed_software(sbom, probedirs, refName + ".dll"):
+            if "Name" not in asmRef:
+                continue
+            refName = asmRef["Name"]
+            if is_absolute_path(refName):
+                relationships.extend(
+                    get_windows_pe_dependencies(sbom, software, [refName])
+                )
+                continue
+            probedirs = []
+            if isinstance(software.installPath, Iterable):
+                for ipath in software.installPath:
+                    probedirs.append(pathlib.PureWindowsPath(ipath).parent.as_posix())
+            combinations = []
+            # TODO: construct list of combinations
+            for e in find_installed_software(sbom, probedirs, combinations):
                 dependency_uuid = e.UUID
                 relationships.append(
                     Relationship(dependent_uuid, dependency_uuid, "Uses")
@@ -174,6 +181,11 @@ def establish_relationships(
                 )
                 # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
     return relationships
+
+
+def is_absolute_path(fname: str) -> bool:
+    # TODO: Implement this
+    return False
 
 
 # construct a list of directories to probe for establishing dotnet relationships
