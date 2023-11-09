@@ -13,15 +13,18 @@ import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
 
-@surfactant.plugin.hookimpl
-def extract_strings(filename: str, hash: str, filetype: str, min_len=4):
+@surfactant.plugin.hookimpl(specname="extract_file_info")
+def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str):
     """
     Extract ASCII strings from a binary file using binary2strings.
+    :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
+    :param software(Software): The software entry associated with the file to extract information from.
     :param filename (str): The full path to the file to extract information from.
-    :param hash (str): md5 hash of the file
     :param filetype (str): File type information based on magic bytes.
     :param min_len (int): Minimum length of strings to be considered valid.
     """
+    hash = str(software.md5)
+    min_len = 4
     # Only parsing executable files
     if filetype not in ["ELF", "PE"]:
         pass
