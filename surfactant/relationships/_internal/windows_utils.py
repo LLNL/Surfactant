@@ -25,7 +25,7 @@ def find_installed_software(
         if e.installPath is None:
             continue
         for pdir in probedirs:
-            if not isinstance(filename, Iterable):
+            if isinstance(filename, str):
                 filename = [filename]
             for fname in filename:
                 # installPath contains full path+filename, so check for all combinations of probedirs+filename
