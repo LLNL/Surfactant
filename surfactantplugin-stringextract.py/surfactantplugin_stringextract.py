@@ -23,7 +23,7 @@ def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str
     :param filetype (str): File type information based on magic bytes.
     :param min_len (int): Minimum length of strings to be considered valid.
     """
-    hash = str(software.md5)
+    hash = str(software.sha256)
     min_len = 4
     # Only parsing executable files
     if filetype not in ["ELF", "PE"]:
@@ -76,7 +76,7 @@ def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str
             # Extract filename without extension
             output_path = Path.cwd() / f"{hash}_additional_metadata.json"
             string_dict = {}
-            string_dict["md5hash"] = hash
+            string_dict["sha25hash"] = hash
             string_dict["filename"] = [filename.name]
             string_dict["strings"] = []
 

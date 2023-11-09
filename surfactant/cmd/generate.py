@@ -77,7 +77,7 @@ def get_software_entry(
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
-    metadata_plugins(pluginmanager, filepath, str(sw_entry.md5), filetype)
+    metadata_plugins(pluginmanager, filepath, str(sw_entry.sha256), filetype)
 
     return sw_entry
 
