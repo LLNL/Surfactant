@@ -6,7 +6,7 @@ import pathlib
 from collections.abc import Iterable
 from typing import List, Optional
 
-from pe_relationship.py import get_windows_pe_dependencies
+from .pe_relationship import get_windows_pe_dependencies
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
