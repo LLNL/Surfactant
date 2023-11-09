@@ -6,12 +6,11 @@ import pathlib
 from collections.abc import Iterable
 from typing import List, Optional
 
-from .pe_relationship import get_windows_pe_dependencies
-
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
 from ._internal.windows_utils import find_installed_software
+from .pe_relationship import get_windows_pe_dependencies
 
 
 def has_required_fields(metadata) -> bool:
