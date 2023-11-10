@@ -94,7 +94,7 @@ def short_name() -> Optional[str]:
 
 
 @hookspec
-def angrimport_finder(filename: str, filetype: str, filehash: str) -> object:
+def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
     """
     Extract list of imported function from a binary file using angr.
     :param filename (str): The full path to the file.

@@ -14,11 +14,11 @@ and PE files will generate additional json files in the working directory that c
 If there are duplicate hashed files the extractor will skip the entry.
 Example:
 
-`Output Filename: $(md5hash)_additional_metadata.json`
+`Output Filename: $(sha256hash)_additional_metadata.json`
 
 ```json
 {
-  "md5hash": "",
+  "sha256hash": "",
   "filename": [],
   "imported function names": []
 }

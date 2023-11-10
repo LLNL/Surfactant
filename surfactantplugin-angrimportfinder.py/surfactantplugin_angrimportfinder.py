@@ -9,10 +9,12 @@ import angr
 from loguru import logger
 
 import surfactant.plugin
+from surfactant.sbomtypes import SBOM, Software
 
-
-@surfactant.plugin.hookimpl
-def angrimport_finder(filename: str, filetype: str, filehash: str):
+@surfactant.plugin.hookimpl(specname="extract_file_info")
+# extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str):
+# def angrimport_finder(filename: str, filetype: str, filehash: str):
+def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: str):
     """
     Extract list of imported function names from a binary file using angr.
     :param filename (str): The full path to the file.
@@ -23,7 +25,7 @@ def angrimport_finder(filename: str, filetype: str, filehash: str):
     # Only parsing executable files
     if filetype not in ["ELF", "PE"]:
         pass
-
+    filehash = str(software.sha256)
     filename = Path(filename)
     flist = []
 
@@ -72,7 +74,7 @@ def angrimport_finder(filename: str, filetype: str, filehash: str):
             # Extract filename without extension
             output_path = Path.cwd() / f"{filehash}_additional_metadata.json"
             metadata = {}
-            metadata["md5hash"] = filehash
+            metadata["sha256hash"] = filehash
             metadata["filename"] = [filename.name]
             metadata["imported function names"] = []
             # Create an angr project

@@ -187,6 +187,7 @@ Sessionx.vim
 # Temporary
 .netrwhist
 *~
+*.json
 # Auto-generated tag files
 tags
 # Persistent undo

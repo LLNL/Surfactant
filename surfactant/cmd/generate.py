@@ -21,8 +21,8 @@ def real_path_to_install_path(root_path: str, install_path: str, filepath: str) 
     return re.sub("^" + root_path + "/", install_path, filepath)
 
 
-def metadata_plugins(pluginmanager, filepath, filehash, filetype):
-    pluginmanager.hook.angrimport_finder(filename=filepath, filetype=filetype, filehash=filehash)
+def metadata_plugins(pluginmanager, parent_sbom, sw_entry, filepath, filetype):
+    pluginmanager.hook.angrimport_finder(sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype)
 
 
 def get_software_entry(
@@ -76,7 +76,7 @@ def get_software_entry(
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
-    metadata_plugins(pluginmanager, filepath, str(sw_entry.md5), filetype)
+    metadata_plugins(pluginmanager, parent_sbom, sw_entry, filepath, filetype)
     return sw_entry
 
 
