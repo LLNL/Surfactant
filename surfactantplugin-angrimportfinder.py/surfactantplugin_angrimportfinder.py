@@ -11,6 +11,7 @@ from loguru import logger
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
+
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 # extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str):
 # def angrimport_finder(filename: str, filetype: str, filehash: str):
