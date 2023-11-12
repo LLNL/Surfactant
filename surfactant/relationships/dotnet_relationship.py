@@ -64,7 +64,9 @@ def establish_relationships(
                         for path in wac_paths.split(";"):
                             if dnProbingPaths is None:
                                 dnProbingPaths = []
-                            dnProbingPaths.append(pathlib.PureWindowsPath(path).as_posix())
+                            dnProbingPaths.append(
+                                pathlib.PureWindowsPath(path).as_posix()
+                            )
 
     # https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/loading-unmanaged
     # 1. Check the active AssemblyLoadContext cache
@@ -87,17 +89,40 @@ def establish_relationships(
                 continue
             refName = asmRef["Name"]
             if is_absolute_path(refName):
-                relationships.extend(get_windows_pe_dependencies(sbom, software, [refName]))
+                relationships.extend(
+                    get_windows_pe_dependencies(sbom, software, [refName])
+                )
                 continue
             probedirs = []
             if isinstance(software.installPath, Iterable):
                 for ipath in software.installPath:
                     probedirs.append(pathlib.PureWindowsPath(ipath).parent.as_posix())
-            combinations = []
-            # TODO: construct list of combinations
+            combinations = [refName]
+            if not (refName.endswith(".dll") or refName.endswith(".exe")):
+                combinations.append(f"{refName}.dll")
+            combinations.extend(
+                [
+                    f"{refName}.so",
+                    f"{refName}.dylib",
+                    f"lib{refName}.so",
+                    f"lib{refName}.dylib",
+                    f"lib{refName}",
+                ]
+            )
+            if ".so." in refName or refName.endswith(".so"):
+                combinations.extend(
+                    [
+                        f"{refName}.so.6",
+                        f"lib{refName}.so.6",
+                        f"{refName}.so.6.so",
+                        f"lib{refName}.so.6.so",
+                    ]
+                )
             for e in find_installed_software(sbom, probedirs, combinations):
                 dependency_uuid = e.UUID
-                relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
+                relationships.append(
+                    Relationship(dependent_uuid, dependency_uuid, "Uses")
+                )
 
     # https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies
     # 1. Determine correct assembly version using configuration files (binding redirects, code location, etc)
@@ -151,7 +176,9 @@ def establish_relationships(
                                         )
                                         cb_file = cb_filepath.name
                                         cb_path = [cb_filepath.parent.as_posix()]
-                                        for e in find_installed_software(sbom, cb_path, cb_file):
+                                        for e in find_installed_software(
+                                            sbom, cb_path, cb_file
+                                        ):
                                             dependency_uuid = e.UUID
                                             relationships.append(
                                                 Relationship(
@@ -163,17 +190,21 @@ def establish_relationships(
 
             # continue on to probing even if codebase element was found, since we can't guarantee the assembly identity required by the codebase element
             # get the list of paths to probe based on locations software is installed, assembly culture, assembly name, and probing paths from appconfig file
-            probedirs = get_dotnet_probedirs(software, refCulture, refName, dnProbingPaths)
+            probedirs = get_dotnet_probedirs(
+                software, refCulture, refName, dnProbingPaths
+            )
             for e in find_installed_software(sbom, probedirs, refName + ".dll"):
                 dependency_uuid = e.UUID
-                relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
+                relationships.append(
+                    Relationship(dependent_uuid, dependency_uuid, "Uses")
+                )
                 # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
     return relationships
 
 
 def is_absolute_path(fname: str) -> bool:
-    # TODO: Implement this
-    return False
+    givenpath = pathlib.PureWindowsPath(fname)
+    return givenpath.is_absolute()
 
 
 # construct a list of directories to probe for establishing dotnet relationships
@@ -182,27 +213,39 @@ def get_dotnet_probedirs(software: Software, refCulture, refName, dnProbingPaths
     # probe for the referenced assemblies
     if isinstance(software.installPath, Iterable):
         for install_filepath in software.installPath:
-            install_basepath = pathlib.PureWindowsPath(install_filepath).parent.as_posix()
+            install_basepath = pathlib.PureWindowsPath(
+                install_filepath
+            ).parent.as_posix()
             if refCulture is None or refCulture == "":
                 # [application base] / [assembly name].dll
                 # [application base] / [assembly name] / [assembly name].dll
                 probedirs.append(pathlib.PureWindowsPath(install_basepath).as_posix())
-                probedirs.append(pathlib.PureWindowsPath(install_basepath, refName).as_posix())
+                probedirs.append(
+                    pathlib.PureWindowsPath(install_basepath, refName).as_posix()
+                )
                 if dnProbingPaths is not None:
                     # add probing private paths
                     for path in dnProbingPaths:
                         # [application base] / [binpath] / [assembly name].dll
                         # [application base] / [binpath] / [assembly name] / [assembly name].dll
-                        probedirs.append(pathlib.PureWindowsPath(install_basepath, path).as_posix())
                         probedirs.append(
-                            pathlib.PureWindowsPath(install_basepath, path, refName).as_posix()
+                            pathlib.PureWindowsPath(install_basepath, path).as_posix()
+                        )
+                        probedirs.append(
+                            pathlib.PureWindowsPath(
+                                install_basepath, path, refName
+                            ).as_posix()
                         )
             else:
                 # [application base] / [culture] / [assembly name].dll
                 # [application base] / [culture] / [assembly name] / [assembly name].dll
-                probedirs.append(pathlib.PureWindowsPath(install_basepath, refCulture).as_posix())
                 probedirs.append(
-                    pathlib.PureWindowsPath(install_basepath, refName, refCulture).as_posix()
+                    pathlib.PureWindowsPath(install_basepath, refCulture).as_posix()
+                )
+                probedirs.append(
+                    pathlib.PureWindowsPath(
+                        install_basepath, refName, refCulture
+                    ).as_posix()
                 )
                 if dnProbingPaths is not None:
                     # add probing private paths
@@ -210,7 +253,9 @@ def get_dotnet_probedirs(software: Software, refCulture, refName, dnProbingPaths
                         # [application base] / [binpath] / [culture] / [assembly name].dll
                         # [application base] / [binpath] / [culture] / [assembly name] / [assembly name].dll
                         probedirs.append(
-                            pathlib.PureWindowsPath(install_basepath, path, refCulture).as_posix()
+                            pathlib.PureWindowsPath(
+                                install_basepath, path, refCulture
+                            ).as_posix()
                         )
                         probedirs.append(
                             pathlib.PureWindowsPath(
