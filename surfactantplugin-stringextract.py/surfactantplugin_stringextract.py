@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 import json
-import os
 from pathlib import Path
 
 import binary2strings as b2s
@@ -23,7 +22,7 @@ def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str
     :param filetype (str): File type information based on magic bytes.
     :param min_len (int): Minimum length of strings to be considered valid.
     """
-    hash = str(software.sha256)
+    shaHash = str(software.sha256)
     min_len = 4
     # Only parsing executable files
     if filetype not in ["ELF", "PE"]:
@@ -37,7 +36,7 @@ def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str
     output_name = None
     for f in Path.cwd().glob("*.json"):
         flist.append((f.stem).split("_")[0])
-        if hash == (f.stem).split("_")[0]:
+        if shaHash == (f.stem).split("_")[0]:
             existing_json = f
             output_name = f
 
@@ -58,7 +57,7 @@ def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str
             # Extract and write strings using binary2strings
             with open(filename, "rb") as f_bin:
                 data = f_bin.read()
-                for string, type, span, is_interesting in b2s.extract_all_strings(
+                for string, _encoding, _span, _is_interesting in b2s.extract_all_strings(
                     data, only_interesting=True
                 ):
                     if len(string) >= min_len:
@@ -74,16 +73,16 @@ def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str
                 raise FileNotFoundError(f"No such file: '{filename}'")
 
             # Extract filename without extension
-            output_path = Path.cwd() / f"{hash}_additional_metadata.json"
+            output_path = Path.cwd() / f"{shaHash}_additional_metadata.json"
             string_dict = {}
-            string_dict["sha25hash"] = hash
+            string_dict["sha25hash"] = shaHash
             string_dict["filename"] = [filename.name]
             string_dict["strings"] = []
 
             # Extract and write strings using binary2strings
             with open(filename, "rb") as f_bin:
                 data = f_bin.read()
-                for string, type, span, is_interesting in b2s.extract_all_strings(
+                for string, _encoding, _span, _is_interesting in b2s.extract_all_strings(
                     data, only_interesting=True
                 ):
                     # you might adjust the condition below to filter strings based on your needs
@@ -95,5 +94,5 @@ def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str
                 json.dump(string_dict, json_file, indent=4)
 
             logger.info(f"Data written to {output_path}")
-        except Exception as e:
-            logger.info("String Extract Error\nFile:{} Caused error:{}".format(filename, e))
+        except Exception as e: # update with specific exception
+            logger.info(f"String Extract Error\nFile:{filename} Caused error:{e}")
