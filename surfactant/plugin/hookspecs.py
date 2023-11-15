@@ -92,12 +92,3 @@ def read_sbom(infile) -> SBOM:
 def short_name() -> Optional[str]:
     """A short name to register the hook as"""
 
-
-@hookspec
-def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
-    """
-    Extract list of imported function from a binary file using angr.
-    :param filename (str): The full path to the file.
-    :param filetype (str): File type information based on magic bytes.
-    :param filehash (str): MD5 hash of the file.
-    """

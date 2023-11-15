@@ -17,10 +17,10 @@ from surfactant.sbomtypes import SBOM, Software
 # def angrimport_finder(filename: str, filetype: str, filehash: str):
 def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: str):
     """
-    Extract list of imported function names from a binary file using angr.
-    :param filename (str): The full path to the file.
+    :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
+    :param software(Software): The software entry associated with the file to extract information from.
+    :param filename (str): The full path to the file to extract information from.
     :param filetype (str): File type information based on magic bytes.
-    :param filehash (str): MD5 hash of the file.
     """
 
     # Only parsing executable files
