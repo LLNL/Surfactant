@@ -91,4 +91,3 @@ def read_sbom(infile) -> SBOM:
 @hookspec
 def short_name() -> Optional[str]:
     """A short name to register the hook as"""
-
