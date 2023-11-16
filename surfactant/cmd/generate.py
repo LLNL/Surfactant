@@ -20,6 +20,7 @@ from surfactant.sbomtypes import SBOM, Software
 def real_path_to_install_path(root_path: str, install_path: str, filepath: str) -> str:
     return re.sub("^" + root_path + "/", install_path, filepath)
 
+
 def get_software_entry(
     pluginmanager,
     parent_sbom: SBOM,
