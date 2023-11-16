@@ -17,7 +17,7 @@ Output Filename: `$(sha256hash)_additional_metadata.json`
 
 ```json
 {
-  "sha256hash": "",
+  "sha256hash": " ",
   "filename": [],
   "strings": []
 }
