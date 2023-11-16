@@ -7,6 +7,7 @@ from pathlib import Path
 
 import angr
 from loguru import logger
+from cle import CLECompatibilityError
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -64,7 +65,7 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
                 # Write the string_dict to the output JSON file
                 with open(output_name, "w") as json_file:
                     json.dump(existing_data, json_file, indent=4)
-            except Exception as e:
+            except CLECompatibilityError as e:
                 logger.info(f"Angr Error {filename} {e}")
     else:
         try:
@@ -90,5 +91,5 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
                 json.dump(metadata, json_file, indent=4)
 
             logger.info(f"Data written to {output_path}")
-        except Exception as e:
+        except CLECompatibilityError as e:
             logger.info(f"Angr Error {filename} {e}")
