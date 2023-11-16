@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 
 import angr
-from loguru import logger
 from cle import CLECompatibilityError
+from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
