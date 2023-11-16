@@ -65,7 +65,7 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
                 with open(output_name, "w") as json_file:
                     json.dump(existing_data, json_file, indent=4)
             except Exception as e:
-                logger.info("Angr Error {} {}".format(filename, e))
+                logger.info(f"Angr Error {filename} {e}")
     else:
         try:
             # Validate the file path
@@ -79,8 +79,7 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
             metadata["filename"] = [filename.name]
             metadata["imported function names"] = []
             # Create an angr project
-            project = angr.Project(filename._str, auto_load_libs=False)
-
+            project = angr.Project(filename.as_posix(), auto_load_libs=False)
             # Get the imported functions using symbol information
             for symbol in project.loader.main_object.symbols:
                 if symbol.is_function:
@@ -92,4 +91,4 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
 
             logger.info(f"Data written to {output_path}")
         except Exception as e:
-            logger.info("Angr Error {} {}".format(filename._str, e))
+            logger.info(f"Angr Error {filename} {e}")
