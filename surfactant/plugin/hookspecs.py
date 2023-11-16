@@ -91,14 +91,3 @@ def read_sbom(infile) -> SBOM:
 @hookspec
 def short_name() -> Optional[str]:
     """A short name to register the hook as"""
-
-
-@hookspec
-def extract_strings(filename: str, hash: str, filetype: str, min_len=4) -> object:
-    """
-    Extract ASCII strings from a binary file using binary2strings.
-    :param filename (str): The full path to the file to extract information from.
-    :param hash (str): md5 hash of the file
-    :param filetype (str): File type information based on magic bytes.
-    :param min_len (int): Minimum length of strings to be considered valid.
-    """
