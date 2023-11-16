@@ -27,7 +27,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.entry-points."surfactant"]
-"surfactantplugin_stringextract" = "surfactantplugin_stringextract"
+"surfactantplugin-binary2strings" = "surfactantplugin-binary2strings"
 
 [tool.setuptools]
-py-modules=["surfactantplugin_stringextract"]
+py-modules=["surfactantplugin-binary2strings"]
