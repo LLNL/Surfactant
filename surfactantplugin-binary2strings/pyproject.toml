@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "surfactantplugin-binary2strings"
+name = "surfactantplugin_binary2strings.py"
 authors = [
     {name = "Tyler Williams", email = "tyler.williams@pnnl.gov"},
 ]
@@ -27,7 +27,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.entry-points."surfactant"]
-"surfactantplugin-binary2strings" = "surfactantplugin-binary2strings"
+"surfactantplugin_binary2strings" = "surfactantplugin_binary2strings"
 
 [tool.setuptools]
-py-modules=["surfactantplugin-binary2strings"]
+py-modules=["surfactantplugin_binary2strings"]
