@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "surfactantplugin_binary2strings.py"
+name = "surfactantplugin-binary2strings"
 authors = [
     {name = "Tyler Williams", email = "tyler.williams@pnnl.gov"},
 ]
