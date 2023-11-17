@@ -43,7 +43,6 @@ def get_software_entry(
     extracted_info_results = pluginmanager.hook.extract_file_info(
         sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype
     )
-
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
         sw_entry.metadata.append(file_details)
@@ -73,7 +72,6 @@ def get_software_entry(
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
-
     return sw_entry
 
 
