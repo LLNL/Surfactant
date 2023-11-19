@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surfactantplugin-binary2strings"
+authors = [
+    {name = "Tyler Williams", email = "tyler.williams@pnnl.gov"},
+]
+description = "Surfactant File String Extractor"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["surfactant"]
+license = {text = "MIT License"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "binary2strings",
+    "surfactant",
+]
+dynamic = ["version"]
+
+[project.entry-points."surfactant"]
+"surfactantplugin_binary2strings" = "surfactantplugin_binary2strings"
+
+[tool.setuptools]
+py-modules=["surfactantplugin_binary2strings"]
