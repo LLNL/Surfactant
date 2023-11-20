@@ -11,6 +11,7 @@ from surfactant.sbomtypes import SBOM, Relationship, Software
 
 from ._internal.windows_utils import find_installed_software
 
+
 def has_required_fields(metadata) -> bool:
     # dotnetAssemblyRef must present, otherwise we have no info on .NET imports
     return "dotnetAssemblyRef" in metadata
