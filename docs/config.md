@@ -212,4 +212,3 @@ The resulting SBOM would be structured like this:
 ```
 
 NOTE: These examples have been simplified to show differences in output based on configuration.
-
