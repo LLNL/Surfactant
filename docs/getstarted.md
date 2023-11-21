@@ -48,12 +48,14 @@ pip install -e ".[test,dev]"
 
 ### Software
 
-TODO: Section information
+This section contains a list of entries relating to each piece of software found in the sample. Metadata including file size, vendor, version, etc are included in this section along with a uuid to uniquely identify the software entry.
 
 ### Relationships
 
-TODO: Section information
+This section contains information on how each of the software entries in the previous section are linked.
 
+**Uses**: this relationship type means that x software uses y software i.e. y is a helper module to x\
+**Contains**: this relationship type means that x software contains y software (often x software is an installer or archive such as a zip file)
 ### Observations
 
 TODO: Section information
