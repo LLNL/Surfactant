@@ -1,6 +1,6 @@
 # Plugins
 
-TODO: About the plugin system
+The surfactant plugin system uses the [pluggy](https://pluggy.readthedocs.io/en/stable) module. This module is used by projects such as pytest and tox for their plugin systems; installing and writing plugins for surfactant is a similar to using plugins for those projects. Most of the core surfactant functionality is also implemented as plugins (see [surfactant/output](surfactant/output), [surfactant/infoextractors](surfactant/infoextractors), [surfactant/filetypeid](surfactant/filetypeid), and [surfactant/relationships](surfactant/relationships)).
 
 ## Creating a Plugin
 
