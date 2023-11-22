@@ -23,6 +23,7 @@ def real_path_to_install_path(root_path: str, install_path: str, filepath: str) 
 
 
 def get_software_entry(
+    context,
     pluginmanager,
     parent_sbom: SBOM,
     filepath,
@@ -42,7 +43,7 @@ def get_software_entry(
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
     extracted_info_results = pluginmanager.hook.extract_file_info(
-        sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype
+        sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype, context=context
     )
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
@@ -130,9 +131,7 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
         elif soft1.size != soft2.size:
             collision = True
     if collision:
-        logger.warn(
-            f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur"
-        )
+        logger.warn(f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur")
 
 
 @click.command("generate")
@@ -160,9 +159,7 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     required=False,
     help="Skip including install path information if not given by configuration",
 )
-@click.option(
-    "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
-)
+@click.option("--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution")
 @click.option(
     "--output_format",
     is_flag=False,
@@ -246,7 +243,7 @@ def sbom(
             if entry.archive is not None:
                 logger.info("Processing parent container " + str(entry.archive))
                 parent_entry = get_software_entry(
-                    pm, new_sbom, entry.archive, user_institution_name=recorded_institution
+                    context, pm, new_sbom, entry.archive, user_institution_name=recorded_institution
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
                 warn_if_hash_collision(archive_entry, parent_entry)
@@ -285,9 +282,7 @@ def sbom(
                                     install_source = real_path_to_install_path(
                                         epath, install_prefix, full_path
                                     )
-                                    install_dest = real_path_to_install_path(
-                                        epath, install_prefix, dest
-                                    )
+                                    install_dest = real_path_to_install_path(epath, install_prefix, dest)
                                     dir_symlinks.append((install_source, install_dest))
 
                     entries: List[Software] = []
@@ -303,12 +298,8 @@ def sbom(
                                 continue
                             # Otherwise add them and skip adding the entry
                             if install_prefix:
-                                install_filepath = real_path_to_install_path(
-                                    epath, install_prefix, filepath
-                                )
-                                install_dest = real_path_to_install_path(
-                                    epath, install_prefix, true_filepath
-                                )
+                                install_filepath = real_path_to_install_path(epath, install_prefix, filepath)
+                                install_dest = real_path_to_install_path(epath, install_prefix, true_filepath)
                                 # A dead link shows as a file so need to test if it's a
                                 # file or a directory once rebased
                                 if os.path.isfile(true_filepath):
@@ -332,6 +323,7 @@ def sbom(
                             try:
                                 entries.append(
                                     get_software_entry(
+                                        context,
                                         pm,
                                         new_sbom,
                                         filepath,
@@ -363,9 +355,7 @@ def sbom(
                                 if parent_entry:
                                     parent_uuid = parent_entry.UUID
                                     child_uuid = e.UUID
-                                    new_sbom.create_relationship(
-                                        parent_uuid, child_uuid, "Contains"
-                                    )
+                                    new_sbom.create_relationship(parent_uuid, child_uuid, "Contains")
                             else:
                                 existing_uuid, entry_uuid = existing_sw.merge(e)
                                 # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs)
@@ -379,12 +369,8 @@ def sbom(
                                     parent_uuid = parent_entry.UUID
                                     child_uuid = existing_uuid
                                     # avoid duplicate entries
-                                    if not new_sbom.find_relationship(
-                                        parent_uuid, child_uuid, "Contains"
-                                    ):
-                                        new_sbom.create_relationship(
-                                            parent_uuid, child_uuid, "Contains"
-                                        )
+                                    if not new_sbom.find_relationship(parent_uuid, child_uuid, "Contains"):
+                                        new_sbom.create_relationship(parent_uuid, child_uuid, "Contains")
                                 # TODO a pass later on to check for and remove duplicate relationships should be added just in case
 
         # Add file symlinks to install paths

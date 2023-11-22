@@ -3,11 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
+from queue import Queue
 from typing import List, Optional
 
 from pluggy import HookspecMarker
 
-from surfactant.sbomtypes import SBOM, Relationship, Software
+from surfactant.sbomtypes import ContextEntry, SBOM, Relationship, Software
 
 hookspec = HookspecMarker("surfactant")
 
@@ -27,7 +28,9 @@ def identify_file_type(filepath: str) -> Optional[str]:
 
 
 @hookspec
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(
+    sbom: SBOM, software: Software, filename: str, filetype: str, context: "Queue[ContextEntry]"
+) -> object:
     """Extracts information from the given file to add to the given software entry. Return an
     object to be included as part of the metadata field, and potentially used as part of
     selecting default values for other Software entry fields. Returning `None` will not add
@@ -45,9 +48,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 
 @hookspec
-def establish_relationships(
-    sbom: SBOM, software: Software, metadata
-) -> Optional[List[Relationship]]:
+def establish_relationships(sbom: SBOM, software: Software, metadata) -> Optional[List[Relationship]]:
     """Called to add relationships to an SBOM after information has been gathered.
 
     The function will be called once for every metadata object in every software
