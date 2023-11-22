@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from pluggy import HookspecMarker
 
-from surfactant.sbomtypes import ContextEntry, SBOM, Relationship, Software
+from surfactant.sbomtypes import SBOM, ContextEntry, Relationship, Software
 
 hookspec = HookspecMarker("surfactant")
 
@@ -48,7 +48,9 @@ def extract_file_info(
 
 
 @hookspec
-def establish_relationships(sbom: SBOM, software: Software, metadata) -> Optional[List[Relationship]]:
+def establish_relationships(
+    sbom: SBOM, software: Software, metadata
+) -> Optional[List[Relationship]]:
     """Called to add relationships to an SBOM after information has been gathered.
 
     The function will be called once for every metadata object in every software

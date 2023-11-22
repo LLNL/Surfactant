@@ -14,7 +14,7 @@ from loguru import logger
 
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
-from surfactant.sbomtypes import ContextEntry, SBOM, Software
+from surfactant.sbomtypes import SBOM, ContextEntry, Software
 
 
 # Converts from a true path to an install path
@@ -131,7 +131,9 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
         elif soft1.size != soft2.size:
             collision = True
     if collision:
-        logger.warn(f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur")
+        logger.warn(
+            f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur"
+        )
 
 
 @click.command("generate")
@@ -159,7 +161,9 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     required=False,
     help="Skip including install path information if not given by configuration",
 )
-@click.option("--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution")
+@click.option(
+    "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
+)
 @click.option(
     "--output_format",
     is_flag=False,
@@ -282,7 +286,9 @@ def sbom(
                                     install_source = real_path_to_install_path(
                                         epath, install_prefix, full_path
                                     )
-                                    install_dest = real_path_to_install_path(epath, install_prefix, dest)
+                                    install_dest = real_path_to_install_path(
+                                        epath, install_prefix, dest
+                                    )
                                     dir_symlinks.append((install_source, install_dest))
 
                     entries: List[Software] = []
@@ -298,8 +304,12 @@ def sbom(
                                 continue
                             # Otherwise add them and skip adding the entry
                             if install_prefix:
-                                install_filepath = real_path_to_install_path(epath, install_prefix, filepath)
-                                install_dest = real_path_to_install_path(epath, install_prefix, true_filepath)
+                                install_filepath = real_path_to_install_path(
+                                    epath, install_prefix, filepath
+                                )
+                                install_dest = real_path_to_install_path(
+                                    epath, install_prefix, true_filepath
+                                )
                                 # A dead link shows as a file so need to test if it's a
                                 # file or a directory once rebased
                                 if os.path.isfile(true_filepath):
@@ -355,7 +365,9 @@ def sbom(
                                 if parent_entry:
                                     parent_uuid = parent_entry.UUID
                                     child_uuid = e.UUID
-                                    new_sbom.create_relationship(parent_uuid, child_uuid, "Contains")
+                                    new_sbom.create_relationship(
+                                        parent_uuid, child_uuid, "Contains"
+                                    )
                             else:
                                 existing_uuid, entry_uuid = existing_sw.merge(e)
                                 # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs)
@@ -369,8 +381,12 @@ def sbom(
                                     parent_uuid = parent_entry.UUID
                                     child_uuid = existing_uuid
                                     # avoid duplicate entries
-                                    if not new_sbom.find_relationship(parent_uuid, child_uuid, "Contains"):
-                                        new_sbom.create_relationship(parent_uuid, child_uuid, "Contains")
+                                    if not new_sbom.find_relationship(
+                                        parent_uuid, child_uuid, "Contains"
+                                    ):
+                                        new_sbom.create_relationship(
+                                            parent_uuid, child_uuid, "Contains"
+                                        )
                                 # TODO a pass later on to check for and remove duplicate relationships should be added just in case
 
         # Add file symlinks to install paths
