@@ -15,6 +15,7 @@ from ._provenance import (
     SystemProvenance,
 )
 from ._relationship import Relationship, StarRelationship
+from ._contextentry import ContextEntry
 from ._sbom import SBOM
 from ._software import Software, SoftwareComponent
 from ._system import System
@@ -28,6 +29,7 @@ __all__ = [
     "AnalysisData",
     "Observation",
     "Relationship",
+    "ContextEntry",
     "StarRelationship",
     "SystemProvenance",
     "HardwareProvenance",

@@ -5,6 +5,7 @@
 import json
 import os
 import pathlib
+import queue
 import re
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -13,7 +14,7 @@ from loguru import logger
 
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
-from surfactant.sbomtypes import SBOM, Software
+from surfactant.sbomtypes import ContextEntry, SBOM, Software
 
 
 # Converts from a true path to an install path
@@ -224,6 +225,11 @@ def sbom(
     if not validate_config(config):
         return
 
+    context = queue.Queue()
+
+    for entry in config:
+        context.put(ContextEntry(**entry))
+
     if not input_sbom:
         new_sbom = SBOM()
     else:
@@ -235,11 +241,12 @@ def sbom(
         dir_symlinks: List[Tuple[str, str]] = []
         # List of file symlinks; keys are SHA256 hashes, values are source paths
         file_symlinks: Dict[str, List[str]] = {}
-        for entry in config:
-            if "archive" in entry:
-                logger.info("Processing parent container " + str(entry["archive"]))
+        while not context.empty():
+            entry = context.get()
+            if entry.archive is not None:
+                logger.info("Processing parent container " + str(entry.archive))
                 parent_entry = get_software_entry(
-                    pm, new_sbom, entry["archive"], user_institution_name=recorded_institution
+                    pm, new_sbom, entry.archive, user_institution_name=recorded_institution
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
                 warn_if_hash_collision(archive_entry, parent_entry)
@@ -252,8 +259,8 @@ def sbom(
                 parent_entry = None
                 parent_uuid = None
 
-            if "installPrefix" in entry:
-                install_prefix = entry["installPrefix"]
+            if entry.installPrefix is not None:
+                install_prefix = entry.installPrefix
                 # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
                 if install_prefix and not install_prefix.endswith(("/", "\\")):
                     logger.warning("Fixing install path")
@@ -261,7 +268,7 @@ def sbom(
             else:
                 install_prefix = None
 
-            for epath in entry["extractPaths"]:
+            for epath in entry.extractPaths:
                 # extractPath should not end with "/" (Windows-style backslash paths shouldn't be used at all)
                 if epath.endswith("/"):
                     epath = epath[:-1]
