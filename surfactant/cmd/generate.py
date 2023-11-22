@@ -131,9 +131,7 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
         elif soft1.size != soft2.size:
             collision = True
     if collision:
-        logger.warn(
-            f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur"
-        )
+        logger.warn(f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur")
 
 
 @click.command("generate")
@@ -161,9 +159,7 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     required=False,
     help="Skip including install path information if not given by configuration",
 )
-@click.option(
-    "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
-)
+@click.option("--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution")
 @click.option(
     "--output_format",
     is_flag=False,
@@ -244,7 +240,7 @@ def sbom(
         file_symlinks: Dict[str, List[str]] = {}
         while not context.empty():
             entry = context.get()
-            if entry.archive is not None:
+            if entry.archive:
                 logger.info("Processing parent container " + str(entry.archive))
                 parent_entry = get_software_entry(
                     context, pm, new_sbom, entry.archive, user_institution_name=recorded_institution
@@ -273,18 +269,16 @@ def sbom(
                 for cdir, dirs, files in os.walk(epath):
                     logger.info("Processing " + str(cdir))
 
-                    if install_prefix:
+                    if entry.installPrefix:
                         for dir_ in dirs:
                             full_path = os.path.join(cdir, dir_)
                             if os.path.islink(full_path):
                                 dest = resolve_link(full_path, cdir, epath)
                                 if dest is not None:
                                     install_source = real_path_to_install_path(
-                                        epath, install_prefix, full_path
+                                        epath, entry.installPrefix, full_path
                                     )
-                                    install_dest = real_path_to_install_path(
-                                        epath, install_prefix, dest
-                                    )
+                                    install_dest = real_path_to_install_path(epath, entry.installPrefix, dest)
                                     dir_symlinks.append((install_source, install_dest))
 
                     entries: List[Software] = []
@@ -299,12 +293,12 @@ def sbom(
                             if true_filepath is None:
                                 continue
                             # Otherwise add them and skip adding the entry
-                            if install_prefix:
+                            if entry.installPrefix:
                                 install_filepath = real_path_to_install_path(
-                                    epath, install_prefix, filepath
+                                    epath, entry.installPrefix, filepath
                                 )
                                 install_dest = real_path_to_install_path(
-                                    epath, install_prefix, true_filepath
+                                    epath, entry.installPrefix, true_filepath
                                 )
                                 # A dead link shows as a file so need to test if it's a
                                 # file or a directory once rebased
@@ -317,8 +311,8 @@ def sbom(
                             # We need get_software_entry to look at the true filepath
                             filepath = true_filepath
 
-                        if install_prefix is not None:
-                            install_path = install_prefix
+                        if entry.installPrefix:
+                            install_path = entry.installPrefix
                         elif not skip_install_path:
                             # epath is guaranteed to not have an ending slash due to formatting above
                             install_path = epath + "/"
@@ -343,7 +337,7 @@ def sbom(
                             except Exception as e:
                                 raise RuntimeError(f"Unable to process: {filepath}") from e
 
-                            if file_is_symlink and install_prefix:
+                            if file_is_symlink and entry.installPrefix:
                                 # Remove the entry from the list as it'll be processed later anyways
                                 entry = entries.pop()
                                 if entry.sha256 not in file_symlinks:
@@ -361,9 +355,7 @@ def sbom(
                                 if parent_entry:
                                     parent_uuid = parent_entry.UUID
                                     child_uuid = e.UUID
-                                    new_sbom.create_relationship(
-                                        parent_uuid, child_uuid, "Contains"
-                                    )
+                                    new_sbom.create_relationship(parent_uuid, child_uuid, "Contains")
                             else:
                                 existing_uuid, entry_uuid = existing_sw.merge(e)
                                 # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs)
@@ -377,12 +369,8 @@ def sbom(
                                     parent_uuid = parent_entry.UUID
                                     child_uuid = existing_uuid
                                     # avoid duplicate entries
-                                    if not new_sbom.find_relationship(
-                                        parent_uuid, child_uuid, "Contains"
-                                    ):
-                                        new_sbom.create_relationship(
-                                            parent_uuid, child_uuid, "Contains"
-                                        )
+                                    if not new_sbom.find_relationship(parent_uuid, child_uuid, "Contains"):
+                                        new_sbom.create_relationship(parent_uuid, child_uuid, "Contains")
                                 # TODO a pass later on to check for and remove duplicate relationships should be added just in case
 
         # Add file symlinks to install paths
