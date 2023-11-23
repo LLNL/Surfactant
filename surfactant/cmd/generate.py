@@ -12,10 +12,10 @@ from typing import Dict, List, Optional, Tuple, Union
 import click
 from loguru import logger
 
+from surfactant import ContextEntry
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
-from surfactant import ContextEntry
 
 
 # Converts from a true path to an install path
@@ -132,7 +132,9 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
         elif soft1.size != soft2.size:
             collision = True
     if collision:
-        logger.warn(f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur")
+        logger.warn(
+            f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur"
+        )
 
 
 @click.command("generate")
@@ -160,7 +162,9 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     required=False,
     help="Skip including install path information if not given by configuration",
 )
-@click.option("--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution")
+@click.option(
+    "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
+)
 @click.option(
     "--output_format",
     is_flag=False,
@@ -279,7 +283,9 @@ def sbom(
                                     install_source = real_path_to_install_path(
                                         epath, entry.installPrefix, full_path
                                     )
-                                    install_dest = real_path_to_install_path(epath, entry.installPrefix, dest)
+                                    install_dest = real_path_to_install_path(
+                                        epath, entry.installPrefix, dest
+                                    )
                                     dir_symlinks.append((install_source, install_dest))
 
                     entries: List[Software] = []
@@ -356,7 +362,9 @@ def sbom(
                                 if parent_entry:
                                     parent_uuid = parent_entry.UUID
                                     child_uuid = e.UUID
-                                    new_sbom.create_relationship(parent_uuid, child_uuid, "Contains")
+                                    new_sbom.create_relationship(
+                                        parent_uuid, child_uuid, "Contains"
+                                    )
                             else:
                                 existing_uuid, entry_uuid = existing_sw.merge(e)
                                 # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs)
@@ -370,8 +378,12 @@ def sbom(
                                     parent_uuid = parent_entry.UUID
                                     child_uuid = existing_uuid
                                     # avoid duplicate entries
-                                    if not new_sbom.find_relationship(parent_uuid, child_uuid, "Contains"):
-                                        new_sbom.create_relationship(parent_uuid, child_uuid, "Contains")
+                                    if not new_sbom.find_relationship(
+                                        parent_uuid, child_uuid, "Contains"
+                                    ):
+                                        new_sbom.create_relationship(
+                                            parent_uuid, child_uuid, "Contains"
+                                        )
                                 # TODO a pass later on to check for and remove duplicate relationships should be added just in case
 
         # Add file symlinks to install paths
