@@ -260,14 +260,10 @@ def sbom(
                 parent_entry = None
                 parent_uuid = None
 
-            if entry.installPrefix is not None:
-                install_prefix = entry.installPrefix
+            if entry.installPrefix and not entry.installPrefix.endswith(("/", "\\")):
                 # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
-                if install_prefix and not install_prefix.endswith(("/", "\\")):
-                    logger.warning("Fixing install path")
-                    install_prefix += "/"
-            else:
-                install_prefix = None
+                logger.warning("Fixing install path")
+                entry.installPrefix += "/"
 
             for epath in entry.extractPaths:
                 # extractPath should not end with "/" (Windows-style backslash paths shouldn't be used at all)
