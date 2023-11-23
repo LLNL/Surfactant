@@ -42,7 +42,7 @@ def extract_file_info(
         software (Software): The software entry the gathered information will be added to.
         filename (str): The full path to the file to extract information from.
         filetype (str): File type information based on magic bytes.
-        context (Queue[ContextEntry]): Modifiable queue of entries from input config file
+        context (Queue[ContextEntry]): Modifiable queue of entries from input config file. Existing plugins should still work without adding this parameter.
 
     Returns:
         object: An object to be added to the metadata field for the software entry. May be `None` to add no metadata.
@@ -50,9 +50,7 @@ def extract_file_info(
 
 
 @hookspec
-def establish_relationships(
-    sbom: SBOM, software: Software, metadata
-) -> Optional[List[Relationship]]:
+def establish_relationships(sbom: SBOM, software: Software, metadata) -> Optional[List[Relationship]]:
     """Called to add relationships to an SBOM after information has been gathered.
 
     The function will be called once for every metadata object in every software
