@@ -14,7 +14,8 @@ from loguru import logger
 
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
-from surfactant.sbomtypes import SBOM, ContextEntry, Software
+from surfactant.sbomtypes import SBOM, Software
+from surfactant import ContextEntry
 
 
 # Converts from a true path to an install path

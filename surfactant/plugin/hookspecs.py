@@ -8,7 +8,8 @@ from typing import List, Optional
 
 from pluggy import HookspecMarker
 
-from surfactant.sbomtypes import SBOM, ContextEntry, Relationship, Software
+from surfactant.sbomtypes import SBOM, Relationship, Software
+from surfactant import ContextEntry
 
 hookspec = HookspecMarker("surfactant")
 

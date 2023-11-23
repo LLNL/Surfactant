@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 from ._analysisdata import AnalysisData
-from ._contextentry import ContextEntry
 from ._file import File
 from ._hardware import Hardware
 from ._observation import Observation
@@ -29,7 +28,6 @@ __all__ = [
     "AnalysisData",
     "Observation",
     "Relationship",
-    "ContextEntry",
     "StarRelationship",
     "SystemProvenance",
     "HardwareProvenance",
