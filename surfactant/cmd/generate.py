@@ -19,7 +19,9 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 # Converts from a true path to an install path
-def real_path_to_install_path(root_path: str, install_path: str, filepath: str) -> str:
+def real_path_to_install_path(
+    root_path: str, install_path: str, filepath: str
+) -> str:
     return re.sub("^" + root_path + "/", install_path, filepath)
 
 
@@ -36,15 +38,23 @@ def get_software_entry(
 ) -> Software:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path and install_path:
-        sw_entry.installPath = [real_path_to_install_path(root_path, install_path, filepath)]
+        sw_entry.installPath = [
+            real_path_to_install_path(root_path, install_path, filepath)
+        ]
     if root_path and container_uuid:
-        sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
+        sw_entry.containerPath = [
+            re.sub("^" + root_path, container_uuid, filepath)
+        ]
     sw_entry.recordedInstitution = user_institution_name
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
     extracted_info_results = pluginmanager.hook.extract_file_info(
-        sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype, context=context
+        sbom=parent_sbom,
+        software=sw_entry,
+        filename=filepath,
+        filetype=filetype,
+        context=context,
     )
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
@@ -115,13 +125,19 @@ def print_input_formats(ctx, _, value):
     ctx.exit()
 
 
-def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software]):
+def warn_if_hash_collision(
+    soft1: Optional[Software], soft2: Optional[Software]
+):
     if not soft1 or not soft2:
         return
     # A hash collision occurs if one or more but less than all hashes match or
     # any hash matches but the filesize is different
     collision = False
-    if soft1.sha256 == soft2.sha256 or soft1.sha1 == soft2.sha1 or soft1.md5 == soft2.md5:
+    if (
+        soft1.sha256 == soft2.sha256
+        or soft1.sha1 == soft2.sha1
+        or soft1.md5 == soft2.md5
+    ):
         # Hashes can be None; make sure they aren't before checking for inequality
         if soft1.sha256 and soft2.sha256 and soft1.sha256 != soft2.sha256:
             collision = True
@@ -138,8 +154,15 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
 
 
 @click.command("generate")
-@click.argument("config_file", envvar="CONFIG_FILE", type=click.Path(exists=True), required=True)
-@click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
+@click.argument(
+    "config_file",
+    envvar="CONFIG_FILE",
+    type=click.Path(exists=True),
+    required=True,
+)
+@click.argument(
+    "sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True
+)
 @click.argument("input_sbom", type=click.File("r"), required=False)
 @click.option(
     "--skip_gather",
@@ -163,7 +186,10 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     help="Skip including install path information if not given by configuration",
 )
 @click.option(
-    "--recorded_institution", is_flag=False, default="LLNL", help="Name of user's institution"
+    "--recorded_institution",
+    is_flag=False,
+    default="LLNL",
+    help="Name of user's institution",
 )
 @click.option(
     "--output_format",
@@ -248,7 +274,11 @@ def sbom(
             if entry.archive:
                 logger.info("Processing parent container " + str(entry.archive))
                 parent_entry = get_software_entry(
-                    context, pm, new_sbom, entry.archive, user_institution_name=recorded_institution
+                    context,
+                    pm,
+                    new_sbom,
+                    entry.archive,
+                    user_institution_name=recorded_institution,
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
                 warn_if_hash_collision(archive_entry, parent_entry)
@@ -261,7 +291,9 @@ def sbom(
                 parent_entry = None
                 parent_uuid = None
 
-            if entry.installPrefix and not entry.installPrefix.endswith(("/", "\\")):
+            if entry.installPrefix and not entry.installPrefix.endswith(
+                ("/", "\\")
+            ):
                 # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
                 logger.warning("Fixing install path")
                 entry.installPrefix += "/"
@@ -286,7 +318,9 @@ def sbom(
                                     install_dest = real_path_to_install_path(
                                         epath, entry.installPrefix, dest
                                     )
-                                    dir_symlinks.append((install_source, install_dest))
+                                    dir_symlinks.append(
+                                        (install_source, install_dest)
+                                    )
 
                     entries: List[Software] = []
                     for f in files:
@@ -313,12 +347,14 @@ def sbom(
                                     # file_symlinks.append((install_filepath, install_dest))
                                     file_is_symlink = True
                                 else:
-                                    dir_symlinks.append((install_filepath, install_dest))
+                                    dir_symlinks.append(
+                                        (install_filepath, install_dest)
+                                    )
                                     continue
                             # We need get_software_entry to look at the true filepath
                             filepath = true_filepath
 
-                        if entry.installPrefix:
+                        if entry.installPrefix or entry.installPrefix == "":
                             install_path = entry.installPrefix
                         elif not skip_install_path:
                             # epath is guaranteed to not have an ending slash due to formatting above
@@ -326,7 +362,9 @@ def sbom(
                         else:
                             install_path = None
 
-                        if ftype := pm.hook.identify_file_type(filepath=filepath):
+                        if ftype := pm.hook.identify_file_type(
+                            filepath=filepath
+                        ):
                             try:
                                 entries.append(
                                     get_software_entry(
@@ -342,14 +380,18 @@ def sbom(
                                     )
                                 )
                             except Exception as e:
-                                raise RuntimeError(f"Unable to process: {filepath}") from e
+                                raise RuntimeError(
+                                    f"Unable to process: {filepath}"
+                                ) from e
 
                             if file_is_symlink and entry.installPrefix:
                                 # Remove the entry from the list as it'll be processed later anyways
                                 entry = entries.pop()
                                 if entry.sha256 not in file_symlinks:
                                     file_symlinks[entry.sha256] = []
-                                file_symlinks[entry.sha256].append(install_filepath)
+                                file_symlinks[entry.sha256].append(
+                                    install_filepath
+                                )
 
                     if entries:
                         # if a software entry already exists with a matching file hash, augment the info in the existing entry
@@ -406,10 +448,14 @@ def sbom(
                             # Replace the matching start with the symlink instead
                             # We can't use os.path.join here because we end up with absolute paths after
                             # removing the common start.
-                            paths_to_add.append(path.replace(link_dest, link_source, 1))
+                            paths_to_add.append(
+                                path.replace(link_dest, link_source, 1)
+                            )
                 paths += paths_to_add
     else:
-        logger.info("Skipping gathering file metadata and adding software entries")
+        logger.info(
+            "Skipping gathering file metadata and adding software entries"
+        )
 
     # add "Uses" relationships based on gathered metadata for software entries
     if not skip_relationships:
