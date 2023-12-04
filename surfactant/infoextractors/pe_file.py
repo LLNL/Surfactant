@@ -195,7 +195,9 @@ def add_core_assembly_info(asm_dict, asm_info):
     asm_dict[
         "Version"
     ] = f"{asm_info.MajorVersion}.{asm_info.MinorVersion}.{asm_info.BuildNumber}.{asm_info.RevisionNumber}"
-    asm_dict["PublicKey"] = asm_info.PublicKey.hex() if hasattr(asm_info.PublicKey, "hex") else asm_info.PublicKey
+    asm_dict["PublicKey"] = (
+        asm_info.PublicKey.hex() if hasattr(asm_info.PublicKey, "hex") else asm_info.PublicKey
+    )
 
 
 def add_assembly_flags_info(asm_dict, asm_info):
