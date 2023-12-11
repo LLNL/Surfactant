@@ -1,5 +1,13 @@
 # Surfactant
 
+<div style="width:20%; margin: auto;">
+
+![Surfactant logo](./docs/logos/surfactant-logo-dark-PhotoRoom.png#gh-dark-mode-only)
+![Surfactant logo](./docs/logos/surfactant-logo-light-PhotoRoom.png#gh-light-mode-only)
+</div>
+
+
+
 A modular framework to gather file information for SBOM generation and dependency analysis.
 
 [![CI Test Status](https://github.com/LLNL/Surfactant/actions/workflows/pytest.yml/badge.svg)](https://github.com/LLNL/Surfactant/actions/workflows/pytest.yml)
