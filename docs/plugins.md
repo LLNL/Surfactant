@@ -24,7 +24,7 @@ In order to create a plugin, you will need to write your implementation for one 
 [read_sbom](https://github.com/LLNL/Surfactant/tree/main/surfactant/plugin/hookspecs.py#L80)
 - If reading from input SBOMs, specifies what format the input SBOMs are
 
-### Step 2. Write .toml File
+### Step 2. Write pyproject.toml File
 
 Once you have written your plugin, you will need to write a pyproject.toml file. Include any relevant project metadata/dependencies for your plugin, as well as an entry-point specification (example below) to make the plugin discoverable by surfactant. Once you write your .toml file, you can `pip install .` your plugin.
 More information on entry points can be found [here](https://setuptools.pypa.io/en/latest/userguide/entry_point.html#entry-points-syntax)

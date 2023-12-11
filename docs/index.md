@@ -11,6 +11,12 @@
 
 Surfactant provides a modular framework to gather file information and analyze dependencies for generating an SBOM.
 
+Some links to pages that may be useful are:
+
+[PyPI](https://pypi.org/project/Surfactant/)
+[GitHub/Source Code](https://github.com/LLNL/Surfactant/)
+[Discussions](https://github.com/LLNL/Surfactant/discussions/)
+
 ## Contents
 
 ```{eval-rst}
@@ -18,21 +24,27 @@ Surfactant provides a modular framework to gather file information and analyze d
    :maxdepth: 2
 
    self
-   getstarted
-   config
-   usage
+   getting_started
+   basic_usage
+   configuration_files
    plugins
-   contribute
+   contribution_guide
    changelog
 ```
 
 ## Support
 
-TODO: Add support information
+Full user guides for Surfactant are available [online](https://surfactant.readthedocs.io)
+and in the [docs](https://github.com/LLNL/Surfactant/tree/main/docs) directory in the GitHub repository.
+
+For questions or support, please create a new discussion on [GitHub Discussions](https://github.com/LLNL/Surfactant/discussions/categories/q-a),
+or [open an issue](https://github.com/LLNL/Surfactant/issues/new/choose) for bug reports and feature requests.
 
 ## License
 
-TODO: License information
+Surfactant is released under the MIT license. See the [LICENSE](./LICENSE)
+and [NOTICE](./NOTICE) files for details. All new contributions must be made
+under this license.
 
 # Indices and tables
 

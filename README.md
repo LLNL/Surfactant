@@ -335,18 +335,29 @@ This section contains information about notable observations about individual so
 
 ## Merging SBOMs
 
-TODO: Insert documentation on how to merge sboms here
+
+A folder containing multiple separate SBOM JSON files can be combined using merge_sbom.py with a command such the one below that gets a list of files using ls, and then uses xargs to pass the resulting list of files to merge_sbom.py as arguments.
+
+`ls -d ~/Folder_With_SBOMs/Surfactant-* | xargs -d '\n' surfactant merge --config_file=merge_config.json --sbom_outfile combined_sbom.json`
+
+If the config file option is given, a top-level system entry will be created that all other software entries are tied to (directly or indirectly based on other relationships). Specifying an empty UUID will make a random UUID get generated for the new system entry, otherwise it will use the one provided.
+
+Details on the merge command can be found in the docs page [here](./docs/basic_usage.md#merging-sboms).
 
 ## Plugins
 
-Detailed information on the plugin system can be found [here](./README-PLUGIN.md).
+Surfactant supports using plugins to add additional features. For users, installing and enabling a plugin usually just involves
+doing a `pip install` of the plugin.
+
+Detailed information on configuration options for the plugin system and how to develop new plugins can be found [here](./docs/plugins.md).
 
 ## Support
 
 Full user guides for Surfactant are available [online](https://surfactant.readthedocs.io)
 and in the [docs](./docs) directory.
 
-For questions or support, please create a new discussion on GitHub Discussions.
+For questions or support, please create a new discussion on [GitHub Discussions](https://github.com/LLNL/Surfactant/discussions/categories/q-a),
+or [open an issue](https://github.com/LLNL/Surfactant/issues/new/choose) for bug reports and feature requests.
 
 ## Contributing
 
