@@ -11,10 +11,10 @@ def get_file_info(filename):
     """Get information about a file.
 
     Args:
-        filename (string): Name of file.
+        filename (str): Name of file.
 
     Returns:
-        dict: Dictionary that contains info about the file.
+        Optional[dict]: Dictionary that contains info about the file.
     """
     try:
         fstats = os.stat(filename)
@@ -50,7 +50,7 @@ def calc_file_hashes(filename):
         filename (str): Name of file.
 
     Returns:
-        dict: Dictionary with the sha256, sha1, and md5 hashes of the file.
+        Optional[dict]: Dictionary with the sha256, sha1, and md5 hashes of the file.
     """
     sha256_hash = sha256()
     sha1_hash = sha1()
