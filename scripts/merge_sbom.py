@@ -28,7 +28,10 @@ def is_valid_uuid4(u) -> bool:
 
 
 def find_relationship_entry(
-    sbom, xUUID: Optional[str] = None, yUUID: Optional[str] = None, relationship: Optional[str] = None
+    sbom,
+    xUUID: Optional[str] = None,
+    yUUID: Optional[str] = None,
+    relationship: Optional[str] = None,
 ) -> Optional[dict]:
     """Search for a specific relationship entry and check if a match exists.
 
