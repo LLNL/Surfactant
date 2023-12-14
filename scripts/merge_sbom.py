@@ -27,7 +27,9 @@ def is_valid_uuid4(u) -> bool:
     return str(u_test) == u
 
 
-def find_relationship_entry(sbom, xUUID: Optional[str]=None, yUUID: Optional[str]=None, relationship=None) -> Optional[dict]:
+def find_relationship_entry(
+    sbom, xUUID: Optional[str] = None, yUUID: Optional[str] = None, relationship=None
+) -> Optional[dict]:
     """Search for a specific relationship entry and check if a match exists.
 
     Args:
@@ -55,7 +57,12 @@ def find_relationship_entry(sbom, xUUID: Optional[str]=None, yUUID: Optional[str
     return None
 
 
-def find_star_relationship_entry(sbom, xUUID: Optional[str]=None, yUUID: Optional[str]=None, relationship: Optional[str]=None) -> Optional[dict]:
+def find_star_relationship_entry(
+    sbom,
+    xUUID: Optional[str] = None,
+    yUUID: Optional[str] = None,
+    relationship: Optional[str] = None,
+) -> Optional[dict]:
     """Search for a star relationship entry and check if a match exists.
 
     Args:
@@ -83,7 +90,9 @@ def find_star_relationship_entry(sbom, xUUID: Optional[str]=None, yUUID: Optiona
     return None
 
 
-def find_systems_entry(sbom, uuid: Optional[str]=None, name: Optional[str]=None) -> Optional[dict]:
+def find_systems_entry(
+    sbom, uuid: Optional[str] = None, name: Optional[str] = None
+) -> Optional[dict]:
     """Search for a systems entry and check if a match exists.
 
     Args:
@@ -107,7 +116,13 @@ def find_systems_entry(sbom, uuid: Optional[str]=None, name: Optional[str]=None)
     return None
 
 
-def find_software_entry(sbom, uuid: Optional[str]=None, sha256: Optional[str]=None, md5: Optional[str]=None, sha1: Optional[str]=None) -> Optional[dict]:
+def find_software_entry(
+    sbom,
+    uuid: Optional[str] = None,
+    sha256: Optional[str] = None,
+    md5: Optional[str] = None,
+    sha1: Optional[str] = None,
+) -> Optional[dict]:
     """Search for a specific software entry and check if a match exists.
 
     Args:
