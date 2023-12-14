@@ -8,6 +8,14 @@ from hashlib import md5, sha1, sha256
 
 
 def get_file_info(filename):
+    """Get information about a file.
+
+    Args:
+        filename (str): Name of file.
+
+    Returns:
+        Optional[dict]: Dictionary that contains info about the file.
+    """
     try:
         fstats = os.stat(filename)
     except FileNotFoundError:
@@ -36,6 +44,14 @@ def get_file_info(filename):
 
 
 def calc_file_hashes(filename):
+    """Calculate hashes for a file specified.
+
+    Args:
+        filename (str): Name of file.
+
+    Returns:
+        Optional[dict]: Dictionary with the sha256, sha1, and md5 hashes of the file.
+    """
     sha256_hash = sha256()
     sha1_hash = sha1()
     md5_hash = md5()
