@@ -1,9 +1,7 @@
-<div style="width:20%; margin: auto;">
-
-![Surfactant logo](./docs/logos/surfactant-logo-dark.png#gh-dark-mode-only)
-![Surfactant logo](./docs/logos/surfactant-logo-light.png#gh-light-mode-only)
-
-</div>
+<p align="center">
+![Surfactant logo](./docs/logos/surfactant-logo-dark-250px.png#gh-dark-mode-only)
+![Surfactant logo](./docs/logos/surfactant-logo-light-250px.png#gh-light-mode-only)
+</p>
 
 # Surfactant
 
