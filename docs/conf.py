@@ -33,7 +33,7 @@ html_theme_options = {
     "badge_branch": "main",
     "fixed_sidebar": "false",
 }
-html_logo = "./logos/surfactant-logo-light-PhotoRoom.png"
+html_logo = "./logos/surfactant-logo-light.png"
 html_favicon = html_logo
 html_sidebars = {"**": ["globaltoc.html", "relations.html", "searchbox.html"]}
 html_static_path = ["_static"]
