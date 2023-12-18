@@ -1,12 +1,12 @@
 exclude: ^(.gitignore|generate_sbom.py|extract_file_info.py|pe_info.py)
 repos:
   - repo: https://github.com/psf/black
-    rev: 23.11.0
+    rev: 23.12.0
     hooks:
       - id: black
         args: [--config=pyproject.toml, --line-length=100]
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.0
+    rev: 5.13.2
     hooks:
       - id: isort
         args: ["--profile", "black", "--filter-files"]
@@ -16,7 +16,7 @@ repos:
       - id: flake8
         additional_dependencies: [flake8-bugbear]
   - repo: https://github.com/pycqa/pylint
-    rev: v3.0.1
+    rev: v3.0.3
     hooks:
       - id: pylint
   - repo: https://github.com/pre-commit/pre-commit-hooks
