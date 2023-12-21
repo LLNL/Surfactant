@@ -19,7 +19,6 @@ def extract_child_info(
             "anchore_syft " + filename + " -o json --scope all-layers", shell=True
         )
         data = json.loads(data.decode())
-        sw_list = []
         for i in data["artifacts"]:
             sw_entry = Software(
                 sha1=None,
