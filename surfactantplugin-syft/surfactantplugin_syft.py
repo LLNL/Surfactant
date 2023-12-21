@@ -10,7 +10,7 @@ from surfactant.sbomtypes import SBOM, Relationship, Software
 
 @surfactant.plugin.hookimpl
 def extract_child_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str
+    sbom: SBOM, software: Software, filename: str, filetype: str, children: List[Software]
 ) -> Optional[List[Software]]:
     pm = get_plugin_manager()
     # Change to properly filter filetypes, add to if statement for filetypes syft should run for
