@@ -41,16 +41,9 @@ def get_software_entry(
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
     extracted_info_results = pluginmanager.hook.extract_file_info(
-        sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype
+        sbom=parent_sbom, software=sw_entry, filename=filepath, filetype=filetype, children=sw_children
     )
-
-    sw_list = pluginmanager.hook.extract_child_info(
-        sbom=parent_sbom,
-        software=sw_entry,
-        filename=filepath,
-        filetype=filetype,
-    )
-
+    
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
         sw_entry.metadata.append(file_details)
