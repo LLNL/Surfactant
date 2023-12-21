@@ -24,6 +24,7 @@ def extract_file_info(
                 sha1=None,
                 # Syft does not provide a SHA256 for each artifact.
                 # This uses their unique IDs in place since surfactant is dependent on this hash.
+                # TODO (Ryan) discuss how to handle software entry without a hash with Lucas in the CyTRICS SBOM schema
                 sha256=i["id"],
                 md5=None,
                 name=[i["name"]],
