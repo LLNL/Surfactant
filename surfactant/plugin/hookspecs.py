@@ -84,25 +84,3 @@ def short_name() -> Optional[str]:
     Returns:
         Optional[str]: The name to register the hook with.
     """
-
-
-@hookspec
-def extract_child_info(
-    sbom: SBOM,
-    software: Software,
-    filename: str,
-    filetype: str,
-) -> Optional[List[Software]]:
-    """Extracts information from the given file to add to the given software entry. Returns a list of
-    software objects that were contained in that file. Will also provide relationship data so
-    relationships can be built.
-
-    Args:
-        sbom (SBOM): The SBOM that the software entry is part of. Can be used to add observations or analysis data.
-        software (Software): The software entry the gathered information will be added to.
-        filename (str): The full path to the file to extract information from.
-        filetype (str): File type information based on magic bytes.
-
-    Returns:
-        Optional[List[Software]]: A list of child Software objects to be added to the SBOM. May be `None` to add none.
-    """
