@@ -37,6 +37,7 @@ def get_software_entry(
     if root_path and container_uuid:
         sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
     sw_entry.recordedInstitution = user_institution_name
+    sw_children = []
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files

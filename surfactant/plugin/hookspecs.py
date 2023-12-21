@@ -27,7 +27,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
 
 
 @hookspec
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str, children: List[Software]) -> Optional[list]:
     """Extracts information from the given file to add to the given software entry. Return an
     object to be included as part of the metadata field, and potentially used as part of
     selecting default values for other Software entry fields. Returning `None` will not add

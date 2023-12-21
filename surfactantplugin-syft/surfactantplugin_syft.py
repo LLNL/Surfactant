@@ -10,7 +10,7 @@ from surfactant.sbomtypes import SBOM, Relationship, Software
 
 @surfactant.plugin.hookimpl
 def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str, children: List[Software]
+    sbom: SBOM, software: Software, filename: str, filetype: str, children: list
 ) -> Optional[List[Software]]:
     pm = get_plugin_manager()
     # Change to properly filter filetypes, add to if statement for filetypes syft should run for
@@ -66,7 +66,7 @@ def establish_relationships(
     return relationship_list
 
 
-def gather_relationship_data(image_sw: Software, data: str, sw_list: object):
+def gather_relationship_data(image_sw: Software, data: str, sw_list: list):
     uuid_dict = {}
     # Build UUID dict for fast lookup
     # First entry is the image sw entry
