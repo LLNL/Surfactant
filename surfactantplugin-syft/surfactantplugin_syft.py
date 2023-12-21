@@ -48,9 +48,8 @@ def extract_file_info(
             for file in i["locations"]:
                 if file["path"] not in sw_entry.supplementaryFiles:
                     sw_entry.supplementaryFiles.append(file["path"])
-            sw_list.append(sw_entry)
-        gather_relationship_data(software, data, sw_list)
-        return sw_list
+            children.append(sw_entry)
+        gather_relationship_data(software, data, children)
     return None
 
 
