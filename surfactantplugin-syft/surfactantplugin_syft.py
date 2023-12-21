@@ -9,7 +9,7 @@ from surfactant.sbomtypes import SBOM, Relationship, Software
 
 
 @surfactant.plugin.hookimpl
-def extract_child_info(
+def extract_file_info(
     sbom: SBOM, software: Software, filename: str, filetype: str, children: List[Software]
 ) -> Optional[List[Software]]:
     pm = get_plugin_manager()
