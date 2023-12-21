@@ -73,7 +73,7 @@ def get_software_entry(
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
-    return (sw_entry, sum(sw_list, []) if sw_list is not None else None)
+    return (sw_entry, sw_children)
 
 
 def validate_config(config):
