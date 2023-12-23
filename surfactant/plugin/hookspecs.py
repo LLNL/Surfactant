@@ -30,7 +30,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
 
 @hookspec
 def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str, context: "Queue[ContextEntry]", children: List[Software]
+    sbom: SBOM,
+    software: Software,
+    filename: str,
+    filetype: str,
+    context: "Queue[ContextEntry]",
+    children: List[Software],
 ) -> Optional[list]:
     """Extracts information from the given file to add to the given software entry. Return an
     object to be included as part of the metadata field, and potentially used as part of
