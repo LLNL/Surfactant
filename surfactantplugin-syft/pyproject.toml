@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surfactantplugin-syft"
+authors = [
+    {name = "Ryan Mast", email = "mast9@llnl.gov"},
+    {name = "Noah Ross", email = "ross63@llnl.gov"},
+]
+description = "Surfactant syft"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["surfactant"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "anchore_syft",
+    "surfactant",
+]
+dynamic = ["version"]
+
+[project.entry-points."surfactant"]
+"anchore_syft" = "surfactantplugin_syft"
+
+[tool.setuptools]
+py-modules=["surfactantplugin_syft"]

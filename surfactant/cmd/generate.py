@@ -33,13 +33,14 @@ def get_software_entry(
     root_path=None,
     install_path=None,
     user_institution_name="",
-) -> Software:
+) -> Tuple[Software, List[Software]]:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path and install_path:
         sw_entry.installPath = [real_path_to_install_path(root_path, install_path, filepath)]
     if root_path and container_uuid:
         sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
     sw_entry.recordedInstitution = user_institution_name
+    sw_children = []
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
@@ -49,6 +50,7 @@ def get_software_entry(
         filename=filepath,
         filetype=filetype,
         context=context,
+        children=sw_children,
     )
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
@@ -79,7 +81,7 @@ def get_software_entry(
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
-    return sw_entry
+    return (sw_entry, sw_children)
 
 
 def validate_config(config):
@@ -344,28 +346,30 @@ def sbom(
 
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
                             try:
-                                entries.append(
-                                    get_software_entry(
-                                        context,
-                                        pm,
-                                        new_sbom,
-                                        filepath,
-                                        filetype=ftype,
-                                        root_path=epath,
-                                        container_uuid=parent_uuid,
-                                        install_path=install_path,
-                                        user_institution_name=recorded_institution,
-                                    )
+                                sw_parent, sw_children = get_software_entry(
+                                    context,
+                                    pm,
+                                    new_sbom,
+                                    filepath,
+                                    filetype=ftype,
+                                    root_path=epath,
+                                    container_uuid=parent_uuid,
+                                    install_path=install_path,
+                                    user_institution_name=recorded_institution,
                                 )
                             except Exception as e:
                                 raise RuntimeError(f"Unable to process: {filepath}") from e
 
                             if file_is_symlink and entry.installPrefix:
-                                # Remove the entry from the list as it'll be processed later anyways
-                                entry = entries.pop()
+                                # Track the symlink, but don't add to list of entries
+                                # as it'll be processed later anyways
                                 if entry.sha256 not in file_symlinks:
                                     file_symlinks[entry.sha256] = []
                                 file_symlinks[entry.sha256].append(install_filepath)
+                            else:
+                                entries.append(sw_parent)
+                                for sw in sw_children:
+                                    entries.append(sw)
 
                     if entries:
                         # if a software entry already exists with a matching file hash, augment the info in the existing entry
