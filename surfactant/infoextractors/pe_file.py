@@ -167,6 +167,11 @@ def extract_pe_info(filename):
                 for ar_info in assemblyref_info:
                     assembly_refs.append(get_assemblyref_info(ar_info))
                 file_details["dotnetAssemblyRef"] = assembly_refs
+            if implmap_info := getattr(dnet_mdtables, "ImplMap", None):
+                imp_modules = []
+                for im_info in implmap_info:
+                    insert_implmap_info(im_info, imp_modules)
+                file_details["dotnetImplMap"] = imp_modules
 
     # TODO for a custom intermediate SBOM format, the information read from the manifest and app config files
     # should be tied to a specific "<install path>/<file name>", in case the same file appears in separate
@@ -190,7 +195,9 @@ def add_core_assembly_info(asm_dict, asm_info):
     asm_dict[
         "Version"
     ] = f"{asm_info.MajorVersion}.{asm_info.MinorVersion}.{asm_info.BuildNumber}.{asm_info.RevisionNumber}"
-    asm_dict["PublicKey"] = asm_info.PublicKey.hex()
+    asm_dict["PublicKey"] = (
+        asm_info.PublicKey.hex() if hasattr(asm_info.PublicKey, "hex") else asm_info.PublicKey
+    )
 
 
 def add_assembly_flags_info(asm_dict, asm_info):
@@ -231,6 +238,17 @@ def get_assemblyref_info(asmref_info):
     asmref["HashValue"] = asmref_info.HashValue.hex()
     add_assembly_flags_info(asmref, asmref_info)
     return asmref
+
+
+def insert_implmap_info(im_info, imp_modules):
+    dllName = im_info.ImportScope.row.Name
+    methodName = im_info.ImportName
+    if dllName:
+        for imp_module in imp_modules:
+            if imp_module["Name"] == dllName:
+                imp_module["Functions"].append(methodName)
+                return
+        imp_modules.append({"Name": dllName, "Functions": [methodName]})
 
 
 def get_xmlns_and_tag(uri):

@@ -8,9 +8,18 @@ import json
 import sys
 import uuid as uuid_module
 from collections import deque
+from typing import Optional
 
 
-def is_valid_uuid4(u):
+def is_valid_uuid4(u) -> bool:
+    """Check if a uuid is valid
+
+    Args:
+        u (string): uuid in string form.
+
+    Returns:
+        bool: true if u is a valid uuid and false if it is not.
+    """
     try:
         u_test = uuid_module.UUID(u, version=4)
     except ValueError:
@@ -18,7 +27,23 @@ def is_valid_uuid4(u):
     return str(u_test) == u
 
 
-def find_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
+def find_relationship_entry(
+    sbom,
+    xUUID: Optional[str] = None,
+    yUUID: Optional[str] = None,
+    relationship: Optional[str] = None,
+) -> Optional[dict]:
+    """Search for a specific relationship entry and check if a match exists.
+
+    Args:
+        sbom (dict): Dictionary containing sbom entries.
+        xUUID (Optional[str]): Component x UUID. Defaults to None.
+        yUUID (Optional[str]): Component y UUID. Defaults to None.
+        relationship (Optional[str]): Describes the relationships between two components. Options are 'Uses', 'Contains'. Defaults to None.
+
+    Returns:
+        Optional[dict]: Dictionary entry that contains information where the xUUID, yUUID and relationship all match. If no match, returns None.
+    """
     for rel in sbom["relationships"]:
         all_match = True
         if xUUID:
@@ -35,7 +60,23 @@ def find_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
     return None
 
 
-def find_star_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None):
+def find_star_relationship_entry(
+    sbom,
+    xUUID: Optional[str] = None,
+    yUUID: Optional[str] = None,
+    relationship: Optional[str] = None,
+) -> Optional[dict]:
+    """Search for a star relationship entry and check if a match exists.
+
+    Args:
+        sbom (dict): Dictionary containing sbom entries.
+        xUUID (Optional[str]): Component x UUID. Defaults to None.
+        yUUID (Optional[str]): Component y UUID. Defaults to None.
+        relationship (Optional[str]): Describes the star relationship between two components. Defaults to None.
+
+    Returns:
+        Optional[dict]: Dictionary entry that contains information wehre the xUUID, yUUID, and relationship all match. If no match, returns None.
+    """
     for rel in sbom["starRelationships"]:
         all_match = True
         if xUUID:
@@ -52,7 +93,19 @@ def find_star_relationship_entry(sbom, xUUID=None, yUUID=None, relationship=None
     return None
 
 
-def find_systems_entry(sbom, uuid=None, name=None):
+def find_systems_entry(
+    sbom, uuid: Optional[str] = None, name: Optional[str] = None
+) -> Optional[dict]:
+    """Search for a systems entry and check if a match exists.
+
+    Args:
+        sbom (dict): Dictionary containing sbom entries.
+        uuid (Optional[str]): Contains component UUID. Defaults to None.
+        name (Optional[str]): Name of the larger file the component came from. Defaults to None.
+
+    Returns:
+        Optional[dict]: Dictionary entry that contains the matching system entry. If no match, returns None.
+    """
     for system in sbom["systems"]:
         all_match = True
         if uuid:
@@ -66,7 +119,25 @@ def find_systems_entry(sbom, uuid=None, name=None):
     return None
 
 
-def find_software_entry(sbom, uuid=None, sha256=None, md5=None, sha1=None):
+def find_software_entry(
+    sbom,
+    uuid: Optional[str] = None,
+    sha256: Optional[str] = None,
+    md5: Optional[str] = None,
+    sha1: Optional[str] = None,
+) -> Optional[dict]:
+    """Search for a specific software entry and check if a match exists.
+
+    Args:
+        sbom (dict): Dictionary containing sbom entries.
+        uuid (Optional[str]): Contains component UUID. Defaults to None.
+        sha256 (Optional[str]): SHA256 hash of component. Defaults to None.
+        md5 (Optional[str]): MD5 hash of component. Defaults to None.
+        sha1 (Optional[str]): SHA1 hash of component. Defaults to None.
+
+    Returns:
+        Optional[dict]: Dictionary entry that contains the matching software entry. If no match, returns None.
+    """
     for sw in sbom["software"]:
         all_match = True
         if uuid:
@@ -86,7 +157,14 @@ def find_software_entry(sbom, uuid=None, sha256=None, md5=None, sha1=None):
     return None
 
 
-def merge_number_same(e1, e2, k):
+def merge_number_same(e1: int, e2: int, k: str):
+    """Merges two entries if the number is the same.
+
+    Args:
+        e1 (int): Number.
+        e2 (int): Number.
+        k (str): Name of the field to compare the two numbers.
+    """
     # use e2 number if field isn't in e1
     if k not in e1:
         if k in e2:
@@ -97,7 +175,14 @@ def merge_number_same(e1, e2, k):
                 print(f"Field {k} that should match does not! e1={e1} e2={e2}")
 
 
-def merge_number_lt(e1, e2, k):
+def merge_number_lt(e1: int, e2: int, k: str):
+    """Merge two entries and assign the lesser of the two numbers.
+
+    Args:
+        e1 (int): Number.
+        e2 (int): Number.
+        k (str): Name of the field to compare the two numbers.
+    """
     # use e2 number if the field isn't in e1
     if k not in e1:
         if k in e2:
@@ -108,7 +193,14 @@ def merge_number_lt(e1, e2, k):
                 e1[k] = e2[k]
 
 
-def merge_number_gt(e1, e2, k):
+def merge_number_gt(e1: int, e2: int, k: str):
+    """Merge two entries and assign the greater of the two numbers.
+
+    Args:
+        e1 (int): Number.
+        e2 (int): Number.
+        k (str): Name of the field to compare the two numbers.
+    """
     # use e2 number if the field isn't in e1
     if k not in e1:
         if k in e2:
@@ -119,7 +211,14 @@ def merge_number_gt(e1, e2, k):
                 e1[k] = e2[k]
 
 
-def merge_string(e1, e2, k):
+def merge_string(e1: str, e2: str, k: str):
+    """Merge two entries. If empty, keep empty.
+
+    Args:
+        e1 (str): String with information.
+        e2 (str): String with information.
+        k (str): Name of the field to compare the two strings.
+    """
     if k not in e1 or not e1[k]:
         # worst case, e2 has an empty string/null just like e1
         if k in e2:
