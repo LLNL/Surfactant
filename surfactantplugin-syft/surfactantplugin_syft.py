@@ -51,7 +51,6 @@ def extract_file_info(
                     sw_entry.supplementaryFiles.append(file["path"])
             children.append(sw_entry)
         gather_relationship_data(software, data, children)
-    return None
 
 
 @surfactant.plugin.hookimpl
