@@ -347,14 +347,14 @@ def sbom(
                         if ftype := pm.hook.identify_file_type(filepath=filepath):
                             try:
                                 sw_parent, sw_children = get_software_entry(
-                                    context
+                                    context,
                                     pm,
                                     new_sbom,
                                     filepath,
                                     filetype=ftype,
                                     root_path=epath,
                                     container_uuid=parent_uuid,
-                                    install_path=install_prefix,
+                                    install_path=entry.installPrefix,
                                     user_institution_name=recorded_institution,
                                 )
                             except Exception as e:
