@@ -354,7 +354,7 @@ def sbom(
                                     filetype=ftype,
                                     root_path=epath,
                                     container_uuid=parent_uuid,
-                                    install_path=entry.installPrefix,
+                                    install_path=install_path,
                                     user_institution_name=recorded_institution,
                                 )
                             except Exception as e:
