@@ -1,4 +1,8 @@
-# Configuration
+# Configuration Files
+
+There are several files for configuring different aspects of Surfactant functionality based on the subcommand used.
+This page currently describes the format for the file used to generate an SBOM, but will eventually cover other
+configuration files as well.
 
 ## Build configuration file
 

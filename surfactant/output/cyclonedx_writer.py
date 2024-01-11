@@ -93,6 +93,11 @@ def write_sbom(sbom: SBOM, outfile) -> None:
     outfile.write(outputter.output_as_string())
 
 
+@surfactant.plugin.hookimpl
+def short_name() -> Optional[str]:
+    return "cyclonedx"
+
+
 def convert_system_to_cyclonedx_component(system: System) -> Tuple[str, Component]:
     """Converts a system entry in the SBOM to a CycloneDX Component.
 

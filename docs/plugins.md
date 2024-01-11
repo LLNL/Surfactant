@@ -24,7 +24,7 @@ In order to create a plugin, you will need to write your implementation for one 
 [read_sbom](https://github.com/LLNL/Surfactant/tree/main/surfactant/plugin/hookspecs.py#L80)
 - If reading from input SBOMs, specifies what format the input SBOMs are
 
-### Step 2. Write .toml File
+### Step 2. Write pyproject.toml File
 
 Once you have written your plugin, you will need to write a pyproject.toml file. Include any relevant project metadata/dependencies for your plugin, as well as an entry-point specification (example below) to make the plugin discoverable by surfactant. Once you write your .toml file, you can `pip install .` your plugin.
 More information on entry points can be found [here](https://setuptools.pypa.io/en/latest/userguide/entry_point.html#entry-points-syntax)
@@ -48,4 +48,4 @@ sampleplugin = "sampleplugin"
 ```
 From the same folder as your sampleplugin files, run `pip install .` to install your plugin and surfactant will automatically load and use the plugin.
 
-Another example can be found in the [surfactantplugin-checksec.py](https://github.com/LLNL/Surfactant/tree/main/surfactantplugin-checksec.py) folder. There you can see the [pyproject.toml](https://github.com/LLNL/Surfactant/tree/main/surfactantplugin-checksec.py/pyproject.toml) file with the `[project.entry-points."surfactant"]` entry. In the [surfactantplugin_checksec.py](https://github.com/LLNL/Surfactant/tree/main/surfactantplugin-checksec.py/surfactantplugin_checksec.py) file, you can identify the hooked functions with the `@surfactant.plugin.hookimpl` hook.
+Another example can be found in the [plugins/checksec.py](https://github.com/LLNL/Surfactant/tree/main/plugins/checksec.py) folder. There you can see the [pyproject.toml](https://github.com/LLNL/Surfactant/tree/main/plugins/checksec.py/pyproject.toml) file with the `[project.entry-points."surfactant"]` entry. In the [surfactantplugin_checksec.py](https://github.com/LLNL/Surfactant/tree/main/plugins/checksec.py/surfactantplugin_checksec.py) file, you can identify the hooked functions with the `@surfactant.plugin.hookimpl` hook.
