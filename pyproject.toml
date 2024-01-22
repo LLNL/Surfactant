@@ -46,7 +46,7 @@ dependencies = [
     "olefile",
     "defusedxml",
     "spdx-tools==0.8.*",
-    "cyclonedx-python-lib==5.0.1",
+    "cyclonedx-python-lib==6.4.0",
     "pluggy",
     "click",
     "javatools>=1.6.0",
