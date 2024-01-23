@@ -1,7 +1,8 @@
 import hashlib
 import sys
-from loguru import logger
+
 import click
+from loguru import logger
 
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._sbom import SBOM
@@ -40,9 +41,9 @@ def find(sbom, sha256, file, installpath, containerpath, output_format, input_fo
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
     in_sbom = input_reader.read_sbom(sbom)
     out_sbom = SBOM()
-    if sha256: # Specific hash, no need to check any other params
+    if sha256:  # Specific hash, no need to check any other params
         out_sbom.add_software(in_sbom.find_software(sha256))
-    elif file: # Specific file referenced, only return that entry, other options not neccessary
+    elif file:  # Specific file referenced, only return that entry, other options not neccessary
         sha256, sha1, md5 = _calculate_hashes(file)
         out_sbom.add_software(in_sbom.find_software(sha256))
     else:
