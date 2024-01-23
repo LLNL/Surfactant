@@ -54,6 +54,8 @@ def find(sbom, sha256, file, installpath, containerpath, output_format, input_fo
             path_query["containerPath"] = str(containerpath)
         for sw in in_sbom.find_software_by_path(path_query):
             out_sbom.add_software(sw)
+    if not out_sbom.software:
+        logger.warning("No software matches found with given parameters.")
     output_writer.write_sbom(out_sbom, sys.stdout)
 
 

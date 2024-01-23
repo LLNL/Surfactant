@@ -82,8 +82,6 @@ class SBOM:
                         break
             if all_match:
                 matches.append(sw)
-        if not matches:
-            logger.error(f"No software matches found for params {paths}")
         return matches
 
     def add_software(self, sw: Software) -> None:
