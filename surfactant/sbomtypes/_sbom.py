@@ -61,28 +61,11 @@ class SBOM:
                 return True
         return False
 
-    def find_software(self, sha256: Optional[str]) -> Optional[Software]:
+    def find_software(self, sha256: Optional[str]) -> List[Software]:
         for sw in self.software:
             if sha256 == sw.sha256:
                 return sw
         return None
-
-    def find_software_by_path(self, paths: dict) -> Optional[Software]:
-        matches = []
-        for sw in self.software:
-            all_match = True
-            for pathname, path in paths.items():
-                if pathname == "containerPath":
-                    if not any(path in p for p in sw.containerPath):
-                        all_match = False
-                        break
-                if pathname == "installPath":
-                    if not any(path in p for p in sw.installPath):
-                        all_match = False
-                        break
-            if all_match:
-                matches.append(sw)
-        return matches
 
     def add_software(self, sw: Software) -> None:
         self.software.append(sw)
