@@ -75,16 +75,23 @@ class cli_find:
     """
 
     match_functions: dict
+    camel_case_conversions: dict
     sbom: SBOM
 
     def __init__(self):
         """Initializes the cli_find class"""
         self.match_functions = {
-            "sha256": self.match_by_sha256,
-            "file": self.match_by_file,
-            "uuid": self.match_by_uuid,
-            "containerpath": self.match_by_containerPath,
-            "installpath": self.match_by_installPath,
+            int: self.match_single_value,
+            str: self.match_single_value,
+            list: self.match_array_value,
+        }
+        self.camel_case_conversions = {
+            "uuid": "UUID",
+            "filename": "fileName",
+            "containerpath": "containerPath",
+            "installpath": "installPath",
+            "capturetime": "captureTime",
+            "relationshipassertion": "relationshipAssertion",
         }
         self.sbom = SBOM()
 
@@ -96,59 +103,39 @@ class cli_find:
         for sw in input_sbom.software:
             match = True
             for k, v in kwargs.items():
-                if not self.match_functions[k](sw, v):
+                if k == "file":
+                    entry_value = sw.sha256
+                    v, _, _ = self._calculate_hashes(v, sha256=True)
+                else:
+                    entry_value = vars(sw)[
+                        self.camel_case_conversions[k]
+                        if k in self.camel_case_conversions.keys()
+                        else k
+                    ]
+                if not self.match_functions[type(entry_value)](entry_value, v):
                     match = False
                     break
             if match:
                 self.sbom.add_software(sw)
         return self.sbom
 
-    def match_by_sha256(self, entry: Software, sha256: str) -> bool:
-        """Matches sbom entry on sha256 hash
-        param: entry   The software sbom entry to match
-        param: sha256: String value of the desired hash to match
+    def match_single_value(self, first, second) -> bool:
+        """Matches sbom entry on single value
+        param: first   The entry value to match
+        param: second: The value to match first to
         returns:       bool, True if a match, False if not
         """
-        if entry.sha256 == sha256:
+        if first == second:
             return True
         return False
 
-    def match_by_file(self, entry: Software, file) -> bool:
-        """Matches sbom entry on a given file
-        param: entry   The software sbom entry to match
-        param: file:   File to match
-        returns:       bool, True if a match, False if not
-        """
-        sha256, _, _ = self._calculate_hashes(file, sha256=True)
-        return self.match_by_sha256(entry, sha256)
-
-    def match_by_uuid(self, entry: Software, uuid: str) -> bool:
-        """Matches sbom entry on uuid
-        param: entry    The software sbom entry to match
-        param: uuid:    String value of the desired uuid to match
+    def match_array_value(self, array, value) -> bool:
+        """Matches sbom entry on array value. Will match if value is contained in any of the array values.
+        param: entry    The entry array to match
+        param: value:   The value to find in array
         returns:        bool, True if a match, False if not
         """
-        if entry.UUID == uuid:
-            return True
-        return False
-
-    def match_by_containerPath(self, entry: Software, containerPath: str) -> bool:
-        """Matches sbom entry on containerpath. Will match if containerPath is contained in any of the containerPath entries.
-        param: entry            The software sbom entry to match
-        param: containerPath:   String value of the desired containerpath to match
-        returns:                bool, True if a match, False if not
-        """
-        if any(containerPath in p for p in entry.containerPath):
-            return True
-        return False
-
-    def match_by_installPath(self, entry: Software, installPath: str) -> bool:
-        """Matches sbom entry on installpath. Will match if installPath is contained in any of the installPath entries.
-        param: entry            The software sbom entry to match
-        param: installPath:     String value of the desired installPath to match
-        returns:                bool, True if a match, False if not
-        """
-        if any(installPath in p for p in entry.installPath):
+        if any(value in entry for entry in array):
             return True
         return False
 
