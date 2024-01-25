@@ -6,7 +6,6 @@ from loguru import logger
 
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._sbom import SBOM
-from surfactant.sbomtypes._software import Software
 
 
 @click.argument("sbom", type=click.File("r"), required=True)
