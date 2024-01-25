@@ -108,7 +108,7 @@ class cli_find:
                 else:
                     entry_value = vars(sw)[
                         self.camel_case_conversions[k]
-                        if k in self.camel_case_conversions.keys()
+                        if k in self.camel_case_conversions
                         else k
                     ]
                 if not self.match_functions[type(entry_value)](entry_value, v):
