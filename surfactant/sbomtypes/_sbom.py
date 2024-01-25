@@ -61,7 +61,7 @@ class SBOM:
                 return True
         return False
 
-    def find_software(self, sha256: Optional[str]) -> List[Software]:
+    def find_software(self, sha256: Optional[str]) -> Optional[Software]:
         for sw in self.software:
             if sha256 == sw.sha256:
                 return sw
