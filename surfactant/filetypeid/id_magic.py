@@ -25,6 +25,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
     try:
         with open(filepath, "rb") as f:
             magic_bytes = f.read(265)
+            suffix = pathlib.Path(filepath).suffix.lower()
             if magic_bytes[:4] == b"\x7fELF":
                 return "ELF"
             if magic_bytes[:2] == b"MZ":
@@ -32,7 +33,9 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 # Regardless, the initial header (may) contain a pointer to an additional COFF
                 # header, so we look for that as the first step.
                 coff_addr = (
-                    int.from_bytes(magic_bytes[0x3C:0x40], byteorder="little", signed=False)
+                    int.from_bytes(
+                        magic_bytes[0x3C:0x40], byteorder="little", signed=False
+                    )
                     & 0xFFFF
                 )
 
@@ -77,10 +80,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 ".cab.gz",
             ]:
                 return "GZIP"
-            if magic_bytes[257:265] == b"ustar\x0000" or magic_bytes[257:265] == b"ustar  \x00":
+            if (
+                magic_bytes[257:265] == b"ustar\x0000"
+                or magic_bytes[257:265] == b"ustar  \x00"
+            ):
                 return "TAR"
             if magic_bytes[:4] in [b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"]:
-                suffix = pathlib.Path(filepath).suffix.lower()
                 if suffix in [".zip", ".zipx"]:
                     return "ZIP"
                 # Java archive files of various types
@@ -104,7 +109,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 # Distinguish them the same way file magic and Apple do
                 # https://opensource.apple.com/source/file/file-80.40.2/file/magic/Magdir/cafebabe.auto.html
                 # https://github.com/file/file/blob/master/magic/Magdir/cafebabe
-                if int.from_bytes(magic_bytes[4:8], byteorder="big", signed=False) <= 30:
+                if (
+                    int.from_bytes(
+                        magic_bytes[4:8], byteorder="big", signed=False
+                    )
+                    <= 30
+                ):
                     return "MACHOFAT"
                 return "JAVACLASS"
             if magic_bytes[:4] == b"\xbe\xba\xfe\xca":
@@ -128,17 +138,23 @@ def identify_file_type(filepath: str) -> Optional[str]:
             # Need to check both small and big endian for a.out
             a_out_magic = [0x111, 0x108, 0x107, 0x0CC, 0x10B]
             if (
-                int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) & 0xFFFF
+                int.from_bytes(magic_bytes[:4], byteorder="big", signed=False)
+                & 0xFFFF
                 in a_out_magic
             ):
                 return "A.OUT big"
             if (
-                int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) & 0xFFFF
+                int.from_bytes(
+                    magic_bytes[:4], byteorder="little", signed=False
+                )
+                & 0xFFFF
                 in a_out_magic
             ):
                 return "A.OUT little"
             if (
-                int.from_bytes(magic_bytes[:2], byteorder="little", signed=False)
+                int.from_bytes(
+                    magic_bytes[:2], byteorder="little", signed=False
+                )
                 in COFF_MAGIC_TARGET_NAME
             ):
                 return "COFF"
@@ -159,9 +175,14 @@ def identify_file_type(filepath: str) -> Optional[str]:
             # OMF:
             # https://github.com/file/file/blob/c8bba134ac1f3c9f5/magic/Magdir/msvc#L22
             if (
-                int.from_bytes(magic_bytes[0:4], byteorder="big", signed=False) & 0xFF0F80FF
+                int.from_bytes(magic_bytes[0:4], byteorder="big", signed=False)
+                & 0xFF0F80FF
             ) == 0xF00D0000:
                 return "OMF_LIB"
+            if magic_bytes[:12] == b"#!/bin/bash\n" or suffix == ".sh":
+                return "BASH"
+            if suffix == ".py":
+                return "PYTHON"
             return None
     except FileNotFoundError:
         return None
