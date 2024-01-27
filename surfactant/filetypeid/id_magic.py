@@ -179,10 +179,18 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 & 0xFF0F80FF
             ) == 0xF00D0000:
                 return "OMF_LIB"
+            # Check for script files
             if magic_bytes[:12] == b"#!/bin/bash\n" or suffix == ".sh":
                 return "BASH"
             if suffix == ".py":
                 return "PYTHON"
+            # Check for web related files
+            if suffix == ".js":
+                return "JAVASCRIPT"
+            if suffix == ".css":
+                return "CSS"
+            if magic_bytes[:16] == "<!DOCTYPE html>\n" or suffix == ".html":
+                return "HTML"
             return None
     except FileNotFoundError:
         return None
