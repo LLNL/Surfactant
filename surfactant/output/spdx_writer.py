@@ -392,17 +392,17 @@ def create_spdx_package(
         ],  # SPDXNone if no license info detected, SpdxNoAssertion if didn't try to determine
         copyright_text=SpdxNoAssertion(),  # SPDXNone if no copyright info, SpdxNoAssertion if didn't try to determine; use any Cr text even if incomplete
         version=version if version else None,
-        file_name=file_name
-        if file_name
-        else None,  # actual file name, or path to directory treated as package (subdirectory is denoted with ./)
-        supplier=supplier
-        if supplier
-        else SpdxNoAssertion(),  # SpdxNoAssertion if can't determine (SPDX can't handle multiple vendors)
+        file_name=(
+            file_name if file_name else None
+        ),  # actual file name, or path to directory treated as package (subdirectory is denoted with ./)
+        supplier=(
+            supplier if supplier else SpdxNoAssertion()
+        ),  # SpdxNoAssertion if can't determine (SPDX can't handle multiple vendors)
         originator=SpdxNoAssertion(),  # 3rd party who distributed package is different than the supplier/vendor
         checksums=pkg_checksums,
-        summary=summary
-        if summary
-        else None,  # concise info on the function or use of package, without having to parse source code
+        summary=(
+            summary if summary else None
+        ),  # concise info on the function or use of package, without having to parse source code
         homepage=SpdxNoAssertion(),  # SPDXNone if none exists, SpdxNoAssertion if didn't try to find a homepage
     )
     # primary_package_purpose can be: APPLICATION | FRAMEWORK | LIBRARY | CONTAINER | OPERATING - SYSTEM |
