@@ -3,13 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-import json
-import os
 import pathlib
-import random
-import string
-
-import pytest
 
 from surfactant.cmd.cli import cli_find
 from surfactant.sbomtypes import SBOM
