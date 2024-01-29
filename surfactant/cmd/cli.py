@@ -84,9 +84,9 @@ class cli_find:
             str: self.match_single_value,
             list: self.match_array_value,
             dict: self.match_dict_value,
-            float: self.match_none,
-            tuple: self.match_none,
-            type(None): self.match_none,
+            float: self.match_none_or_unhandled,
+            tuple: self.match_none_or_unhandled,
+            type(None): self.match_none_or_unhandled,
         }
         self.camel_case_conversions = {
             "uuid": "UUID",
@@ -121,12 +121,7 @@ class cli_find:
                 if k == "file":
                     entry_value = {"sha256": sw.sha256, "sha1": sw.sha1, "md5": sw.md5}
                 else:
-                    key = self.camel_case_conversions[k] if k in self.camel_case_conversions else k
-                    entry_value = (
-                        vars(sw)[key]
-                        if key in vars(sw)
-                        else logger.error(f"Key {key} not found in SBOM")
-                    )
+                    entry_value = vars(sw)[k] if k in vars(sw) else None
                 if not self.match_functions[type(entry_value)](entry_value, v):
                     match = False
                     break
