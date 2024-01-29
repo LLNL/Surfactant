@@ -46,7 +46,9 @@ class SoftwareProvenance:
 
 @dataclass
 class AnalysisDataProvenance:
-    fieldName: str  # enum: origin, testName, testVersion, specificEnvironment, linksToKnownVulnerabilities
+    fieldName: (
+        str  # enum: origin, testName, testVersion, specificEnvironment, linksToKnownVulnerabilities
+    )
     capturedBy: Optional[str] = None
     captureTime: Optional[int] = None
     source: Optional[str] = None

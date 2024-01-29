@@ -54,9 +54,9 @@ class Software:
     sha1: Optional[str] = None
     sha256: Optional[str] = None
     md5: Optional[str] = None
-    relationshipAssertion: Optional[
-        str
-    ] = None  # enum: Unknown, Root, Partial, Known; default=Unknown
+    relationshipAssertion: Optional[str] = (
+        None  # enum: Unknown, Root, Partial, Known; default=Unknown
+    )
     comments: Optional[str] = None
     metadata: Optional[List[object]] = None
     supplementaryFiles: Optional[List[File]] = None
