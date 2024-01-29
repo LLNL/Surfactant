@@ -16,7 +16,7 @@ from surfactant.sbomtypes._sbom import SBOM
     "--installPath",
     is_flag=False,
     type=str,
-    help="Matches all entries with a install path or partial install path match",
+    help="Matches all entries with an install path or partial install path match",
 )
 @click.option(
     "--containerPath",
@@ -28,7 +28,7 @@ from surfactant.sbomtypes._sbom import SBOM
     "--output_format",
     is_flag=False,
     default="surfactant.output.cytrics_writer",
-    help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx]_writer",
+    help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx|cyclonedx]_writer",
 )
 @click.option(
     "--input_format",
@@ -70,7 +70,7 @@ class cli_find:
 
     Attributes:
     match_functions     A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
-    sbom                A internal record of sbom entries the class adds to as it finds more matches.
+    sbom                An internal record of sbom entries the class adds to as it finds more matches.
     """
 
     match_functions: dict
@@ -83,6 +83,10 @@ class cli_find:
             int: self.match_single_value,
             str: self.match_single_value,
             list: self.match_array_value,
+            dict: self.match_dict_value,
+            float: self.match_none,
+            tuple: self.match_none,
+            type(None): self.match_none,
         }
         self.camel_case_conversions = {
             "uuid": "UUID",
@@ -94,21 +98,35 @@ class cli_find:
         }
         self.sbom = SBOM()
 
+    def handle_kwargs(self, kwargs: dict) -> dict:
+        converted_kwargs = {}
+        for k, v in kwargs.items():  # Convert key values to camelcase where appropriate
+            if k == "file":
+                sha256, sha1, md5 = self._calculate_hashes(v, sha256=True, sha1=True, md5=True)
+                v = {"sha256": sha256, "sha1": sha1, "md5": md5}
+            key = self.camel_case_conversions[k] if k in self.camel_case_conversions else k
+            converted_kwargs[key] = v
+        return converted_kwargs
+
     def execute(self, input_sbom: SBOM, **kwargs):
         """Executes the main functionality of the cli_find class
         param: input_sbom   The sbom to find matches within
         param: kwargs:      Dictionary of key/value pairs indicating what features to match on
         """
+        converted_kwargs = self.handle_kwargs(kwargs)
+
         for sw in input_sbom.software:
             match = True
-            for k, v in kwargs.items():
+            for k, v in converted_kwargs.items():
                 if k == "file":
-                    entry_value = sw.sha256
-                    v, _, _ = self._calculate_hashes(v, sha256=True)
+                    entry_value = {"sha256": sw.sha256, "sha1": sw.sha1, "md5": sw.md5}
                 else:
-                    entry_value = vars(sw)[
-                        self.camel_case_conversions[k] if k in self.camel_case_conversions else k
-                    ]
+                    key = self.camel_case_conversions[k] if k in self.camel_case_conversions else k
+                    entry_value = (
+                        vars(sw)[key]
+                        if key in vars(sw)
+                        else logger.error(f"Key {key} not found in SBOM")
+                    )
                 if not self.match_functions[type(entry_value)](entry_value, v):
                     match = False
                     break
@@ -134,6 +152,25 @@ class cli_find:
         """
         if any(value in entry for entry in array):
             return True
+        return False
+
+    def match_dict_value(self, d1: dict, d2: dict) -> bool:
+        """Matches dictonary values. Will match if two dictionaries have any k,v pairs in common. Used for file hash comparison.
+        param: d1       The first dictionary of values
+        param: d2:      The 2nd dictionary of values to find
+        returns:        bool, True if a match, False if not
+        """
+        if set(d1.items()).intersection(set(d2.items())):
+            return True
+        return False
+
+    def match_none_or_unhandled(self, value, match):
+        """Default match function if no key value found in SBOM or match type unknown/unhandled
+        param: value    Should only be None
+        param: match:   Value that would have been matched
+        returns:        False
+        """
+        logger.debug(f"SBOM entry_value of type={type(value)} is not currently handled.")
         return False
 
     def _calculate_hashes(self, file, sha256=False, sha1=False, md5=False):
