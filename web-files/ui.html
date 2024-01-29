@@ -103,14 +103,14 @@
             font-weight: bold;
         }
 
-        .generate_extract_path_grid {
+        .extract_path_grid {
             display: inline-grid;
             grid-template-columns: auto max-content max-content;
             width: 100%;
             column-gap: 1ch;
         }
 
-        .generate_extract_path_grid input[type=text] {
+        .extract_path_grid input[type=text] {
             width: 99%;
         }
 
@@ -166,6 +166,7 @@
 
         // Use globals because I'm not sure of a better way to do this
         let generate_input_num = 0;
+        let merge_input_num = 0;
 
         function generate_disable_or_enable_delete_input()
         {
@@ -174,6 +175,19 @@
             // Disable deleting the last input, but enable all delete buttons if there's more than one
             for (let i = 0; i < generate_input_num; ++i) {
                 const elem = document.getElementById(`generate_delete_button_${i}`);
+                if (elem) {
+                    elem.disabled = num_inputs == 1;
+                }
+            }
+        }
+
+        // TODO: This can probably be merged with the above
+        function merge_disable_or_enable_delete_input()
+        {
+            const input_files = document.getElementById("merge_input_files");
+            const num_inputs = input_files.children.length;
+            for (let i = 0; i < merge_input_num; ++i) {
+                const elem = document.getElementById(`merge_delete_button_${i}`);
                 if (elem) {
                     elem.disabled = num_inputs == 1;
                 }
@@ -211,7 +225,7 @@
 
             // Extract Paths
             const extract_div = document.createElement("div");
-            extract_div.classList.add("generate_extract_path_grid");
+            extract_div.classList.add("extract_path_grid");
             const extract_1 = document.createElement("div");
             const label = document.createElement("label");
             const abbr = document.createElement("abbr");
@@ -314,12 +328,124 @@
             generate_disable_or_enable_delete_input();
         }
 
+        // TODO: Can this be combined with the above in some way?
+        function add_merge_input_file()
+        {
+            const cur_input_num = merge_input_num;
+            const inputs = document.getElementById("merge_input_files");
+
+            const div = document.createElement("div");
+            div.classList.add("extract_path_grid");
+            // add input field
+            const input = document.createElement("input");
+            input.type = "text";
+            input.id = `merge_input_${merge_input_num}`;
+            const add_btn = document.createElement("button");
+            add_btn.textContent = '+';
+            const sub_btn = document.createElement("button");
+            sub_btn.textContent = '-';
+            sub_btn.id = `merge_delete_button_${cur_input_num}`;
+            div.appendChild(input);
+            div.appendChild(add_btn);
+            div.appendChild(sub_btn);
+
+            add_btn.addEventListener("click", (event) => {
+                add_merge_input_file();
+            });
+
+            sub_btn.addEventListener("click", (event) => {
+                inputs.removeChild(div);
+                merge_disable_or_enable_delete_input();
+            });
+
+            inputs.appendChild(div);
+
+            merge_input_num += 1;
+            merge_disable_or_enable_delete_input();
+        }
+
+        function refresh_results()
+        {
+            // Remove old results
+            const results_list = document.getElementById("results_list");
+            while (results_list.firstChild) {
+                results_list.removeChild(results_list.lastChild);
+            }
+            document.getElementById("refresh_btn").classList.add("hidden");
+            // Fetch new results
+            fetch(`${document.URL}/get_result_list`)
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Error with server's response");
+                    }
+                    return response.blob();
+                })
+                .then((blob) => {
+                    return blob.text();
+                })
+                .then((data) => {
+                    const response = JSON.parse(data);
+                    const results_list = document.getElementById("results_list");
+                    for (let result of response) {
+                        const para = document.createElement('p');
+                        const link = document.createElement('a');
+                        link.download = result;
+                        link.href = `${document.URL}/get_result/${result}`;
+                        link.textContent = result;
+                        para.appendChild(link);
+                        results_list.appendChild(para);
+                    }
+                    document.getElementById("refresh_btn").classList.remove("hidden");
+                })
+                .catch((err) => {
+                    document.getElementById("results_error").innerText = `Error: ${err}`;
+                });
+        }
+
+        function handle_server_response(data, command_name)
+        {
+            const response = JSON.parse(data);
+            if (response["error"]) {
+                document.getElementById(`${command_name}_results_text`).textContent = '';
+                document.getElementById(`${command_name}_error_text`).textContent = `Error: ${response["error_desc"]}`;
+            }
+            else {
+                // Erase any old results
+                const res = document.getElementById(`${command_name}_results_text`);
+                while (res.firstChild) {
+                    res.removeChild(res.lastChild);
+                }
+                // Generate the download link
+                const link = document.createElement('a');
+                link.download = response["file_name"];
+                link.href = `${document.URL}/get_result/${response["file_name"]}`;
+                link.textContent = "Download result.";
+                res.appendChild(link);
+            }
+            document.getElementById("option_input").classList.remove("hidden");
+            document.getElementById("running").classList.add("hidden");
+            document.getElementById(`${command_name}_result`).classList.remove("hidden");
+            refresh_results();
+        }
+
+        function handle_server_error(err, command_name)
+        {
+            document.getElementById(`${command_name}_results_text`).textContent = '';
+            document.getElementById("option_input").classList.remove("hidden");
+            document.getElementById("running").classList.add("hidden");
+            document.getElementById(`${command_name}_result`).classList.remove("hidden");
+            document.getElementById(`${command_name}_error_text`).textContent = `Error: ${err}`;
+        }
+
         window.addEventListener("load", () => {
+            // Load previous results
+            refresh_results();
+
             // Command tabs
             const command_list = [
                 "generate",
                 "merge",
-                "stats"
+                "results"
             ]
             for (const command of command_list) {
                 document.getElementById(`${command}_button`).addEventListener("click", (event) => {
@@ -336,6 +462,9 @@
             // Create the first generate_input_files field
             add_generate_input_file();
 
+            // Create the first merge_input_files field
+            add_merge_input_file();
+
             // Generate's run button
             document.getElementById("generate_run").addEventListener("click", (event) => {
                 document.getElementById("generate_error_text").textContent = '';
@@ -350,7 +479,6 @@
                     let cur_input = {"extract_paths": []};
                     for (const div_group of input.children) {
                         for (const child of div_group.children) {
-                            console.log(child, child.className);
                             if (is_input.test(child.id)) {
                                 cur_input["archive"] = child.value;
                             }
@@ -394,35 +522,60 @@
                         return blob.text();
                     })
                     .then((data) => {
-                        const response = JSON.parse(data);
-                        if (response["error"]) {
-                            document.getElementById("generate_results_text").textContent = '';
-                            document.getElementById("generate_error_text").textContent = `Error: ${err}`;
-                        }
-                        else {
-                            // Erase any old results
-                            const res = document.getElementById("generate_results_text");
-                            while (res.firstChild) {
-                                res.removeChild(res.lastChild);
-                            }
-                            // Generate the download link
-                            const link = document.createElement('a');
-                            link.download = response["file_name"];
-                            link.href = `${document.URL}/get_result/${response["file_name"]}`;
-                            link.textContent = "Download result.";
-                            res.appendChild(link);
-                        }
-                        document.getElementById("option_input").classList.remove("hidden");
-                        document.getElementById("running").classList.add("hidden");
-                        document.getElementById("generate_result").classList.remove("hidden");
+                        handle_server_response(data, "generate");
                     })
                     .catch((err) => {
-                        document.getElementById("generate_results_text").textContent = '';
-                        document.getElementById("option_input").classList.remove("hidden");
-                        document.getElementById("running").classList.add("hidden");
-                        document.getElementById("generate_result").classList.remove("hidden");
-                        document.getElementById("generate_error_text").textContent = `Error: ${err}`;
+                        handle_server_error(err, "generate");
                     });
+            });
+
+            // Merge's run button
+            document.getElementById("merge_run").addEventListener("click", (event) => {
+                document.getElementById("merge_error_text").textContent = '';
+                document.getElementById("option_input").classList.add("hidden");
+                document.getElementById("running").classList.remove("hidden");
+
+                const inputs = [];
+                const is_merge_input = /merge_input_\d+/;
+                for (const input of document.getElementById("merge_input_files").children) {
+                    for (const child of input.children) {
+                        if (is_merge_input.test(child.id)) {
+                            inputs.push(child.value);
+                        }
+                    }
+                }
+                fetch(`${document.URL}/merge`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        inputs: inputs,
+                        input_format: document.getElementById("merge_input_format").value,
+                        output_format: document.getElementById("merge_output_format").value,
+                        config_file: document.getElementById("merge_config_file").value
+                    }),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error("Error with server's response.");
+                        }
+                        return response.blob();
+                    })
+                    .then((blob) => {
+                        return blob.text();
+                    })
+                    .then((data) => {
+                        handle_server_response(data, "merge");
+                    })
+                    .catch((err) => {
+                        handle_server_error(err, "merge");
+                    });
+            });
+
+            // Refresh results button
+            document.getElementById("refresh_btn").addEventListener("click", (event) => {
+                refresh_results();
             });
         });
     </script>
@@ -436,7 +589,7 @@
         <div class="tabs">
             <button id="generate_button" class="command-tab selected">Generate</button>
             <button id="merge_button" class="command-tab">Merge</button>
-            <button id="stats_button" class="command-tab">Stats</button>
+            <button id="results_button" class="command-tab">Results</button>
         </div>
 
         <div id="generate" class="visible">
@@ -529,10 +682,66 @@
             </div>
         </div>
         <div id="merge" class="hidden">
-            <p>Merge</p>
+            <div id="merge_result" class="hidden">
+                <h2>Results</h2>
+                <div id="merge_results_text"></div>
+                <div id="merge_error_text"></div>
+            </div>
+            <h2>Options</h2>
+            <h3>Input Files</h3>
+            <div id="merge_input_files"></div>
+            <h3>Optional options</h3>
+            <div class="option_grid">
+                <div class="grid_left">
+                    <p>
+                        <label for="merge_input_format">
+                            <abbr title="SBOM input format, assumes all SBOM's have the same format">
+                                Input Format
+                            </abbr>
+                        </label>
+                        <select id="merge_input_format">
+                            <option value="cytrics">CyTRICS</option>
+                            <option value="spdx">SPDX</option>
+                            <option value="csv">CSV</option>
+                        </select>
+                    </p>
+                    <p>
+                        <div class="input_grid">
+                            <label class="grid_left" for="merge_config_file">
+                                <abbr title="Config file to specify a root system entry">
+                                    Config File
+                                </abbr>
+                            </label>
+                            <input class="grid_right" type="text" id="merge_config_file" />
+                        </div>
+                    </p>
+                </div>
+                <div class="grid_right">
+                    <p>
+                        <label for="merge_output_format">
+                            <abbr title="SBOM output format">
+                                Output Format
+                            </abbr>
+                        </label>
+                        <select id="merge_output_format">
+                            <option value="cytrics">CyTRICS</option>
+                            <option value="spdx">SPDX</option>
+                            <option value="csv">CSV</option>
+                        </select>
+                    </p>
+                </div>
+            </div>
+            <div class="run_button_div">
+                <button id="merge_run" class="run_button">Run</button>
+            </div>
         </div>
-        <div id="stats" class="hidden">
-            <p>Stats</p>
+        <div id="results" class="hidden">
+            <h2>Results</h2>
+            <div id="results_error"></div>
+            <div id="results_list" class="center"></div>
+            <div class="run_button_div">
+                <button id="refresh_btn">Refresh Results</button>
+            </div>
         </div>
     </div>
 </body>

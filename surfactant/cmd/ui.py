@@ -9,6 +9,7 @@ import os
 import tempfile
 import json
 import surfactant.cmd.generate as gen
+import surfactant.cmd.merge as merge_command
 import datetime
 
 site = flask.Blueprint('site', __name__, url_prefix='/')
@@ -19,7 +20,7 @@ def get_result(id):
 
 @site.route('/get_result_list')
 def get_result_list():
-    return json.dumps(sorted([f for f in os.listdir('results') if os.path.isfile(os.path.join('results', f))]))
+    return json.dumps(sorted([f for f in os.listdir('results') if os.path.isfile(os.path.join('results', f))], reverse=True))
 
 @site.post('/generate')
 def generate():
@@ -39,7 +40,7 @@ def generate():
             json.dump(config_input, config_file)
             config_file.flush()
 
-            output_file_name = f'generate_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")}.json'
+            output_file_name = f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")}_generate.json'
 
             with open(f'results/{output_file_name}', 'w') as _:
                 args = [config_file.name, f'results/{output_file_name}']
@@ -61,10 +62,32 @@ def generate():
                     args.append('--output_format')
                     args.append(req['output_format'])
                 gen.sbom(args, standalone_mode=False)
-                return {'error': False, 'file_name': f'{output_file_name}'}
+                return {'error': False, 'file_name': output_file_name}
     except Exception as e:
         return {'error': True, 'error_desc': str(e)}
 
+@site.post('/merge')
+def merge():
+    try:
+        req = flask.request.get_json()
+        output_file_name = f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")}_merge.json'
+
+        with open(f'results/{output_file_name}', 'w') as _:
+            args = req['inputs']
+            args.append(f'results/{output_file_name}')
+            if req['config_file']:
+                args.append('--config_file')
+                args.append(req['config_file'])
+            if req['input_format']:
+                args.append('--input_format')
+                args.append(req['input_format'])
+            if req['output_format']:
+                args.append('--output_format')
+                args.append(req['output_format'])
+            merge_command.merge_command(args, standalone_mode=False)
+            return {'error': False, 'file_name': output_file_name}
+    except Exception as e:
+        return {'error': True, 'error_desc': str(e)}
 
 @site.route('/')
 def index():
