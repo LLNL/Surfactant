@@ -28,13 +28,13 @@ from surfactant.sbomtypes._sbom import SBOM
     "--output_format",
     is_flag=False,
     default="surfactant.output.cytrics_writer",
-    help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx|cyclonedx]_writer",
+    help="SBOM output format, options=[cytrics|csv|spdx|cyclonedx]",
 )
 @click.option(
     "--input_format",
     is_flag=False,
     default="surfactant.input_readers.cytrics_reader",
-    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=surfactant.input_readers.[cytrics|cyclonedx|spdx]_reader",
+    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
 )
 @click.command("find")
 def find(sbom, output_format, input_format, **kwargs):
