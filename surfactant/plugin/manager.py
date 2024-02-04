@@ -13,7 +13,7 @@ from surfactant.plugin import hookspecs
 def _register_plugins(pm: pluggy.PluginManager) -> None:
     # pylint: disable=import-outside-toplevel
     # don't want all these imports as part of the file-level scope
-    from surfactant.filetypeid import id_hex, id_magic
+    from surfactant.filetypeid import id_hex, id_magic, id_extension
     from surfactant.infoextractors import (
         a_out_file,
         coff_file,
@@ -39,6 +39,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
     internal_plugins = (
         id_magic,
         id_hex,
+        id_extension,
         a_out_file,
         coff_file,
         elf_file,
@@ -77,7 +78,9 @@ def print_plugins(pm: pluggy.PluginManager):
         print("name: " + pm.get_name(p))
 
 
-def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):
+def find_io_plugin(
+    pm: pluggy.PluginManager, io_format: str, function_name: str
+):
     found_plugin = pm.get_plugin(io_format)
 
     if found_plugin is None:
@@ -92,7 +95,9 @@ def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str)
                 pass
 
     if found_plugin is None:
-        logger.error(f'No "{function_name}" plugin for format "{io_format}" found')
+        logger.error(
+            f'No "{function_name}" plugin for format "{io_format}" found'
+        )
         sys.exit(1)
 
     return found_plugin
