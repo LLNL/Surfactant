@@ -73,7 +73,7 @@ Documentation = "https://surfactant.readthedocs.io/en/latest/"
 include = ["surfactant", "surfactant.*"]
 
 [tool.setuptools_scm]
-write_to = "surfactant/_version.py"
+version_file = "surfactant/_version.py"
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
