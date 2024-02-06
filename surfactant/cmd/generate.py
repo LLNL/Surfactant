@@ -363,9 +363,9 @@ def sbom(
                             if file_is_symlink and entry.installPrefix:
                                 # Track the symlink, but don't add to list of entries
                                 # as it'll be processed later anyways
-                                if entry.sha256 not in file_symlinks:
-                                    file_symlinks[entry.sha256] = []
-                                file_symlinks[entry.sha256].append(install_filepath)
+                                if sw_parent.sha256 not in file_symlinks:
+                                    file_symlinks[sw_parent.sha256] = []
+                                file_symlinks[sw_parent.sha256].append(install_filepath)
                             else:
                                 entries.append(sw_parent)
                                 for sw in sw_children:
