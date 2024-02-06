@@ -230,6 +230,7 @@ def sbom(
     if pathlib.Path(config_file).is_file():
         with click.open_file(config_file) as f:
             config = json.load(f)
+            # TODO: what if it isn't a JSON config file, but a single file to generate an SBOM for? perhaps file == "archive"?
     else:
         # Emulate a configuration file with the path
         config = []
@@ -258,10 +259,13 @@ def sbom(
         # List of file symlinks; keys are SHA256 hashes, values are source paths
         file_symlinks: Dict[str, List[str]] = {}
         while not context.empty():
-            entry = context.get()
+            entry: ContextEntry = context.get()
             if entry.archive:
                 logger.info("Processing parent container " + str(entry.archive))
-                parent_entry = get_software_entry(
+                # TODO: if the parent archive has an info extractor that does unpacking interally, should the children be added to the SBOM?
+                # current thoughts are (Syft) doesn't provide hash information for a proper SBOM software entry, so exclude these
+                # extractor plugins meant to unpack files could be okay when used on an "archive", but then extractPaths should be empty
+                parent_entry, _ = get_software_entry(
                     context,
                     pm,
                     new_sbom,
@@ -312,6 +316,7 @@ def sbom(
                         # need to make sure that separator is a / and not a \ on windows
                         filepath = pathlib.Path(cdir, f).as_posix()
                         file_is_symlink = False
+                        # TODO: add CI tests for generating SBOMs in scenarios with symlinks... (and just generally more CI tests overall...)
                         if os.path.islink(filepath):
                             true_filepath = resolve_link(filepath, cdir, epath)
                             # Dead/infinite links will error so skip them
