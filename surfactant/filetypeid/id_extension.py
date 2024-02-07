@@ -38,7 +38,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
             head = f.read(256)
             if suffix in _filetype_extensions:
                 return _filetype_extensions[suffix]
-            if head[:14] == b"<!DOCTYPE html>":
+            if head.startswith(b"<!DOCTYPE html>"):
                 return "HTML"
             if head.startswith(b"#!") and b"\n" in head:
                 head = head[: head.index(b"\n")].decode("utf-8")
