@@ -12,27 +12,39 @@ import surfactant.plugin
 @surfactant.plugin.hookimpl
 def identify_file_type(filepath: str) -> Optional[str]:
     # pylint: disable=too-many-return-statements
+    _filetype_extensions = {
+        ".sh": "SHELL",
+        ".bash": "BASH",
+        ".zsh": "ZSH",
+        ".py": "PYTHON",
+        ".pyc": "PYTHON_COMPILED",
+        ".js": "JAVASCRIPT",
+        ".css": "CSS",
+        ".html": "HTML",
+        ".htm": "HTML",
+        ".php": "PHP",
+    }
+    _interpreters = {
+        "sh": "SHELL",
+        "bash": "BASH",
+        "zsh": "ZSH",
+        "php": "PHP",
+        "python": "PYTHON",
+        "python3": "PYTHON",
+    }
     try:
-        with open(filepath, "r") as f:
-            head = f.readline().strip("\n")
+        with open(filepath, "rb") as f:
             suffix = pathlib.Path(filepath).suffix.lower()
-            # Check for script files
-            if re.match(r"#!.*bash", head) or suffix == ".sh":
-                return "BASH"
-            if re.match(r"#!.*zsh", head) or suffix == ".zsh":
-                return "ZSH"
-            if re.match(r"#!.*php", head) or suffix == ".php":
-                return "PHP"
-            if re.match(r"#!.*python", head) or suffix == ".py":
-                return "PYTHON"
-            if suffix == ".pyc":
-                return "PYTHON_COMPILED"
-            if suffix == ".js":
-                return "JAVASCRIPT"
-            if suffix == ".css":
-                return "CSS"
-            if head == "<!DOCTYPE html>" or suffix in (".html", ".htm"):
+            head = f.read(256)
+            if suffix in _filetype_extensions:
+                return _filetype_extensions[suffix]
+            if head[:14] == b"<!DOCTYPE html>":
                 return "HTML"
+            if head.startswith(b"#!") and b"\n" in head:
+                head = head[: head.index(b"\n")].decode("utf-8")
+                for interpreter, filetype in _interpreters.items():
+                    if re.search(interpreter, head):
+                        return filetype
             return None
     except FileNotFoundError:
         return None
