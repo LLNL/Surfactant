@@ -187,7 +187,7 @@ class SBOM:
                 self.observations.append(observation)
         # merge starRelationships
         if sbom_m.starRelationships:
-            for rel in self.starRelationships:
+            for rel in sbom_m.starRelationships:
                 # rewrite UUIDs before doing the search
                 if rel.xUUID in uuid_updates:
                     rel.xUUID = uuid_updates[rel.xUUID]
