@@ -45,6 +45,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 for interpreter, filetype in _interpreters.items():
                     if re.search(interpreter, head):
                         return filetype
+                return "SHEBANG"
             return None
     except FileNotFoundError:
         return None
