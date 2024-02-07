@@ -138,7 +138,7 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
         elif soft1.size != soft2.size:
             collision = True
     if collision:
-        logger.warn(
+        logger.warning(
             f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur"
         )
 
@@ -300,7 +300,7 @@ def sbom(
                         for dir_ in dirs:
                             full_path = os.path.join(cdir, dir_)
                             if os.path.islink(full_path):
-                                dest = resolve_link(full_path, cdir, epath)
+                                dest = resolve_link(full_path, cdir, epath, entry.installPrefix)
                                 if dest is not None:
                                     install_source = real_path_to_install_path(
                                         epath, entry.installPrefix, full_path
@@ -318,7 +318,7 @@ def sbom(
                         file_is_symlink = False
                         # TODO: add CI tests for generating SBOMs in scenarios with symlinks... (and just generally more CI tests overall...)
                         if os.path.islink(filepath):
-                            true_filepath = resolve_link(filepath, cdir, epath)
+                            true_filepath = resolve_link(filepath, cdir, epath, entry.installPrefix)
                             # Dead/infinite links will error so skip them
                             if true_filepath is None:
                                 continue
@@ -414,15 +414,21 @@ def sbom(
         # Add file symlinks to install paths
         for software in new_sbom.software:
             if software.sha256 in file_symlinks:
+                symlinks_added = []
                 for full_path in file_symlinks[software.sha256]:
                     if full_path not in software.installPath:
                         software.installPath.append(full_path)
+                        symlinks_added.append(full_path)
                     base_name = pathlib.PurePath(full_path).name
                     if base_name not in software.fileName:
                         software.fileName.append(base_name)
+                if symlinks_added:
+                    # Store information on which install paths are symlinks
+                    software.metadata.append({"installPathSymlinks": symlinks_added})
 
         # Add directory symlink destinations to extract/install paths
         for software in new_sbom.software:
+            # NOTE: this probably doesn't actually add any containerPath symlinks
             for paths in (software.containerPath, software.installPath):
                 paths_to_add = []
                 for path in paths:
@@ -432,7 +438,15 @@ def sbom(
                             # We can't use os.path.join here because we end up with absolute paths after
                             # removing the common start.
                             paths_to_add.append(path.replace(link_dest, link_source, 1))
-                paths += paths_to_add
+                if paths_to_add:
+                    found_md_installpathsymlinks = False
+                    for md in software.metadata:
+                        if "installPathSymlinks" in md:
+                            found_md_installpathsymlinks = True
+                            md["installPathSymlinks"] += paths_to_add
+                    if not found_md_installpathsymlinks:
+                        software.metadata.append({"installPathSymlinks": paths_to_add})
+                    paths += paths_to_add
     else:
         logger.info("Skipping gathering file metadata and adding software entries")
 
@@ -446,7 +460,9 @@ def sbom(
     output_writer.write_sbom(new_sbom, sbom_outfile)
 
 
-def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
+def resolve_link(
+    path: str, cur_dir: str, extract_dir: str, install_prefix: str = None
+) -> Union[str, None]:
     assert cur_dir.startswith(extract_dir)
     # Links seen before
     seen_paths = set()
@@ -456,6 +472,7 @@ def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
     while os.path.islink(current_path):
         # If we've already seen this then we're in an infinite loop
         if current_path in seen_paths:
+            logger.warning(f"Resolving symlink {path} encountered infinite loop at {current_path}")
             return None
         seen_paths.add(current_path)
         dest = os.readlink(current_path)
@@ -465,7 +482,10 @@ def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
             local_path = os.path.join("/", cur_dir[len(common_path) :])
             dest = os.path.join(local_path, dest)
         # Convert to a canonical form to eliminate .. to prevent reading above extract_dir
+        # NOTE: should consider detecting reading above extract_dir and warn the user about incomplete file system structure issues
         dest = os.path.normpath(dest)
+        if install_prefix and dest.startswith(install_prefix):
+            dest = dest[len(install_prefix) :]
         # We need to get a non-absolute path so os.path.join works as we want
         if pathlib.Path(dest).is_absolute():
             # TODO: Windows support, but how???
@@ -474,5 +494,6 @@ def resolve_link(path: str, cur_dir: str, extract_dir: str) -> Union[str, None]:
         current_path = os.path.join(extract_dir, dest)
         cur_dir = os.path.dirname(current_path)
     if not os.path.exists(current_path):
+        logger.warning(f"Resolved symlink {path} to a path that doesn't exist {current_path}")
         return None
     return os.path.normpath(current_path)
