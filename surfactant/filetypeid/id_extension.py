@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 import pathlib
-import re
 from typing import Optional
 
 import surfactant.plugin
@@ -43,7 +42,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
             if head.startswith(b"#!") and b"\n" in head:
                 head = head[: head.index(b"\n")].decode("utf-8")
                 for interpreter, filetype in _interpreters.items():
-                    if re.search(interpreter, head):
+                    if interpreter in head:
                         return filetype
                 return "SHEBANG"
             return None
