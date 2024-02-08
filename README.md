@@ -1,6 +1,8 @@
 <p align="center">
-<img src="https://user-images.githubusercontent.com/3969255/290751328-fe11d1de-c2a9-4602-a7cd-b0e34bfce728.png#gh-dark-mode-only" width="250" alt="Blue magnifying glass Surfactant logo">
+<picture>
+<source srcset="https://user-images.githubusercontent.com/3969255/290751328-fe11d1de-c2a9-4602-a7cd-b0e34bfce728.png#gh-dark-mode-only" media="(prefers-color-scheme: dark)" width="250" alt="Blue magnifying glass Surfactant logo">
 <img src="https://user-images.githubusercontent.com/3969255/290751330-77003e89-944a-4269-9821-843abe35fe4a.png#gh-light-mode-only" width="250" alt="Blue magnifying glass Surfactant logo">
+</picture>
 </p>
 
 # Surfactant
