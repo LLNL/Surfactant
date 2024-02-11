@@ -6,6 +6,8 @@ import pathlib
 import re
 from typing import Optional
 
+from loguru import logger
+
 import surfactant.plugin
 
 
@@ -34,18 +36,25 @@ def identify_file_type(filepath: str) -> Optional[str]:
     }
     try:
         with open(filepath, "rb") as f:
-            suffix = pathlib.Path(filepath).suffix.lower()
             head = f.read(256)
-            if suffix in _filetype_extensions:
-                return _filetype_extensions[suffix]
             if head.startswith(b"<!DOCTYPE html>"):
                 return "HTML"
             if head.startswith(b"#!") and b"\n" in head:
-                head = head[: head.index(b"\n")].decode("utf-8")
-                for interpreter, filetype in _interpreters.items():
-                    if re.search(interpreter, head):
-                        return filetype
+                end_line = head.index(b"\n")
+                try:
+                    head = head[:end_line].decode("utf-8")
+                    for interpreter, filetype in _interpreters.items():
+                        if re.search(interpreter, head):
+                            return filetype
+                except UnicodeDecodeError:
+                    logger.warning(
+                        f"Decode error in file {filepath}: {head[: end_line]}"
+                    )
                 return "SHEBANG"
-            return None
     except FileNotFoundError:
+        logger.warning(f"File not found: {filepath}")
         return None
+    suffix = pathlib.Path(filepath).suffix.lower()
+    if suffix in _filetype_extensions:
+        return _filetype_extensions[suffix]
+    return None
