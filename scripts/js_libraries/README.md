@@ -7,5 +7,5 @@ Running this script retrieves vulnerability information from various javascript 
 and only keeps the contents under each library's "extractors" section, which contains regexes
 relevant for detecting a specific javascript library.
 
-The resulting smaller json is written to reduced.json in the same directory. This smaller file
+The resulting smaller json is written to `reduced.json` in the same directory. This smaller file
 will be read from to make the checks later on.
