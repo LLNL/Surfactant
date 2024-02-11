@@ -47,9 +47,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
                         if re.search(interpreter, head):
                             return filetype
                 except UnicodeDecodeError:
-                    logger.warning(
-                        f"Decode error in file {filepath}: {head[: end_line]}"
-                    )
+                    logger.warning(f"Decode error in file {filepath}: {head[: end_line]}")
                 return "SHEBANG"
     except FileNotFoundError:
         logger.warning(f"File not found: {filepath}")
