@@ -87,10 +87,17 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         output_format = cyclonedx.output.OutputFormat.JSON
     elif outformat == "xml":
         output_format = cyclonedx.output.OutputFormat.XML
-    outputter: cyclonedx.output.BaseOutput = cyclonedx.output.get_instance(
-        bom=bom, output_format=output_format
+    # The docs say that you don't need to specify a version (it says it defaults to the latest)
+    # but I got a missing keyword error when doing so, so just specify 1.5 for now
+    outputter: cyclonedx.output.BaseOutput = cyclonedx.output.make_outputter(
+        bom=bom, output_format=output_format, schema_version=cyclonedx.schema.SchemaVersion.V1_5
     )
     outfile.write(outputter.output_as_string())
+
+
+@surfactant.plugin.hookimpl
+def short_name() -> Optional[str]:
+    return "cyclonedx"
 
 
 def convert_system_to_cyclonedx_component(system: System) -> Tuple[str, Component]:
