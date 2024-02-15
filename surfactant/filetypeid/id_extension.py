@@ -27,12 +27,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
         ".php": "PHP",
     }
     _interpreters = {
-        "sh": "SHELL",
-        "bash": "BASH",
-        "zsh": "ZSH",
-        "php": "PHP",
-        "python": "PYTHON",
-        "python3": "PYTHON",
+        b"sh": "SHELL",
+        b"bash": "BASH",
+        b"zsh": "ZSH",
+        b"php": "PHP",
+        b"python": "PYTHON",
+        b"python3": "PYTHON",
     }
     try:
         with open(filepath, "rb") as f:
@@ -41,13 +41,10 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 return "HTML"
             if head.startswith(b"#!") and b"\n" in head:
                 end_line = head.index(b"\n")
-                try:
-                    head = head[:end_line].decode("utf-8")
-                    for interpreter, filetype in _interpreters.items():
-                        if re.search(interpreter, head):
-                            return filetype
-                except UnicodeDecodeError:
-                    logger.warning(f"Decode error in file {filepath}: {head[: end_line]}")
+                head = head[:end_line]
+                for interpreter, filetype in _interpreters.items():
+                    if re.search(interpreter, head):
+                        return filetype
                 return "SHEBANG"
     except FileNotFoundError:
         logger.warning(f"File not found: {filepath}")
