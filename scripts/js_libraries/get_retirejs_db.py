@@ -1,4 +1,5 @@
 import json
+import re
 import requests
 
 
@@ -12,6 +13,8 @@ def load_database() -> dict:
 
 def strip_irrelevant_data(retirejs_db: dict) -> dict:
     clean_db = {}
+    reg_temp = "\u00a7\u00a7version\u00a7\u00a7"
+    version_regex = ".*"
     for library, lib_entry in retirejs_db.items():
         if "extractors" in lib_entry:
             clean_db[library] = {}
@@ -25,7 +28,10 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
             ]
             for entry in possible_entries:
                 if entry in patterns:
-                    clean_db[library][entry] = patterns[entry]
+                    entry_list = []
+                    for reg in patterns[entry]:
+                        entry_list.append(reg.replace(reg_temp, version_regex))
+                    clean_db[library][entry] = entry_list
     return clean_db
 
 
