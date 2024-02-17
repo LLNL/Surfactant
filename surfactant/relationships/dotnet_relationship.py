@@ -162,27 +162,25 @@ def establish_relationships(
                             ):
                                 # codebase references a url; interesting for manual analysis/gathering additional files, but not supported by surfactant yet
                                 pass
-                            else:
-                                # most likely a private assembly, so path must be relative to application's directory
-                                if isinstance(software.installPath, Iterable):
-                                    for install_filepath in software.installPath:
-                                        install_basepath = pathlib.PureWindowsPath(
-                                            install_filepath
-                                        ).parent.as_posix()
-                                        cb_filepath = pathlib.PureWindowsPath(
-                                            install_basepath, codebase_href
-                                        )
-                                        cb_file = cb_filepath.name
-                                        cb_path = [cb_filepath.parent.as_posix()]
-                                        for e in find_installed_software(sbom, cb_path, cb_file):
-                                            dependency_uuid = e.UUID
-                                            relationships.append(
-                                                Relationship(
-                                                    dependent_uuid,
-                                                    dependency_uuid,
-                                                    "Uses",
-                                                )
+                            elif isinstance(software.installPath, Iterable):
+                                for install_filepath in software.installPath:
+                                    install_basepath = pathlib.PureWindowsPath(
+                                        install_filepath
+                                    ).parent.as_posix()
+                                    cb_filepath = pathlib.PureWindowsPath(
+                                        install_basepath, codebase_href
+                                    )
+                                    cb_file = cb_filepath.name
+                                    cb_path = [cb_filepath.parent.as_posix()]
+                                    for e in find_installed_software(sbom, cb_path, cb_file):
+                                        dependency_uuid = e.UUID
+                                        relationships.append(
+                                            Relationship(
+                                                dependent_uuid,
+                                                dependency_uuid,
+                                                "Uses",
                                             )
+                                        )
 
             # continue on to probing even if codebase element was found, since we can't guarantee the assembly identity required by the codebase element
             # get the list of paths to probe based on locations software is installed, assembly culture, assembly name, and probing paths from appconfig file

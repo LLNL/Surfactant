@@ -261,9 +261,8 @@ class SBOM:
                     if sw.sha1 == sha1:
                         match = True
             # If no hashes to check, match by UUID
-            else:
-                if sw.UUID == uuid:
-                    match = True
+            elif sw.UUID == uuid:
+                match = True
             if match:
                 return sw
         return None

@@ -169,10 +169,9 @@ def merge_number_same(e1: int, e2: int, k: str):
     if k not in e1:
         if k in e2:
             e1[k] = e2[k]
-    else:
-        if k in e2:
-            if e1[k] != e2[k]:
-                print(f"Field {k} that should match does not! e1={e1} e2={e2}")
+    elif k in e2:
+        if e1[k] != e2[k]:
+            print(f"Field {k} that should match does not! e1={e1} e2={e2}")
 
 
 def merge_number_lt(e1: int, e2: int, k: str):
@@ -187,10 +186,9 @@ def merge_number_lt(e1: int, e2: int, k: str):
     if k not in e1:
         if k in e2:
             e1[k] = e2[k]
-    else:
-        if k in e2:
-            if e1[k] > e2[k]:
-                e1[k] = e2[k]
+    elif k in e2:
+        if e1[k] > e2[k]:
+            e1[k] = e2[k]
 
 
 def merge_number_gt(e1: int, e2: int, k: str):
@@ -205,10 +203,9 @@ def merge_number_gt(e1: int, e2: int, k: str):
     if k not in e1:
         if k in e2:
             e1[k] = e2[k]
-    else:
-        if k in e2:
-            if e1[k] < e2[k]:
-                e1[k] = e2[k]
+    elif k in e2:
+        if e1[k] < e2[k]:
+            e1[k] = e2[k]
 
 
 def merge_string(e1: str, e2: str, k: str):
@@ -230,13 +227,10 @@ def merge_array(e1, e2, k):
         # e2 is at worst empty list like e1, or contains some entries
         if k in e2:
             e1[k] = e2[k]
-    else:
-        # e1 is guaranteed to have a list with at least one entry
-        # merge in items from e2 that aren't already in e1
-        if k in e2 and e2[k]:
-            for item in e2[k]:
-                if item not in e1[k]:
-                    e1[k].append(item)
+    elif k in e2 and e2[k]:
+        for item in e2[k]:
+            if item not in e1[k]:
+                e1[k].append(item)
 
 
 # merges data from two systems entries, modifying the first to contain new info from the second
