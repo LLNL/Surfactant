@@ -8,17 +8,15 @@ import json
 import re
 import os
 
-"""
-The following code adds the data present in additional_metadata.json files to an input 
-sbom and outputs it at a new location.
+# The following code adds the data present in additional_metadata.json files to an input 
+# sbom and outputs it at a new location.
 
-    - It does use dict.update(), so any shared fields will be overwritten
-    - It uses the sha256hash field to perform linkages
-    - It does overwrite the output location
+#     - It does use dict.update(), so any shared fields will be overwritten
+#     - It uses the sha256hash field to perform linkages
+#     - It does overwrite the output location
 
-Usage:
-    python3 scripts/merge_additional_metadata.py . sbom_without_metadata.json output_sbom_file.json
-"""
+# Usage:
+#     python3 scripts/merge_additional_metadata.py . sbom_without_metadata.json output_sbom_file.json
 
 
 def parse_args():
@@ -31,8 +29,8 @@ def parse_args():
         "input_sbom", help="The SBOM for the additional metadata to be merged into"
     )
     parser.add_argument("output_file", help="The output file")
-    args = parser.parse_args()
-    return args
+    _args = parser.parse_args()
+    return _args
 
 
 if __name__ == "__main__":
