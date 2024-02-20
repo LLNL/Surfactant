@@ -5,8 +5,8 @@
 
 import argparse
 import json
-import re
 import os
+import re
 
 # The following code adds the data present in additional_metadata.json files to an input 
 # sbom and outputs it at a new location.
@@ -25,9 +25,7 @@ def parse_args():
         "metadata_dir",
         help='The directory that contains the "additional metadata" files',
     )
-    parser.add_argument(
-        "input_sbom", help="The SBOM for the additional metadata to be merged into"
-    )
+    parser.add_argument("input_sbom", help="The SBOM for the additional metadata to be merged into")
     parser.add_argument("output_file", help="The output file")
     _args = parser.parse_args()
     return _args
@@ -38,8 +36,7 @@ if __name__ == "__main__":
     with open(args.input_sbom) as f:
         sbom_data = json.load(f)
     lookup_table = {
-        sbom_node["sha256"]: index
-        for index, sbom_node in enumerate(sbom_data["software"])
+        sbom_node["sha256"]: index for index, sbom_node in enumerate(sbom_data["software"])
     }
     for path in os.scandir(args.metadata_dir):
         if re.match("[a-z0-9]{64}_additional_metadata.json", path.name):
