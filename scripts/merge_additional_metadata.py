@@ -49,6 +49,8 @@ if __name__ == "__main__":
                 additional_data = json.load(f)
             if additional_data["sha256hash"] in lookup_table:
                 index = lookup_table[additional_data["sha256hash"]]
-                sbom_data["software"][index].update(additional_data)
+                if "metadata" not in sbom_data["software"][index]:
+                    sbom_data["software"][index]["metadata"] = []
+                sbom_data["software"][index]["metadata"].append(additional_data)
     with open(args.output_file, "w") as f:
         json.dump(sbom_data, f, indent=4)
