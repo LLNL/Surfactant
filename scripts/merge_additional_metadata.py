@@ -8,7 +8,7 @@ import json
 import os
 import re
 
-# The following code adds the data present in additional_metadata.json files to an input 
+# The following code adds the data present in additional_metadata.json files to an input
 # sbom and outputs it at a new location.
 
 #     - It does use dict.update(), so any shared fields will be overwritten
