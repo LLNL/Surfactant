@@ -73,7 +73,7 @@ def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str
         # Extract filename without extension
         output_path = Path.cwd() / f"{shaHash}_additional_metadata.json"
         string_dict = {}
-        string_dict["sha25hash"] = shaHash
+        string_dict["sha256hash"] = shaHash
         string_dict["filename"] = [filename.name]
         string_dict["strings"] = []
 
