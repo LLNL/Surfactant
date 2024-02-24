@@ -20,8 +20,6 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
             clean_db[library] = {}
             patterns = lib_entry["extractors"]
             possible_entries = [
-                "func",
-                "uri",
                 "filename",
                 "filecontent",
                 "hashes",
