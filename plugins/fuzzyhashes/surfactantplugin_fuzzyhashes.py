@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: MIT
 
 
-# TODO: Read and write file once
-
 import json
 from pathlib import Path
 import logging
@@ -23,7 +21,6 @@ def do_ssdeep(bin_data: bytes):
     return ssdeep.hash(bin_data)
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
-# extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str):
 # def fuzzyhashes(filename: str, filetype: str, filehash: str):
 def fuzzyhashes(sbom: SBOM, software: Software, filename: str, filetype: str):
     """
@@ -35,35 +32,11 @@ def fuzzyhashes(sbom: SBOM, software: Software, filename: str, filetype: str):
 
     hashdata = [(do_ssdeep, "ssdeep"), (do_tlsh, "tlsh")]
 
-    # Only parsing executable files
-    # if filetype not in ["ELF", "PE"]:
-    #     pass
-    # filehash = str(software.sha256)
-    # filename = Path(filename)
-    # flist = []
-
-    # # Performing check to see if file has been analyzed already
-    # existing_json = None
-    # output_name = None
-    # for f in Path.cwd().glob("*.json"):
-    #     flist.append((f.stem).split("_")[0])
-    #     if filehash == (f.stem).split("_")[0]:
-    #         existing_json = f
-    #         output_name = f
-
-    # output_path = Path.cwd() / f"{filehash}_additional_metadata.json"
-
-    # if existing_json:
-    #     with open(existing_json, "r") as json_file:
-    #         existing_data = json.load(json_file)
-        # Validate the file path
+    # Validate the file path
     existing_data = {}
     filename = Path(filename)
     if not filename.exists():
         raise FileNotFoundError(f"No such file: '{filename}'")
-
-    # if filename.name not in existing_data["filename"]:
-    #     existing_data["filename"].append(filename.name)
 
     if all([hashname in existing_data for _, hashname in hashdata]):
         # if everything is already in there, we just want to terminate without writing
