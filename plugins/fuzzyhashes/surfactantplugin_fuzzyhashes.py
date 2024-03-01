@@ -4,21 +4,22 @@
 # SPDX-License-Identifier: MIT
 
 
-import json
 from pathlib import Path
 import logging
+import ssdeep
+import tlsh
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
-import ssdeep
-import tlsh
 
 
 def do_tlsh(bin_data: bytes):
     return tlsh.hash(bin_data)
 
+
 def do_ssdeep(bin_data: bytes):
     return ssdeep.hash(bin_data)
+
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 # def fuzzyhashes(filename: str, filetype: str, filehash: str):
@@ -46,11 +47,12 @@ def fuzzyhashes(sbom: SBOM, software: Software, filename: str, filetype: str):
 
     for hashfunc, hashname in hashdata:
         if hashname in existing_data:
-            logging.info(f"Already {hashname} hashed {filename.name}")
+            logging.info("Already %s hashed %s", hashname, filename.name)
         else:
             logging.info(
-                f"Found existing JSON file for {filename.name} but without '{hashname}' key. Proceeding with hashing."
+                "Found existing JSON file for %s but without '%s' key. Proceeding with hashing.",
+                filename.name,
+                hashname,
             )
             existing_data[hashname] = hashfunc(bin_data)
     return existing_data
-           
