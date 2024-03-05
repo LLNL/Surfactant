@@ -9,6 +9,7 @@ from pathlib import Path
 
 try:
     import ssdeep
+
     SSDEEP_PRESENT = True
 except ImportError:
     SSDEEP_PRESENT = False
