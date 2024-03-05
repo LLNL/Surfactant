@@ -7,7 +7,7 @@ name = "surfactantplugin-fuzzyhashes"
 authors = [
     {name = "Michael Cutshaw", email = "michael.cutshaw@inl.gov"},
 ]
-description = "Surfactant Imported Function Extractor"
+description = "Surfactant plugin for generating fuzzy hashes"
 readme = "README.md"
 requires-python = ">=3.8"
 keywords = ["surfactant"]
@@ -21,11 +21,13 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "ssdeep",
     "python-tlsh",
     "surfactant"
 ]
 dynamic = ["version"]
+
+[project.optional-dependencies]
+ssdeep = ["ssdeep"]
 
 [project.entry-points."surfactant"]
 "surfactantplugin_fuzzyhashes" = "surfactantplugin_fuzzyhashes"

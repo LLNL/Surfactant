@@ -7,7 +7,12 @@
 import logging
 from pathlib import Path
 
-import ssdeep
+try:
+    import ssdeep
+    SSDEEP_PRESENT = True
+except ImportError:
+    SSDEEP_PRESENT = False
+    logging.warning("SSDEEP is not installed, therefore those hashes will not be generated.")
 import tlsh
 
 import surfactant.plugin
@@ -23,24 +28,25 @@ def do_ssdeep(bin_data: bytes):
 
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
-# def fuzzyhashes(filename: str, filetype: str, filehash: str):
 def fuzzyhashes(sbom: SBOM, software: Software, filename: str, filetype: str):
     """
+    Generate TLSH and potentially SSDEEP fuzzy hashes for the provided files.
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
     :param software(Software): The software entry associated with the file to extract information from.
     :param filename (str): The full path to the file to extract information from.
     :param filetype (str): File type information based on magic bytes.
     """
 
-    hashdata = [(do_ssdeep, "ssdeep"), (do_tlsh, "tlsh")]
-
+    hashdata = [(do_tlsh, "tlsh")]
+    if SSDEEP_PRESENT:
+        hashdata.append((do_ssdeep, "ssdeep"))
     # Validate the file path
     existing_data = {}
     filename = Path(filename)
     if not filename.exists():
         raise FileNotFoundError(f"No such file: '{filename}'")
 
-    if all([hashname in existing_data for _, hashname in hashdata]):
+    if all(hashname in existing_data for _, hashname in hashdata):
         # if everything is already in there, we just want to terminate without writing
         return None
     with open(filename, "rb") as f_bin:

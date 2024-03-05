@@ -3,12 +3,7 @@
 A plugin for Surfactant that uses TLSH and SSDEEP to generate fuzzy hashes.
 
 ## Quickstart
-If you do not have SSDEEP library already installed, you must run `export BUILD_LIB=1` before running `pip install`.
-
-The SSDEEP package also required the following packages on a ubuntu 22 system:
-  libtool
-  build-essential
-  automake
+**Note:** By default only TLSH is enabled as SSDEEP has a more complex build process, if you wish to include SSDEEP see the relevant section.
 
 In the same virtual environment that Surfactant was installed in, install this plugin with `pip install .`.
 
@@ -26,6 +21,18 @@ This will output within the metadata field of the main SBOM output JSON. The met
 Surfactant features for controlling which plugins are enabled/disabled can be used to control
 whether or not this plugin will run using the plugin name `surfactantplugin_fuzzyhashes.py` (the name given in
 `pyproject.toml` under the `project.entry-points."surfactant"` section).
+
+## SSDEEP
+
+If you do not have SSDEEP library already installed, you must run `export BUILD_LIB=1` before running `pip install`.
+
+The SSDEEP package also required the following packages on a ubuntu 22 system:
+  libtool
+  build-essential
+  automake
+
+To install SSDEEP run the following:
+`pip install .[ssdeep]` or `pip install -e .[ssdeep]`
 
 ## Uninstalling
 
