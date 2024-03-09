@@ -37,5 +37,5 @@ retirejs = load_database()
 
 if retirejs is not None:
     cleaned = strip_irrelevant_data(retirejs)
-    with open("reduced.json", "w") as f:
+    with open("js_libraries.regex", "w") as f:
         json.dump(cleaned, f, indent=4)
