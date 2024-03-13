@@ -1,4 +1,4 @@
-""" setupstepper.py """
+"""setupstepper.py"""
 
 from json import loads
 from logging import DEBUG, basicConfig, exception, info
