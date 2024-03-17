@@ -32,7 +32,7 @@ def find_js_match(expressions: dict, filename: str) -> str:
 
 get_test_file()
 
-with open("reduced.json", "r") as f:
+with open("js_libraries.regex", "r") as f:
     patterns = json.load(f)
 
 library_name = find_js_match(patterns, "testFile.js")
