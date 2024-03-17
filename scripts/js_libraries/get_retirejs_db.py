@@ -14,7 +14,7 @@ def load_database() -> dict:
 def strip_irrelevant_data(retirejs_db: dict) -> dict:
     clean_db = {}
     reg_temp = "\u00a7\u00a7version\u00a7\u00a7"
-    version_regex = ".*"
+    version_regex = r"\d+(?:\.\d+)*"
     for library, lib_entry in retirejs_db.items():
         if "extractors" in lib_entry:
             clean_db[library] = {}
