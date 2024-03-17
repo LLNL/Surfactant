@@ -5,7 +5,7 @@
 import json
 import pathlib
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from loguru import logger
 
@@ -39,26 +39,34 @@ def extract_js_info(filename):
         return None
 
     # Try to match file name
-    libname = match_by_attribute("filename", filename, database)
-    if libname is not None:
-        js_info["Library"]["By_Filename"] = libname
+    ver, lib = match_by_attribute("filename", filename, database)
+    if lib is not None:
+        js_info["Library"] = lib
+        js_info["Version"] = ver
+        return js_info
 
     # Try to match file contents
     try:
         with open(filename, "r") as js_file:
             filecontent = js_file.read()
-        libname = match_by_attribute("filecontent", filecontent, database)
-        if libname is not None:
-            js_info["Library"]["By_File_Contents"] = libname
+        ver, lib = match_by_attribute("filecontent", filecontent, database)
+        if lib is not None:
+            js_info["Library"] = lib
+            js_info["Version"] = ver
     except FileNotFoundError:
         logger.warning(f"File not found: {filename}")
     return js_info
 
 
-def match_by_attribute(attribute: str, content: str, database: Dict) -> str:
+def match_by_attribute(
+    attribute: str, content: str, database: Dict
+) -> Tuple[str, str]:
     for name, library in database.items():
         if attribute in library:
             for pattern in library[attribute]:
-                if re.search(pattern, content):
-                    return name
-    return None
+                matches = re.search(pattern, content)
+                if matches:
+                    if len(matches.groups()) > 0:
+                        return (matches.group(1), name)
+                    return ("None Found", name)
+    return (None, None)
