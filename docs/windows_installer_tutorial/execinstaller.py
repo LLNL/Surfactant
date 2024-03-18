@@ -1,4 +1,4 @@
-""" execinstaller.py """
+"""execinstaller.py"""
 
 import sys
 from json import dumps
