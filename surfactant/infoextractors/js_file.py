@@ -18,9 +18,7 @@ def supports_file(filetype) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str
-) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
     if not supports_file(filetype):
         return None
     return extract_js_info(filename)
@@ -58,9 +56,7 @@ def extract_js_info(filename):
     return js_info
 
 
-def match_by_attribute(
-    attribute: str, content: str, database: Dict
-) -> Tuple[str, str]:
+def match_by_attribute(attribute: str, content: str, database: Dict) -> Tuple[str, str]:
     for name, library in database.items():
         if attribute in library:
             for pattern in library[attribute]:
