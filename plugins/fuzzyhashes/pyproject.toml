@@ -21,7 +21,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "python-tlsh",
+    "py-tlsh",
     "surfactant"
 ]
 dynamic = ["version"]
