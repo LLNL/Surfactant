@@ -92,5 +92,5 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 return "MOTOROLA_SREC"
             return None
 
-    except FileNotFoundError:
+    except (FileNotFoundError, UnicodeDecodeError):
         return None
