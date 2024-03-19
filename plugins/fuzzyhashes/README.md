@@ -36,4 +36,4 @@ To install SSDEEP run the following:
 
 ## Uninstalling
 
-The plugin can be uninstalled with `pip uninstall surfactantplugin_fuzzyhashes.py`.
+The plugin can be uninstalled with `pip uninstall surfactantplugin-fuzzyhashes`.
