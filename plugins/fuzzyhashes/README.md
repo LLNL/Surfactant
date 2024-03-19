@@ -19,7 +19,7 @@ This will output within the metadata field of the main SBOM output JSON. The met
 ```
 
 Surfactant features for controlling which plugins are enabled/disabled can be used to control
-whether or not this plugin will run using the plugin name `surfactantplugin_fuzzyhashes.py` (the name given in
+whether or not this plugin will run using the plugin name `surfactantplugin_fuzzyhashes` (the name given in
 `pyproject.toml` under the `project.entry-points."surfactant"` section).
 
 ## SSDEEP
