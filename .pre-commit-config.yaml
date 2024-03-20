@@ -1,22 +1,15 @@
 exclude: ^(.gitignore|generate_sbom.py|extract_file_info.py|pe_info.py)
 repos:
-  - repo: https://github.com/psf/black
-    rev: 23.12.1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.3
     hooks:
-      - id: black
-        args: [--config=pyproject.toml, --line-length=100]
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        additional_dependencies: [flake8-bugbear]
+      # Run the linter
+      - id: ruff
+        args: [ --fix ]
+      # Run the formatter
+      - id: ruff-format
   - repo: https://github.com/pycqa/pylint
-    rev: v3.0.3
+    rev: v3.1.0
     hooks:
       - id: pylint
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -31,7 +24,7 @@ repos:
       - id: check-json
       #- id: pretty-format-json
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6
+    rev: v0.10.0.1
     hooks:
       - id: shellcheck
         args: [-x]

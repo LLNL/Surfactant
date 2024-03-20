@@ -46,7 +46,7 @@ dependencies = [
     "olefile",
     "defusedxml",
     "spdx-tools==0.8.*",
-    "cyclonedx-python-lib",
+    "cyclonedx-python-lib==6.4.3",
     "pluggy",
     "click",
     "javatools>=1.6.0",
@@ -73,11 +73,26 @@ Documentation = "https://surfactant.readthedocs.io/en/latest/"
 include = ["surfactant", "surfactant.*"]
 
 [tool.setuptools_scm]
-write_to = "surfactant/_version.py"
+version_file = "surfactant/_version.py"
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
 pythonpath = "."
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+
+[tool.ruff.lint]
+# ruff defaults: E4, E7, E9, F
+select = ["E", "F", "B", "I"]
+ignore = ["E501", "F841"]
+# don't fix flake8-bugbear (`B`) violations
+unfixable = ["B"]
+
+# Ignore `E402` import violations in plugin manager
+[tool.ruff.lint.per-file-ignores]
+"surfactant/plugin/manager.py" = ["E402"]
 
 [tool.pylint.messages_control]
 max-line-length = "100"

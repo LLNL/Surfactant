@@ -1,4 +1,5 @@
-""" execinstaller.py """
+"""execinstaller.py"""
+
 import sys
 from json import dumps
 from logging import DEBUG, basicConfig, exception, info
