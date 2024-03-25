@@ -19,6 +19,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         coff_file,
         elf_file,
         java_file,
+        js_file,
         ole_file,
         pe_file,
     )
@@ -44,6 +45,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         coff_file,
         elf_file,
         java_file,
+        js_file,
         pe_file,
         ole_file,
         dotnet_relationship,
