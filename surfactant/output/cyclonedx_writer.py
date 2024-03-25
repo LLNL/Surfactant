@@ -256,6 +256,12 @@ def create_cyclonedx_file(file_path: str, software: Software) -> Component:
     if cr_text := get_fileinfo_metadata(software, "LegalCopyright"):
         copyright_text = cr_text  # free-form text field extracted from actual file identifying copyright holder and any dates present
 
+    if software.description == "":
+        software.description = None
+
+    if software.version == "":
+        software.version = None
+
     return Component(
         bom_ref=software.UUID,
         name=file_path,
@@ -263,7 +269,7 @@ def create_cyclonedx_file(file_path: str, software: Software) -> Component:
         supplier=supplier,
         description=software.description,
         hashes=hashes,
-        copyright=copyright,
+        copyright=copyright_text,
         # components: Optional[Iterable['Component']]
         type=ComponentType.FILE,
     )
