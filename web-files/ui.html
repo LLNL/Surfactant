@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Surfactant GUI</title>
+    <style>
+        html {
+            margin: 0 3ch;
+        }
+
+        body {
+            max-width: 120ch;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .tabs {
+            background-color: gray;
+            border: 1px solid darkgray;
+        }
+
+        .tabs button {
+            font-weight: bold;
+            background-color: inherit;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 16px 16px;
+        }
+
+        .tabs button:hover {
+            background-color: #dddddd;
+        }
+
+        .tabs button.selected {
+            background-color: #cccccc;
+        }
+
+        @media (prefers-color-scheme: light) {
+            body {
+                background: white;
+                color: black;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: black;
+                color: white;
+            }
+        }
+
+        .option_grid {
+            display: inline-grid;
+            grid-template-columns: repeat(2, 58ch);
+            grid-template-rows: auto;
+            gap: 4ch;
+        }
+
+        .grid_left {
+            grid-column-start: 1;
+        }
+
+        .grid_right {
+            grid-column-start: 2;
+        }
+
+        .grid_3 {
+            grid-column-start: 3;
+        }
+
+        .grid_4 {
+            grid-column-start: 4;
+        }
+
+        .input_grid {
+            display: inline-grid;
+            grid-template-columns: max-content auto;
+            width: 100%;
+            gap: 1ch;
+        }
+
+        .input_grid input[type=text] {
+            width: auto;
+        }
+
+        .run_button_div {
+            text-align: center;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .run_button {
+            font-size: xx-large;
+            font-weight: bold;
+        }
+
+        .extract_path_grid {
+            display: inline-grid;
+            grid-template-columns: auto max-content max-content;
+            width: 100%;
+            column-gap: 1ch;
+        }
+
+        .extract_path_grid input[type=text] {
+            width: 99%;
+        }
+
+        #running {
+            text-align: center;
+        }
+    </style>
+    <script>
+        "use strict";
+
+        function disable_generate_remove_buttons_if_needed() {
+            const num_buttons = document.getElementById("generate_input_files").children.length / 3;
+            // Is there a better way of doing this...?
+            for (const child of document.getElementById("generate_input_files").children) {
+                if (child.textContent == "-") {
+                    child.disabled = num_buttons == 1;
+                }
+            }
+        }
+
+        function add_generate_input_file(btn_number) {
+            const add_btn = document.createElement("button");
+            const sub_btn = document.createElement("button");
+            const inp = document.createElement("input");
+            inp.type = "text";
+            const append_to = document.getElementById("generate_input_files");
+            add_btn.classList.add(`generate_increase_inputs_${btn_number}`);
+            add_btn.textContent = "+";
+            sub_btn.classList.add(`generate_decrease_inputs_${btn_number}`);
+            sub_btn.textContent = "-";
+            inp.classList.add(`generate_input_file_${btn_number}`);
+            add_btn.addEventListener("click", (event) => {
+                const num_buttons = document.getElementById("generate_input_files").children.length / 3;
+                add_generate_input_file(num_buttons + 1);
+            });
+            sub_btn.addEventListener("click", (event) => {
+                const to_remove = [
+                    "generate_input_file",
+                    "generate_increase_inputs",
+                    "generate_decrease_inputs"
+                ];
+                for (const removal of to_remove) {
+                    append_to.removeChild(append_to.getElementsByClassName(`${removal}_${btn_number}`)[0]);
+                }
+                disable_generate_remove_buttons_if_needed();
+            });
+            // Add all the elements at the end
+            append_to.appendChild(inp);
+            append_to.appendChild(add_btn);
+            append_to.appendChild(sub_btn);
+            disable_generate_remove_buttons_if_needed();
+        }
+
+        // Use globals because I'm not sure of a better way to do this
+        let generate_input_num = 0;
+        let merge_input_num = 0;
+
+        function generate_disable_or_enable_delete_input()
+        {
+            const input_files = document.getElementById("generate_input_files");
+            const num_inputs = input_files.children.length;
+            // Disable deleting the last input, but enable all delete buttons if there's more than one
+            for (let i = 0; i < generate_input_num; ++i) {
+                const elem = document.getElementById(`generate_delete_button_${i}`);
+                if (elem) {
+                    elem.disabled = num_inputs == 1;
+                }
+            }
+        }
+
+        // TODO: This can probably be merged with the above
+        function merge_disable_or_enable_delete_input()
+        {
+            const input_files = document.getElementById("merge_input_files");
+            const num_inputs = input_files.children.length;
+            for (let i = 0; i < merge_input_num; ++i) {
+                const elem = document.getElementById(`merge_delete_button_${i}`);
+                if (elem) {
+                    elem.disabled = num_inputs == 1;
+                }
+            }
+        }
+
+        function add_generate_input_file()
+        {
+            function create_input_div(title, field_name, input_id)
+            {
+                const div = document.createElement("div");
+                div.classList.add("input_grid");
+                const label = document.createElement("label");
+                label.classList.add("grid_left");
+                label.htmlFor = input_id;
+                const abbr = document.createElement("abbr");
+                abbr.title = title;
+                abbr.textContent = field_name;
+                label.appendChild(abbr);
+                div.appendChild(label);
+                const input = document.createElement("input");
+                input.classList.add("grid_right");
+                input.type = "text";
+                input.id = input_id;
+                div.appendChild(input);
+                return div;
+            }
+
+            const cur_input_num = generate_input_num;
+            const div = document.createElement("div");
+            div.id = `generate_input_${cur_input_num}`;
+            // Input File/Install Path
+            div.appendChild(create_input_div("Archive to process (optional)", "Archive", `generate_archive_${cur_input_num}`));
+            div.appendChild(create_input_div("Path that files are installed to (optional)", "Install Prefix", `generate_install_prefix_${cur_input_num}`));
+
+            // Extract Paths
+            const extract_div = document.createElement("div");
+            extract_div.classList.add("extract_path_grid");
+            const extract_1 = document.createElement("div");
+            const label = document.createElement("label");
+            const abbr = document.createElement("abbr");
+            abbr.title = "Paths to process"
+            abbr.textContent = "Extract Paths";
+            label.appendChild(abbr);
+            extract_1.appendChild(label);
+            div.appendChild(extract_1);
+
+            let extract_path_num = 0;
+            function add_extract_path()
+            {
+                let cur_path_num = extract_path_num;
+                let cur_path_class = `generate_extract_${cur_path_num}`;
+
+                function disable_or_enable_extract_buttons()
+                {
+                    const num_children = extract_div.children.length;
+                    for (const child of extract_div.children) {
+                        for (const child2 of child.children) {
+                            if (child2.classList.contains("extract_path_sub")) {
+                                child2.disabled = num_children == 3;
+                            }
+                        }
+                    }
+                }
+
+                const extract_2 = document.createElement("div");
+                extract_2.classList.add(cur_path_class);
+                extract_div.appendChild(extract_2);
+                const extract_3 = document.createElement("div");
+                extract_3.classList.add(cur_path_class);
+                extract_div.appendChild(extract_3);
+                const extract_4 = document.createElement("div");
+                extract_4.classList.add(cur_path_class);
+                extract_div.appendChild(extract_4);
+
+                const input = document.createElement("input");
+                input.type = "text";
+                input.id = `generate_extract_path_${cur_input_num}_${cur_path_num}`
+                input.classList.add("generate_extract_path");
+                extract_2.appendChild(input)
+                const add_btn = document.createElement("button");
+                add_btn.textContent = "+";
+                extract_3.appendChild(add_btn);
+                const sub_btn = document.createElement("button");
+                sub_btn.textContent = "-";
+                sub_btn.classList.add("extract_path_sub");
+                extract_4.appendChild(sub_btn);
+
+                add_btn.addEventListener("click", (event) => {
+                    add_extract_path();
+                });
+
+                sub_btn.addEventListener("click", (event) => {
+                    // Remove all elements that match the current class
+                    const children_raw = extract_div.getElementsByClassName(cur_path_class);
+                    // Need to copy the elements into an array since we're removing them during the loop
+                    const children = Array.from(children_raw);
+                    for (const child of children) {
+                        extract_div.removeChild(child);
+                    }
+                    disable_or_enable_extract_buttons();
+                });
+
+                extract_path_num += 1;
+                disable_or_enable_extract_buttons();
+            }
+
+            add_extract_path();
+            div.append(extract_div);
+
+            // Create/delete buttons
+            const btn_div = document.createElement("div");
+            btn_div.classList.add("center");
+            const add_btn = document.createElement("button");
+            add_btn.textContent = "Add another input";
+            const delete_btn = document.createElement("button");
+            delete_btn.textContent = "Delete this input";
+            delete_btn.id = `generate_delete_button_${cur_input_num}`;
+            btn_div.appendChild(add_btn);
+            btn_div.appendChild(delete_btn);
+            div.appendChild(btn_div);
+
+            // Horizontal rule to separate inputs
+            div.append(document.createElement("hr"));
+
+            // Add events
+            add_btn.addEventListener("click", (event) => {
+                add_generate_input_file();
+            });
+            delete_btn.addEventListener("click", (event) => {
+                document.getElementById("generate_input_files").removeChild(div);
+                generate_disable_or_enable_delete_input();
+            });
+
+            document.getElementById("generate_input_files").append(div);
+            // Don't forget to increase the amount of inputs for later calls
+            generate_input_num += 1;
+            generate_disable_or_enable_delete_input();
+        }
+
+        // TODO: Can this be combined with the above in some way?
+        function add_merge_input_file()
+        {
+            const cur_input_num = merge_input_num;
+            const inputs = document.getElementById("merge_input_files");
+
+            const div = document.createElement("div");
+            div.classList.add("extract_path_grid");
+            // add input field
+            const input = document.createElement("input");
+            input.type = "text";
+            input.id = `merge_input_${merge_input_num}`;
+            const add_btn = document.createElement("button");
+            add_btn.textContent = '+';
+            const sub_btn = document.createElement("button");
+            sub_btn.textContent = '-';
+            sub_btn.id = `merge_delete_button_${cur_input_num}`;
+            div.appendChild(input);
+            div.appendChild(add_btn);
+            div.appendChild(sub_btn);
+
+            add_btn.addEventListener("click", (event) => {
+                add_merge_input_file();
+            });
+
+            sub_btn.addEventListener("click", (event) => {
+                inputs.removeChild(div);
+                merge_disable_or_enable_delete_input();
+            });
+
+            inputs.appendChild(div);
+
+            merge_input_num += 1;
+            merge_disable_or_enable_delete_input();
+        }
+
+        function refresh_results()
+        {
+            // Remove old results
+            const results_list = document.getElementById("results_list");
+            while (results_list.firstChild) {
+                results_list.removeChild(results_list.lastChild);
+            }
+            document.getElementById("refresh_btn").classList.add("hidden");
+            // Fetch new results
+            fetch(`${document.URL}/get_result_list`)
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Error with server's response");
+                    }
+                    return response.blob();
+                })
+                .then((blob) => {
+                    return blob.text();
+                })
+                .then((data) => {
+                    const response = JSON.parse(data);
+                    const results_list = document.getElementById("results_list");
+                    for (let result of response) {
+                        const para = document.createElement('p');
+                        const link = document.createElement('a');
+                        link.download = result;
+                        link.href = `${document.URL}/get_result/${result}`;
+                        link.textContent = result;
+                        para.appendChild(link);
+                        results_list.appendChild(para);
+                    }
+                    document.getElementById("refresh_btn").classList.remove("hidden");
+                })
+                .catch((err) => {
+                    document.getElementById("results_error").innerText = `Error: ${err}`;
+                });
+        }
+
+        function handle_server_response(data, command_name)
+        {
+            const response = JSON.parse(data);
+            if (response["error"]) {
+                document.getElementById(`${command_name}_results_text`).textContent = '';
+                document.getElementById(`${command_name}_error_text`).textContent = `Error: ${response["error_desc"]}`;
+            }
+            else {
+                // Erase any old results
+                const res = document.getElementById(`${command_name}_results_text`);
+                while (res.firstChild) {
+                    res.removeChild(res.lastChild);
+                }
+                // Generate the download link
+                const link = document.createElement('a');
+                link.download = response["file_name"];
+                link.href = `${document.URL}/get_result/${response["file_name"]}`;
+                link.textContent = "Download result.";
+                res.appendChild(link);
+            }
+            document.getElementById("option_input").classList.remove("hidden");
+            document.getElementById("running").classList.add("hidden");
+            document.getElementById(`${command_name}_result`).classList.remove("hidden");
+            refresh_results();
+        }
+
+        function handle_server_error(err, command_name)
+        {
+            document.getElementById(`${command_name}_results_text`).textContent = '';
+            document.getElementById("option_input").classList.remove("hidden");
+            document.getElementById("running").classList.add("hidden");
+            document.getElementById(`${command_name}_result`).classList.remove("hidden");
+            document.getElementById(`${command_name}_error_text`).textContent = `Error: ${err}`;
+        }
+
+        window.addEventListener("load", () => {
+            // Load previous results
+            refresh_results();
+
+            // Command tabs
+            const command_list = [
+                "generate",
+                "merge",
+                "results"
+            ]
+            for (const command of command_list) {
+                document.getElementById(`${command}_button`).addEventListener("click", (event) => {
+                    for (const command2 of command_list) {
+                        document.getElementById(`${command2}_button`).classList.remove("selected");
+                        document.getElementById(command2).classList.add("hidden");
+                    }
+                    event.target.classList.add("selected");
+                    document.getElementById(command).classList.remove("hidden");
+                    document.getElementById(command).classList.add("visible");
+                });
+            };
+
+            // Create the first generate_input_files field
+            add_generate_input_file();
+
+            // Create the first merge_input_files field
+            add_merge_input_file();
+
+            // Generate's run button
+            document.getElementById("generate_run").addEventListener("click", (event) => {
+                document.getElementById("generate_error_text").textContent = '';
+                document.getElementById("option_input").classList.add("hidden");
+                document.getElementById("running").classList.remove("hidden");
+                const inputs = [];
+                const is_input = /generate_archive_\d+/;
+                const is_install = /generate_install_prefix_\d+/;
+                const is_extract_base = /generate_extract_\d+/;
+                // Gather the input information and add it to inputs
+                for (const input of document.getElementById("generate_input_files").children) {
+                    let cur_input = {"extract_paths": []};
+                    for (const div_group of input.children) {
+                        for (const child of div_group.children) {
+                            if (is_input.test(child.id)) {
+                                cur_input["archive"] = child.value;
+                            }
+                            else if (is_install.test(child.id)) {
+                                cur_input["install_prefix"] = child.value;
+                            }
+                            else if (is_extract_base.test(child.className)) {
+                                for (const extract_child of child.children) {
+                                    if (extract_child.className == "generate_extract_path") {
+                                        cur_input["extract_paths"].push(extract_child.value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    inputs.push(cur_input);
+                }
+                fetch(`${document.URL}/generate`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        inputs: inputs,
+                        input_sbom: document.getElementById("generate_sbom_input").value,
+                        skip_gather: document.getElementById("generate_skip_gather").checked,
+                        skip_relationships: document.getElementById("generate_skip_relationships").checked,
+                        input_format: document.getElementById("generate_input_format").value,
+                        skip_install_path: document.getElementById("generate_skip_install_path").checked,
+                        recorded_institution: document.getElementById("generate_recorded_institution").value,
+                        output_format: document.getElementById("generate_output_format").value
+                    }),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error("Error with server's response.");
+                        }
+                        return response.blob();
+                    })
+                    .then((blob) => {
+                        return blob.text();
+                    })
+                    .then((data) => {
+                        handle_server_response(data, "generate");
+                    })
+                    .catch((err) => {
+                        handle_server_error(err, "generate");
+                    });
+            });
+
+            // Merge's run button
+            document.getElementById("merge_run").addEventListener("click", (event) => {
+                document.getElementById("merge_error_text").textContent = '';
+                document.getElementById("option_input").classList.add("hidden");
+                document.getElementById("running").classList.remove("hidden");
+
+                const inputs = [];
+                const is_merge_input = /merge_input_\d+/;
+                for (const input of document.getElementById("merge_input_files").children) {
+                    for (const child of input.children) {
+                        if (is_merge_input.test(child.id)) {
+                            inputs.push(child.value);
+                        }
+                    }
+                }
+                fetch(`${document.URL}/merge`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        inputs: inputs,
+                        input_format: document.getElementById("merge_input_format").value,
+                        output_format: document.getElementById("merge_output_format").value,
+                        config_file: document.getElementById("merge_config_file").value
+                    }),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error("Error with server's response.");
+                        }
+                        return response.blob();
+                    })
+                    .then((blob) => {
+                        return blob.text();
+                    })
+                    .then((data) => {
+                        handle_server_response(data, "merge");
+                    })
+                    .catch((err) => {
+                        handle_server_error(err, "merge");
+                    });
+            });
+
+            // Refresh results button
+            document.getElementById("refresh_btn").addEventListener("click", (event) => {
+                refresh_results();
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Surfactant GUI</h1>
+    <div id="running" class="hidden">
+        <h2>Running, check console for details</h2>
+    </div>
+    <div id="option_input">
+        <div class="tabs">
+            <button id="generate_button" class="command-tab selected">Generate</button>
+            <button id="merge_button" class="command-tab">Merge</button>
+            <button id="results_button" class="command-tab">Results</button>
+        </div>
+
+        <div id="generate" class="visible">
+            <div id="generate_result" class="hidden">
+                <h2>Results</h2>
+                <div id="generate_results_text"></div>
+                <div id="generate_error_text"></div>
+            </div>
+            <h2>Options</h2>
+            <h3>Input Files</h3>
+            <div id="generate_input_files"></div>
+            <h3>Optional Options</h3>
+            <div class="option_grid">
+                <div class="grid_left">
+                    <p>
+                        <div class="input_grid">
+                            <label for="generate_sbom_input" class="grid_left">
+                                <abbr title="SBOM to add information to">Input SBOM</abbr>
+                            </label>
+                            <input class="grid_right" type="text" id="generate_sbom_input" />
+                        </div>
+                    </p>
+
+                    <p>
+                        <label for="generate_skip_gather">
+                            <abbr title="Skip gathering information on files and adding software entries">
+                                Skip Gather
+                            </abbr>
+                        </label>
+                        <input type="checkbox" id="generate_skip_gather" />
+                    </p>
+
+                    <p>
+                        <label for="generate_skip_relationships">
+                            <abbr title="Skip adding relationships based on Linux/Windows/etc. metadata">
+                                Skip Relationships
+                            </abbr>
+                        </label>
+                        <input type="checkbox" id="generate_skip_relationships" />
+                    </p>
+
+                    <p>
+                        <label for="generate_input_format">
+                            <abbr title="SBOM input format">
+                                Input Format
+                            </abbr>
+                        </label>
+                        <select id="generate_input_format">
+                            <option value="cytrics">CyTRICS</option>
+                        </select>
+                    </p>
+                </div>
+                <div class="grid_right">
+                    <p>
+                        <label for="generate_skip_install_path">
+                            <abbr title="Skip including install path information if not given">
+                                Skip Install Path
+                            </abbr>
+                        </label>
+                        <input type="checkbox" id="generate_skip_install_path" />
+                    </p>
+
+                    <p>
+                        <div class="input_grid">
+                            <label class="grid_left" for="generate_recorded_institution">
+                                <abbr title="Name of user's institution">
+                                    Recorded Institution
+                                </abbr>
+                            </label>
+                            <input class="grid_right" type="text" id="generate_recorded_institution" />
+                        </div>
+                    </p>
+
+                    <p>
+                        <label for="generate_output_format">
+                            <abbr title="SBOM output format">
+                                Output Format
+                            </abbr>
+                        </label>
+                        <select id="generate_output_format">
+                            <option value="cytrics">CyTRICS</option>
+                            <option value="spdx">SPDX</option>
+                            <option value="csv">CSV</option>
+                        </select>
+                    </p>
+                </div>
+            </div>
+            <div class="run_button_div">
+                <button id="generate_run" class="run_button">Run</button>
+            </div>
+        </div>
+        <div id="merge" class="hidden">
+            <div id="merge_result" class="hidden">
+                <h2>Results</h2>
+                <div id="merge_results_text"></div>
+                <div id="merge_error_text"></div>
+            </div>
+            <h2>Options</h2>
+            <h3>Input Files</h3>
+            <div id="merge_input_files"></div>
+            <h3>Optional options</h3>
+            <div class="option_grid">
+                <div class="grid_left">
+                    <p>
+                        <label for="merge_input_format">
+                            <abbr title="SBOM input format, assumes all SBOM's have the same format">
+                                Input Format
+                            </abbr>
+                        </label>
+                        <select id="merge_input_format">
+                            <option value="cytrics">CyTRICS</option>
+                            <option value="spdx">SPDX</option>
+                            <option value="csv">CSV</option>
+                        </select>
+                    </p>
+                    <p>
+                        <div class="input_grid">
+                            <label class="grid_left" for="merge_config_file">
+                                <abbr title="Config file to specify a root system entry">
+                                    Config File
+                                </abbr>
+                            </label>
+                            <input class="grid_right" type="text" id="merge_config_file" />
+                        </div>
+                    </p>
+                </div>
+                <div class="grid_right">
+                    <p>
+                        <label for="merge_output_format">
+                            <abbr title="SBOM output format">
+                                Output Format
+                            </abbr>
+                        </label>
+                        <select id="merge_output_format">
+                            <option value="cytrics">CyTRICS</option>
+                            <option value="spdx">SPDX</option>
+                            <option value="csv">CSV</option>
+                        </select>
+                    </p>
+                </div>
+            </div>
+            <div class="run_button_div">
+                <button id="merge_run" class="run_button">Run</button>
+            </div>
+        </div>
+        <div id="results" class="hidden">
+            <h2>Results</h2>
+            <div id="results_error"></div>
+            <div id="results_list" class="center"></div>
+            <div class="run_button_div">
+                <button id="refresh_btn">Refresh Results</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

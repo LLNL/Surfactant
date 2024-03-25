@@ -6,6 +6,9 @@ surfactant/_version.py
 # Test directories
 tests/symlink/test_dir/
 
+# Result files from web UI
+results/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

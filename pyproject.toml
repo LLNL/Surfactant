@@ -50,7 +50,8 @@ dependencies = [
     "pluggy",
     "click",
     "javatools>=1.6.0",
-    "loguru"
+    "loguru",
+    "flask"
 ]
 dynamic = ["version"]
 
