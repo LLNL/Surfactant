@@ -258,10 +258,10 @@ def create_cyclonedx_file(file_path: str, software: Software) -> Component:
 
     if software.description == "":
         software.description = None
-    
+
     if software.version == "":
         software.version = None
-    
+
     return Component(
         bom_ref=software.UUID,
         name=file_path,
