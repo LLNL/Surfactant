@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surfactantplugin-fuzzyhashes"
+authors = [
+    {name = "Michael Cutshaw", email = "michael.cutshaw@inl.gov"},
+]
+description = "Surfactant plugin for generating fuzzy hashes"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["surfactant"]
+license = {text = "MIT License"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "py-tlsh",
+    "surfactant"
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+ssdeep = ["ssdeep"]
+
+[project.entry-points."surfactant"]
+"surfactantplugin_fuzzyhashes" = "surfactantplugin_fuzzyhashes"
+
+[tool.setuptools]
+py-modules=["surfactantplugin_fuzzyhashes"]
