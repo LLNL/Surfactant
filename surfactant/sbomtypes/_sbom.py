@@ -25,6 +25,7 @@ INTERNAL_FIELDS = {"software_lookup_by_sha256"}
 @dataclass_json
 @dataclass
 class SBOM:
+    # pylint: disable=R0902
     systems: List[System] = field(default_factory=list)
     hardware: List[Hardware] = field(default_factory=list)
     software: List[Software] = field(default_factory=list)
