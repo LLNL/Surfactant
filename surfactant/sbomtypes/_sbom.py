@@ -58,6 +58,7 @@ class SBOM:
         self, xUUID: str = None, yUUID: str = None, relationship: str = None
     ) -> bool:
         for rel in self.relationships:
+            # We iterate until we find a relationship that meets all the conditions
             if xUUID and rel.xUUID != xUUID:
                 continue
             if yUUID and rel.yUUID != yUUID:
@@ -222,15 +223,13 @@ class SBOM:
             Optional[System]: The system found that matches the given criteria, otherwise None.
         """
         for system in self.systems:
-            all_match = True
             if uuid:
                 if system.UUID != uuid:
-                    all_match = False
+                    continue
             if name:
                 if system.name != name:
-                    all_match = False
-            if all_match:
-                return system
+                    continue
+            return system
         return None
 
     def _find_software_entry(
@@ -292,18 +291,16 @@ class SBOM:
             Optional[Relationship]: The relationship entry found that matches the given criteria, otherwise None.
         """
         for rel in self.relationships:
-            all_match = True
             if xUUID:
                 if rel.xUUID != xUUID:
-                    all_match = False
+                    continue
             if yUUID:
                 if rel.yUUID != yUUID:
-                    all_match = False
+                    continue
             if relationship:
                 if rel.relationship != relationship:
-                    all_match = False
-            if all_match:
-                return rel
+                    continue
+            return rel
         return None
 
     def _find_star_relationship_entry(
@@ -324,18 +321,16 @@ class SBOM:
             Optional[StarRelationship]: The star relationship found that matches the given criteria, otherwise None.
         """
         for rel in self.starRelationships:
-            all_match = True
             if xUUID:
                 if rel.xUUID != xUUID:
-                    all_match = False
+                    continue
             if yUUID:
                 if rel.yUUID != yUUID:
-                    all_match = False
+                    continue
             if relationship:
                 if rel.relationship != relationship:
-                    all_match = False
-            if all_match:
-                return rel
+                    continue
+            return rel
         return None
 
     def is_valid_uuid4(self, u: str) -> bool:
