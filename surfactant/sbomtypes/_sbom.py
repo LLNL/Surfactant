@@ -22,6 +22,7 @@ from ._system import System
 
 INTERNAL_FIELDS = {"software_lookup_by_sha256"}
 
+
 @dataclass_json
 @dataclass
 class SBOM:
@@ -37,8 +38,7 @@ class SBOM:
 
     def __post_init__(self):
         self.__dataclass_fields__ = {
-            k: v for k, v in self.__dataclass_fields__.items()
-            if k not in INTERNAL_FIELDS
+            k: v for k, v in self.__dataclass_fields__.items() if k not in INTERNAL_FIELDS
         }
 
     def add_relationship(self, rel: Relationship) -> None:
