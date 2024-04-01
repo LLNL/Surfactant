@@ -39,6 +39,13 @@ def main(log_level):
     logger.add(sys.stderr, level=log_level)
 
 
+@click.command("version")
+def version():
+    """Print version information."""
+    click.echo(importlib.metadata.version("surfactant"))
+    sys.exit(0)
+
+
 @main.group("cli")
 def cli():
     """Commandline interface used to modify SBOM entries."""
@@ -46,6 +53,7 @@ def cli():
 
 # Main Commands
 main.add_command(generate)
+main.add_command(version)
 main.add_command(stat)
 main.add_command(merge_command)
 main.add_command(create_config)
