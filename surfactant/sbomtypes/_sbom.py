@@ -170,7 +170,7 @@ class SBOM:
                 ):
                     logger.info(f"DUPLICATE RELATIONSHIP: {existing_rel}")
                 else:
-                    self.relationships.add(rel)
+                    self.relationships.append(rel)
 
         # rewrite container path UUIDs using rewrite map/list
         for sw in self.software:
