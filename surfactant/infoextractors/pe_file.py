@@ -190,13 +190,13 @@ def extract_pe_info(filename):
 
 
 def add_core_assembly_info(asm_dict, asm_info):
-    asm_dict["Name"] = asm_info.Name
-    asm_dict["Culture"] = asm_info.Culture
+    asm_dict["Name"] = asm_info.Name.value
+    asm_dict["Culture"] = asm_info.Culture.value
     asm_dict["Version"] = (
         f"{asm_info.MajorVersion}.{asm_info.MinorVersion}.{asm_info.BuildNumber}.{asm_info.RevisionNumber}"
     )
     asm_dict["PublicKey"] = (
-        asm_info.PublicKey.hex() if hasattr(asm_info.PublicKey, "hex") else asm_info.PublicKey
+        asm_info.PublicKey.hex() if hasattr(asm_info.PublicKey, "hex") else asm_info.PublicKey.value
     )
 
 
@@ -236,7 +236,7 @@ def get_assemblyref_info(asmref_info):
     asmref: Dict[str, Any] = {}
     add_core_assembly_info(asmref, asmref_info)
     asmref["HashValue"] = (  # asmref_info.HashValue.hex()
-        asmref_info.HashValue.hex() if hasattr(asmref_info.HashValue, "hex") else asmref_info.HashValue
+        asmref_info.HashValue.value if hasattr(asmref_info.HashValue, "value") else asmref_info.HashValue
     )
     add_assembly_flags_info(asmref, asmref_info)
     return asmref
