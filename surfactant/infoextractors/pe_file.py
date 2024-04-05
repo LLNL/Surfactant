@@ -199,6 +199,7 @@ def add_core_assembly_info(asm_dict, asm_info):
         asm_info.PublicKey.hex() if hasattr(asm_info.PublicKey, "hex")
         else (
            asm_info.PublicKey.value if hasattr(asm_info.PublicKey, "value")
+           else asm_info.PublicKey
 		)
     )
 
