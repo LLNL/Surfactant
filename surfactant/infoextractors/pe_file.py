@@ -190,13 +190,16 @@ def extract_pe_info(filename):
 
 
 def add_core_assembly_info(asm_dict, asm_info):
-    asm_dict["Name"] = asm_info.Name.value
-    asm_dict["Culture"] = asm_info.Culture.value
+    asm_dict["Name"] = (asm_info.Name.value if hasattr(asm_info.Name, "value") else asm_info.Name)
+    asm_dict["Culture"] = (asm_info.Culture.value if hasattr(asm_info.Culture, "value") else asm_info.Culture)
     asm_dict["Version"] = (
         f"{asm_info.MajorVersion}.{asm_info.MinorVersion}.{asm_info.BuildNumber}.{asm_info.RevisionNumber}"
     )
     asm_dict["PublicKey"] = (
-        asm_info.PublicKey.hex() if hasattr(asm_info.PublicKey, "hex") else asm_info.PublicKey.value
+        asm_info.PublicKey.hex() if hasattr(asm_info.PublicKey, "hex")
+        else (
+           asm_info.PublicKey.value if hasattr(asm_info.PublicKey, "value")
+		)
     )
 
 
