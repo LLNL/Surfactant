@@ -51,8 +51,8 @@ def convert_cve_to_openvex(json_output_path, output_dir):
 
     openvex_template = {
         "@context": "https://openvex.dev/ns/v0.2.0",
-        "@id": f"urn:uuid:{uuid.uuid4()}",  # Replace with actual UUID
-        "author": "Surfactant",  # Replace with actual author name
+        "@id": f"urn:uuid:{uuid.uuid4()}",
+        "author": "Surfactant plugin cvebintool2vex",
         "timestamp": datetime.now().isoformat(),
         "version": 1,
         "tooling": "Surfactant (https://github.com/LLNL/Surfactant)",
@@ -70,7 +70,7 @@ def convert_cve_to_openvex(json_output_path, output_dir):
                     "@id": f"cpe:2.3:a:{entry['vendor']}:{entry['product']}:{entry['version']}:::::"
                 }
             ],
-            "status": "under_investigation",  # This is an assumption, adjust as necessary
+            "status": "under_investigation",
             "source": entry["source"],
             "cvss_version": entry["cvss_version"],
             "cvss_vector": entry["cvss_vector"],
@@ -98,8 +98,8 @@ def process_input(input_path, output_dir=None):
     output_directory.mkdir(exist_ok=True)
 
     if input_path.is_dir():
-        for input_file in input_path.glob('*.*'):  # Adjust the glob pattern as needed
-            if input_file.suffix.lower() not in ['.bin']:  # Filter files by extension if needed
+        for input_file in input_path.glob('*.*'):
+            if input_file.suffix.lower() not in ['.bin', '.exe', '.jar']:
                 continue
             process_file(input_file, output_directory)
     elif input_path.is_file():
