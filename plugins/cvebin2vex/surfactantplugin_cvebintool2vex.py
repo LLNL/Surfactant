@@ -110,9 +110,11 @@ def process_input(input_path, output_dir=None):
 
 def process_file(input_file, output_directory):
     try:
-        jsonfile = run_cve_bin_tool(input_file, output_directory)
+        run_cve_bin_tool(input_file, output_directory)
     except Exception as e:
         logger.info(f"Proccess file exception: {e}")
+
+    jsonfile = Path(output_directory) / (Path(input_file).stem + '.json')
     if jsonfile and jsonfile.exists():
         convert_cve_to_openvex(jsonfile, output_directory)
 
@@ -130,10 +132,4 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
     if filetype not in ["ELF", "PE"]:
         pass
     filename = Path(filename)
-    process_input(filename, output_dir)
-
-
-if __name__ == "__main__":
-    input_path = '/home/user/Desktop/cve'  # This can be a file or directory
-    output_dir = '/home/user/Desktop/cve/output'
-    process_input(input_path, output_dir)
+    process_input(filename)

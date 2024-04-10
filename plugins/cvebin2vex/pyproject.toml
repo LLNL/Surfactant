@@ -27,7 +27,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.entry-points."surfactant"]
-"surfactantplugin-cvebintool2vex" = "surfactantplugin-cvebintool2vex"
+"surfactantplugin_cvebintool2vex" = "surfactantplugin_cvebintool2vex"
 
 [tool.setuptools]
-py-modules=["surfactantplugin-cvebintool2vex"]
+py-modules=["surfactantplugin_cvebintool2vex"]
