@@ -3,14 +3,16 @@
 #
 # SPDX-License-Identifier: MIT
 import json
+import subprocess
+import sys
+import uuid
+from datetime import datetime
 from pathlib import Path
+
 from loguru import logger
+
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
-import subprocess
-from datetime import datetime
-import uuid
-import sys
 
 
 def run_cve_bin_tool(input_file_path, shaHash, output_dir):
@@ -22,14 +24,16 @@ def run_cve_bin_tool(input_file_path, shaHash, output_dir):
 
     try:
         command = [
-            'cve-bin-tool',
-            '--offline',
-            '--output', str(output_file_path),
-            '--format', 'json',
-            '--vex',
+            "cve-bin-tool",
+            "--offline",
+            "--output",
+            str(output_file_path),
+            "--format",
+            "json",
+            "--vex",
             str(vex_output_path),
-            '--input-file',
-            str(input_file_path)
+            "--input-file",
+            str(input_file_path),
         ]
         subprocess.run(command, check=True)
         logger.info(f"Output saved to {output_file_path}")
@@ -42,10 +46,10 @@ def run_cve_bin_tool(input_file_path, shaHash, output_dir):
 def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
     openvex_file_name = f"{json_output_path.stem}.vex"
     openvex_output = output_dir / openvex_file_name
-    
+
     # Open and read the .json file
     try:
-        with open(json_output_path, 'r') as file:
+        with open(json_output_path, "r") as file:
             cve_data = json.load(file)
     except Exception as e:
         logger.info(f"Error reading JSON file: {e}")
@@ -58,31 +62,27 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
         "timestamp": datetime.now().isoformat(),
         "version": 1,
         "tooling": "Surfactant (https://github.com/LLNL/Surfactant)",
-        "statements": []
+        "statements": [],
     }
 
     for entry in cve_data:
         # Convert CVE data to OpenVEX format
         statement = {
-            "vulnerability": {
-                "name": entry["cve_number"]
-            },
+            "vulnerability": {"name": entry["cve_number"]},
             "products": [
-                {
-                    "@id": f"cpe:2.3:a:{entry['vendor']}:{entry['product']}:{entry['version']}:::::"
-                }
+                {"@id": f"cpe:2.3:a:{entry['vendor']}:{entry['product']}:{entry['version']}:::::"}
             ],
             "status": "under_investigation",
             "source": entry["source"],
             "cvss_version": entry["cvss_version"],
             "cvss_vector": entry["cvss_vector"],
-            "severity": entry["severity"]
+            "severity": entry["severity"],
         }
         openvex_template["statements"].append(statement)
 
     # Save the OpenVEX output to a new file
     try:
-        with open(openvex_output, 'w') as outfile:
+        with open(openvex_output, "w") as outfile:
             json.dump(openvex_template, outfile, indent=4)
         logger.info(f"OpenVEX Output Path: {openvex_output}")
     except Exception as e:
@@ -95,14 +95,15 @@ def process_input(input_path, shaHash, output_dir=None):
         output_dir = Path.cwd()
 
     if input_path.is_dir():
-        for input_file in input_path.glob('*.*'):
-            if input_file.suffix.lower() not in ['.bin', '.exe', '.jar']:
+        for input_file in input_path.glob("*.*"):
+            if input_file.suffix.lower() not in [".bin", ".exe", ".jar"]:
                 continue
             process_file(input_file, shaHash, output_dir)
     elif input_path.is_file():
         process_file(input_path, shaHash, output_dir)
     else:
         logger.info(f"Error: {input_path} is neither a file nor a directory.")
+
 
 def process_file(input_file, shaHash, output_directory):
     try:
@@ -118,6 +119,7 @@ def process_file(input_file, shaHash, output_directory):
     else:
         logger.warning(f"Expected JSON file does not exist: {jsonfile}")
 
+
 def delete_extra_files(*file_paths):
     for file_path in file_paths:
         try:
@@ -128,6 +130,7 @@ def delete_extra_files(*file_paths):
                 logger.warning(f"File does not exist, cannot delete: {file_path}")
         except Exception as e:
             logger.error(f"Failed to delete {file_path}: {e}")
+
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 # cvebintool2vwx(sbom: SBOM, software: Software, filename: str, filetype: str):
@@ -148,7 +151,7 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
 
     existing_json_path = output_dir / f"{shaHash}_additional_metadata.json"
     if existing_json_path.exists():
-        with open(existing_json_path, 'r') as file:
+        with open(existing_json_path, "r") as file:
             data = json.load(file)
     else:
         data = {
@@ -156,7 +159,7 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
             "filename": [filename.name],
             "openvex": [],
             "cyclonedx-vex": [],
-            "cve-bin-tool": []
+            "cve-bin-tool": [],
         }
 
     # Assuming JSON, CDXVEX, and VEX files are processed here
@@ -171,30 +174,30 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
     if cdxvex_file_path.exists() and vex_file_path.exists() and json_file_path.exists():
         # For .cdxvex and .vex files, if they contain JSON, parse them as such; otherwise, read as text
         try:
-            with open(cdxvex_file_path, 'r') as file:
+            with open(cdxvex_file_path, "r") as file:
                 cdxvex_data = json.load(file)  # Assuming .cdxvex file is in JSON format
             data["cyclonedx-vex"].append(cdxvex_data)
         except json.JSONDecodeError:
-            with open(cdxvex_file_path, 'r') as file:
+            with open(cdxvex_file_path, "r") as file:
                 cdxvex_data = file.read()  # Fallback if not JSON
             data["cyclonedx-vex"].append(cdxvex_data)
 
         try:
-            with open(vex_file_path, 'r') as file:
+            with open(vex_file_path, "r") as file:
                 vex_data = json.load(file)  # Assuming .vex file is in JSON format
             data["openvex"].append(vex_data)
         except json.JSONDecodeError:
-            with open(vex_file_path, 'r') as file:
+            with open(vex_file_path, "r") as file:
                 vex_data = file.read()  # Fallback if not JSON
             data["openvex"].append(vex_data)
 
-        with open(json_file_path, 'r') as file:
+        with open(json_file_path, "r") as file:
             json_data = json.load(file)
         data["cve-bin-tool"].append(json_data)
 
     # Attempt to save the updated data
     try:
-        with open(existing_json_path, 'w') as file:
+        with open(existing_json_path, "w") as file:
             json.dump(data, file, indent=4)
             logger.info(f"Updated data saved to {existing_json_path}")
     except Exception as e:
