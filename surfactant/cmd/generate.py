@@ -229,7 +229,11 @@ def sbom(
 
     if pathlib.Path(config_file).is_file():
         with click.open_file(config_file) as f:
-            config = json.load(f)
+            try:
+                config = json.load(f)
+            except json.decoder.JSONDecodeError as err:
+                logger.exception(f"Invalid JSON in given config file ({config_file})")
+                raise SystemExit(f"Invalid JSON in given config file ({config_file})") from err
             # TODO: what if it isn't a JSON config file, but a single file to generate an SBOM for? perhaps file == "archive"?
     else:
         # Emulate a configuration file with the path
@@ -283,10 +287,21 @@ def sbom(
                 parent_entry = None
                 parent_uuid = None
 
-            if entry.installPrefix and not entry.installPrefix.endswith(("/", "\\")):
-                # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
-                logger.warning("Fixing install path")
-                entry.installPrefix += "/"
+            # If an installPrefix was given, clean it up some
+            if entry.installPrefix:
+                if not entry.installPrefix.endswith(("/", "\\")):
+                    # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
+                    logger.warning(
+                        "Fixing installPrefix in config file entry (include the trailing /)"
+                    )
+                    entry.installPrefix += "/"
+                if "\\" in entry.installPrefix:
+                    # Using an install prefix with backslashes can result in a gradual reduction of the number of backslashes... and weirdness
+                    # Ideally even on a Windows "/" should be preferred instead in file paths, but "\" can be a valid character in Linux folder names
+                    logger.warning(
+                        "Fixing installPrefix with Windows-style backslash path separator in config file (ideally use / as path separator instead of \\, even for Windows"
+                    )
+                    entry.installPrefix = entry.installPrefix.replace("\\", "\\\\")
 
             for epath in entry.extractPaths:
                 # extractPath should not end with "/" (Windows-style backslash paths shouldn't be used at all)
