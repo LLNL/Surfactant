@@ -56,7 +56,7 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
         return
     except IOError as e:
         logger.error(f"IO error when reading {json_output_path}: {e}")
-        return    
+        return
 
     openvex_template = {
         "@context": "https://openvex.dev/ns/v0.2.0",
