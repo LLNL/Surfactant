@@ -8,15 +8,22 @@ To install this plugin within the same virtual environment as Surfactant, use th
 
 For developers modifying the plugin, the editable installation can be achieved with `pip install -e .`.
 
-Since the plugin is designed to run in `--offline` mode, before your initial run of the script please run the command `cve-bin-tool --update now` this will provide you a freshly updated database that the script will check against in the offline mode.
+Since the plugin is designed to run in `--offline` mode, before your initial run of the script please run the command `cve-bin-tool --update now` this will provide you a freshly updated local database that the script will check against in the offline mode.
 
-After the plugin installation, run Surfactant as you normally would to create an SBOM. For binary files analyzed by this plugin, additional JSON and OpenVEX files will be generated in the specified output directory, containing vulnerability data extracted from the binaries. If a specific output directory has not been added the default will be the current working directory of the script and create a new directory named `cve2vexoutput`.
+After the plugin installation, run Surfactant as you normally would to create an SBOM. For binary files analyzed by this plugin, additional JSON files will be generated containing vulnerability data extracted from the binaries.
+If there are duplicate hashed files the extractor will skip the entry.
+Example:
+Output Filename: `$(sha256hash)_additional_metadata.json`
 
-The output filenames are structured as follows:
-
-- cve-bin-tool findings JSON output: `<original_filename>.json`
-- CycloneDX Vex output: `<original_filename>.cdxvex`
-- OpenVEX output: `<original_filename>.vex`
+```json
+{
+  "sha256hash": " ",
+  "filename": [],
+  "openvex": [],
+  "cyclonedx-vex": [],
+  "cve-bin-tool": []
+}
+```
 
 The plugin's functionality can be toggled via Surfactant's plugin management features, using the plugin name `surfactantplugin_cvebintool2vex.py` as defined in the `pyproject.toml` under the `project.entry-points."surfactant"` section.
 
