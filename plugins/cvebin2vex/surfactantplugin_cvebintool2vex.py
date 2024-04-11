@@ -14,9 +14,12 @@ import uuid
 import sys
 
 
-def run_cve_bin_tool(input_file_path, output_dir):
-    output_file_path = output_dir / (input_file_path.stem + '.json')
-    vex_output_path = output_dir / (input_file_path.stem + '.cdxvex')
+def run_cve_bin_tool(input_file_path, shaHash, output_dir):
+    cvebin_file_name = f"{shaHash}_{input_file_path.stem}.json"
+    output_file_path = output_dir / cvebin_file_name
+
+    cdxvex_file_name = f"{shaHash}_{input_file_path.stem}.cdxvex"
+    vex_output_path = output_dir / cdxvex_file_name
 
     try:
         command = [
@@ -37,10 +40,10 @@ def run_cve_bin_tool(input_file_path, output_dir):
         return None
 
 
-def convert_cve_to_openvex(json_output_path, output_dir):
-    # Construct the .vex output file path
-    openvex_output = output_dir / (json_output_path.stem + '.vex')
-
+def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
+    openvex_file_name = f"{shaHash}_{json_output_path.stem}.vex"
+    openvex_output = output_dir / openvex_file_name
+    
     # Open and read the .json file
     try:
         with open(json_output_path, 'r') as file:
@@ -87,10 +90,10 @@ def convert_cve_to_openvex(json_output_path, output_dir):
         logger.info(f"Error writing OpenVEX file: {e}")
 
 
-def process_input(input_path, output_dir=None):
+def process_input(input_path, shaHash, output_dir=None):
     input_path = Path(input_path)
     if output_dir is None:
-        output_dir = Path.cwd() / 'cve2vexoutput'
+        output_dir = Path.cwd() / 'cvebintool2vexoutput'
         if not output_dir.exists():
             output_dir.mkdir(parents=True)
 
@@ -101,22 +104,25 @@ def process_input(input_path, output_dir=None):
         for input_file in input_path.glob('*.*'):
             if input_file.suffix.lower() not in ['.bin', '.exe', '.jar']:
                 continue
-            process_file(input_file, output_directory)
+            process_file(input_file, shaHash, output_directory)
     elif input_path.is_file():
-        process_file(input_path, output_directory)
+        process_file(input_path, shaHash, output_directory)
     else:
         logger.info(f"Error: {input_path} is neither a file nor a directory.")
 
 
-def process_file(input_file, output_directory):
+def process_file(input_file, shaHash, output_directory):
     try:
-        run_cve_bin_tool(input_file, output_directory)
+        run_cve_bin_tool(input_file, shaHash, output_directory)
     except Exception as e:
         logger.info(f"Proccess file exception: {e}")
 
-    jsonfile = Path(output_directory) / (Path(input_file).stem + '.json')
+
+    cvebin_file_name = f"{shaHash}_{input_file.stem}.json"
+    jsonfile = output_directory / cvebin_file_name
+
     if jsonfile and jsonfile.exists():
-        convert_cve_to_openvex(jsonfile, output_directory)
+        convert_cve_to_openvex(jsonfile, shaHash, output_directory)
 
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
@@ -131,5 +137,6 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
     # Only parsing executable files
     if filetype not in ["ELF", "PE"]:
         pass
+    shaHash = str(software.sha256)
     filename = Path(filename)
-    process_input(filename)
+    process_input(filename, shaHash)

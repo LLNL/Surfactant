@@ -24,7 +24,6 @@ The plugin's functionality can be toggled via Surfactant's plugin management fea
 
 - **Offline Vulnerability Analysis**: Utilizes CVE-bin-tool in offline mode to scan binaries for known vulnerabilities.
 - **OpenVEX Format Conversion**: Transforms CVE-bin-tool JSON output into the OpenVEX format, a standardized way to report vulnerabilities.
-- **Automated Directory Scanning**: Can process all binary files within a specified directory or a single binary file.
 
 ## Uninstalling
 
