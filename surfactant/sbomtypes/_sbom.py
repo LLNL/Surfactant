@@ -75,7 +75,10 @@ class SBOM:
         return None
 
     def add_software(self, sw: Software) -> None:
+        if sw.sha256 is not None:
+            self.software_lookup_by_sha256[sw.sha256] = sw
         self.software.append(sw)
+        
 
     # pylint: disable=too-many-arguments
     def create_software(
@@ -170,7 +173,7 @@ class SBOM:
                 ):
                     logger.info(f"DUPLICATE RELATIONSHIP: {existing_rel}")
                 else:
-                    self.relationships.append(rel)
+                    self.relationships.add(rel)
 
         # rewrite container path UUIDs using rewrite map/list
         for sw in self.software:
