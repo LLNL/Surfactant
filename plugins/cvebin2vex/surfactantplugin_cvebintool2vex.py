@@ -35,7 +35,7 @@ def run_cve_bin_tool(input_file_path, shaHash, output_dir):
         logger.info(f"Output saved to {output_file_path}")
         return output_file_path  # Return path to the generated JSON file
     except subprocess.CalledProcessError as e:
-        logger.info(f"Error running CVE-bin-tool: {e}", file=sys.stderr)
+        logger.error(f"Error running CVE-bin-tool: {e}", file=sys.stderr)
         return None
 
 
@@ -47,9 +47,12 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
     try:
         with open(json_output_path, 'r') as file:
             cve_data = json.load(file)
-    except Exception as e:
-        logger.info(f"Error reading JSON file: {e}")
+    except json.JSONDecodeError as e:
+        logger.error(f"Error reading JSON file: {e}")
         return
+    except IOError as e:
+        logger.error(f"IO error when reading {json_output_path}: {e}")
+        return    
 
     openvex_template = {
         "@context": "https://openvex.dev/ns/v0.2.0",
@@ -85,8 +88,8 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
         with open(openvex_output, 'w') as outfile:
             json.dump(openvex_template, outfile, indent=4)
         logger.info(f"OpenVEX Output Path: {openvex_output}")
-    except Exception as e:
-        logger.info(f"Error writing OpenVEX file: {e}")
+    except IOError as e:
+        logger.error(f"IO error when writing {openvex_output}: {e}")
 
 
 def process_input(input_path, shaHash, output_dir=None):
@@ -124,10 +127,10 @@ def delete_extra_files(*file_paths):
             if file_path.exists():
                 file_path.unlink()
                 logger.info(f"Deleted file: {file_path}")
-            else:
-                logger.warning(f"File does not exist, cannot delete: {file_path}")
-        except Exception as e:
-            logger.error(f"Failed to delete {file_path}: {e}")
+        except PermissionError as e:
+            logger.error(f"Permission error deleting {file_path}: {e}")
+        except OSError as e:
+            logger.error(f"OS error deleting {file_path}: {e}")
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 # cvebintool2vwx(sbom: SBOM, software: Software, filename: str, filetype: str):
