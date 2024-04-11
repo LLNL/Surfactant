@@ -144,9 +144,7 @@ with open(
     "r",
 ) as f:
     sbom3 = SBOM.from_json(f.read())
-with open(
-    pathlib.Path(__file__).parent / "../data/sample_sboms/helics_libs_sbom.json", "r"
-) as f:
+with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_libs_sbom.json", "r") as f:
     sbom4 = SBOM.from_json(f.read())
 
 
@@ -156,9 +154,7 @@ def test_simple_merge_method():
     merged_sbom.merge(sbom2)
     softwares = sbom1.software
     softwares.extend(sbom2.software)
-    assert merged_sbom.software.sort(key=lambda x: x.UUID) == softwares.sort(
-        key=lambda x: x.UUID
-    )
+    assert merged_sbom.software.sort(key=lambda x: x.UUID) == softwares.sort(key=lambda x: x.UUID)
     relations = sbom1.relationships
     relations.update(sbom2.relationships)
     assert sorted(merged_sbom.relationships, key=lambda x: x.xUUID) == sorted(

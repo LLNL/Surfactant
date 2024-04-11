@@ -78,7 +78,6 @@ class SBOM:
         if sw.sha256 is not None:
             self.software_lookup_by_sha256[sw.sha256] = sw
         self.software.append(sw)
-        
 
     # pylint: disable=too-many-arguments
     def create_software(
