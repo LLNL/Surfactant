@@ -110,18 +110,21 @@ def process_input(input_path, shaHash, output_dir=None):
 
 def process_file(input_file, shaHash, output_directory):
     try:
-        run_cve_bin_tool(input_file, shaHash, output_directory)
-    except Exception as e:
-        logger.error(f"Process file exception: {e}")
+        json_output_path = run_cve_bin_tool(input_file, shaHash, output_directory)
+        if json_output_path:
+            convert_cve_to_openvex(json_output_path, shaHash, output_directory)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error running CVE-bin-tool: {e}")
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decoding error in {input_file}: {e}")
+    except IOError as e:
+        logger.error(f"I/O error processing {input_file}: {e}")
 
+    # Check if the expected JSON file was created and proceed if it exists
     cvebin_file_name = f"{shaHash}_{input_file.stem}.json"
     jsonfile = output_directory / cvebin_file_name
-
-    if jsonfile and jsonfile.exists():
-        convert_cve_to_openvex(jsonfile, shaHash, output_directory)
-    else:
+    if not jsonfile.exists():
         logger.warning(f"Expected JSON file does not exist: {jsonfile}")
-
 
 def delete_extra_files(*file_paths):
     for file_path in file_paths:
@@ -203,8 +206,8 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
         with open(existing_json_path, "w") as file:
             json.dump(data, file, indent=4)
             logger.info(f"Updated data saved to {existing_json_path}")
-    except Exception as e:
-        logger.error(f"Failed to write updated data to {existing_json_path}: {e}")
+    except IOError as e:
+        logger.error(f"IO error when writing {existing_json_path}: {e}")            
 
     # Clean up extra files
     delete_extra_files(cdxvex_file_path, vex_file_path, json_file_path)
