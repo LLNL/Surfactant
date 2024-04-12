@@ -126,6 +126,7 @@ def process_file(input_file, shaHash, output_directory):
     if not jsonfile.exists():
         logger.warning(f"Expected JSON file does not exist: {jsonfile}")
 
+
 def delete_extra_files(*file_paths):
     for file_path in file_paths:
         try:
@@ -207,7 +208,7 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
             json.dump(data, file, indent=4)
             logger.info(f"Updated data saved to {existing_json_path}")
     except IOError as e:
-        logger.error(f"IO error when writing {existing_json_path}: {e}")            
+        logger.error(f"IO error when writing {existing_json_path}: {e}")
 
     # Clean up extra files
     delete_extra_files(cdxvex_file_path, vex_file_path, json_file_path)
