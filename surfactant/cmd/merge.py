@@ -69,9 +69,9 @@ def merge(input_sboms, sbom_outfile, config, output_writer):
 
     # Add a system relationship to each root software/systems entry identified
     for r in roots:
-        new_relationship = Relationship(xUUID=system.UUID, yUUID=r, relationship="Includes")
-        if new_relationship not in merged_sbom.relationships:
-            merged_sbom.relationships.append(new_relationship)
+        merged_sbom.relationships.add(
+            Relationship(xUUID=system["UUID"], yUUID=r, relationship="Includes")
+        )
 
     output_writer.write_sbom(merged_sbom, sbom_outfile)
 
