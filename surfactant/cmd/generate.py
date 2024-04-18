@@ -7,6 +7,7 @@ import os
 import pathlib
 import queue
 import re
+import subprocess
 from typing import Dict, List, Optional, Tuple, Union
 
 import click
@@ -186,7 +187,7 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     help="SBOM output format, see --list-output-formats for list of options; default is CyTRICS",
 )
 @click.option(
-    "--list-output-formats",
+    "--list_output_formats",
     is_flag=True,
     callback=print_output_formats,
     expose_value=False,
@@ -200,12 +201,18 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     help="Input SBOM format, see --list-input-formats for list of options; default is CyTRICS",
 )
 @click.option(
-    "--list-input-formats",
+    "--list_input_formats",
     is_flag=True,
     callback=print_input_formats,
     expose_value=False,
     is_eager=True,
     help="List supported input formats",
+)
+@click.option(
+    "--disable_docker_scout",
+    is_flag=True,
+    default=False,
+    help="Disable Docker Scout analysis"
 )
 def sbom(
     config_file,
@@ -217,6 +224,7 @@ def sbom(
     recorded_institution,
     output_format,
     input_format,
+    disable_docker_scout,
 ):
     """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
 
@@ -254,6 +262,13 @@ def sbom(
 
     # gather metadata for files and add/augment software entries in the sbom
     if not skip_gather:
+        # Check that Docker Scout can be run unless it's disabled
+        if not disable_docker_scout:
+            result = subprocess.run(["docker", "scout", "--help"], capture_output=True)
+            if result.returncode != 0:
+                logger.error(f"Docker Scout exited with error:\nstdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n\n")
+                logger.error(f"Either install Docker Scout or run Surfactant with --disable_docker_scout")
+                return
         # List of directory symlinks; 2-sized tuples with (source, dest)
         dir_symlinks: List[Tuple[str, str]] = []
         # List of file symlinks; keys are SHA256 hashes, values are source paths
