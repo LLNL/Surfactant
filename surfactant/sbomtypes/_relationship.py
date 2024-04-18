@@ -11,9 +11,15 @@ class Relationship:
     yUUID: str
     relationship: str
 
+    def __hash__(self) -> int:
+        return hash(repr(self))
+
 
 @dataclass
 class StarRelationship:
     xUUID: str
     yUUID: str
     relationship: str
+
+    def __hash__(self) -> int:
+        return hash(repr(self))
