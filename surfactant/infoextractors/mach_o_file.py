@@ -58,7 +58,7 @@ def extract_mach_o_info(filename):
             tools = []
             for tool in build.tools:
                 tools.append({"tool": tool.tool, "version": tool.version})
-            binary_details["tools"]: tools
+            binary_details["tools"] = tools
 
         file_details["binaries"].append(binary_details)
 
