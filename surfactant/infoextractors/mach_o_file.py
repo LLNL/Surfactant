@@ -18,9 +18,7 @@ def supports_file(filetype) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str
-) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
     if not supports_file(filetype):
         return None
     return extract_mach_o_info(filename)

@@ -80,9 +80,7 @@ def print_plugins(pm: pluggy.PluginManager):
         print("name: " + pm.get_name(p))
 
 
-def find_io_plugin(
-    pm: pluggy.PluginManager, io_format: str, function_name: str
-):
+def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):
     found_plugin = pm.get_plugin(io_format)
 
     if found_plugin is None:
@@ -97,9 +95,7 @@ def find_io_plugin(
                 pass
 
     if found_plugin is None:
-        logger.error(
-            f'No "{function_name}" plugin for format "{io_format}" found'
-        )
+        logger.error(f'No "{function_name}" plugin for format "{io_format}" found')
         sys.exit(1)
 
     return found_plugin
