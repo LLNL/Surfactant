@@ -105,11 +105,11 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 ".cab.gz",
             ]:
                 if is_docker_archive(filepath):
-                    return "Docker"
+                    return "Docker archive gzip"
                 return "GZIP"
             if magic_bytes[257:265] == b"ustar\x0000" or magic_bytes[257:265] == b"ustar  \x00":
                 if is_docker_archive(filepath):
-                    return "Docker"
+                    return "Docker archive tar"
                 return "TAR"
             if magic_bytes[:4] in [b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"]:
                 suffix = pathlib.Path(filepath).suffix.lower()

@@ -17,6 +17,7 @@ from surfactant import ContextEntry
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.infoextractors import docker_file
 
 
 # Converts from a true path to an install path
@@ -269,6 +270,8 @@ def sbom(
                 logger.error(f"Docker Scout exited with error:\nstdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n\n")
                 logger.error(f"Either install Docker Scout or run Surfactant with --disable_docker_scout")
                 return
+            # TODO: Is there a better way of doing this?
+            pm.register(docker_file)
         # List of directory symlinks; 2-sized tuples with (source, dest)
         dir_symlinks: List[Tuple[str, str]] = []
         # List of file symlinks; keys are SHA256 hashes, values are source paths
