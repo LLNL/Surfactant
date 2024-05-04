@@ -90,9 +90,6 @@ def extract_mach_o_info(filename):
             lib_details["compatibilityVersion"] = library.compatibility_version
             libraries.append(lib_details)
         binary_details["libraryDependencies"] = libraries
-            
-        
-            
 
         file_details["binaries"].append(binary_details)
 
