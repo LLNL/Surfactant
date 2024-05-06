@@ -33,6 +33,6 @@ def extract_docker_info(filetype: str, filename: str) -> object:
 
 # Function that extract_docker_info delegates to to actually run Docker scout
 def run_docker(filename: str) -> object:
-    result = subprocess.run(["docker", "scout", "sbom", "--format", "spdx", f"fs://{filename}"], capture_output=True)
+    result = subprocess.run(["docker", "scout", "sbom", "--format", "spdx", f"fs://{filename}"], capture_output=True, check=False)
     spdx_out = json.loads(result.stdout)
     return {'dockerSPDX': spdx_out}

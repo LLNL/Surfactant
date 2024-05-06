@@ -265,7 +265,7 @@ def sbom(
     if not skip_gather:
         # Check that Docker Scout can be run unless it's disabled
         if not disable_docker_scout:
-            result = subprocess.run(["docker", "scout", "--help"], capture_output=True)
+            result = subprocess.run(["docker", "scout", "--help"], capture_output=True, check=False)
             if result.returncode != 0:
                 logger.error(f"Docker Scout exited with error:\nstdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n\n")
                 logger.error(f"Either install Docker Scout or run Surfactant with --disable_docker_scout")

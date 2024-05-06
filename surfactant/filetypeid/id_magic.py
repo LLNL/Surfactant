@@ -33,7 +33,7 @@ def is_docker_archive(filepath: str) -> bool:
                 manifest = json.load(manifest_file)
                 # TODO: Figure out if there's a reason this is an array rather than just assuming
                 #       All of the array members are the same
-                if type(manifest) != list:
+                if isinstance(manifest, list):
                     return False
                 for data in manifest:
                     # Just check if this data member exists
