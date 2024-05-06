@@ -14,10 +14,10 @@ import click
 from loguru import logger
 
 from surfactant import ContextEntry
+from surfactant.infoextractors import docker_file
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
-from surfactant.infoextractors import docker_file
 
 
 # Converts from a true path to an install path
@@ -210,10 +210,7 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     help="List supported input formats",
 )
 @click.option(
-    "--disable_docker_scout",
-    is_flag=True,
-    default=False,
-    help="Disable Docker Scout analysis"
+    "--disable_docker_scout", is_flag=True, default=False, help="Disable Docker Scout analysis"
 )
 def sbom(
     config_file,
@@ -267,8 +264,12 @@ def sbom(
         if not disable_docker_scout:
             result = subprocess.run(["docker", "scout", "--help"], capture_output=True)
             if result.returncode != 0:
-                logger.error(f"Docker Scout exited with error:\nstdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n\n")
-                logger.error(f"Either install Docker Scout or run Surfactant with --disable_docker_scout")
+                logger.error(
+                    f"Docker Scout exited with error:\nstdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n\n"
+                )
+                logger.error(
+                    "Either install Docker Scout or run Surfactant with --disable_docker_scout"
+                )
                 return
             # TODO: Is there a better way of doing this?
             pm.register(docker_file)

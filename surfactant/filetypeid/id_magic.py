@@ -2,10 +2,9 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+import json
 import pathlib
 import tarfile
-import tempfile
-import json
 from enum import Enum, auto
 from typing import Optional
 
