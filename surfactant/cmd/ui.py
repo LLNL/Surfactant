@@ -17,9 +17,9 @@ import surfactant.cmd.merge as merge_command
 site = flask.Blueprint("site", __name__, url_prefix="/")
 
 
-@site.route("/get_result/<path:id>")
-def get_result(id):
-    return flask.send_from_directory(f"{os.getcwd()}/results", id)
+@site.route("/get_result/<path:result_id>")
+def get_result(result_id):
+    return flask.send_from_directory(f"{os.getcwd()}/results", result_id)
 
 
 @site.route("/get_result_list")
@@ -34,6 +34,8 @@ def get_result_list():
 
 @site.post("/generate")
 def generate():
+    # Hush some pylint things due to them not really being aplicable here
+    # pylint: disable=broad-exception-caught, no-value-for-parameter
     try:
         req = flask.request.get_json()
         with tempfile.NamedTemporaryFile("w") as config_file:
@@ -81,6 +83,7 @@ def generate():
 
 @site.post("/merge")
 def merge():
+    # pylint: disable=broad-exception-caught, no-value-for-parameter
     try:
         req = flask.request.get_json()
         output_file_name = f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")}_merge.json'
