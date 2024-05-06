@@ -48,7 +48,8 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         # Create CycloneDX Components for every software entry
         # start with software entries that act as containers for other software entries
         if sbom.has_relationship(xUUID=software.UUID, relationship="Contains"):
-            for _, container in convert_software_to_cyclonedx_container_components(software):
+            _, container_list = convert_software_to_cyclonedx_container_components(software)
+            for container in container_list:
                 bom.components.add(container)
         else:
             for parent_uuid, _, file in convert_software_to_cyclonedx_file_components(software):
@@ -256,6 +257,12 @@ def create_cyclonedx_file(file_path: str, software: Software) -> Component:
     if cr_text := get_fileinfo_metadata(software, "LegalCopyright"):
         copyright_text = cr_text  # free-form text field extracted from actual file identifying copyright holder and any dates present
 
+    if software.description == "":
+        software.description = None
+
+    if software.version == "":
+        software.version = None
+
     return Component(
         bom_ref=software.UUID,
         name=file_path,
@@ -263,7 +270,7 @@ def create_cyclonedx_file(file_path: str, software: Software) -> Component:
         supplier=supplier,
         description=software.description,
         hashes=hashes,
-        copyright=copyright,
+        copyright=copyright_text,
         # components: Optional[Iterable['Component']]
         type=ComponentType.FILE,
     )
