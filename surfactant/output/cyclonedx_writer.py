@@ -3,10 +3,11 @@ from collections.abc import Iterable
 from typing import Dict, List, Optional, Tuple
 
 import cyclonedx.output
-from cyclonedx.model import HashAlgorithm, HashType, OrganizationalEntity, Tool
+from cyclonedx.model import HashAlgorithm, HashType, Tool
 from cyclonedx.model.bom import Bom, BomMetaData
 from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType
+from cyclonedx.model.contact import OrganizationalEntity
 from cyclonedx.model.dependency import Dependency
 
 import surfactant.plugin
