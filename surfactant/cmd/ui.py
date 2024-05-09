@@ -108,12 +108,16 @@ def merge():
 
 @site.route("/")
 def index():
-    return flask.send_file("../../web-files/ui.html")
+    return flask.send_file(os.path.join(os.path.dirname(__file__), "../web-files/ui.html"))
 
 
 @click.command("ui")
 @click.argument("port", type=click.INT, required=False, default=8080)
 def ui(port: int):
+    """Start web UI server
+
+    An optional PORT (default=8080) can be supplied as an argument.
+    """
     os.makedirs("results", exist_ok=True)
     if not 0 <= port <= 65535:
         sys.exit("Port number must be between 0 and 65535")
