@@ -53,12 +53,23 @@ def merge(input_sboms, sbom_outfile, config, output_writer):
 
     rel_graph = construct_relationship_graph(merged_sbom)
     roots = get_roots_check_cycles(rel_graph)
+
+    # Check if provided UUID for a system object already exists to avoid creating a duplicate
+    add_system = True
+    if config and "system" in config:
+        if "UUID" in config["system"]:
+            for s in merged_sbom.systems:
+                if config["system"]["UUID"] == s.UUID:
+                    add_system = False
+                    break
+    # Even if not adding the system, create a dummy/placeholder with the UUID for creating relationships
     system = create_system_object(merged_sbom, config)
-    merged_sbom.systems.append(system)
+    if add_system:
+        merged_sbom.systems.append(system)
 
     # Add a system relationship to each root software/systems entry identified
     for r in roots:
-        merged_sbom.relationships.append(
+        merged_sbom.relationships.add(
             Relationship(xUUID=system["UUID"], yUUID=r, relationship="Includes")
         )
 
@@ -151,7 +162,7 @@ def create_system_object(sbom: SBOM, config=None) -> System:
     """
 
     system = {}
-    if config:
+    if config and "system" in config:
         system = config["system"]
     # make sure the required fields are present and at least mostly valid
     if ("UUID" not in system) or not sbom.is_valid_uuid4(system["UUID"]):
@@ -171,4 +182,4 @@ def create_system_object(sbom: SBOM, config=None) -> System:
         system["captureStart"] = captureStart
     if "captureEnd" not in system or not system["captureEnd"]:
         system["captureEnd"] = captureEnd
-    return system
+    return System(**system)
