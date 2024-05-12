@@ -26,7 +26,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 def extract_js_info(filename):
     js_info: Dict[str, Any] = {"Library": {}}
-    js_lib_file = pathlib.Path(__file__).parent / "js_libraries.regex"
+    js_lib_file = pathlib.Path(__file__).parent / "js_library_patterns.json"
 
     # Load expressions from retire.js, should move this file elsewhere
     try:

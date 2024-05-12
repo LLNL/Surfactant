@@ -431,7 +431,10 @@
             "axios-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
         ],
         "filecontent": [
-            "/\\* *axios v(\\d+(?:\\.\\d+)*) "
+            "/\\* *axios v(\\d+(?:\\.\\d+)*) ",
+            "// Axios v(\\d+(?:\\.\\d+)*) C",
+            "return\"\\[Axios v(\\d+(?:\\.\\d+)*)\\] Transitional",
+            "\\\"axios\\\",\\\"version\\\":\\\"(\\d+(?:\\.\\d+)*)\\\""
         ]
     },
     "markdown-it": {
