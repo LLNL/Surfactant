@@ -5,7 +5,7 @@
 import json
 import pathlib
 import re
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List
 
 from loguru import logger
 
@@ -25,7 +25,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 
 def extract_js_info(filename):
-    js_info: Dict[str, Any] = {"Library": {}}
+    js_info: Dict[str, Any] = {"jsLibraries": []}
     js_lib_file = pathlib.Path(__file__).parent / "js_library_patterns.json"
 
     # Load expressions from retire.js, should move this file elsewhere
@@ -37,32 +37,30 @@ def extract_js_info(filename):
         return None
 
     # Try to match file name
-    ver, lib = match_by_attribute("filename", filename, database)
-    if lib is not None:
-        js_info["Library"] = lib
-        js_info["Version"] = ver
+    libs = match_by_attribute("filename", filename, database)
+    if len(libs) > 0:
+        js_info["jsLibraries"] = libs
         return js_info
 
     # Try to match file contents
     try:
         with open(filename, "r") as js_file:
             filecontent = js_file.read()
-        ver, lib = match_by_attribute("filecontent", filecontent, database)
-        if lib is not None:
-            js_info["Library"] = lib
-            js_info["Version"] = ver
+        libs = match_by_attribute("filecontent", filecontent, database)
+        js_info["jsLibraries"] = libs
     except FileNotFoundError:
         logger.warning(f"File not found: {filename}")
     return js_info
 
 
-def match_by_attribute(attribute: str, content: str, database: Dict) -> Tuple[str, str]:
+def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
+    libs = []
     for name, library in database.items():
         if attribute in library:
             for pattern in library[attribute]:
                 matches = re.search(pattern, content)
                 if matches:
                     if len(matches.groups()) > 0:
-                        return (matches.group(1), name)
-                    return ("None Found", name)
-    return (None, None)
+                        libs.append({"Library": name, "Version": matches.group(1)})
+                        continue
+    return libs
