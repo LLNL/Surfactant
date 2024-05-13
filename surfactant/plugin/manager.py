@@ -23,7 +23,10 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         ole_file,
         pe_file,
     )
-    from surfactant.input_readers import cytrics_reader
+    from surfactant.input_readers import (
+        cytrics_reader,
+        cyclonedx_reader,
+    ) 
     from surfactant.output import (
         csv_writer,
         cyclonedx_writer,
@@ -57,6 +60,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         cyclonedx_writer,
         spdx_writer,
         cytrics_reader,
+        cyclonedx_reader,
     )
     for plugin in internal_plugins:
         pm.register(plugin)
