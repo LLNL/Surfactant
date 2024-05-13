@@ -62,5 +62,6 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                 if matches:
                     if len(matches.groups()) > 0:
                         libs.append({"Library": name, "Version": matches.group(1)})
+                        # skip remaining patterns, move on to the next library
                         break
     return libs
