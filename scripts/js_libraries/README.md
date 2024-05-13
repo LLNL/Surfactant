@@ -2,17 +2,17 @@
 
 ## get_retirejs_db.py
 
-Running this script retrieves vulnerability information from various javascript libraries from
+Running this script retrieves the javascript library CVE database used by
 [retire.js](https://github.com/RetireJS/retire.js/blob/master/repository/jsrepository-master.json)
-and only keeps the contents under each library's "extractors" section, which contains regexes
-relevant for detecting a specific javascript library by its file name, file contents, or md5 hash.
+and only keeps the contents under each library's "extractors" section, which contains file hashes and
+regexes relevant for detecting a specific javascript library by its file name or contents.
 
-The resulting smaller json is written to `reduced.json` in the same directory. This smaller file
+The resulting smaller json is written to `js_libraries.regex` in the same directory. This smaller file
 will be read from to make the checks later on.
 
 ## match_javascript.py
 
 This is an example script that retrieves
 [this javascript library file](https://cdnjs.cloudflare.com/ajax/libs/select2/3.5.4/select2.min.js)
-and checks it against the regular expressions in `reduced.json`. It prints the javascript library
+and checks it against the regular expressions in `js_libraries.regex`. It prints the javascript library
 whose regex entries matched the contents of the file.
