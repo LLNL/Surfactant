@@ -5,8 +5,8 @@
 
 import pathlib
 
-from surfactant.cmd.cli import cli_find
-from surfactant.sbomtypes import SBOM
+from surfactant.cmd.cli import cli_find, cli_add
+from surfactant.sbomtypes import SBOM, Relationship
 
 with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_sbom.json", "r") as f:
     in_sbom = SBOM.from_json(f.read())
@@ -91,3 +91,58 @@ def test_find_with_bad_filter():
     assert len(out_bom.software) == 0
     out_bom = cli_find().execute(bad_sbom, bad_filter=1.234)  # Unsupported Type
     assert len(out_bom.software) == 0
+
+
+def test_add_by_file():
+    previous_software_len = len(in_sbom.software)
+    out_bom = cli_add().execute(in_sbom, file=pathlib.Path(__file__).parent / "../data/a_out_files/big_m68020.aout")
+    assert len(out_bom.software) == previous_software_len + 1
+    assert (
+        out_bom.software[8].sha256
+        == "9e125f97e5f180717096c57fa2fdf06e71cea3e48bc33392318643306b113da4"
+    )
+    del in_sbom.software[-1]
+
+
+def test_add_entry():
+    entry = {
+      "UUID": "6b50c545-3e07-4aec-bbb0-bae07704143a",
+      "name": "Test Aout File",
+      "size": 4,
+      "fileName": [
+        "big_m68020.aout"
+      ],
+      "installPath": [],
+      "containerPath": [],
+      "captureTime": 1715726918,
+      "sha1": "fbf8688fbe1976b6f324b0028c4b97137ae9139d",
+      "sha256": "9e125f97e5f180717096c57fa2fdf06e71cea3e48bc33392318643306b113da4",
+      "md5": "e8d3808a4e311a4262563f3cb3a31c3e",
+      "comments": "This is a test entry.",
+    }
+    previous_software_len = len(in_sbom.software)
+    out_bom = cli_add().execute(in_sbom, entry=entry)
+    assert len(out_bom.software) == previous_software_len + 1
+    assert (
+        out_bom.software[8].sha256
+        == "9e125f97e5f180717096c57fa2fdf06e71cea3e48bc33392318643306b113da4"
+    )
+    del in_sbom.software[-1]
+
+
+def test_add_relationship():
+    relationship = {
+      "xUUID": "455341bb-2739-4918-9805-e1a93e27e2a4",
+      "yUUID": "e286a415-6c6b-427d-9fe6-d7dbb0486f7d",
+      "relationship": "Uses"
+    }
+    previous_rel_len = len(in_sbom.relationships)
+    out_bom = cli_add().execute(in_sbom, relationship=relationship)
+    assert len(out_bom.relationships) == previous_rel_len + 1
+    in_sbom.relationships.discard(Relationship(**relationship))
+
+def test_add_installpath():
+    installPath = "C:/Users/test/Program Files/test_folder"
+    out_bom = cli_add().execute(in_sbom, installpath=installPath)
+    for sw in out_bom.software:
+        assert installPath in sw.installPath

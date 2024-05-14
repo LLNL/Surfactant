@@ -6,6 +6,8 @@ from loguru import logger
 
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._sbom import SBOM
+from surfactant.sbomtypes._software import Software
+from surfactant.sbomtypes._relationship import Relationship
 
 
 @click.argument("sbom", type=click.File("r"), required=True)
@@ -53,16 +55,107 @@ def find(sbom, output_format, input_format, **kwargs):
 
 
 @click.argument("sbom", type=click.File("r"), required=True)
-@click.command("edit")
-def edit(sbom):
-    "CLI command to edit specific entry(s) in a supplied SBOM"
+@click.option("--file", is_flag=False, help="Adds entry for file to sbom")
+@click.option("--relationship", is_flag=False, type=str, help="Adds relationship to sbom")
+@click.option("--entry", is_flag=False, type=str, help="Adds software entry to sbom")
+@click.option(
+    "--installPath",
+    is_flag=False,
+    type=str,
+    help="Adds installPath to add to all entries",
+)
+@click.option(
+    "--containerPath",
+    is_flag=False,
+    type=str,
+    help="Adds containerPath to add to all entries",
+)
+@click.option(
+    "--output_format",
+    is_flag=False,
+    default="surfactant.output.cytrics_writer",
+    help="SBOM output format, options=[cytrics|csv|spdx|cyclonedx]",
+)
+@click.option(
+    "--input_format",
+    is_flag=False,
+    default="surfactant.input_readers.cytrics_reader",
+    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
+)
+@click.command("add")
+def add(sbom, output_format, input_format, **kwargs):
+    "CLI command to add specific entry(s) to a supplied SBOM"
+    pm = get_plugin_manager()
+    output_writer = find_io_plugin(pm, output_format, "write_sbom")
+    input_reader = find_io_plugin(pm, input_format, "read_sbom")
+    in_sbom = input_reader.read_sbom(sbom)
+
+    # Remove None values
+    filtered_kwargs = dict({(k, v) for k, v in kwargs.items() if v is not None})
+    print(filtered_kwargs)
+    out_sbom = cli_add().execute(in_sbom, **filtered_kwargs)
+    if not out_sbom.software:
+        logger.warning("No software matches found with given parameters.")
+    output_writer.write_sbom(out_sbom, sys.stdout)
 
 
 @click.argument("sbom", type=click.File("r"), required=True)
-@click.command("add")
-def add(sbom):
-    "CLI command to add specific entry(s) to a supplied SBOM"
+@click.command("edit")
+def edit(sbom, output_format, input_format, **kwargs):
+    "CLI command to edit specific entry(s) in a supplied SBOM"
 
+class cli_add:
+    """
+    A class that implements the surfactant cli find functionality
+
+    Attributes:
+    match_functions     A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
+    sbom                An internal record of sbom entries the class adds to as it finds more matches.
+    """
+    
+    camel_case_conversions: dict
+    sbom: SBOM
+
+    def __init__(self):
+        """Initializes the cli_add class"""
+        self.camel_case_conversions = {
+            "uuid": "UUID",
+            "filename": "fileName",
+            "containerpath": "containerPath",
+            "installpath": "installPath",
+            "capturetime": "captureTime",
+            "relationshipassertion": "relationshipAssertion",
+        }
+
+    def handle_kwargs(self, kwargs: dict) -> dict:
+        converted_kwargs = {}
+        for k, v in kwargs.items():  # Convert key values to camelcase where appropriate
+            key = self.camel_case_conversions[k] if k in self.camel_case_conversions else k
+            converted_kwargs[key] = v
+        return converted_kwargs
+
+    def execute(self, input_sbom: SBOM, **kwargs):
+        """Executes the main functionality of the cli_find class
+        param: input_sbom   The sbom to find matches within
+        param: kwargs:      Dictionary of key/value pairs indicating what features to match on
+        """
+        converted_kwargs = self.handle_kwargs(kwargs)
+        self.sbom = input_sbom
+
+        for key, value in converted_kwargs.items():
+            if key == "file": # Do once
+                self.sbom.software.append(Software.create_software_from_file(value))
+            elif key == "relationship":
+                self.sbom.add_relationship(Relationship(**value))
+            elif key == "entry":
+                self.sbom.software.append(Software.from_dict(value))
+            else: 
+                for sw in self.sbom.software:
+                    if key == "installPath":
+                        sw.installPath.append(value)
+                    elif key == "containerPath":
+                        sw.containerPath.append(value)
+        return self.sbom
 
 class cli_find:
     """
