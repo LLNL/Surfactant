@@ -27,8 +27,21 @@ from surfactant.sbomtypes._system import System
     default="surfactant.input_readers.cytrics_reader",
     help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=surfactant.input_readers.[cytrics|cyclonedx|spdx]_reader",
 )
+@click.option(
+    "--system_relationship",
+    is_flag=False,
+    default="Contains",
+    show_default=True,
+    help="Relationship type between merged SBOM contents to a top-level system object",
+)
+@click.option(
+    "--add_system/--no_add_system",
+    default=False,
+    show_default=True,
+    help="Create a top-level system entry for tying together the merged SBOM components. When disabled, relationships will still be created to a provided system UUID",
+)
 @click.command("merge")
-def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_format):
+def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_format, system_relationship, add_system):
     """Merge two or more INPUT_SBOMS together into SBOM_OUTFILE.
 
     An optional CONFIG_FILE can be supplied to specify a root system entry
@@ -43,10 +56,10 @@ def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_f
     config = None
     if config_file:
         config = json.load(config_file)
-    merge(sboms, sbom_outfile, config, output_writer)
+    merge(sboms, sbom_outfile, config, output_writer, system_relationship, add_system)
 
 
-def merge(input_sboms, sbom_outfile, config, output_writer):
+def merge(input_sboms, sbom_outfile, config, output_writer, system_relationship="Contains", add_system=True):
     """Merge two or more SBOMs."""
     merged_sbom = input_sboms[0]
     for sbom_m in input_sboms[1:]:
@@ -56,7 +69,6 @@ def merge(input_sboms, sbom_outfile, config, output_writer):
     roots = get_roots_check_cycles(rel_graph)
 
     # Check if provided UUID for a system object already exists to avoid creating a duplicate
-    add_system = True
     if config and "system" in config:
         if "UUID" in config["system"]:
             for s in merged_sbom.systems:
@@ -69,9 +81,11 @@ def merge(input_sboms, sbom_outfile, config, output_writer):
         merged_sbom.systems.append(system)
 
     # Add a system relationship to each root software/systems entry identified
+    if config and "systemRelationship" in config:
+        system_relationship = config["systemRelationship"]
     for r in roots:
         merged_sbom.relationships.add(
-            Relationship(xUUID=system["UUID"], yUUID=r, relationship="Includes")
+            Relationship(xUUID=system.UUID, yUUID=r, relationship=system_relationship)
         )
 
     output_writer.write_sbom(merged_sbom, sbom_outfile)
