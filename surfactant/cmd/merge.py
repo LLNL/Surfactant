@@ -17,7 +17,7 @@ from surfactant.sbomtypes._system import System
     "--config_file",
     type=click.File("r"),
     required=False,
-    help="Config file for controlling some aspects of the merged SBOM, primarily the creation of a new top-level system object (settings here will typically take precedence over command line options)"
+    help="Config file for controlling some aspects of the merged SBOM, primarily the creation of a new top-level system object (settings here will typically take precedence over command line options)",
 )
 @click.option(
     "--output_format",
@@ -45,7 +45,15 @@ from surfactant.sbomtypes._system import System
     help="Create a top-level system entry for tying together the merged SBOM components. When disabled, relationships will still be created to a provided system UUID",
 )
 @click.command("merge")
-def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_format, system_relationship, add_system):
+def merge_command(
+    input_sboms,
+    sbom_outfile,
+    config_file,
+    output_format,
+    input_format,
+    system_relationship,
+    add_system,
+):
     """Merge two or more INPUT_SBOMS together into SBOM_OUTFILE.
 
     An optional CONFIG_FILE can be supplied to specify a root system entry
@@ -63,7 +71,14 @@ def merge_command(input_sboms, sbom_outfile, config_file, output_format, input_f
     merge(sboms, sbom_outfile, config, output_writer, system_relationship, add_system)
 
 
-def merge(input_sboms, sbom_outfile, config, output_writer, system_relationship="Contains", add_system=True):
+def merge(
+    input_sboms,
+    sbom_outfile,
+    config,
+    output_writer,
+    system_relationship="Contains",
+    add_system=True,
+):
     """Merge two or more SBOMs."""
     merged_sbom = input_sboms[0]
     for sbom_m in input_sboms[1:]:
