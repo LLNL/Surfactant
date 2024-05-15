@@ -13,7 +13,12 @@ from surfactant.sbomtypes._system import System
 
 @click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
 @click.argument("input_sboms", type=click.File("r"), required=True, nargs=-1)
-@click.option("--config_file", type=click.File("r"), required=False)
+@click.option(
+    "--config_file",
+    type=click.File("r"),
+    required=False,
+    help="Config file for controlling some aspects of the merged SBOM, primarily the creation of a new top-level system object (settings here will typically take precedence over command line options)"
+)
 @click.option(
     "--output_format",
     is_flag=False,
