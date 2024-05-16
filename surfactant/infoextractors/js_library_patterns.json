@@ -1,0 +1,550 @@
+{
+    "retire-example": {
+        "filename": [
+            "retire-example-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*!? Retire-example v(\\d+(?:\\.\\d+)*)"
+        ],
+        "hashes": [
+            "07f8b94c8d601a24a1914a1a92bec0e4fafda964"
+        ]
+    },
+    "jquery": {
+        "filename": [
+            "jquery-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*!? jQuery v(\\d+(?:\\.\\d+)*)",
+            "\\* jQuery JavaScript Library v(\\d+(?:\\.\\d+)*)",
+            "\\* jQuery (\\d+(?:\\.\\d+)*) - New Wave Javascript",
+            "/\\*![\\s]+\\* jQuery JavaScript Library v(\\d+(?:\\.\\d+)*)",
+            "// \\$Id: jquery.js,v (\\d+(?:\\.\\d+)*)",
+            "/\\*! jQuery v(\\d+(?:\\.\\d+)*)",
+            "[^a-z]f=\"(\\d+(?:\\.\\d+)*)\",.*[^a-z]jquery:f,",
+            "[^a-z]m=\"(\\d+(?:\\.\\d+)*)\",.*[^a-z]jquery:m,",
+            "[^a-z.]jquery:[ ]?\"(\\d+(?:\\.\\d+)*)\"",
+            "\\$\\.documentElement,Q=e.jQuery,Z=e\\.\\$,ee=\\{\\},te=\\[\\],ne=\"(\\d+(?:\\.\\d+)*)\"",
+            "=\"(\\d+(?:\\.\\d+)*)\",.{50,300}(.)\\.fn=(\\2)\\.prototype=\\{jquery:"
+        ],
+        "hashes": []
+    },
+    "jquery-migrate": {
+        "filename": [
+            "jquery-migrate-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*!?(?:\n \\*)? jQuery Migrate(?: -)? v(\\d+(?:\\.\\d+)*)",
+            "\\.migrateVersion ?= ?\"(\\d+(?:\\.\\d+)*)\"[\\s\\S]{10,150}(migrateDisablePatches|migrateWarnings|JQMIGRATE)",
+            "jQuery\\.migrateVersion ?= ?\"(\\d+(?:\\.\\d+)*)\""
+        ],
+        "hashes": []
+    },
+    "jquery-validation": {
+        "filename": [
+            "jquery.validat(?:ion|e)-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*!?(?:\n \\*)?[\\s]*jQuery Validation Plugin -? ?v(\\d+(?:\\.\\d+)*)",
+            "Original file: /npm/jquery-validation@(\\d+(?:\\.\\d+)*)/dist/jquery.validate.js"
+        ],
+        "hashes": []
+    },
+    "jquery-mobile": {
+        "filename": [
+            "jquery.mobile-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*!?[\\s*]*jQuery Mobile(?: -)? v?(\\d+(?:\\.\\d+)*)",
+            "// Version of the jQuery Mobile Framework[\\s]+version: *[\"'](\\d+(?:\\.\\d+)*)[\"'],"
+        ],
+        "hashes": []
+    },
+    "jquery-ui": {
+        "filecontent": [
+            "/\\*!? jQuery UI - v(\\d+(?:\\.\\d+)*)",
+            "/\\*!?[\n *]+jQuery UI (\\d+(?:\\.\\d+)*)"
+        ],
+        "hashes": []
+    },
+    "jquery-ui-dialog": {
+        "filecontent": [
+            "/\\*!? jQuery UI - v(\\d+(?:\\.\\d+)*)(.*\n){1,3}.*jquery\\.ui\\.dialog\\.js",
+            "/\\*!?[\n *]+jQuery UI (\\d+(?:\\.\\d+)*)(.*\n)*.*\\.ui\\.dialog",
+            "/\\*!?[\n *]+jQuery UI Dialog (\\d+(?:\\.\\d+)*)",
+            "/\\*!? jQuery UI - v(\\d+(?:\\.\\d+)*)(.*\n){1,3}\\* Includes: .* dialog\\.js"
+        ],
+        "hashes": []
+    },
+    "jquery-ui-autocomplete": {
+        "filecontent": [
+            "/\\*!? jQuery UI - v(\\d+(?:\\.\\d+)*)(.*\n){1,3}.*jquery\\.ui\\.autocomplete\\.js",
+            "/\\*!?[\n *]+jQuery UI (\\d+(?:\\.\\d+)*)(.*\n)*.*\\.ui\\.autocomplete",
+            "/\\*!?[\n *]+jQuery UI Autocomplete (\\d+(?:\\.\\d+)*)",
+            "/\\*!? jQuery UI - v(\\d+(?:\\.\\d+)*)(.*\n){1,3}\\* Includes: .* autocomplete\\.js"
+        ],
+        "hashes": []
+    },
+    "jquery-ui-tooltip": {
+        "filecontent": [
+            "/\\*!? jQuery UI - v(\\d+(?:\\.\\d+)*)(.*\n){1,3}.*jquery\\.ui\\.tooltip\\.js",
+            "/\\*!?[\n *]+jQuery UI (\\d+(?:\\.\\d+)*)(.*\n)*.*\\.ui\\.tooltip",
+            "/\\*!?[\n *]+jQuery UI Tooltip (\\d+(?:\\.\\d+)*)"
+        ],
+        "hashes": []
+    },
+    "jquery.prettyPhoto": {
+        "filecontent": [
+            "/\\*[\r\n -]+Class: prettyPhoto(?:.*\n){1,3}[ ]*Version: (\\d+(?:\\.\\d+)*)",
+            "\\.prettyPhoto[ ]?=[ ]?\\{version:[ ]?(?:'|\")(\\d+(?:\\.\\d+)*)(?:'|\")\\}"
+        ],
+        "hashes": []
+    },
+    "jquery.terminal": {
+        "filecontent": [
+            "version (\\d+(?:\\.\\d+)*)[\\s]+\\*[\\s]+\\* This file is part of jQuery Terminal.",
+            "\\$\\.terminal=\\{version:\"(\\d+(?:\\.\\d+)*)\""
+        ]
+    },
+    "jquery-deparam": {
+        "hashes": [
+            "61c9d49ae64331402c3bde766c9dc504ed2ca509",
+            "10a68e5048995351a01b0ad7f322bb755a576a02",
+            "b8f063c860fa3aab266df06b290e7da648f9328d",
+            "851bc74dc664aa55130ecc74dd6b1243becc3242",
+            "2aae12841f4d00143ffc1effa59fbd058218c29f",
+            "967942805137f9eb0ae26005d94e8285e2e288a0",
+            "fbf2e115feae7ade26788e38ebf338af11a98bb2"
+        ]
+    },
+    "tableexport.jquery.plugin": {
+        "filecontent": [
+            "/\\*[\\s]+tableExport.jquery.plugin[\\s]+Version (\\d+(?:\\.\\d+)*)",
+            "/\\*![\\s]+\\* TableExport.js v(\\d+(?:\\.\\d+)*)"
+        ]
+    },
+    "jPlayer": {
+        "filecontent": [
+            "/\\*!?[\n *]+jPlayer Plugin for jQuery (?:.*\n){1,10}[ *]+Version: (\\d+(?:\\.\\d+)*)",
+            "/\\*!? jPlayer (\\d+(?:\\.\\d+)*) for jQuery"
+        ],
+        "hashes": []
+    },
+    "knockout": {
+        "filename": [
+            "knockout-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "(?:\\*|//) Knockout JavaScript library v(\\d+(?:\\.\\d+)*)"
+        ],
+        "hashes": []
+    },
+    "sessvars": {
+        "filename": [
+            "sessvars-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "sessvars ver (\\d+(?:\\.\\d+)*)"
+        ],
+        "hashes": []
+    },
+    "swfobject": {
+        "filename": [
+            "swfobject_(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "SWFObject v(\\d+(?:\\.\\d+)*) "
+        ],
+        "hashes": []
+    },
+    "tinyMCE": {
+        "filecontent": [
+            "// (\\d+(?:\\.\\d+)*) \\([0-9\\-]+\\)[\n\r]+.{0,1200}l=.tinymce/geom/Rect.",
+            "/\\*\\*[\\s]*\\* TinyMCE version (\\d+(?:\\.\\d+)*)"
+        ]
+    },
+    "YUI": {
+        "filename": [
+            "yui-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "/*\nYUI (\\d+(?:\\.\\d+)*)",
+            "/yui/license.(?:html|txt)\nversion: (\\d+(?:\\.\\d+)*)"
+        ],
+        "hashes": []
+    },
+    "prototypejs": {
+        "filename": [
+            "prototype-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "Prototype JavaScript framework, version (\\d+(?:\\.\\d+)*)",
+            "Prototype[ ]?=[ ]?\\{[ \r\n\t]*Version:[ ]?(?:'|\")(\\d+(?:\\.\\d+)*)(?:'|\")"
+        ],
+        "hashes": []
+    },
+    "ember": {
+        "filename": [
+            "ember-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "Project:   Ember -(?:.*\n){9,11}// Version: v(\\d+(?:\\.\\d+)*)",
+            "// Version: v(\\d+(?:\\.\\d+)*)(.*\n){10,15}(Ember Debug|@module ember|@class ember)",
+            "Ember.VERSION[ ]?=[ ]?(?:'|\")(\\d+(?:\\.\\d+)*)(?:'|\")",
+            "meta\\.revision=\"Ember@(\\d+(?:\\.\\d+)*)\"",
+            "e\\(\"ember/version\",\\[\"exports\"\\],function\\(e\\)\\{\"use strict\";?[\\s]*e(?:\\.|\\[\")default(?:\"\\])?=\"(\\d+(?:\\.\\d+)*)\"",
+            "\\(\"ember/version\",\\[\"exports\"\\],function\\(e\\)\\{\"use strict\";.{1,70}\\.default=\"(\\d+(?:\\.\\d+)*)\"",
+            "/\\*![\\s]+\\* @overview  Ember - JavaScript Application Framework[\\s\\S]{0,400}\\* @version   (\\d+(?:\\.\\d+)*)",
+            "// Version: (\\d+(?:\\.\\d+)*)[\\s]+\\(function\\(\\) *\\{[\\s]*/\\*\\*[\\s]+@module ember[\\s]"
+        ],
+        "hashes": []
+    },
+    "dojo": {
+        "filename": [
+            "dojo-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "hashes": [
+            "73cdd262799aab850abbe694cd3bfb709ea23627",
+            "c8c84eddc732c3cbf370764836a7712f3f873326",
+            "d569ce9efb7edaedaec8ca9491aab0c656f7c8f0",
+            "ad44e1770895b7fa84aff5a56a0f99b855a83769",
+            "8fc10142a06966a8709cd9b8732f7b6db88d0c34",
+            "a09b5851a0a3e9d81353745a4663741238ee1b84",
+            "2ab48d45abe2f54cdda6ca32193b5ceb2b1bc25d",
+            "12208a1e649402e362f528f6aae2c614fc697f8f",
+            "72a6a9fbef9fa5a73cd47e49942199147f905206"
+        ]
+    },
+    "angularjs": {
+        "filename": [
+            "angular(?:js)?-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*[\\*\\s]+(?:@license )?AngularJS v(\\d+(?:\\.\\d+)*)",
+            "http://errors\\.angularjs\\.org/(\\d+(?:\\.\\d+)*)/"
+        ],
+        "hashes": []
+    },
+    "@angular/core": {},
+    "backbone.js": {
+        "filename": [
+            "backbone(?:js)?-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "//[ ]+Backbone.js (\\d+(?:\\.\\d+)*)",
+            "a=t.Backbone=\\{\\}\\}a.VERSION=\"(\\d+(?:\\.\\d+)*)\"",
+            "Backbone\\.VERSION *= *[\"'](\\d+(?:\\.\\d+)*)[\"']"
+        ],
+        "hashes": []
+    },
+    "mustache.js": {
+        "filename": [
+            "mustache(?:js)?-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "name:\"mustache.js\",version:\"(\\d+(?:\\.\\d+)*)\"",
+            "name=\"mustache.js\"[;,].\\.version=\"(\\d+(?:\\.\\d+)*)\"",
+            "[^a-z]mustache.version[ ]?=[ ]?(?:'|\")(\\d+(?:\\.\\d+)*)(?:'|\")",
+            "exports.name[ ]?=[ ]?\"mustache.js\";[\n ]*exports.version[ ]?=[ ]?(?:'|\")(\\d+(?:\\.\\d+)*)(?:'|\");"
+        ],
+        "hashes": []
+    },
+    "handlebars": {
+        "filename": [
+            "handlebars(?:js)?-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "Handlebars.VERSION = \"(\\d+(?:\\.\\d+)*)\";",
+            "Handlebars=\\{VERSION:(?:'|\")(\\d+(?:\\.\\d+)*)(?:'|\")",
+            "this.Handlebars=\\{\\};[\n\r \t]+\\(function\\([a-z]\\)\\{[a-z].VERSION=(?:'|\")(\\d+(?:\\.\\d+)*)(?:'|\")",
+            "exports.HandlebarsEnvironment=[\\s\\S]{70,120}exports.VERSION=(?:'|\")(\\d+(?:\\.\\d+)*)(?:'|\")",
+            "/\\*+![\\s]+(?:@license)?[\\s]+handlebars v+(\\d+(?:\\.\\d+)*)",
+            "window\\.Handlebars=.,.\\.VERSION=\"(\\d+(?:\\.\\d+)*)\"",
+            ".\\.HandlebarsEnvironment=.;var .=.\\(.\\),.=.\\(.\\),.=\"(\\d+(?:\\.\\d+)*)\";.\\.VERSION="
+        ],
+        "hashes": []
+    },
+    "easyXDM": {
+        "filename": [
+            "easyXDM-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            " \\* easyXDM\n \\* http://easyxdm.net/(?:\r|\n|.)+version:\"(\\d+(?:\\.\\d+)*)\"",
+            "@class easyXDM(?:.|\r|\n)+@version (\\d+(?:\\.\\d+)*)(\r|\n)"
+        ],
+        "hashes": [
+            "cf266e3bc2da372c4f0d6b2bd87bcbaa24d5a643"
+        ]
+    },
+    "plupload": {
+        "filename": [
+            "plupload-(\\d+(?:\\.\\d+)*)(.min)?\\.js"
+        ],
+        "filecontent": [
+            "\\* Plupload - multi-runtime File Uploader(?:\r|\n)+ \\* v(\\d+(?:\\.\\d+)*)",
+            "var g=\\{VERSION:\"(\\d+(?:\\.\\d+)*)\",.*;window.plupload=g\\}"
+        ],
+        "hashes": []
+    },
+    "DOMPurify": {
+        "filecontent": [
+            "DOMPurify.version = '(\\d+(?:\\.\\d+)*)';",
+            "DOMPurify.version=\"(\\d+(?:\\.\\d+)*)\"",
+            "DOMPurify=.[^\\r\\n]{10,850}?\\.version=\"(\\d+(?:\\.\\d+)*)\"",
+            "/\\*! @license DOMPurify (\\d+(?:\\.\\d+)*)",
+            "var .=\"dompurify\"+.{10,550}?\\.version=\"(\\d+(?:\\.\\d+)*)\""
+        ],
+        "hashes": []
+    },
+    "react": {
+        "filecontent": [
+            "/\\*\\*\n +\\* React \\(with addons\\) ?v(\\d+(?:\\.\\d+)*)",
+            "/\\*\\*\n +\\* React v(\\d+(?:\\.\\d+)*)",
+            "/\\*\\* @license React v(\\d+(?:\\.\\d+)*)[\\s]*\\* react(-jsx-runtime)?\\.",
+            "\"\\./ReactReconciler\":[0-9]+,\"\\./Transaction\":[0-9]+,\"fbjs/lib/invariant\":[0-9]+\\}\\],[0-9]+:\\[function\\(require,module,exports\\)\\{\"use strict\";module\\.exports=\"(\\d+(?:\\.\\d+)*)\"\\}",
+            "ReactVersion\\.js[\\*! \\\\/\n\r]{0,100}function\\(e,t\\)\\{\"use strict\";e\\.exports=\"(\\d+(?:\\.\\d+)*)\"",
+            "expected a ReactNode.[\\s\\S]{0,1800}?function\\(e,t\\)\\{\"use strict\";e\\.exports=\"(\\d+(?:\\.\\d+)*)\""
+        ]
+    },
+    "react-dom": {
+        "filecontent": [
+            "version:\"(\\d+(?:\\.\\d+)*)[a-z0-9\\-]*\"[\\s,]*rendererPackageName:\"react-dom\"",
+            "/\\*\\* @license React v(\\d+(?:\\.\\d+)*)[\\s]*\\* react-dom\\."
+        ]
+    },
+    "react-is": {
+        "filecontent": [
+            "/\\*\\* @license React v(\\d+(?:\\.\\d+)*)[\\s]*\\* react-is\\."
+        ]
+    },
+    "scheduler": {
+        "filecontent": [
+            "/\\*\\* @license React v(\\d+(?:\\.\\d+)*)[\\s]*\\* scheduler\\."
+        ]
+    },
+    "flowplayer": {
+        "filename": [
+            "flowplayer-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ]
+    },
+    "DWR": {
+        "filecontent": [
+            " dwr-(\\d+(?:\\.\\d+)*).jar"
+        ]
+    },
+    "moment.js": {
+        "filename": [
+            "moment(?:-|\\.)(\\d+(?:\\.\\d+)*)(?:-min)?\\.js"
+        ],
+        "filecontent": [
+            "//!? moment.js(?:[\n\r]+)//!? version : (\\d+(?:\\.\\d+)*)",
+            "/\\* Moment.js +\\| +version : (\\d+(?:\\.\\d+)*) \\|",
+            "\\.version=\"(\\d+(?:\\.\\d+)*)\".{20,60}\"isBefore\".{20,60}\"isAfter\".{200,500}\\.isMoment=",
+            "\\.version=\"(\\d+(?:\\.\\d+)*)\".{20,300}duration.{2,100}\\.isMoment=",
+            "\\.isMoment\\(.{50,400}_isUTC.{50,400}=\"(\\d+(?:\\.\\d+)*)\"",
+            "=\"(\\d+(?:\\.\\d+)*)\".{300,1000}Years:31536e6.{60,80}\\.isMoment",
+            "// Moment.js is freely distributable under the terms of the MIT license.[\\s]+//[\\s]+// Version (\\d+(?:\\.\\d+)*)"
+        ]
+    },
+    "underscore.js": {
+        "filecontent": [
+            "//[\\s]*Underscore.js (\\d+(?:\\.\\d+)*)",
+            "// *Underscore\\.js[\\s\\S]{1,2500}_\\.VERSION *= *['\"](\\d+(?:\\.\\d+)*)['\"]"
+        ]
+    },
+    "bootstrap": {
+        "filename": [
+            "bootstrap-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*!? Bootstrap v(\\d+(?:\\.\\d+)*)",
+            "\\* Bootstrap v(\\d+(?:\\.\\d+)*)",
+            "/\\*! Bootstrap v(\\d+(?:\\.\\d+)*)",
+            "this\\.close\\)\\};.\\.VERSION=\"(\\d+(?:\\.\\d+)*)\"(?:,.\\.TRANSITION_DURATION=150)?,.\\.prototype\\.close"
+        ],
+        "hashes": []
+    },
+    "bootstrap-select": {
+        "filecontent": [
+            "/\\*![\\s]+\\*[\\s]+Bootstrap-select[\\s]+v(\\d+(?:\\.\\d+)*)",
+            ".\\.data\\(\"selectpicker\",.=new .\\(this,.\\)\\)\\}\"string\"==typeof .&&\\(.=.\\[.\\]instanceof Function\\?.\\[.\\]\\.apply\\(.,.\\):.\\.options\\[.\\]\\)\\}\\}\\);return void 0!==.\\?.:.\\}.\\.VERSION=\"(\\d+(?:\\.\\d+)*)\","
+        ]
+    },
+    "ckeditor": {
+        "filename": [
+            "ckeditor-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "ckeditor..js.{4,30}=\\{timestamp:\"[^\"]+\",version:\"(\\d+(?:\\.\\d+)*)",
+            "window\\.CKEDITOR=function\\(\\)\\{var [a-z]=\\{timestamp:\"[^\"]+\",version:\"(\\d+(?:\\.\\d+)*)"
+        ],
+        "hashes": []
+    },
+    "ckeditor5": {
+        "filename": [
+            "ckeditor5-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "const .=\"(\\d+(?:\\.\\d+)*)\";.{0,140}?\\.CKEDITOR_VERSION=.;",
+            "CKEDITOR_VERSION=\"(\\d+(?:\\.\\d+)*)\""
+        ],
+        "hashes": []
+    },
+    "vue": {
+        "filename": [
+            "vue-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*!\\n \\* Vue.js v(\\d+(?:\\.\\d+)*)",
+            "Vue.version = '(\\d+(?:\\.\\d+)*)';",
+            "'(\\d+(?:\\.\\d+)*)'[^\\n]{0,8000}Vue compiler",
+            "\\* Original file: /npm/vue@(\\d+(?:\\.\\d+)*)/dist/vue.(global|common).js",
+            "const version[ ]*=[ ]*\"(\\d+(?:\\.\\d+)*)\";[\\s]*/\\*\\*[\\s]*\\* SSR utils for \\\\@vue/server-renderer",
+            "\\.__vue_app__=.{0,8000}?const [a-z]+=\"(\\d+(?:\\.\\d+)*)\","
+        ]
+    },
+    "ExtJS": {
+        "filename": [
+            "/ext-all-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js",
+            "/ext-all-debug-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js",
+            "/ext-base-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "/*!\n * Ext JS Library (\\d+(?:\\.\\d+)*)",
+            "Ext = \\{[\\s]*/\\*[^/]+/[\\s]*version *: *['\"](\\d+(?:\\.\\d+)*)['\"]",
+            "var version *= *['\"](\\d+(?:\\.\\d+)*)['\"], *Version;[\\s]*Ext.Version *= *Version *= *Ext.extend"
+        ]
+    },
+    "svelte": {
+        "filename": [
+            "svelte[@\\-](\\d+(?:\\.\\d+)*)(.min)?\\.m?js"
+        ],
+        "filecontent": [
+            "generated by Svelte v\\$\\{['\"](\\d+(?:\\.\\d+)*)['\"]\\}",
+            "version: '(\\d+(?:\\.\\d+)*)' [\\s\\S]{80,200}'SvelteDOMInsert'",
+            "VERSION = '(\\d+(?:\\.\\d+)*)'[\\s\\S]{21,200}parse\\$[0-9][\\s\\S]{10,80}preprocess",
+            "var version\\$[0-9] = \"(\\d+(?:\\.\\d+)*)\";[\\s\\S]{10,30}normalizeOptions\\(options\\)[\\s\\S]{80,200}'SvelteComponent.html'"
+        ]
+    },
+    "axios": {
+        "filename": [
+            "axios-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\* *axios v(\\d+(?:\\.\\d+)*) ",
+            "// Axios v(\\d+(?:\\.\\d+)*) C",
+            "return\"\\[Axios v(\\d+(?:\\.\\d+)*)\\] Transitional",
+            "\\\"axios\\\",\\\"version\\\":\\\"(\\d+(?:\\.\\d+)*)\\\""
+        ]
+    },
+    "markdown-it": {
+        "filename": [
+            "markdown-it-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*! markdown-it(?:-ins)? (\\d+(?:\\.\\d+)*)"
+        ]
+    },
+    "jszip": {
+        "filename": [
+            "jszip-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*![\\s]+JSZip v(\\d+(?:\\.\\d+)*) "
+        ]
+    },
+    "AlaSQL": {
+        "filename": [
+            "alasql-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "/\\*!?[ \n]*AlaSQL v(\\d+(?:\\.\\d+)*)"
+        ]
+    },
+    "jquery.datatables": {
+        "filename": [
+            "jquery.dataTables-(\\d+(?:\\.\\d+)*)(\\.min)?\\.js"
+        ],
+        "filecontent": [
+            "http://www.datatables.net\n +DataTables (\\d+(?:\\.\\d+)*)",
+            "/\\*! DataTables (\\d+(?:\\.\\d+)*)",
+            ".\\.version=\"(\\d+(?:\\.\\d+)*)\";[\\s]*.\\.settings=\\[\\];[\\s]*.\\.models=\\{[\\s]*\\};[\\s]*.\\.models.oSearch"
+        ]
+    },
+    "nextjs": {
+        "filecontent": [
+            "version=\"(\\d+(?:\\.\\d+)*)\".{1,1500}document\\.getElementById\\(\"__NEXT_DATA__\"\\)\\.textContent",
+            "document\\.getElementById\\(\"__NEXT_DATA__\"\\)\\.textContent\\);window\\.__NEXT_DATA__=.;.\\.version=\"(\\d+(?:\\.\\d+)*)\""
+        ]
+    },
+    "chart.js": {
+        "filecontent": [
+            "var version=\"(\\d+(?:\\.\\d+)*)\";const KNOWN_POSITIONS=\\[\"top\",\"bottom\",\"left\",\"right\",\"chartArea\"\\]",
+            "/\\*![\\s]+\\* Chart.js v(\\d+(?:\\.\\d+)*)",
+            "/\\*![\\s]+\\* Chart.js[\\s]+\\* http://chartjs.org/[\\s]+\\* Version: (\\d+(?:\\.\\d+)*)"
+        ]
+    },
+    "froala": {
+        "filecontent": [
+            "/\\*![\\s]+\\* froala_editor v(\\d+(?:\\.\\d+)*)",
+            "VERSION:\"(\\d+(?:\\.\\d+)*)\",INSTANCES:\\[\\],OPTS_MAPPING:\\{\\}"
+        ]
+    },
+    "pendo": {
+        "filecontent": [
+            "// Pendo Agent Wrapper\n//[\\s]+Environment:[\\s]+[^\n]+\n// Agent Version:[\\s]+(\\d+(?:\\.\\d+)*)"
+        ]
+    },
+    "highcharts": {
+        "filecontent": [
+            "product:\"Highcharts\",version:\"(\\d+(?:\\.\\d+)*)\"",
+            "product=\"Highcharts\"[,;].\\.version=\"(\\d+(?:\\.\\d+)*)\""
+        ]
+    },
+    "select2": {
+        "filecontent": [
+            "/\\*!(?:[\\s]+\\*)? Select2 (\\d+(?:\\.\\d+)*)",
+            "/\\*[\\s]+Copyright 20[0-9]{2} [I]gor V[a]ynberg[\\s]+Version: (\\d+(?:\\.\\d+)*)[\\s\\S]{1,5000}(\\.attr\\(\"class\",\"select2-sizer\"|\\.data\\(document, *\"select2-lastpos\"|document\\)\\.data\\(\"select2-lastpos\"|SingleSelect2, *MultiSelect2|window.Select2 *!== *undefined)"
+        ]
+    },
+    "blueimp-file-upload": {
+        "filecontent": [
+            "/\\*[\\s*]+jQuery File Upload User Interface Plugin (\\d+(?:\\.\\d+)*)[\\s*]+https://github.com/blueimp"
+        ]
+    },
+    "c3": {
+        "filecontent": [
+            "[\\s]+var c3 ?= ?\\{ ?version: ?['\"](\\d+(?:\\.\\d+)*)['\"] ?\\};[\\s]+var c3_chart_fn,"
+        ]
+    },
+    "lodash": {
+        "filecontent": [
+            "/\\*[\\s*!]+(?:@license)?[\\s*]+(?:Lo-Dash|lodash|Lodash) v?(\\d+(?:\\.\\d+)*)[\\s\\S]{1,200}Build: `lodash modern -o",
+            "/\\*[\\s*!]+(?:@license)?[\\s*]+(?:Lo-Dash|lodash|Lodash) v?(\\d+(?:\\.\\d+)*) <",
+            "/\\*[\\s*!]+(?:@license)?[\\s*]+(?:Lo-Dash|lodash|Lodash) v?(\\d+(?:\\.\\d+)*) lodash.com/license",
+            "=\"(\\d+(?:\\.\\d+)*)\"[\\s\\S]{1,300}__lodash_hash_undefined__",
+            "/\\*[\\s*]+@license[\\s*]+(?:Lo-Dash|lodhash|Lodash)[\\s\\S]{1,500}var VERSION *= *['\"](\\d+(?:\\.\\d+)*)['\"]",
+            "var VERSION=\"(\\d+(?:\\.\\d+)*)\";var BIND_FLAG=1,BIND_KEY_FLAG=2,CURRY_BOUND_FLAG=4,CURRY_FLAG=8"
+        ]
+    },
+    "ua-parser-js": {
+        "filecontent": [
+            "/\\* UAParser.js v(\\d+(?:\\.\\d+)*)",
+            "/\\*[*!](?:@license)?[\\s]+\\* UAParser.js v(\\d+(?:\\.\\d+)*)",
+            "// UAParser.js v(\\d+(?:\\.\\d+)*)",
+            ".\\.VERSION=\"(\\d+(?:\\.\\d+)*)\",.\\.BROWSER=\\{NAME:.,MAJOR:\"major\",VERSION:.\\},.\\.CPU=\\{ARCHITECTURE:",
+            ".\\.VERSION=\"(\\d+(?:\\.\\d+)*)\",.\\.BROWSER=.\\(\\[[^\\]]{1,20}\\]\\),.\\.CPU=",
+            "LIBVERSION=\"(\\d+(?:\\.\\d+)*)\",EMPTY=\"\",UNKNOWN=\"\\?\",FUNC_TYPE=\"function\",UNDEF_TYPE=\"undefined\"",
+            ".=\"(\\d+(?:\\.\\d+)*)\",.=\"\",.=\"\\?\",.=\"function\",.=\"undefined\",.=\"object\",(.=\"string\",)?.=\"major\",.=\"model\",.=\"name\",.=\"type\",.=\"vendor\""
+        ]
+    },
+    "mathjax": {
+        "filecontent": [
+            "\\.MathJax\\.config\\.startup;{10,100}.\\.VERSION=\"(\\d+(?:\\.\\d+)*)\"",
+            "\\.MathJax=\\{version:\"(\\d+(?:\\.\\d+)*)\"",
+            "MathJax.{0,100}.\\.VERSION=void 0,.\\.VERSION=\"(\\d+(?:\\.\\d+)*)\"",
+            "MathJax\\.version=\"(\\d+(?:\\.\\d+)*)\";"
+        ]
+    },
+    "dont check": {}
+}
