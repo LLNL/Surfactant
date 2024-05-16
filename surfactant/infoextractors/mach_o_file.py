@@ -90,12 +90,12 @@ def extract_mach_o_info(filename: str) -> object:
 
         # rpath info
         if binary.has_rpath:
-            binary_details["rpathSelf"] = binary.rpath.path 
+            binary_details["rpathSelf"] = binary.rpath.path
         rpaths = []
         for rpath in binary.rpaths:
             rpaths.append(rpath.path)
         binary_details["rpaths"] = rpaths
-        
+
         # dyld info
         dyld = {}
         if binary.has_dylinker:
