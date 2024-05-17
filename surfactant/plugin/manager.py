@@ -19,8 +19,8 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         coff_file,
         elf_file,
         java_file,
-        mach_o_file,
         js_file,
+        mach_o_file,
         ole_file,
         pe_file,
     )
