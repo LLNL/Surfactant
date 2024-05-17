@@ -42,7 +42,7 @@ dependencies = [
     "dataclasses_json",
     "pyelftools",
     "pefile",
-    "dnfile",
+    "dnfile==0.14.1",
     "olefile",
     "defusedxml",
     "spdx-tools==0.8.*",
