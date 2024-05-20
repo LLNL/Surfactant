@@ -14,7 +14,7 @@ import click
 from loguru import logger
 
 from surfactant import ContextEntry
-from surfactant.infoextractors import docker_file
+from surfactant.infoextractors import docker_image
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
@@ -209,9 +209,6 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     is_eager=True,
     help="List supported input formats",
 )
-@click.option(
-    "--disable_docker_scout", is_flag=True, default=False, help="Disable Docker Scout analysis"
-)
 def sbom(
     config_file,
     sbom_outfile,
@@ -222,7 +219,6 @@ def sbom(
     recorded_institution,
     output_format,
     input_format,
-    disable_docker_scout,
 ):
     """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
 
@@ -260,19 +256,6 @@ def sbom(
 
     # gather metadata for files and add/augment software entries in the sbom
     if not skip_gather:
-        # Check that Docker Scout can be run unless it's disabled
-        if not disable_docker_scout:
-            result = subprocess.run(["docker", "scout", "--help"], capture_output=True, check=False)
-            if result.returncode != 0:
-                logger.error(
-                    f"Docker Scout exited with error:\nstdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n\n"
-                )
-                logger.error(
-                    "Either install Docker Scout or run Surfactant with --disable_docker_scout"
-                )
-                return
-            # TODO: Is there a better way of doing this?
-            pm.register(docker_file)
         # List of directory symlinks; 2-sized tuples with (source, dest)
         dir_symlinks: List[Tuple[str, str]] = []
         # List of file symlinks; keys are SHA256 hashes, values are source paths

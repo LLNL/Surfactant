@@ -30,9 +30,8 @@ def is_docker_archive(filepath: str) -> bool:
                 return False
             with tar.extractfile(manifest_info) as manifest_file:
                 manifest = json.load(manifest_file)
-                # TODO: Figure out if there's a reason this is an array rather than just assuming
-                #       All of the array members are the same
-                if isinstance(manifest, list):
+                # There's one entry in the list for each image
+                if not isinstance(manifest, list):
                     return False
                 for data in manifest:
                     # Just check if this data member exists
@@ -104,11 +103,11 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 ".cab.gz",
             ]:
                 if is_docker_archive(filepath):
-                    return "Docker archive gzip"
+                    return "DOCKER_GZIP"
                 return "GZIP"
             if magic_bytes[257:265] == b"ustar\x0000" or magic_bytes[257:265] == b"ustar  \x00":
                 if is_docker_archive(filepath):
-                    return "Docker archive tar"
+                    return "DOCKER_TAR"
                 return "TAR"
             if magic_bytes[:4] in [b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"]:
                 suffix = pathlib.Path(filepath).suffix.lower()
