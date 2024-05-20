@@ -6,6 +6,7 @@ import gzip
 import json
 import subprocess
 import tempfile
+
 from loguru import logger
 
 import surfactant.plugin
@@ -16,11 +17,10 @@ def is_docker_scout_installed():
     # Check that Docker Scout can be run
     result = subprocess.run(["docker", "scout", "--help"], capture_output=True, check=False)
     if result.returncode != 0:
-        logger.warning(
-            "Install Docker Scout to scan containers for additional information"
-        )
+        logger.warning("Install Docker Scout to scan containers for additional information")
         return False
     return True
+
 
 # Check if Docker Scout is installed when this Python module gets loaded
 disable_docker_scout = not is_docker_scout_installed()
@@ -35,6 +35,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     if disable_docker_scout or not supports_file(filetype):
         return None
     return extract_docker_info(filetype, filename)
+
 
 def extract_docker_info(filetype: str, filename: str) -> object:
     if filetype == "DOCKER_GZIP":

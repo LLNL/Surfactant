@@ -7,14 +7,12 @@ import os
 import pathlib
 import queue
 import re
-import subprocess
 from typing import Dict, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
 
 from surfactant import ContextEntry
-from surfactant.infoextractors import docker_image
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
