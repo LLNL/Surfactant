@@ -29,12 +29,8 @@ def extract_mach_o_info(filename: str) -> object:
         binaries = lief.MachO.parse(filename)
     except OSError:
         return {}
-    
-    file_details: Dict[str:Any] = {
-        "OS": "MacOS",
-        "numBinaries": binaries.size,
-        "binaries": []
-    }
+
+    file_details: Dict[str:Any] = {"OS": "MacOS", "numBinaries": binaries.size, "binaries": []}
 
     # Iterate over all binaries in the FAT binary
     for binary in binaries:
@@ -63,15 +59,10 @@ def extract_mach_o_info(filename: str) -> object:
                 "platform": build.platform.value,
                 "minOSVersion": build.minos,
                 "sdkVersion": build.sdk,
-                "tools": []
+                "tools": [],
             }
             for tool in build.tools:
-                details["build"]["tools"].append(
-                    {
-                        "tool": tool.tool, 
-                        "version": tool.version
-                    }
-                )
+                details["build"]["tools"].append({"tool": tool.tool, "version": tool.version})
 
         # Extract info from code signature
         if binary.has_code_signature or binary.has_code_signature_dir:
@@ -85,7 +76,7 @@ def extract_mach_o_info(filename: str) -> object:
             details["signature"] = {
                 "offset": signature.data_offset,
                 "size": signature.data_size,
-                "type": signature_type
+                "type": signature_type,
                 # If a user configurable setting is enabled to include signature contents:
                 # "content": signature.content
             }
@@ -96,7 +87,7 @@ def extract_mach_o_info(filename: str) -> object:
                 {
                     "name": library.name,
                     "currentVersion": library.current_version,
-                    "compatibilityVersion": library.compatibility_version
+                    "compatibilityVersion": library.compatibility_version,
                 }
             )
 
@@ -112,10 +103,7 @@ def extract_mach_o_info(filename: str) -> object:
             details["dyld"]["exports"] = []
             for export in binary.dyld_exports_trie.exports:
                 details["dyld"]["exports"].append(
-                    {
-                        "address": export.address,
-                        "kind": export.kind.__name__
-                    }
+                    {"address": export.address, "kind": export.kind.__name__}
                 )
         if binary.has_dyld_environment:
             details["dyld"]["environment"] = binary.dyld_environment.value
@@ -126,7 +114,7 @@ def extract_mach_o_info(filename: str) -> object:
             details["encryption"] = {
                 "system": encryption.crypt_id,
                 "offset": encryption.crypt_offset,
-                "size": encryption.crypt_size
+                "size": encryption.crypt_size,
             }
         file_details["binaries"].append(details)
     return file_details
