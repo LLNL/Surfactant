@@ -143,7 +143,7 @@ class cli_add:
         self.sbom = input_sbom
 
         for key, value in converted_kwargs.items():
-            if key == "file": # Do once
+            if key == "file":
                 self.sbom.software.append(Software.create_software_from_file(value))
             elif key == "relationship":
                 self.sbom.add_relationship(Relationship(**value))
