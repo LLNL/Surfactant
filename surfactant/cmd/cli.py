@@ -5,9 +5,9 @@ import click
 from loguru import logger
 
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
+from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
 from surfactant.sbomtypes._software import Software
-from surfactant.sbomtypes._relationship import Relationship
 
 
 @click.argument("sbom", type=click.File("r"), required=True)
@@ -104,6 +104,7 @@ def add(sbom, output_format, input_format, **kwargs):
 def edit(sbom, output_format, input_format, **kwargs):
     "CLI command to edit specific entry(s) in a supplied SBOM"
 
+
 class cli_add:
     """
     A class that implements the surfactant cli find functionality
@@ -112,7 +113,7 @@ class cli_add:
     match_functions     A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
     sbom                An internal record of sbom entries the class adds to as it finds more matches.
     """
-    
+
     camel_case_conversions: dict
     match_functions: dict
     sbom: SBOM
@@ -124,7 +125,7 @@ class cli_add:
             "file": self.add_file,
             "installPath": self.add_installpath,
             "containerPath": self.add_containerpath,
-            "entry": self.add_entry
+            "entry": self.add_entry,
         }
         self.camel_case_conversions = {
             "uuid": "UUID",
@@ -156,7 +157,7 @@ class cli_add:
             else:
                 logger.warning(f"Paramter {key} is not supported")
         return self.sbom
-    
+
     def add_relationship(self, value: dict) -> bool:
         try:
             self.sbom.add_relationship(Relationship(**value))
@@ -180,11 +181,11 @@ class cli_add:
         except Exception as e:
             logger.warning(f"Could not add entry: {entry} to SBOM - {e}")
         return False
-    
+
     def add_installpath(self, path):
         try:
             for sw in self.sbom.software:
-                    sw.installPath.append(path)
+                sw.installPath.append(path)
             return True
         except Exception as e:
             logger.warning(f"Could not add installPath: {path} to SBOM - {e}")
@@ -193,13 +194,11 @@ class cli_add:
     def add_containerpath(self, path):
         try:
             for sw in self.sbom.software:
-                    sw.containerPath.append(path)
+                sw.containerPath.append(path)
             return True
         except Exception as e:
             logger.warning(f"Could not add containerPath: {path} to SBOM - {e}")
         return False
-
-
 
 
 class cli_find:
