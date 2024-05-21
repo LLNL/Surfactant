@@ -96,17 +96,48 @@ def extract_mach_o_info(filename: str) -> object:
             for rpath in binary.rpaths:
                 details["rpaths"].append(rpath.path)
 
+
         # dyld info
         if binary.has_dylinker:
             details["dyld"]["linker"] = binary.dylinker.name
-        if binary.has_dyld_exports_trie:
+        if binary.has_dyld_environment:
+            details["dyld"]["environment"] = binary.dyld_environment.value
+        # https://github.com/qyang-nj/llios/blob/main/dynamic_linking/chained_fixups.md
+        if binary.has_dyld_info:
+            details["dyld"]["info"] = {
+                "bindings": [],
+                "exports": [],
+            }
+            bindings = get_bindings(binary.dyld_info.bindings)
+            details["dyld"]["info"]["bindings"].append(bindings)
+            for export in binary.dyld_info.exports:
+                details["dyld"]["info"]["exports"].append(
+                    {"address": export.address, "kind": export.kind.__name__}    
+                )
+        elif binary.has_dyld_exports_trie:
             details["dyld"]["exports"] = []
             for export in binary.dyld_exports_trie.exports:
                 details["dyld"]["exports"].append(
                     {"address": export.address, "kind": export.kind.__name__}
                 )
-        if binary.has_dyld_environment:
-            details["dyld"]["environment"] = binary.dyld_environment.value
+            if binary.has_dyld_chained_fixups:
+                fixups = binary.dyld_chained_fixups
+                details["dyld"]["chainedFixups"] = {
+                    "chainedStartsInSegment": [],
+                    "bindings": []
+                }
+                for chainedStarts in fixups.chained_starts_in_segments:
+                    details["dyld"]["chainedFixups"]["chainedStartsInSegment"].append(
+                        {
+                            "maxValidPointer": chainedStarts.max_valid_pointer,
+                            "pageSize": chainedStarts.page_size,
+                            "pointerFormat": chainedStarts.pointer_format.__name__,
+                            "pointerFormatValue": chainedStarts.pointer_format.value,
+                            "segment": chainedStarts.segment.name,
+                        }
+                    )
+                bindings = get_bindings(fixups.bindings)
+                details["dyld"]["chainedFixups"]["bindings"].append(bindings)
 
         # encryption info
         if binary.has_encryption_info:
@@ -118,3 +149,19 @@ def extract_mach_o_info(filename: str) -> object:
             }
         file_details["binaries"].append(details)
     return file_details
+
+
+def get_bindings(bindings):
+    bindings_info = []
+    for binding in bindings:
+        info = {
+            "addend": binding.addend,
+            "address": binding.address,
+            "isWeakImport": binding.weak_import
+        }
+        if binding.has_library:
+            info["library"] = binding.library.name
+        if binding.has_segment:
+            info["segment"] = binding.segment.name
+        bindings_info.append(info)
+    return bindings_info
