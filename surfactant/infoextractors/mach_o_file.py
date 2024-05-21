@@ -96,7 +96,6 @@ def extract_mach_o_info(filename: str) -> object:
             for rpath in binary.rpaths:
                 details["rpaths"].append(rpath.path)
 
-
         # dyld info
         if binary.has_dylinker:
             details["dyld"]["linker"] = binary.dylinker.name
@@ -112,7 +111,7 @@ def extract_mach_o_info(filename: str) -> object:
             details["dyld"]["info"]["bindings"].append(bindings)
             for export in binary.dyld_info.exports:
                 details["dyld"]["info"]["exports"].append(
-                    {"address": export.address, "kind": export.kind.__name__}    
+                    {"address": export.address, "kind": export.kind.__name__}
                 )
         elif binary.has_dyld_exports_trie:
             details["dyld"]["exports"] = []
@@ -122,10 +121,7 @@ def extract_mach_o_info(filename: str) -> object:
                 )
             if binary.has_dyld_chained_fixups:
                 fixups = binary.dyld_chained_fixups
-                details["dyld"]["chainedFixups"] = {
-                    "chainedStartsInSegment": [],
-                    "bindings": []
-                }
+                details["dyld"]["chainedFixups"] = {"chainedStartsInSegment": [], "bindings": []}
                 for chainedStarts in fixups.chained_starts_in_segments:
                     details["dyld"]["chainedFixups"]["chainedStartsInSegment"].append(
                         {
@@ -157,7 +153,7 @@ def get_bindings(bindings):
         info = {
             "addend": binding.addend,
             "address": binding.address,
-            "isWeakImport": binding.weak_import
+            "isWeakImport": binding.weak_import,
         }
         if binding.has_library:
             info["library"] = binding.library.name
