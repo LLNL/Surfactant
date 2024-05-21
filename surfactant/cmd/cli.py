@@ -114,10 +114,18 @@ class cli_add:
     """
     
     camel_case_conversions: dict
+    match_functions: dict
     sbom: SBOM
 
     def __init__(self):
         """Initializes the cli_add class"""
+        self.match_functions = {
+            "relationship": self.add_relationship,
+            "file": self.add_file,
+            "installPath": self.add_installpath,
+            "containerPath": self.add_containerpath,
+            "entry": self.add_entry
+        }
         self.camel_case_conversions = {
             "uuid": "UUID",
             "filename": "fileName",
@@ -143,19 +151,56 @@ class cli_add:
         self.sbom = input_sbom
 
         for key, value in converted_kwargs.items():
-            if key == "file":
-                self.sbom.software.append(Software.create_software_from_file(value))
-            elif key == "relationship":
-                self.sbom.add_relationship(Relationship(**value))
-            elif key == "entry":
-                self.sbom.software.append(Software.from_dict(value))
-            else: 
-                for sw in self.sbom.software:
-                    if key == "installPath":
-                        sw.installPath.append(value)
-                    elif key == "containerPath":
-                        sw.containerPath.append(value)
+            if key in self.match_functions.keys():
+                self.match_functions[key](value)
+            else:
+                logger.warning(f"Paramter {key} is not supported")
         return self.sbom
+    
+    def add_relationship(self, value: dict) -> bool:
+        try:
+            self.sbom.add_relationship(Relationship(**value))
+            return True
+        except Exception as e:
+            logger.warning(f"Could not add relationship {value} to SBOM - {e}")
+        return False
+
+    def add_file(self, path):
+        try:
+            self.sbom.software.append(Software.create_software_from_file(path))
+            return True
+        except Exception as e:
+            logger.warning(f"Could not add entry for file: {path} to SBOM - {e}")
+        return False
+
+    def add_entry(self, entry):
+        try:
+            self.sbom.software.append(Software.from_dict(entry))
+            return True
+        except Exception as e:
+            logger.warning(f"Could not add entry: {entry} to SBOM - {e}")
+        return False
+    
+    def add_installpath(self, path):
+        try:
+            for sw in self.sbom.software:
+                    sw.installPath.append(path)
+            return True
+        except Exception as e:
+            logger.warning(f"Could not add installPath: {path} to SBOM - {e}")
+        return False
+
+    def add_containerpath(self, path):
+        try:
+            for sw in self.sbom.software:
+                    sw.containerPath.append(path)
+            return True
+        except Exception as e:
+            logger.warning(f"Could not add containerPath: {path} to SBOM - {e}")
+        return False
+
+
+
 
 class cli_find:
     """
