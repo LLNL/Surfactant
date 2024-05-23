@@ -8,6 +8,7 @@
 from typing import Any, Dict
 
 import lief
+import json
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -62,7 +63,7 @@ def extract_mach_o_info(filename: str) -> object:
                 "tools": [],
             }
             for tool in build.tools:
-                details["build"]["tools"].append({"tool": tool.tool, "version": tool.version})
+                details["build"]["tools"].append({"tool": tool.tool.__name__, "version": tool.version})
 
         # Extract info from code signature
         if binary.has_code_signature or binary.has_code_signature_dir:
@@ -108,32 +109,30 @@ def extract_mach_o_info(filename: str) -> object:
                 "exports": [],
             }
             bindings = get_bindings(binary.dyld_info.bindings)
-            details["dyld"]["info"]["bindings"].append(bindings)
+            details["dyld"]["info"]["bindings"] = bindings
             for export in binary.dyld_info.exports:
                 details["dyld"]["info"]["exports"].append(
                     {"address": export.address, "kind": export.kind.__name__}
                 )
-        elif binary.has_dyld_exports_trie:
+        elif binary.has_dyld_exports_trie and binary.has_dyld_chained_fixups:
             details["dyld"]["exports"] = []
             for export in binary.dyld_exports_trie.exports:
                 details["dyld"]["exports"].append(
                     {"address": export.address, "kind": export.kind.__name__}
                 )
-            if binary.has_dyld_chained_fixups:
-                fixups = binary.dyld_chained_fixups
-                details["dyld"]["chainedFixups"] = {"chainedStartsInSegment": [], "bindings": []}
-                for chainedStarts in fixups.chained_starts_in_segments:
-                    details["dyld"]["chainedFixups"]["chainedStartsInSegment"].append(
-                        {
-                            "maxValidPointer": chainedStarts.max_valid_pointer,
-                            "pageSize": chainedStarts.page_size,
-                            "pointerFormat": chainedStarts.pointer_format.__name__,
-                            "pointerFormatValue": chainedStarts.pointer_format.value,
-                            "segment": chainedStarts.segment.name,
-                        }
-                    )
-                bindings = get_bindings(fixups.bindings)
-                details["dyld"]["chainedFixups"]["bindings"].append(bindings)
+            fixups = binary.dyld_chained_fixups
+            details["dyld"]["chainedFixups"] = {"chainedStartsInSegment": [], "bindings": []}
+            for chainedStarts in fixups.chained_starts_in_segments:
+                details["dyld"]["chainedFixups"]["chainedStartsInSegment"].append(
+                    {
+                        "maxValidPointer": chainedStarts.max_valid_pointer,
+                        "pageSize": chainedStarts.page_size,
+                        "pointerFormat": chainedStarts.pointer_format.value,
+                        "segment": chainedStarts.segment.name,
+                    }
+                )
+            bindings = get_bindings(fixups.bindings)
+            details["dyld"]["chainedFixups"]["bindings"] = bindings
 
         # encryption info
         if binary.has_encryption_info:
