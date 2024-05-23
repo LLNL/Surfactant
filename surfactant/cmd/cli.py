@@ -162,53 +162,28 @@ class cli_add:
         self.sbom = input_sbom
 
         for key, value in converted_kwargs.items():
-            if key in self.match_functions.keys():
+            if key in self.match_functions:
                 self.match_functions[key](value)
             else:
                 logger.warning(f"Paramter {key} is not supported")
         return self.sbom
 
     def add_relationship(self, value: dict) -> bool:
-        try:
-            self.sbom.add_relationship(Relationship(**value))
-            return True
-        except Exception as e:
-            logger.warning(f"Could not add relationship {value} to SBOM - {e}")
-        return False
+        self.sbom.add_relationship(Relationship(**value))
 
     def add_file(self, path):
-        try:
-            self.sbom.software.append(Software.create_software_from_file(path))
-            return True
-        except Exception as e:
-            logger.warning(f"Could not add entry for file: {path} to SBOM - {e}")
-        return False
+        self.sbom.software.append(Software.create_software_from_file(path))
 
     def add_entry(self, entry):
-        try:
-            self.sbom.software.append(Software.from_dict(entry))
-            return True
-        except Exception as e:
-            logger.warning(f"Could not add entry: {entry} to SBOM - {e}")
-        return False
+        self.sbom.software.append(Software.from_dict(entry))
 
     def add_installpath(self, path):
-        try:
-            for sw in self.sbom.software:
-                sw.installPath.append(path)
-            return True
-        except Exception as e:
-            logger.warning(f"Could not add installPath: {path} to SBOM - {e}")
-        return False
+        for sw in self.sbom.software:
+            sw.installPath.append(path)
 
     def add_containerpath(self, path):
-        try:
-            for sw in self.sbom.software:
-                sw.containerPath.append(path)
-            return True
-        except Exception as e:
-            logger.warning(f"Could not add containerPath: {path} to SBOM - {e}")
-        return False
+        for sw in self.sbom.software:
+            sw.containerPath.append(path)
 
 
 class cli_find:
