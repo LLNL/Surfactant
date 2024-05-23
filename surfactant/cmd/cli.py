@@ -1,5 +1,6 @@
 import hashlib
 import sys
+from pathlib import Path
 
 import click
 from loguru import logger
@@ -54,7 +55,10 @@ def find(sbom, output_format, input_format, **kwargs):
     output_writer.write_sbom(out_sbom, sys.stdout)
 
 
-@click.argument("sbom", type=click.File("r"), required=True)
+@click.argument("sbom", required=True)
+@click.option(
+    "--output", default=None, is_flag=False, help="Specifies the file to output new sbom to"
+)
 @click.option("--file", is_flag=False, help="Adds entry for file to sbom")
 @click.option("--relationship", is_flag=False, type=str, help="Adds relationship to sbom")
 @click.option("--entry", is_flag=False, type=str, help="Adds software entry to sbom")
@@ -83,20 +87,26 @@ def find(sbom, output_format, input_format, **kwargs):
     help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
 )
 @click.command("add")
-def add(sbom, output_format, input_format, **kwargs):
+def add(sbom, output, output_format, input_format, **kwargs):
     "CLI command to add specific entry(s) to a supplied SBOM"
     pm = get_plugin_manager()
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
-    in_sbom = input_reader.read_sbom(sbom)
-
+    with open(Path(sbom), "r") as f:
+        in_sbom = input_reader.read_sbom(f)
     # Remove None values
     filtered_kwargs = dict({(k, v) for k, v in kwargs.items() if v is not None})
-    print(filtered_kwargs)
     out_sbom = cli_add().execute(in_sbom, **filtered_kwargs)
-    if not out_sbom.software:
-        logger.warning("No software matches found with given parameters.")
-    output_writer.write_sbom(out_sbom, sys.stdout)
+    # Write to the input file if no output specified
+    if output is None:
+        with open(Path(sbom), "w") as f:
+            output_writer.write_sbom(out_sbom, f)
+    else:
+        try:
+            with open(Path(output), "w") as f:
+                output_writer.write_sbom(out_sbom, f)
+        except OSError as e:
+            logger.error(f"Could not open file {output} in write mode - {e}")
 
 
 @click.argument("sbom", type=click.File("r"), required=True)
