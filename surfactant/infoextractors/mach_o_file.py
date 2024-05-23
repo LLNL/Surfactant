@@ -8,7 +8,6 @@
 from typing import Any, Dict
 
 import lief
-import json
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -63,7 +62,9 @@ def extract_mach_o_info(filename: str) -> object:
                 "tools": [],
             }
             for tool in build.tools:
-                details["build"]["tools"].append({"tool": tool.tool.__name__, "version": tool.version})
+                details["build"]["tools"].append(
+                    {"tool": tool.tool.__name__, "version": tool.version}
+                )
 
         # Extract info from code signature
         if binary.has_code_signature or binary.has_code_signature_dir:
