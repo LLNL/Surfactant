@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+# TODO: Ensure all the relevant information available is extracted from here
 # https://lief.re/doc/stable/api/python/macho.html
 
 from typing import Any, Dict
@@ -14,6 +15,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype) -> bool:
+    # TODO: It could be decided whether to keep it this way or separate into cases
     return "MACHO" in filetype  # Covers MACHOFAT, MACHOFAT64, MACHO32, MACHO64
 
 
@@ -79,7 +81,7 @@ def extract_mach_o_info(filename: str) -> object:
                 "offset": signature.data_offset,
                 "size": signature.data_size,
                 "type": signature_type,
-                # If a user configurable setting is enabled to include signature contents:
+                # TODO: If a user configurable setting is enabled, include signature contents:
                 # "content": signature.content
             }
 
@@ -144,12 +146,15 @@ def extract_mach_o_info(filename: str) -> object:
                 "size": encryption.crypt_size,
             }
         file_details["binaries"].append(details)
+
+        # TODO: Add more information to extract, if any
     return file_details
 
 
 def get_bindings(bindings):
     bindings_info = []
     for binding in bindings:
+        # ChainedFixups and dyld info store bindings in the same format in LIEF
         info = {
             "addend": binding.addend,
             "address": binding.address,
