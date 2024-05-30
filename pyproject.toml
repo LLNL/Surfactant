@@ -43,7 +43,6 @@ dependencies = [
     "pyelftools",
     "pefile",
     "dnfile==0.14.1",
-    "lief==0.13.2",
     "olefile",
     "defusedxml",
     "spdx-tools==0.8.*",
@@ -57,6 +56,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
+macho = ["lief==0.13.2"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]
