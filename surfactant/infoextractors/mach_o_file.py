@@ -6,9 +6,10 @@
 # TODO: Ensure all the relevant information available is extracted from here
 # https://lief.re/doc/stable/api/python/macho.html
 
-from typing import Any, Dict
-from loguru import logger
 from sys import modules
+from typing import Any, Dict
+
+from loguru import logger
 
 try:
     import lief
