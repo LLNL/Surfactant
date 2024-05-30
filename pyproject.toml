@@ -43,7 +43,7 @@ dependencies = [
     "pyelftools",
     "pefile",
     "dnfile==0.14.1",
-    "lief",
+    "lief==0.13.2",
     "olefile",
     "defusedxml",
     "spdx-tools==0.8.*",
