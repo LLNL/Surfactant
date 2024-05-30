@@ -64,9 +64,7 @@ def extract_mach_o_info(filename: str) -> object:
                 "tools": [],
             }
             for tool in build.tools:
-                details["build"]["tools"].append(
-                    {"tool": tool.tool.name, "version": tool.version}
-                )
+                details["build"]["tools"].append({"tool": tool.tool.name, "version": tool.version})
 
         # Extract info from code signature
         if binary.has_code_signature or binary.has_code_signature_dir:
