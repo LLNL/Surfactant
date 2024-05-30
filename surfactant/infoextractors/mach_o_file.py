@@ -7,8 +7,13 @@
 # https://lief.re/doc/stable/api/python/macho.html
 
 from typing import Any, Dict
+from loguru import logger
+from sys import modules
 
-import lief
+try:
+    import lief
+except ModuleNotFoundError:
+    logger.warning("LIEF not installed. Skipping all MACHO files.")
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -21,7 +26,7 @@ def supports_file(filetype) -> bool:
 
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
-    if not supports_file(filetype):
+    if not supports_file(filetype) or "lief" not in modules:
         return None
     return extract_mach_o_info(filename)
 
