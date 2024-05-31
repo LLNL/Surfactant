@@ -30,7 +30,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     if not supports_file(filetype):
         return None
     if "lief" not in modules:
-        logger.warning(f"LIEF not installed - MACHO file Skipped.")
+        logger.warning("LIEF not installed - MACHO file Skipped.")
         return None
     return extract_mach_o_info(filename)
 
@@ -73,7 +73,9 @@ def extract_mach_o_info(filename: str) -> object:
                 "tools": [],
             }
             for tool in build.tools:
-                details["build"]["tools"].append({"tool": tool.tool.name, "version": ".".join(map(str, tool.version))})
+                details["build"]["tools"].append(
+                    {"tool": tool.tool.name, "version": ".".join(map(str, tool.version))}
+                )
 
         # Extract info from code signature
         if binary.has_code_signature or binary.has_code_signature_dir:
