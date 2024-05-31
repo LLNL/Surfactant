@@ -14,7 +14,7 @@ from loguru import logger
 try:
     import lief
 except ModuleNotFoundError:
-    logger.warning("LIEF not installed. Skipping all MACHO files.")
+    pass
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -27,7 +27,10 @@ def supports_file(filetype) -> bool:
 
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
-    if not supports_file(filetype) or "lief" not in modules:
+    if not supports_file(filetype):
+        return None
+    if "lief" not in modules:
+        logger.warning(f"LIEF not installed - MACHO file Skipped.")
         return None
     return extract_mach_o_info(filename)
 
@@ -65,12 +68,12 @@ def extract_mach_o_info(filename: str) -> object:
             build = binary.build_version
             details["build"] = {
                 "platform": build.platform.value,
-                "minOSVersion": build.minos,
-                "sdkVersion": build.sdk,
+                "minOSVersion": ".".join(map(str, build.minos)),
+                "sdkVersion": ".".join(map(str, build.sdk)),
                 "tools": [],
             }
             for tool in build.tools:
-                details["build"]["tools"].append({"tool": tool.tool.name, "version": tool.version})
+                details["build"]["tools"].append({"tool": tool.tool.name, "version": ".".join(map(str, tool.version))})
 
         # Extract info from code signature
         if binary.has_code_signature or binary.has_code_signature_dir:
@@ -94,8 +97,8 @@ def extract_mach_o_info(filename: str) -> object:
             details["dependencies"].append(
                 {
                     "name": library.name,
-                    "currentVersion": library.current_version,
-                    "compatibilityVersion": library.compatibility_version,
+                    "currentVersion": ".".join(map(str, library.current_version)),
+                    "compatibilityVersion": ".".join(map(str, library.compatibility_version)),
                 }
             )
 
