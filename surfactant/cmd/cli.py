@@ -84,7 +84,7 @@ def find(sbom, output_format, input_format, **kwargs):
     "--input_format",
     is_flag=False,
     default="surfactant.input_readers.cytrics_reader",
-    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
+    help="SBOM input format, options=[cytrics|cyclonedx|spdx]",
 )
 @click.command("add")
 def add(sbom, output, output_format, input_format, **kwargs):
@@ -117,11 +117,12 @@ def edit(sbom, output_format, input_format, **kwargs):
 
 class cli_add:
     """
-    A class that implements the surfactant cli find functionality
+    A class that implements the surfactant cli add functionality
 
     Attributes:
-    match_functions     A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
-    sbom                An internal record of sbom entries the class adds to as it finds more matches.
+    match_functions         A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
+    camel_case_conversions  A dictionary of string conversions from all lowercase to camelcase. Used to convert python click options to match the SBOM attribute's case
+    sbom                    An internal record of sbom entries the class adds to as it finds more matches.
     """
 
     camel_case_conversions: dict
@@ -155,7 +156,7 @@ class cli_add:
 
     def execute(self, input_sbom: SBOM, **kwargs):
         """Executes the main functionality of the cli_find class
-        param: input_sbom   The sbom to find matches within
+        param: input_sbom   The sbom to add entries to
         param: kwargs:      Dictionary of key/value pairs indicating what features to match on
         """
         converted_kwargs = self.handle_kwargs(kwargs)
@@ -191,8 +192,9 @@ class cli_find:
     A class that implements the surfactant cli find functionality
 
     Attributes:
-    match_functions     A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
-    sbom                An internal record of sbom entries the class adds to as it finds more matches.
+    match_functions         A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
+    camel_case_conversions  A dictionary of string conversions from all lowercase to camelcase. Used to convert python click options to match the SBOM attribute's case
+    sbom                    An internal record of sbom entries the class adds to as it finds more matches.
     """
 
     match_functions: dict

@@ -1,15 +1,15 @@
 # CLI Usage
-The surfactant cli interface allows users to easily and quickly find, add, and edit entires within a given SBOM.
-Some functionality we support include:
-- Specify a file to either find, add, or edit it's entry in a given SBOM
+The surfactant cli interface allows users to easily and quickly find, add, and edit entries within a given SBOM.
+Some functionality we support includes:
+- Specify a file to either find, add, or edit its entry in a given SBOM
 - Fix up path prefixes, i.e. installPath or containerPath
 - Add relationships
 
 ## surfactant cli find
-The **cli find** command allows users to find specific entries within a SBOM. This will allow users to do a few things
-- Verify entries exist within the sbom
-- Manually inspect one or more related entries with an SBOM for errors or bad formatting
-- Provide a subset of entries to supply to the cli edit or cli add command.
+The **cli find** command allows users to find specific entries within a SBOM. This will allow users to do a few things:
+- Verify entries exist within the SBOM
+- Manually inspect one or more related entries within a SBOM for errors or bad formatting
+- Provide a subset of entries to supply to the `cli edit` or `cli add` commands.
 
 ### Example 1: Find Exact Matches
 ```bash
@@ -28,7 +28,7 @@ surfactant cli find --file ../test.exe # File matches are found by hash matching
 "installPath": ["C:/Users/Test/Documents/"]
 }
 ```
-### Example 2: Find a Partial Matches
+### Example 2: Find Partial Matches
 ```bash
 surfactant cli find --installpath C:/Users/Test/Downloads/
 {
@@ -40,9 +40,9 @@ surfactant cli find --installpath C:/Users/Test/Downloads/
 ```
 
 ## surfactant cli add
-The **cli add** command will allow users to easily manually add entries to an SBOM. This command should allow users to do a few things:
+The **cli add** command will allow users to easily add manual entries to an SBOM. This command should allow users to do a few things:
 - Add key value pairs to existing SBOM entries
-- Add whole new entries to sbom
+- Add whole new entries to the SBOM
 
 ```bash
 surfactant cli add --relationship "{xUUID:"123",yUUID:456, "relationship: "Uses"}" sbom.json
