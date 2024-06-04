@@ -42,15 +42,16 @@ dependencies = [
     "dataclasses_json",
     "pyelftools",
     "pefile",
-    "dnfile",
+    "dnfile==0.14.1",
     "olefile",
     "defusedxml",
     "spdx-tools==0.8.*",
-    "cyclonedx-python-lib==6.4.4",
+    "cyclonedx-python-lib==7.4.0",
     "pluggy",
     "click",
     "javatools>=1.6.0",
-    "loguru"
+    "loguru",
+    "flask"
 ]
 dynamic = ["version"]
 
