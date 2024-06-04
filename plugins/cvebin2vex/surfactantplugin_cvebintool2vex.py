@@ -26,20 +26,25 @@ def run_cve_bin_tool(input_file_path, shaHash, output_dir):
         command = [
             "cve-bin-tool",
             "--offline",
+            "--input-file",
+            str(input_file_path),
             "--output",
             str(output_file_path),
             "--format",
             "json",
             "--vex",
-            str(vex_output_path),
-            "--input-file",
-            str(input_file_path),
+            str(vex_output_path)
         ]
-        subprocess.run(command, check=True)
-        logger.info(f"Output saved to {output_file_path}")
-        return output_file_path  # Return path to the generated JSON file
+        result = subprocess.run(command, capture_output=True, text=True)
+        
+        # Check the exit status
+        if result.returncode == 0 or result.returncode == 1:
+            logger.info(f"Output saved to {output_file_path}")
+            return output_file_path  # Return path to the generated JSON file
+        else:
+            raise subprocess.CalledProcessError(result.returncode, command, output=result.stdout, stderr=result.stderr)
     except subprocess.CalledProcessError as e:
-        logger.error(f"Error running CVE-bin-tool: {e}", file=sys.stderr)
+        logger.error(f"Error running CVE-bin-tool: {e}\nOutput: {e.output}\nError: {e.stderr}", file=sys.stderr)
         return None
 
 
