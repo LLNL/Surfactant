@@ -66,13 +66,8 @@ def find(sbom, output_format, input_format, **kwargs):
     "--installPath",
     is_flag=False,
     type=str,
-    help="Adds installPath to add to all entries",
-)
-@click.option(
-    "--containerPath",
-    is_flag=False,
-    type=str,
-    help="Adds containerPath to add to all entries",
+    nargs=2,
+    help="Adds new installPath by finding and replacing a containerPath prefix (1st arg) with a new prefix (2nd arg)",
 )
 @click.option(
     "--output_format",
@@ -135,13 +130,11 @@ class cli_add:
             "relationship": self.add_relationship,
             "file": self.add_file,
             "installPath": self.add_installpath,
-            "containerPath": self.add_containerpath,
             "entry": self.add_entry,
         }
         self.camel_case_conversions = {
             "uuid": "UUID",
             "filename": "fileName",
-            "containerpath": "containerPath",
             "installpath": "installPath",
             "capturetime": "captureTime",
             "relationshipassertion": "relationshipAssertion",
@@ -178,13 +171,12 @@ class cli_add:
     def add_entry(self, entry):
         self.sbom.software.append(Software.from_dict(entry))
 
-    def add_installpath(self, path):
+    def add_installpath(self, prefixes: tuple):
+        containerPathPrefix, installPathPrefix = prefixes
         for sw in self.sbom.software:
-            sw.installPath.append(path)
-
-    def add_containerpath(self, path):
-        for sw in self.sbom.software:
-            sw.containerPath.append(path)
+            for path in sw.containerPath:
+                if containerPathPrefix in path:
+                    sw.installPath.append(path.replace(containerPathPrefix, installPathPrefix))
 
 
 class cli_find:
