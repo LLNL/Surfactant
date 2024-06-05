@@ -43,13 +43,40 @@ surfactant cli find --installpath C:/Users/Test/Downloads/
 The **cli add** command will allow users to easily add manual entries to an SBOM. This command should allow users to do a few things:
 - Add key value pairs to existing SBOM entries
 - Add whole new entries to the SBOM
-
+- Add new installPaths based on existing containerPaths
+### Adding a relationship
 ```bash
 surfactant cli add --relationship "{xUUID:"123",yUUID:456, "relationship: "Uses"}" sbom.json
 ```
+### Example 1: Adding a manual entry
 ```bash
 surfactant cli add --entry "{UUID:"123",filename:"test.exe", "sha256": "3423csdlkf13048kj"}" sbom.json
 ```
+### Example 2: Adding an entry by file
 ```bash
 surfactant cli add --file test.exe sbom.json
+```
+### Example 3: Creating new installPaths from containerPaths
+```bash
+surfactant cli add --installPath 123/ /bin/ sbom.json
+```
+Our SBOM before the `cli add` command:
+```bash
+{
+"UUID": 456,
+"filename": test.exe,
+"sha256": <hash>
+"installPath": [],
+"containerPath": ["123/helpers/test/exe"]
+}
+```
+Our SBOM after the `cli add` command:
+```bash
+{
+"UUID": 456,
+"filename": test.exe,
+"sha256": <hash>
+"installPath": ["/bin/helpers/test.exe"],
+"containerPath": ["123/helpers/test.exe"]
+}
 ```
