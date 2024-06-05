@@ -143,7 +143,9 @@ def test_add_relationship():
 
 
 def test_add_installpath():
-    installPath = "C:/Users/test/Program Files/test_folder"
-    out_bom = cli_add().execute(in_sbom, installpath=installPath)
+    containerPathPrefix = "477da45b-bb38-450e-93f7-e525aaaa6862/"
+    installPathPrefix = "/bin/"
+    out_bom = cli_add().execute(in_sbom, installpath=(containerPathPrefix, installPathPrefix))
     for sw in out_bom.software:
-        assert installPath in sw.installPath
+        if containerPathPrefix in sw.containerPath:
+            assert installPathPrefix in sw.installPath
