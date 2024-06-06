@@ -6,7 +6,7 @@
 import json
 import tarfile
 from pathlib import PurePosixPath
-from typing import IO, Any
+from typing import IO, Any, Union
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -15,13 +15,13 @@ from surfactant.sbomtypes import SBOM, Software
 class optics:
     class tarball:
         @staticmethod
-        def manifest_file(tarball: tarfile.TarFile) -> IO[bytes] | None:
+        def manifest_file(tarball: tarfile.TarFile) -> Union[IO[bytes], None]:
             return tarball.extractfile(
                 {tarinfo.name: tarinfo for tarinfo in tarball.getmembers()}["manifest.json"]
             )
 
         @staticmethod
-        def config_file(tarball: tarfile.TarFile, path: str) -> IO[bytes] | None:
+        def config_file(tarball: tarfile.TarFile, path: str) -> Union[IO[bytes], None]:
             return tarball.extractfile(
                 {tarinfo.name: tarinfo for tarinfo in tarball.getmembers()}[path]
             )
