@@ -6,7 +6,7 @@
 import json
 import tarfile
 from pathlib import PurePosixPath
-from typing import IO, Any, Union
+from typing import IO, Any, Union, Dict, List
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -28,12 +28,12 @@ class optics:
 
     class manifest:
         @staticmethod
-        def config_path(manifest: list[dict[str, Any]]) -> list[str]:
+        def config_path(manifest: List[Dict[str, Any]]) -> List[str]:
             path = "Config"
             return [entry[path] for entry in manifest]
 
         @staticmethod
-        def repo_tags(manifest: list[dict[str, Any]]) -> list[str]:
+        def repo_tags(manifest: List[Dict[str, Any]]) -> List[str]:
             path = "RepoTags"
             return [entry[path] for entry in manifest]
 
@@ -73,7 +73,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 def extract_image_info(filename: str):
     """Return image configuration objects mapped by their paths."""
     root_key = "dockerImageConfigs"
-    image_info: dict[str, list[dict[str, Any]]] = {root_key: []}
+    image_info: Dict[str, List[Dict[str, Any]]] = {root_key: []}
     with tarfile.open(filename) as tarball:
         # we know the manifest file is present or we wouldn't be this far
         assert (manifest_file := optics.tarball.manifest_file(tarball))
