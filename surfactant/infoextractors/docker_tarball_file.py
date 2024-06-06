@@ -3,10 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-import json
 import tarfile
 from pathlib import PurePosixPath
-from typing import IO, Any, Dict, List, Union
+import json
+from typing import IO, Any
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -15,25 +15,27 @@ from surfactant.sbomtypes import SBOM, Software
 class optics:
     class tarball:
         @staticmethod
-        def manifest_file(tarball: tarfile.TarFile) -> Union[IO[bytes], None]:
+        def manifest_file(tarball: tarfile.TarFile) -> IO[bytes] | None:
             return tarball.extractfile(
-                {tarinfo.name: tarinfo for tarinfo in tarball.getmembers()}["manifest.json"]
+                {tarinfo.name: tarinfo for tarinfo in tarball.getmembers()}[
+                    "manifest.json"
+                ]
             )
 
         @staticmethod
-        def config_file(tarball: tarfile.TarFile, path: str) -> Union[IO[bytes], None]:
+        def config_file(tarball: tarfile.TarFile, path: str) -> IO[bytes] | None:
             return tarball.extractfile(
                 {tarinfo.name: tarinfo for tarinfo in tarball.getmembers()}[path]
             )
 
     class manifest:
         @staticmethod
-        def config_path(manifest: List[Dict[str, Any]]) -> List[str]:
+        def config_path(manifest: list[dict[str, Any]]) -> list[str]:
             path = "Config"
             return [entry[path] for entry in manifest]
 
         @staticmethod
-        def repo_tags(manifest: List[Dict[str, Any]]) -> List[str]:
+        def repo_tags(manifest: list[dict[str, Any]]) -> list[str]:
             path = "RepoTags"
             return [entry[path] for entry in manifest]
 
@@ -58,13 +60,19 @@ def supports_file(filename: str, filetype: str) -> bool:
         return False
 
     with tarfile.open(filename) as this_tarfile:
-        found_members = portable_path_list(*[member.name for member in this_tarfile.getmembers()])
+        found_members = portable_path_list(
+            *[member.name for member in this_tarfile.getmembers()]
+        )
 
-    return all([expected_member in found_members for expected_member in expected_members])
+    return all(
+        [expected_member in found_members for expected_member in expected_members]
+    )
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(
+    sbom: SBOM, software: Software, filename: str, filetype: str
+) -> object:
     if not supports_file(filename, filetype):
         return None
     return extract_image_info(filename)
@@ -73,7 +81,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 def extract_image_info(filename: str):
     """Return image configuration objects mapped by their paths."""
     root_key = "dockerImageConfigs"
-    image_info: Dict[str, List[Dict[str, Any]]] = {root_key: []}
+    image_info: dict[str, list[dict[str, Any]]] = {root_key: []}
     with tarfile.open(filename) as tarball:
         # we know the manifest file is present or we wouldn't be this far
         assert (manifest_file := optics.tarball.manifest_file(tarball))
