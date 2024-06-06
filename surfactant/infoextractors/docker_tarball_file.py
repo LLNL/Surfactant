@@ -6,7 +6,7 @@
 import json
 import tarfile
 from pathlib import PurePosixPath
-from typing import IO, Any, Union, Dict, List
+from typing import IO, Any, Dict, List, Union
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
