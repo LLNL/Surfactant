@@ -43,7 +43,6 @@ def run_cve_bin_tool(input_file_path, shaHash, output_dir):
         )
 
 
-
 def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
     openvex_file_name = f"{json_output_path.stem}.vex"
     openvex_output = output_dir / openvex_file_name
@@ -57,7 +56,6 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
         return
     except IOError as e:
         logger.error(f"IO error when reading {json_output_path}: {e}")
-
 
     openvex_template = {
         "@context": "https://openvex.dev/ns/v0.2.0",
@@ -90,7 +88,6 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
             json.dump(openvex_template, outfile, indent=4)
     except IOError as e:
         logger.error(f"IO error when writing {openvex_output}: {e}")
-
 
 
 def process_input(input_path, shaHash, output_dir=None):
@@ -135,10 +132,9 @@ def delete_extra_files(*file_paths):
                 file_path.unlink()
         except PermissionError as e:
             logger.error(f"Permission error deleting {file_path}: {e}")
-    
+
         except OSError as e:
             logger.error(f"OS error deleting {file_path}: {e}")
-    
 
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
