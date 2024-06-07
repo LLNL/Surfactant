@@ -92,6 +92,7 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
         logger.error(f"IO error when writing {openvex_output}: {e}")
         return None
 
+
 def process_input(input_path, shaHash, output_dir=None):
     input_path = Path(input_path)
     if output_dir is None:
@@ -138,6 +139,7 @@ def delete_extra_files(*file_paths):
         except OSError as e:
             logger.error(f"OS error deleting {file_path}: {e}")
             return None
+
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str):
