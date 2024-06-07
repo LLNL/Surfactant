@@ -1,7 +1,3 @@
-# Copyright 2023 Lawrence Livermore National Security, LLC
-# See the top-level LICENSE file for details.
-#
-# SPDX-License-Identifier: MIT
 import json
 import subprocess
 import sys
@@ -38,11 +34,11 @@ def run_cve_bin_tool(input_file_path, shaHash, output_dir):
         result = subprocess.run(command, capture_output=True, text=True)
         
         # Check the exit status
-        if result.returncode == 0 or result.returncode == 1:
+        if result.returncode in (0, 1):
             logger.info(f"Output saved to {output_file_path}")
             return output_file_path  # Return path to the generated JSON file
-        else:
-            raise subprocess.CalledProcessError(result.returncode, command, output=result.stdout, stderr=result.stderr)
+        
+        raise subprocess.CalledProcessError(result.returncode, command, output=result.stdout, stderr=result.stderr)
     except subprocess.CalledProcessError as e:
         logger.error(f"Error running CVE-bin-tool: {e}\nOutput: {e.output}\nError: {e.stderr}", file=sys.stderr)
         return None
@@ -145,7 +141,6 @@ def delete_extra_files(*file_paths):
 
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
-# cvebintool2vwx(sbom: SBOM, software: Software, filename: str, filetype: str):
 def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str):
     """
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
@@ -159,7 +154,7 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
 
     shaHash = str(software.sha256)
     filename = Path(filename)
-    output_dir = output_dir = Path.cwd()
+    output_dir = Path.cwd()
 
     existing_json_path = output_dir / f"{shaHash}_additional_metadata.json"
     if existing_json_path.exists():
