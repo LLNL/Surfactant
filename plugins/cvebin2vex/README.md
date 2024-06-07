@@ -38,9 +38,6 @@ The plugin's functionality can be toggled via Surfactant's plugin management fea
 
 Remove the plugin from your environment with `pip uninstall surfactantplugin_cvebintool2vex.py`.
 
-## License
-The CVE-to-OpenVEX Plugin for SBOM Surfactant is licensed under the MIT License. However, it leverages the cve-bin-tool, which is licensed under the GPL-3.0 License.
-
 ## Important Licensing Information
 Main Project License (Surfactant): MIT License.
 
