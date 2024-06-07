@@ -36,7 +36,7 @@ The plugin's functionality can be toggled via Surfactant's plugin management fea
 
 ## Uninstalling
 
-Remove the plugin from your environment with `pip uninstall surfactantplugin_cvebintool2vex.py`.
+Remove the plugin from your environment with `pip uninstall surfactantplugin_cvebintool2vex`.
 
 ## Important Licensing Information
 Main Project License (Surfactant): MIT License.
