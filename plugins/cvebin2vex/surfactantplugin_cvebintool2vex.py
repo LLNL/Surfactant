@@ -35,12 +35,7 @@ def run_cve_bin_tool(input_file_path, shaHash, output_dir):
 
         # Check the exit status
         if result.returncode in (0, 1):
-            logger.info(f"Output saved to {output_file_path}")
             return output_file_path  # Return path to the generated JSON file
-        else:
-            raise subprocess.CalledProcessError(
-                result.returncode, command, output=result.stdout, stderr=result.stderr
-            )
     except subprocess.CalledProcessError as e:
         logger.error(
             f"Error running CVE-bin-tool: {e}\nOutput: {e.output}\nError: {e.stderr}",
@@ -93,7 +88,6 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
     try:
         with open(openvex_output, "w") as outfile:
             json.dump(openvex_template, outfile, indent=4)
-        logger.info(f"OpenVEX Output Path: {openvex_output}")
     except IOError as e:
         logger.error(f"IO error when writing {openvex_output}: {e}")
 
@@ -138,7 +132,6 @@ def delete_extra_files(*file_paths):
         try:
             if file_path.exists():
                 file_path.unlink()
-                logger.info(f"Deleted file: {file_path}")
         except PermissionError as e:
             logger.error(f"Permission error deleting {file_path}: {e}")
         except OSError as e:
