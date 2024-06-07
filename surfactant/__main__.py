@@ -16,6 +16,7 @@ from surfactant.cmd.createconfig import create_config
 from surfactant.cmd.generate import sbom as generate
 from surfactant.cmd.merge import merge_command
 from surfactant.cmd.stat import stat
+from surfactant.cmd.ui import ui
 
 
 @click.group()
@@ -57,6 +58,7 @@ main.add_command(version)
 main.add_command(stat)
 main.add_command(merge_command)
 main.add_command(create_config)
+main.add_command(ui)
 
 # CLI Subcommands
 cli.add_command(find)

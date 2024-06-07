@@ -3,10 +3,11 @@ from collections.abc import Iterable
 from typing import Dict, List, Optional, Tuple
 
 import cyclonedx.output
-from cyclonedx.model import HashAlgorithm, HashType, OrganizationalEntity, Tool
+from cyclonedx.model import HashAlgorithm, HashType, Tool
 from cyclonedx.model.bom import Bom, BomMetaData
 from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType
+from cyclonedx.model.contact import OrganizationalEntity
 from cyclonedx.model.dependency import Dependency
 
 import surfactant.plugin
@@ -48,7 +49,8 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         # Create CycloneDX Components for every software entry
         # start with software entries that act as containers for other software entries
         if sbom.has_relationship(xUUID=software.UUID, relationship="Contains"):
-            for _, container in convert_software_to_cyclonedx_container_components(software):
+            _, container_list = convert_software_to_cyclonedx_container_components(software)
+            for container in container_list:
                 bom.components.add(container)
         else:
             for parent_uuid, _, file in convert_software_to_cyclonedx_file_components(software):
