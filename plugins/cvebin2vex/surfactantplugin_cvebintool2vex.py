@@ -37,7 +37,7 @@ def run_cve_bin_tool(input_file_path, shaHash, output_dir):
         if result.returncode in (0, 1):
             logger.info(f"Output saved to {output_file_path}")
             return output_file_path  # Return path to the generated JSON file
-        
+
         raise subprocess.CalledProcessError(result.returncode, command, output=result.stdout, stderr=result.stderr)
         else:
             raise subprocess.CalledProcessError(
