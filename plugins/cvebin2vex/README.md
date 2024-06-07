@@ -43,8 +43,5 @@ The CVE-to-OpenVEX Plugin for SBOM Surfactant is licensed under the MIT License.
 
 ## Important Licensing Information
 Main Project License (Surfactant): MIT License.
-Plugin License: MIT License, but it includes and uses cve-bin-tool, which is GPL-3.0 licensed.
-## Implications
-Using this plugin means that when it operates, it invokes the cve-bin-tool (GPL-3.0 licensed). This interaction does not automatically change the license of your project to GPL-3.0, but any distribution of the combined work that includes this plugin must comply with the GPL-3.0 terms.
 
-For more details on GPL-3.0, please review the GPL-3.0 License.
+Plugin License: MIT License, but it includes and uses cve-bin-tool, which is GPL-3.0 licensed.
