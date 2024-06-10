@@ -15,11 +15,14 @@ from surfactant.sbomtypes import SBOM, Software
 
 def is_docker_scout_installed():
     # Check that Docker Scout can be run
-    result = subprocess.run(["docker", "scout", "--help"], capture_output=True, check=False)
-    if result.returncode != 0:
-        logger.warning("Install Docker Scout to scan containers for additional information")
+    try:
+        result = subprocess.run(["docker", "scout", "--help"], capture_output=True, check=False)
+        if result.returncode != 0:
+            logger.warning("Install Docker Scout to scan containers for additional information")
+            return False
+        return True
+    except FileNotFoundError:
         return False
-    return True
 
 
 # Check if Docker Scout is installed when this Python module gets loaded
