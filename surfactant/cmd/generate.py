@@ -17,6 +17,7 @@ from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 
+from surfactant.infoextractors import mach_o_file
 
 # Converts from a true path to an install path
 def real_path_to_install_path(root_path: str, install_path: str, filepath: str) -> str:
@@ -207,6 +208,20 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     is_eager=True,
     help="List supported input formats",
 )
+@click.option(
+    "--mach_o_include_bindings_exports",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Include bindings/exports information for Mach-O files"
+)
+@click.option(
+    "--mach_o_include_signature_content",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Include signature content for Mach-O files"
+)
 def sbom(
     config_file,
     sbom_outfile,
@@ -217,6 +232,8 @@ def sbom(
     recorded_institution,
     output_format,
     input_format,
+    mach_o_include_bindings_exports,
+    mach_o_include_signature_content,
 ):
     """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
 
@@ -226,6 +243,10 @@ def sbom(
     pm = get_plugin_manager()
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
+
+    # TODO: This is temporary until plug-in level configuration is added
+    mach_o_file.include_bindings_exports = mach_o_include_bindings_exports
+    mach_o_file.include_signature_content = mach_o_include_signature_content
 
     if pathlib.Path(config_file).is_file():
         with click.open_file(config_file) as f:

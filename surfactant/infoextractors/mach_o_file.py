@@ -20,6 +20,11 @@ import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
 
+# TODO: This is temporary until plug-in level configuration is added
+include_bindings_exports = False
+include_signature_content = False
+
+
 def supports_file(filetype) -> bool:
     # TODO: It could be decided whether to keep it this way or separate into cases
     return "MACHO" in filetype  # Covers MACHOFAT, MACHOFAT64, MACHO32, MACHO64
@@ -90,9 +95,9 @@ def extract_mach_o_info(filename: str) -> object:
                 "offset": signature.data_offset,
                 "size": signature.data_size,
                 "type": signature_type,
-                # TODO: If a user configurable setting is enabled, include signature contents:
-                # "content": signature.content
             }
+            if include_signature_content:
+                details["signature"]["content"] = signature.content
 
         # Extract library dependencies
         for library in binary.libraries:
@@ -115,38 +120,37 @@ def extract_mach_o_info(filename: str) -> object:
         if binary.has_dyld_environment:
             details["dyld"]["environment"] = binary.dyld_environment.value
         # https://github.com/qyang-nj/llios/blob/main/dynamic_linking/chained_fixups.md
-        # TODO: add user configurable option that includes bindings/exports as they take up a lot of space
-        # if include_bindings_exports:
-        #     if binary.has_dyld_info:
-        #         details["dyld"]["info"] = {
-        #             "bindings": [],
-        #             "exports": [],
-        #         }
-        #         bindings = get_bindings(binary.dyld_info.bindings)
-        #         details["dyld"]["info"]["bindings"] = bindings
-        #         for export in binary.dyld_info.exports:
-        #             details["dyld"]["info"]["exports"].append(
-        #                 {"address": export.address, "kind": export.kind.name}
-        #             )
-        #     elif binary.has_dyld_exports_trie and binary.has_dyld_chained_fixups:
-        #         details["dyld"]["exports"] = []
-        #         for export in binary.dyld_exports_trie.exports:
-        #             details["dyld"]["exports"].append(
-        #                 {"address": export.address, "kind": export.kind.name}
-        #             )
-        #         fixups = binary.dyld_chained_fixups
-        #         details["dyld"]["chainedFixups"] = {"chainedStartsInSegment": [], "bindings": []}
-        #         for chainedStarts in fixups.chained_starts_in_segments:
-        #             details["dyld"]["chainedFixups"]["chainedStartsInSegment"].append(
-        #                 {
-        #                     "maxValidPointer": chainedStarts.max_valid_pointer,
-        #                     "pageSize": chainedStarts.page_size,
-        #                     "pointerFormat": chainedStarts.pointer_format.value,
-        #                     "segment": chainedStarts.segment.name,
-        #                 }
-        #             )
-        #         bindings = get_bindings(fixups.bindings)
-        #         details["dyld"]["chainedFixups"]["bindings"] = bindings
+        if include_bindings_exports:
+            if binary.has_dyld_info:
+                details["dyld"]["info"] = {
+                    "bindings": [],
+                    "exports": [],
+                }
+                bindings = get_bindings(binary.dyld_info.bindings)
+                details["dyld"]["info"]["bindings"] = bindings
+                for export in binary.dyld_info.exports:
+                    details["dyld"]["info"]["exports"].append(
+                        {"address": export.address, "kind": export.kind.name}
+                    )
+            elif binary.has_dyld_exports_trie and binary.has_dyld_chained_fixups:
+                details["dyld"]["exports"] = []
+                for export in binary.dyld_exports_trie.exports:
+                    details["dyld"]["exports"].append(
+                        {"address": export.address, "kind": export.kind.name}
+                    )
+                fixups = binary.dyld_chained_fixups
+                details["dyld"]["chainedFixups"] = {"chainedStartsInSegment": [], "bindings": []}
+                for chainedStarts in fixups.chained_starts_in_segments:
+                    details["dyld"]["chainedFixups"]["chainedStartsInSegment"].append(
+                        {
+                            "maxValidPointer": chainedStarts.max_valid_pointer,
+                            "pageSize": chainedStarts.page_size,
+                            "pointerFormat": chainedStarts.pointer_format.value,
+                            "segment": chainedStarts.segment.name,
+                        }
+                    )
+                bindings = get_bindings(fixups.bindings)
+                details["dyld"]["chainedFixups"]["bindings"] = bindings
 
         # encryption info
         if binary.has_encryption_info:
@@ -158,7 +162,6 @@ def extract_mach_o_info(filename: str) -> object:
             }
         file_details["binaries"].append(details)
 
-        # TODO: Add more information to extract, if any
     return file_details
 
 
