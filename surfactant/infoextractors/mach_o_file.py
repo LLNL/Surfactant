@@ -19,7 +19,6 @@ except ModuleNotFoundError:
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
-
 # TODO: This is temporary until plug-in level configuration is added
 include_bindings_exports = False
 include_signature_content = False

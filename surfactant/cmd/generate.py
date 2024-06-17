@@ -13,11 +13,11 @@ import click
 from loguru import logger
 
 from surfactant import ContextEntry
+from surfactant.infoextractors import mach_o_file
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 
-from surfactant.infoextractors import mach_o_file
 
 # Converts from a true path to an install path
 def real_path_to_install_path(root_path: str, install_path: str, filepath: str) -> str:
@@ -213,14 +213,14 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     is_flag=True,
     default=False,
     required=False,
-    help="Include bindings/exports information for Mach-O files"
+    help="Include bindings/exports information for Mach-O files",
 )
 @click.option(
     "--mach_o_include_signature_content",
     is_flag=True,
     default=False,
     required=False,
-    help="Include signature content for Mach-O files"
+    help="Include signature content for Mach-O files",
 )
 def sbom(
     config_file,
