@@ -54,9 +54,9 @@ def read_sbom(infile) -> SBOM:
             yuuid = uuids[ybomref]
             yuuid = ybomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
 
-            """It is unclear what different CycloneDX dependency types exist outside of the type shown in the official examples of CycloneDX SBOM types
-            and how those would map to CyTRICS's relationship types, so each relationship between CycloneDX components will be labeled as "Contains" for the time being
-            """
+            # It is unclear what different CycloneDX dependency types exist outside of the type shown in the official examples of CycloneDX SBOM types
+            # and how those would map to CyTRICS's relationship types, so each relationship between CycloneDX components will be labeled as "Contains" for the time being
+
             # TODO: Add in other relationship type mappings
             rel_type = "Contains"
             cytrics_rel = Relationship(xUUID=xuuid, yUUID=yuuid, relationship=rel_type)
@@ -64,9 +64,9 @@ def read_sbom(infile) -> SBOM:
 
     # Create a CyTRICS software entry for each CycloneDX component
     for component in bom.components:
-        """If a component detail can be mapped to a detail in a software entry, then add to software entry details
-        Otherwise, add detail to software entry's metadata section
-        """
+        # If a component detail can be mapped to a detail in a software entry, then add to software entry details
+        # Otherwise, add detail to software entry's metadata section
+
         # Add CycloneDX metadata section to metadata section of each software entry
         c_uuid, sw = convert_cyclonedx_component_to_software(component, uuids)
         sbom.add_software(sw)
@@ -147,10 +147,9 @@ def convert_cyclonedx_component_to_software(
         metadata["publisher"] = component.publisher
     if component.group:
         metadata["group"] = component.group
-        # if component.scope:
-        """ Need to see some examples of this property in use
-        TODO: Verify that this is serializable
-        """
+    # if component.scope:
+        # Need to see some examples of this property in use
+        # TODO: Verify that this is serializable
     #    metadata["scope"] = component.scope
     # if component.licenses:
     # TODO: Create a proper conversion of the object into a serializable format
@@ -180,66 +179,68 @@ def convert_cyclonedx_component_to_software(
             purl = purl + "#" + component.purl.subpath
 
         metadata["purl"] = purl
-        # if component.external_references:
-        """*** Not JSON serializable on its own despite being a serializable class.
-        TODO: Create a proper conversion of the object into a serializable format
-        """
-        #    metadata["external_references"] = component.external_references
-        # if component.properties:
-        """*** Not JSON serializable on its own despite being a serializable class.
-        TODO: Create a proper conversion of the object into a serializable format
-        """
-        #    metadata["properties"] = component.properties
-        # if component.release_notes:
-        """ Need to see some examples of this property in use
-        # TODO: Create a proper conversion of the object into a serializable format
-        """
+
+    # if component.external_references:
+    # *** Not JSON serializable on its own despite being a serializable class.
+    # TODO: Create a proper conversion of the object into a serializable format
+    #    metadata["external_references"] = component.external_references
+    
+    # if component.properties:
+    # *** Not JSON serializable on its own despite being a serializable class.
+    # TODO: Create a proper conversion of the object into a serializable format
+    #    metadata["properties"] = component.properties
+    
+    # if component.release_notes:
+    # Need to see some examples of this property in use
+    # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["release_notes"] = component.release_notes
+    
     if component.cpe:
         metadata["cpe"] = component.cpe
-        # if component.swid:
-        """*** Not JSON serializable on its own despite being a serializable class.
-        TODO: Create a proper conversion of the object into a serializable format
-        """
-        #    metadata["swid"] = str(component.swid)
-        # if component.pedigree:
-        """*** Not JSON serializable on its own despite being a serializable class.
-        TODO: Create a proper conversion of the object into a serializable format
-        """
-        #    metadata["pedigree"] = component.pedigree
-        # if component.evidence:
-        """*** Not JSON serializable on its own despite being a serializable class.
-        TODO: Create a proper conversion of the object into a serializable format
-        """
+    
+    # if component.swid:
+    # *** Not JSON serializable on its own despite being a serializable class.
+    # TODO: Create a proper conversion of the object into a serializable format
+    #    metadata["swid"] = str(component.swid)
+    
+    # if component.pedigree:
+    # *** Not JSON serializable on its own despite being a serializable class.
+    # TODO: Create a proper conversion of the object into a serializable format
+    #    metadata["pedigree"] = component.pedigree
+    
+    # if component.evidence:
+    # *** Not JSON serializable on its own despite being a serializable class.
+    # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["evidence"] = component.evidence
+    
     if component.modified:
         metadata["modified"] = component.modified
     if component.manufacturer:
         metadata["manufacturer"] = component.manufacturer
-        # if component.authors:
-        """ Need to see some examples of this property in use
-        # TODO: Create a proper conversion of the object into a serializable format
-        """
-        #    metadata["authors"] = component.authors
-        # if component.omnibor_ids:
-        """ Need to see some examples of this property in use
-        # TODO: Create a proper conversion of the object into a serializable format
-        """
-        #    metadata["omnibor_ids"] = component.omnibor_ids
-        # if component.swhids:
-        """ Need to see some examples of this property in use
-        # TODO: Create a proper conversion of the object into a serializable format
-        """
-        #    metadata["swhids"] = component.swhids
-        # if component.crypto_properties:
-        """ Need to see some examples of this property in use
-        # TODO: Create a proper conversion of the object into a serializable format
-        """
-        #    metadata["crypto_properties"] = component.crypto_properties
-        # if component.tags:
-        """ Need to see some examples of this property in use
-        # TODO: Create a proper conversion of the object into a serializable format
-        """
+    
+    # if component.authors:
+    # Need to see some examples of this property in use
+    # TODO: Create a proper conversion of the object into a serializable format
+    #    metadata["authors"] = component.authors
+    
+    # if component.omnibor_ids:
+    # Need to see some examples of this property in use
+    # TODO: Create a proper conversion of the object into a serializable format
+    #    metadata["omnibor_ids"] = component.omnibor_ids
+    
+    # if component.swhids:
+    # Need to see some examples of this property in use
+    # TODO: Create a proper conversion of the object into a serializable format
+    #    metadata["swhids"] = component.swhids
+    
+    # if component.crypto_properties:
+    # Need to see some examples of this property in use
+    # TODO: Create a proper conversion of the object into a serializable format
+    #    metadata["crypto_properties"] = component.crypto_properties
+    
+    # if component.tags:
+    # Need to see some examples of this property in use
+    # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["tags"] = component.tags
 
     # TODO: Distinguish CycloneDX files from containers
