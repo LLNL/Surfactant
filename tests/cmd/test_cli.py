@@ -11,8 +11,8 @@ from surfactant.cmd.cli import cli_add, cli_find
 from surfactant.sbomtypes import SBOM, Relationship
 
 
-@pytest.fixture
-def test_sbom():
+@pytest.fixture(name="test_sbom")
+def fixture_test_sbom():
     with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_sbom.json", "r") as f:
         sbom = SBOM.from_json(f.read())
         return sbom
