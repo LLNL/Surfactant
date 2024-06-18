@@ -148,8 +148,8 @@ def convert_cyclonedx_component_to_software(
     if component.group:
         metadata["group"] = component.group
     # if component.scope:
-        # Need to see some examples of this property in use
-        # TODO: Verify that this is serializable
+    # Need to see some examples of this property in use
+    # TODO: Verify that this is serializable
     #    metadata["scope"] = component.scope
     # if component.licenses:
     # TODO: Create a proper conversion of the object into a serializable format
@@ -184,60 +184,60 @@ def convert_cyclonedx_component_to_software(
     # *** Not JSON serializable on its own despite being a serializable class.
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["external_references"] = component.external_references
-    
+
     # if component.properties:
     # *** Not JSON serializable on its own despite being a serializable class.
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["properties"] = component.properties
-    
+
     # if component.release_notes:
     # Need to see some examples of this property in use
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["release_notes"] = component.release_notes
-    
+
     if component.cpe:
         metadata["cpe"] = component.cpe
-    
+
     # if component.swid:
     # *** Not JSON serializable on its own despite being a serializable class.
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["swid"] = str(component.swid)
-    
+
     # if component.pedigree:
     # *** Not JSON serializable on its own despite being a serializable class.
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["pedigree"] = component.pedigree
-    
+
     # if component.evidence:
     # *** Not JSON serializable on its own despite being a serializable class.
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["evidence"] = component.evidence
-    
+
     if component.modified:
         metadata["modified"] = component.modified
     if component.manufacturer:
         metadata["manufacturer"] = component.manufacturer
-    
+
     # if component.authors:
     # Need to see some examples of this property in use
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["authors"] = component.authors
-    
+
     # if component.omnibor_ids:
     # Need to see some examples of this property in use
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["omnibor_ids"] = component.omnibor_ids
-    
+
     # if component.swhids:
     # Need to see some examples of this property in use
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["swhids"] = component.swhids
-    
+
     # if component.crypto_properties:
     # Need to see some examples of this property in use
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["crypto_properties"] = component.crypto_properties
-    
+
     # if component.tags:
     # Need to see some examples of this property in use
     # TODO: Create a proper conversion of the object into a serializable format
