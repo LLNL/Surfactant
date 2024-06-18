@@ -5,7 +5,7 @@ import uuid
 from cyclonedx.model import HashAlgorithm
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.component import Component
-from cyclonedx.model.vulnerability import Vulnerability
+from cyclonedx.model.vulnerability import Vulnerability, VulnerabilityRating
 
 import surfactant.plugin
 from surfactant import __version__ as surfactant_version
@@ -120,8 +120,7 @@ def convert_cyclonedx_component_to_software(
         cytrics_uuid = str(uuid.uuid4())
     else:
         cytrics_uuid = uuids[bomref]
-    
-    cytrics_uuid = bomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+        cytrics_uuid = bomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
 
     name = component.name
     description = component.description
@@ -158,42 +157,42 @@ def convert_cyclonedx_component_to_software(
         metadata["publisher"] = component.publisher
     if component.group:
         metadata["group"] = component.group
-    if component.scope:
-        metadata["scope"] = component.scope
-    if component.licenses:
-        metadata["licenses"] = component.licenses
+    #if component.scope:
+    #    metadata["scope"] = component.scope
+    #if component.licenses:
+    #    metadata["licenses"] = component.licenses
     if component.copyright:
         metadata["copyright"] = component.copyright
-    if component.purl:
-        metadata["purl"] = component.purl
-    if component.external_references:
-        metadata["external_references"] = component.external_references
-    if component.properties:
-        metadata["properties"] = component.properties
-    if component.release_notes:
-        metadata["release_notes"] = component.release_notes
+    #if component.purl:
+    #    metadata["purl"] = "pkg:" + component.purl.type + "/" + component.purl.namespace + "/" + component.purl.name + "@" + component.purl.version + "?" + component.purl.qualifiers + "#" + component.purl.subpath
+    #if component.external_references:
+    #    metadata["external_references"] = component.external_references
+    #if component.properties:
+    #    metadata["properties"] = component.properties
+    #if component.release_notes:
+    #    metadata["release_notes"] = component.release_notes
     if component.cpe:
         metadata["cpe"] = component.cpe
-    if component.swid:
-        metadata["swid"] = component.swid
-    if component.pedigree:
-        metadata["pedigree"] = component.pedigree
-    if component.evidence:
-        metadata["evidence"] = component.evidence
+    #if component.swid:
+    #    metadata["swid"] = component.swid
+    #if component.pedigree:
+    #    metadata["pedigree"] = component.pedigree
+    #if component.evidence:
+    #    metadata["evidence"] = component.evidence
     if component.modified:
         metadata["modified"] = component.modified
-    if component.manufacturer:
-        metadata["manufacturer"] = component.manufacturer
-    if component.authors:
-        metadata["authors"] = component.authors
-    if component.omnibor_ids:
-        metadata["omnibor_ids"] = component.omnibor_ids
-    if component.swhids:
-        metadata["swhids"] = component.swhids
-    if component.crypto_properties:
-        metadata["crypto_properties"] = component.crypto_properties
-    if component.tags:
-        metadata["tags"] = component.tags
+    #if component.manufacturer:
+    #    metadata["manufacturer"] = component.manufacturer
+    #if component.authors:
+    #    metadata["authors"] = component.authors
+    #if component.omnibor_ids:
+    #    metadata["omnibor_ids"] = component.omnibor_ids
+    #if component.swhids:
+    #    metadata["swhids"] = component.swhids
+    #if component.crypto_properties:
+    #    metadata["crypto_properties"] = component.crypto_properties
+    #if component.tags:
+    #    metadata["tags"] = component.tags
 
     # TODO: Is it possible to distinguish CycloneDX files from containers?
 
@@ -255,13 +254,17 @@ def convert_cyclonedx_vulnerability_to_observation(
     
     vbomref = vulnerability.bom_ref.value
     v_uuid = str(uuid.uuid4())
-    v_uuid = vbomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+    if vbomref:
+        v_uuid = vbomref # Comment this if statement if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
     cve = vulnerability.id
-    cvss = vulnerability.ratings.score
+    cvss:int
+    for rating in vulnerability.ratings:
+        cvss = rating.score
+        break
     cwe = vulnerability.cwes
     description = vulnerability.description
     mitigations = vulnerability.recommendation
-    url = vulnerability.source.url
+    url = str(vulnerability.source.url)
 
     sw_observation = Observation(
         UUID=v_uuid,
