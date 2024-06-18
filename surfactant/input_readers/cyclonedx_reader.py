@@ -1,14 +1,11 @@
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 import json
 import uuid
 
 from cyclonedx.model import HashAlgorithm
 from cyclonedx.model.bom import Bom
-from cyclonedx.model.component import Component, Swid, Pedigree, ComponentEvidence
-from cyclonedx.model.vulnerability import Vulnerability, VulnerabilityRating
-from cyclonedx.model.release_note import ReleaseNotes
-from cyclonedx.model.contact import OrganizationalContact, OrganizationalEntity
-from cyclonedx.model.crypto import CryptoProperties
+from cyclonedx.model.component import Component
+from cyclonedx.model.vulnerability import Vulnerability
 
 import surfactant.plugin
 from surfactant import __version__ as surfactant_version
@@ -136,16 +133,16 @@ def convert_cyclonedx_component_to_software(
         "SHA-256": None,
         "MD5": None
     }
-    for hash in component.hashes:
-        if hash.alg == HashAlgorithm.SHA_1:
-            hashes.update({"SHA-1": hash.content})
-        elif hash.alg == HashAlgorithm.SHA_256:
-            hashes.update({"SHA-256": hash.content})
-        elif hash.alg == HashAlgorithm.MD5:
-            hashes.update({"MD5": hash.content})
+    for c_hash in component.hashes:
+        if c_hash.alg == HashAlgorithm.SHA_1:
+            hashes.update({"SHA-1": c_hash.content})
+        elif c_hash.alg == HashAlgorithm.SHA_256:
+            hashes.update({"SHA-256": c_hash.content})
+        elif c_hash.alg == HashAlgorithm.MD5:
+            hashes.update({"MD5": c_hash.content})
     
     # Convert subcomponents of CycloneDX components into components of the corresponding CyTRICS software entry
-    sw_components = []
+    sw_components: List[SoftwareComponent] = []
     for subcomp in component.components:
         sw_comp = convert_cyclonedx_subcomponent_to_software_components(subcomp)
         sw_components.append[sw_comp]
