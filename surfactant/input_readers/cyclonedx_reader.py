@@ -1,36 +1,27 @@
-from typing import Dict, Optional, Tuple
 import json
 import uuid
-
-from cyclonedx.model import HashAlgorithm
-from cyclonedx.model.bom import Bom
-from cyclonedx.model.component import Component, Swid, Pedigree, ComponentEvidence
-from cyclonedx.model.vulnerability import Vulnerability, VulnerabilityRating
-from cyclonedx.model.release_note import ReleaseNotes
-from cyclonedx.model.contact import OrganizationalContact, OrganizationalEntity
-from cyclonedx.model.crypto import CryptoProperties
-
-import surfactant.plugin
-from surfactant import __version__ as surfactant_version
-from surfactant.sbomtypes import SBOM, Software, SoftwareComponent, Relationship, Observation
 
 # Copyright 2024 Lawrence Livermore National Security, LLC
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+from typing import Dict, Optional, Tuple
 
-from typing import Optional
+from cyclonedx.model import HashAlgorithm
+from cyclonedx.model.bom import Bom
+from cyclonedx.model.component import Component
+from cyclonedx.model.vulnerability import Vulnerability
 
 import surfactant.plugin
-from surfactant.sbomtypes import SBOM
+from surfactant.sbomtypes import SBOM, Observation, Relationship, Software, SoftwareComponent
 
 
 @surfactant.plugin.hookimpl
-def read_sbom(infile) -> SBOM:    
+def read_sbom(infile) -> SBOM:
     """Reads the contents of the CycloneDX SBOM to the CyTRICS format.
 
     The read_sbom hook for the cyclonedx_reader makes a best-effort attempt
-    to map the information gathered from the CycloneDX file to a valid 
+    to map the information gathered from the CycloneDX file to a valid
     internal SBOM representation.
 
     Args:
@@ -38,36 +29,36 @@ def read_sbom(infile) -> SBOM:
     """
     # NOTE eventually informat should be user settable
     informat = "json"
-    
+
     bom = Bom.from_json(data=json.loads(infile.read()))
     sbom = SBOM()
-    
+
     # Keep track of dependecies
     # bom_ref -> xuuid, dependencies -> yuuids
-    # Keep track of which generated UUIDs map to which bom refs 
+    # Keep track of which generated UUIDs map to which bom refs
     uuids = {}
 
     for xdependency in bom.dependencies:
         xbomref = xdependency.ref.value
-        if not xbomref in uuids.keys():
+        if xbomref not in uuids.keys():
             new_uuid = str(uuid.uuid4())
             uuids[xbomref] = new_uuid
         xuuid = uuids[xbomref]
-        xuuid = xbomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
-        
+        xuuid = xbomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+
         for ydependency in xdependency.dependencies:
             ybomref = ydependency.ref.value
-            if not ybomref in uuids.keys():
+            if ybomref not in uuids.keys():
                 new_uuid = str(uuid.uuid4())
                 uuids[ybomref] = new_uuid
             yuuid = uuids[ybomref]
-            yuuid = ybomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+            yuuid = ybomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
 
             """It is unclear what different CycloneDX dependency types exist outside of the type shown in the official examples of CycloneDX SBOM types
             and how those would map to CyTRICS's relationship types, so each relationship between CycloneDX components will be labeled as "Contains" for the time being"""
             # TODO: Add in other relationship type mappings
             rel_type = "Contains"
-            cytrics_rel = Relationship(xUUID=xuuid,yUUID=yuuid,relationship=rel_type)
+            cytrics_rel = Relationship(xUUID=xuuid, yUUID=yuuid, relationship=rel_type)
             sbom.add_relationship(cytrics_rel)
 
     # Create a CyTRICS software entry for each CycloneDX component
@@ -79,22 +70,19 @@ def read_sbom(infile) -> SBOM:
         sbom.add_software(sw)
         if component.bom_ref.value:
             uuids[component.bom_ref.value] = c_uuid
-    
+
     # Do the same thing for the component from the CycloneDX metadata section (if there is one) because its bom-ref can appear in the dependencies
     if bom.metadata.component:
         mc_uuid, msw = convert_cyclonedx_component_to_software(bom.metadata.component, uuids)
         sbom.add_software(msw)
         if bom.metadata.component.bom_ref.value:
             uuids[bom.metadata.component.bom_ref.value] = mc_uuid
-    
+
     # Add vulnerabilities from the CycloneDX SBOM to the observations section in the CyTRICS SBOM
     if bom.vulnerabilities:
         for vuln in bom.vulnerabilities:
             observation = convert_cyclonedx_vulnerability_to_observation(vuln)
             sbom.observations.append(observation)
-
-
-
 
     return sbom
 
@@ -102,6 +90,7 @@ def read_sbom(infile) -> SBOM:
 @surfactant.plugin.hookimpl
 def short_name() -> Optional[str]:
     return "cyclonedx"
+
 
 def convert_cyclonedx_component_to_software(
     component: Component, uuids: Dict
@@ -119,23 +108,19 @@ def convert_cyclonedx_component_to_software(
 
     print(component.bom_ref)
     bomref = component.bom_ref.value
-    if (not bomref) or (not bomref in uuids.keys()):
+    if (not bomref) or (bomref not in uuids.keys()):
         cytrics_uuid = str(uuid.uuid4())
     else:
         cytrics_uuid = uuids[bomref]
-        cytrics_uuid = bomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+        cytrics_uuid = bomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
 
     name = component.name
     description = component.description
-    
+
     # CycloneDX only supports one supplier, so the vendor list will only contain one vendor
     vendor = [component.supplier]
     version = component.version
-    hashes = {
-        "SHA-1": None,
-        "SHA-256": None,
-        "MD5": None
-    }
+    hashes = {"SHA-1": None, "SHA-256": None, "MD5": None}
     for hash in component.hashes:
         if hash.alg == HashAlgorithm.SHA_1:
             hashes.update({"SHA-1": hash.content})
@@ -143,13 +128,13 @@ def convert_cyclonedx_component_to_software(
             hashes.update({"SHA-256": hash.content})
         elif hash.alg == HashAlgorithm.MD5:
             hashes.update({"MD5": hash.content})
-    
+
     # Convert subcomponents of CycloneDX components into components of the corresponding CyTRICS software entry
     sw_components = []
     for subcomp in component.components:
         sw_comp = convert_cyclonedx_subcomponent_to_software_components(subcomp)
         sw_components.append[sw_comp]
-    
+
     # Add remaining data that is exclusive to CycloneDX component entries into the metadata section of the CyTRICS software entry
     metadata = {}
     if component.type:
@@ -160,18 +145,27 @@ def convert_cyclonedx_component_to_software(
         metadata["publisher"] = component.publisher
     if component.group:
         metadata["group"] = component.group
-    #if component.scope:
+        # if component.scope:
         """ Need to see some examples of this property in use
         TODO: Verify that this is serializable
         """
     #    metadata["scope"] = component.scope
-    #if component.licenses:
-        # TODO: Create a proper conversion of the object into a serializable format
+    # if component.licenses:
+    # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["licenses"] = component.licenses
     if component.copyright:
         metadata["copyright"] = component.copyright
     if component.purl:
-        purl = "pkg:" + component.purl.type + "/" + component.purl.namespace + "/" + component.purl.name + "@" + component.purl.version
+        purl = (
+            "pkg:"
+            + component.purl.type
+            + "/"
+            + component.purl.namespace
+            + "/"
+            + component.purl.name
+            + "@"
+            + component.purl.version
+        )
         if component.purl.qualifiers:
             purl = purl + "?"
             first = True
@@ -184,35 +178,35 @@ def convert_cyclonedx_component_to_software(
             purl = purl + "#" + component.purl.subpath
 
         metadata["purl"] = purl
-    #if component.external_references:
-        """*** Not JSON serializable on its own despite being a serializable class. 
+        # if component.external_references:
+        """*** Not JSON serializable on its own despite being a serializable class.
         TODO: Create a proper conversion of the object into a serializable format
         """
-    #    metadata["external_references"] = component.external_references
-    #if component.properties:
-        """*** Not JSON serializable on its own despite being a serializable class. 
+        #    metadata["external_references"] = component.external_references
+        # if component.properties:
+        """*** Not JSON serializable on its own despite being a serializable class.
         TODO: Create a proper conversion of the object into a serializable format
         """
-    #    metadata["properties"] = component.properties
-    #if component.release_notes:
+        #    metadata["properties"] = component.properties
+        # if component.release_notes:
         """ Need to see some examples of this property in use
         # TODO: Create a proper conversion of the object into a serializable format
         """
     #    metadata["release_notes"] = component.release_notes
     if component.cpe:
         metadata["cpe"] = component.cpe
-    #if component.swid: 
-        """*** Not JSON serializable on its own despite being a serializable class. 
+        # if component.swid:
+        """*** Not JSON serializable on its own despite being a serializable class.
         TODO: Create a proper conversion of the object into a serializable format
         """
-    #    metadata["swid"] = str(component.swid)
-    #if component.pedigree:
-        """*** Not JSON serializable on its own despite being a serializable class. 
+        #    metadata["swid"] = str(component.swid)
+        # if component.pedigree:
+        """*** Not JSON serializable on its own despite being a serializable class.
         TODO: Create a proper conversion of the object into a serializable format
         """
-    #    metadata["pedigree"] = component.pedigree
-    #if component.evidence:
-        """*** Not JSON serializable on its own despite being a serializable class. 
+        #    metadata["pedigree"] = component.pedigree
+        # if component.evidence:
+        """*** Not JSON serializable on its own despite being a serializable class.
         TODO: Create a proper conversion of the object into a serializable format
         """
     #    metadata["evidence"] = component.evidence
@@ -220,27 +214,27 @@ def convert_cyclonedx_component_to_software(
         metadata["modified"] = component.modified
     if component.manufacturer:
         metadata["manufacturer"] = component.manufacturer
-    #if component.authors:
+        # if component.authors:
         """ Need to see some examples of this property in use
         # TODO: Create a proper conversion of the object into a serializable format
         """
-    #    metadata["authors"] = component.authors
-    #if component.omnibor_ids:
+        #    metadata["authors"] = component.authors
+        # if component.omnibor_ids:
         """ Need to see some examples of this property in use
         # TODO: Create a proper conversion of the object into a serializable format
         """
-    #    metadata["omnibor_ids"] = component.omnibor_ids
-    #if component.swhids:
+        #    metadata["omnibor_ids"] = component.omnibor_ids
+        # if component.swhids:
         """ Need to see some examples of this property in use
         # TODO: Create a proper conversion of the object into a serializable format
         """
-    #    metadata["swhids"] = component.swhids
-    #if component.crypto_properties:
+        #    metadata["swhids"] = component.swhids
+        # if component.crypto_properties:
         """ Need to see some examples of this property in use
         # TODO: Create a proper conversion of the object into a serializable format
         """
-    #    metadata["crypto_properties"] = component.crypto_properties
-    #if component.tags:
+        #    metadata["crypto_properties"] = component.crypto_properties
+        # if component.tags:
         """ Need to see some examples of this property in use
         # TODO: Create a proper conversion of the object into a serializable format
         """
@@ -261,13 +255,14 @@ def convert_cyclonedx_component_to_software(
         sha256=hashes["SHA-256"],
         md5=hashes["MD5"],
         metadata=metadata,
-        components=sw_components
+        components=sw_components,
     )
 
     return cytrics_uuid, sw_entry
 
+
 def convert_cyclonedx_subcomponent_to_software_components(
-    component: Component
+    component: Component,
 ) -> SoftwareComponent:
     """Converts a subcomponent of a CycloneDX component into a component of the corresponding CyTRICS software entry
 
@@ -284,17 +279,13 @@ def convert_cyclonedx_subcomponent_to_software_components(
     version = component.version
 
     sw_component = SoftwareComponent(
-        name=name,
-        version=version,
-        vendor=vendor,
-        description=description
+        name=name, version=version, vendor=vendor, description=description
     )
 
     return sw_component
 
-def convert_cyclonedx_vulnerability_to_observation(
-        vulnerability: Vulnerability
-) -> Observation:
+
+def convert_cyclonedx_vulnerability_to_observation(vulnerability: Vulnerability) -> Observation:
     """Convert a CycloneDX Vulnerability object into a CyTRICS Observation object
 
     Args:
@@ -303,13 +294,13 @@ def convert_cyclonedx_vulnerability_to_observation(
     Returns:
         Observation: The Observation object that was created.
     """
-    
+
     vbomref = vulnerability.bom_ref.value
     v_uuid = str(uuid.uuid4())
     if vbomref:
-        v_uuid = vbomref # Comment this if statement if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+        v_uuid = vbomref  # Comment this if statement if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
     cve = vulnerability.id
-    cvss:int
+    cvss: int
     for rating in vulnerability.ratings:
         cvss = rating.score
         break
@@ -325,7 +316,7 @@ def convert_cyclonedx_vulnerability_to_observation(
         CVE=cve,
         CVSS=cvss,
         toRecreate=url,
-        mitigationSuggestions=mitigations
+        mitigationSuggestions=mitigations,
     )
 
     return sw_observation
