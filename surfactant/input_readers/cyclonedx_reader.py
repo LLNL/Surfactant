@@ -1,21 +1,11 @@
-from typing import Dict, Optional, Tuple, List
 import json
 import uuid
-
-from cyclonedx.model import HashAlgorithm
-from cyclonedx.model.bom import Bom
-from cyclonedx.model.component import Component
-from cyclonedx.model.vulnerability import Vulnerability
-
-import surfactant.plugin
-from surfactant import __version__ as surfactant_version
-from surfactant.sbomtypes import SBOM, Software, SoftwareComponent, Relationship, Observation
 
 # Copyright 2024 Lawrence Livermore National Security, LLC
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from cyclonedx.model import HashAlgorithm
 from cyclonedx.model.bom import Bom
@@ -130,11 +120,7 @@ def convert_cyclonedx_component_to_software(
     # CycloneDX only supports one supplier, so the vendor list will only contain one vendor
     vendor = [component.supplier]
     version = component.version
-    hashes = {
-        "SHA-1": None,
-        "SHA-256": None,
-        "MD5": None
-    }
+    hashes = {"SHA-1": None, "SHA-256": None, "MD5": None}
     for c_hash in component.hashes:
         if c_hash.alg == HashAlgorithm.SHA_1:
             hashes.update({"SHA-1": c_hash.content})
@@ -142,7 +128,7 @@ def convert_cyclonedx_component_to_software(
             hashes.update({"SHA-256": c_hash.content})
         elif c_hash.alg == HashAlgorithm.MD5:
             hashes.update({"MD5": c_hash.content})
-    
+
     # Convert subcomponents of CycloneDX components into components of the corresponding CyTRICS software entry
     sw_components: List[SoftwareComponent] = []
     for subcomp in component.components:
