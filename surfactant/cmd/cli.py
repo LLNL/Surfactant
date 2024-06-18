@@ -57,7 +57,10 @@ def find(sbom, output_format, input_format, **kwargs):
 
 @click.argument("sbom", required=True)
 @click.option(
-    "--output", default=None, is_flag=False, help="Specifies the file to output new sbom. Default replaces the input file."
+    "--output",
+    default=None,
+    is_flag=False,
+    help="Specifies the file to output new sbom. Default replaces the input file.",
 )
 @click.option("--file", is_flag=False, help="Adds entry for file to sbom")
 @click.option("--relationship", is_flag=False, type=str, help="Adds relationship to sbom")
