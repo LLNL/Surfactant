@@ -55,7 +55,8 @@ def read_sbom(infile) -> SBOM:
             yuuid = ybomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
 
             """It is unclear what different CycloneDX dependency types exist outside of the type shown in the official examples of CycloneDX SBOM types
-            and how those would map to CyTRICS's relationship types, so each relationship between CycloneDX components will be labeled as "Contains" for the time being"""
+            and how those would map to CyTRICS's relationship types, so each relationship between CycloneDX components will be labeled as "Contains" for the time being
+            """
             # TODO: Add in other relationship type mappings
             rel_type = "Contains"
             cytrics_rel = Relationship(xUUID=xuuid, yUUID=yuuid, relationship=rel_type)
@@ -64,7 +65,8 @@ def read_sbom(infile) -> SBOM:
     # Create a CyTRICS software entry for each CycloneDX component
     for component in bom.components:
         """If a component detail can be mapped to a detail in a software entry, then add to software entry details
-        Otherwise, add detail to software entry's metadata section"""
+        Otherwise, add detail to software entry's metadata section
+        """
         # Add CycloneDX metadata section to metadata section of each software entry
         c_uuid, sw = convert_cyclonedx_component_to_software(component, uuids)
         sbom.add_software(sw)
