@@ -4,12 +4,16 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
+import pytest
 
 from surfactant.cmd.cli import cli_add, cli_find
 from surfactant.sbomtypes import SBOM, Relationship
 
-with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_sbom.json", "r") as f:
-    in_sbom = SBOM.from_json(f.read())
+@pytest.fixture
+def test_sbom():
+    with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_sbom.json", "r") as f:
+        sbom = SBOM.from_json(f.read())
+        return sbom
 
 bad_sbom = SBOM(
     {
@@ -41,9 +45,9 @@ bad_sbom = SBOM(
 )
 
 
-def test_find_by_sha256():
+def test_find_by_sha256(test_sbom):
     out_bom = cli_find().execute(
-        in_sbom, sha256="f41ca6f7c447225df3a7eef754d303d22cf877586735fb2d56d1eb15bf1daed9"
+        test_sbom, sha256="f41ca6f7c447225df3a7eef754d303d22cf877586735fb2d56d1eb15bf1daed9"
     )
     assert len(out_bom.software) == 1
     assert (
@@ -52,9 +56,9 @@ def test_find_by_sha256():
     )
 
 
-def test_find_by_multiple_hashes():
+def test_find_by_multiple_hashes(test_sbom):
     out_bom = cli_find().execute(
-        in_sbom,
+        test_sbom,
         sha256="f41ca6f7c447225df3a7eef754d303d22cf877586735fb2d56d1eb15bf1daed9",
         md5="5fbf80df5004db2f0ce1f78b524024fe",
     )
@@ -65,17 +69,17 @@ def test_find_by_multiple_hashes():
     )
 
 
-def test_find_by_mismatched_hashes():
+def test_find_by_mismatched_hashes(test_sbom):
     out_bom = cli_find().execute(
-        in_sbom,
+        test_sbom,
         sha256="f41ca6f7c447225df3a7eef754d303d22cf877586735fb2d56d1eb15bf1daed9",
         md5="2ff380e740d2eb09e5d67f6f2cd17636",
     )
     assert len(out_bom.software) == 0
 
 
-def test_find_by_containerPath():
-    out_bom = cli_find().execute(in_sbom, containerpath="477da45b-bb38-450e-93f7-e525aaaa6862/")
+def test_find_by_containerPath(test_sbom):
+    out_bom = cli_find().execute(test_sbom, containerpath="477da45b-bb38-450e-93f7-e525aaaa6862/")
     assert len(out_bom.software) == 7
 
 
@@ -93,20 +97,19 @@ def test_find_with_bad_filter():
     assert len(out_bom.software) == 0
 
 
-def test_add_by_file():
-    previous_software_len = len(in_sbom.software)
+def test_add_by_file(test_sbom):
+    previous_software_len = len(test_sbom.software)
     out_bom = cli_add().execute(
-        in_sbom, file=pathlib.Path(__file__).parent / "../data/a_out_files/big_m68020.aout"
+        test_sbom, file=pathlib.Path(__file__).parent / "../data/a_out_files/big_m68020.aout"
     )
     assert len(out_bom.software) == previous_software_len + 1
     assert (
         out_bom.software[8].sha256
         == "9e125f97e5f180717096c57fa2fdf06e71cea3e48bc33392318643306b113da4"
     )
-    del in_sbom.software[-1]
 
 
-def test_add_entry():
+def test_add_entry(test_sbom):
     entry = {
         "UUID": "6b50c545-3e07-4aec-bbb0-bae07704143a",
         "name": "Test Aout File",
@@ -120,32 +123,31 @@ def test_add_entry():
         "md5": "e8d3808a4e311a4262563f3cb3a31c3e",
         "comments": "This is a test entry.",
     }
-    previous_software_len = len(in_sbom.software)
-    out_bom = cli_add().execute(in_sbom, entry=entry)
+    previous_software_len = len(test_sbom.software)
+    out_bom = cli_add().execute(test_sbom, entry=entry)
     assert len(out_bom.software) == previous_software_len + 1
     assert (
         out_bom.software[8].sha256
         == "9e125f97e5f180717096c57fa2fdf06e71cea3e48bc33392318643306b113da4"
     )
-    del in_sbom.software[-1]
 
 
-def test_add_relationship():
+def test_add_relationship(test_sbom):
     relationship = {
         "xUUID": "455341bb-2739-4918-9805-e1a93e27e2a4",
         "yUUID": "e286a415-6c6b-427d-9fe6-d7dbb0486f7d",
         "relationship": "Uses",
     }
-    previous_rel_len = len(in_sbom.relationships)
-    out_bom = cli_add().execute(in_sbom, relationship=relationship)
+    previous_rel_len = len(test_sbom.relationships)
+    out_bom = cli_add().execute(test_sbom, relationship=relationship)
     assert len(out_bom.relationships) == previous_rel_len + 1
-    in_sbom.relationships.discard(Relationship(**relationship))
+    test_sbom.relationships.discard(Relationship(**relationship))
 
 
-def test_add_installpath():
+def test_add_installpath(test_sbom):
     containerPathPrefix = "477da45b-bb38-450e-93f7-e525aaaa6862/"
     installPathPrefix = "/bin/"
-    out_bom = cli_add().execute(in_sbom, installpath=(containerPathPrefix, installPathPrefix))
+    out_bom = cli_add().execute(test_sbom, installpath=(containerPathPrefix, installPathPrefix))
     for sw in out_bom.software:
         if containerPathPrefix in sw.containerPath:
             assert installPathPrefix in sw.installPath
