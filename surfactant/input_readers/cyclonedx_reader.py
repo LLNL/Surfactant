@@ -5,10 +5,11 @@ import uuid
 from cyclonedx.model import HashAlgorithm
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.component import Component
+from cyclonedx.model.vulnerability import Vulnerability
 
 import surfactant.plugin
 from surfactant import __version__ as surfactant_version
-from surfactant.sbomtypes import SBOM, Software, SoftwareComponent, Relationship
+from surfactant.sbomtypes import SBOM, Software, SoftwareComponent, Relationship, Observation
 
 # Copyright 2024 Lawrence Livermore National Security, LLC
 # See the top-level LICENSE file for details.
@@ -23,6 +24,18 @@ from surfactant.sbomtypes import SBOM
 
 @surfactant.plugin.hookimpl
 def read_sbom(infile) -> SBOM:    
+    """Reads the contents of the CycloneDX SBOM to the CyTRICS format.
+
+    The read_sbom hook for the cyclonedx_reader makes a best-effort attempt
+    to map the information gathered from the CycloneDX file to a valid 
+    internal SBOM representation.
+
+    Args:
+        infile: The input file handle to read the CycloneDX SBOM from.
+    """
+    # NOTE eventually informat should be user settable
+    informat = "json"
+    
     bom = Bom.from_json(data=json.loads(infile.read()))
     sbom = SBOM()
     
@@ -32,14 +45,12 @@ def read_sbom(infile) -> SBOM:
     uuids = {}
 
     for xdependency in bom.dependencies:
-        #print(xdependency)
-        #print(xdependency.dependencies)
         xbomref = xdependency.ref.value
         if not xbomref in uuids.keys():
             new_uuid = str(uuid.uuid4())
             uuids[xbomref] = new_uuid
         xuuid = uuids[xbomref]
-        # xuuid = xbomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+        xuuid = xbomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
         
         for ydependency in xdependency.dependencies:
             ybomref = ydependency.ref.value
@@ -47,33 +58,39 @@ def read_sbom(infile) -> SBOM:
                 new_uuid = str(uuid.uuid4())
                 uuids[ybomref] = new_uuid
             yuuid = uuids[ybomref]
-            # yuuid = ybomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+            yuuid = ybomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
 
-            # It is unclear what different CycloneDX dependency types exist outside of the type shown in the official examples of CycloneDX SBOM types
-            # and how those would map to CyTRICS's relationship types, so each relationship between CycloneDX components will be labeled as "Contains" for the time being
+            """It is unclear what different CycloneDX dependency types exist outside of the type shown in the official examples of CycloneDX SBOM types
+            and how those would map to CyTRICS's relationship types, so each relationship between CycloneDX components will be labeled as "Contains" for the time being"""
             # TODO: Add in other relationship type mappings
             rel_type = "Contains"
             cytrics_rel = Relationship(xUUID=xuuid,yUUID=yuuid,relationship=rel_type)
             sbom.add_relationship(cytrics_rel)
 
-    # print(sbom.relationships)
     # Create a CyTRICS software entry for each CycloneDX component
     for component in bom.components:
-        # print(component)
-        # If a component detail can be mapped to a detail in a software entry, then add to software entry details
-        # Otherwise, add detail to software entry's metadata section
-        # Add CycloneDX metadata section to metadata section of each software entry?
-        c_uuid, sw = convert_cyclonedx_components_to_software(component, uuids)
+        """If a component detail can be mapped to a detail in a software entry, then add to software entry details
+        Otherwise, add detail to software entry's metadata section"""
+        # Add CycloneDX metadata section to metadata section of each software entry
+        c_uuid, sw = convert_cyclonedx_component_to_software(component, uuids)
         sbom.add_software(sw)
         if component.bom_ref.value:
             uuids[component.bom_ref.value] = c_uuid
     
     # Do the same thing for the component from the CycloneDX metadata section (if there is one) because its bom-ref can appear in the dependencies
     if bom.metadata.component:
-        mc_uuid, msw = convert_cyclonedx_components_to_software(bom.metadata.component, uuids)
+        mc_uuid, msw = convert_cyclonedx_component_to_software(bom.metadata.component, uuids)
         sbom.add_software(msw)
         if bom.metadata.component.bom_ref.value:
             uuids[bom.metadata.component.bom_ref.value] = mc_uuid
+    
+    # Add vulnerabilities from the CycloneDX SBOM to the observations section in the CyTRICS SBOM
+    if bom.vulnerabilities:
+        for vuln in bom.vulnerabilities:
+            observation = convert_cyclonedx_vulnerability_to_observation(vuln)
+            sbom.observations.append(observation)
+
+
 
 
     return sbom
@@ -83,9 +100,20 @@ def read_sbom(infile) -> SBOM:
 def short_name() -> Optional[str]:
     return "cyclonedx"
 
-def convert_cyclonedx_components_to_software(
+def convert_cyclonedx_component_to_software(
     component: Component, uuids: Dict
 ) -> Tuple[str, Software]:
+    """Converts a component entry in the CycloneDX SBOM to a CyTRICS software entry
+
+    Args:
+        component (Component): The CycloneDX component to convert to a CyTRICS software entry.
+        uuids (Dict): A Python dictionary that keeps track of which CycloneDX bom-refs have already been assigned UUIDs
+
+    Returns:
+        Tuple[str, Software]: A tuple containing the UUID of the Component that was
+        converted into a Software, and the Software object that was created.
+    """
+
     print(component.bom_ref)
     bomref = component.bom_ref.value
     if (not bomref) or (not bomref in uuids.keys()):
@@ -93,10 +121,11 @@ def convert_cyclonedx_components_to_software(
     else:
         cytrics_uuid = uuids[bomref]
     
-    # cytrics_uuid = bomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+    cytrics_uuid = bomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
 
     name = component.name
     description = component.description
+    
     # CycloneDX only supports one supplier, so the vendor list will only contain one vendor
     vendor = [component.supplier]
     version = component.version
@@ -116,7 +145,7 @@ def convert_cyclonedx_components_to_software(
     # Convert subcomponents of CycloneDX components into components of the corresponding CyTRICS software entry
     sw_components = []
     for subcomp in component.components:
-        sw_comp = convert_cyclonedx_subcomponents_to_software_components(subcomp)
+        sw_comp = convert_cyclonedx_subcomponent_to_software_components(subcomp)
         sw_components.append[sw_comp]
     
     # Add remaining data that is exclusive to CycloneDX component entries into the metadata section of the CyTRICS software entry
@@ -186,9 +215,17 @@ def convert_cyclonedx_components_to_software(
 
     return cytrics_uuid, sw_entry
 
-def convert_cyclonedx_subcomponents_to_software_components(
-    component: Component,
+def convert_cyclonedx_subcomponent_to_software_components(
+    component: Component
 ) -> SoftwareComponent:
+    """Converts a subcomponent of a CycloneDX component into a component of the corresponding CyTRICS software entry
+
+    Args:
+        component (Component): The subcomponent of the CycloneDX component to convert to a CyTRICS component in the CyTRICS software entry.
+
+    Returns:
+        SoftwareComponent: The Software object that was created.
+    """
     name = component.name
     description = component.description
     # CycloneDX only supports one supplier, so vendor list will only contain one vendor
@@ -203,3 +240,37 @@ def convert_cyclonedx_subcomponents_to_software_components(
     )
 
     return sw_component
+
+def convert_cyclonedx_vulnerability_to_observation(
+        vulnerability: Vulnerability
+) -> Observation:
+    """Convert a CycloneDX Vulnerability object into a CyTRICS Observation object
+
+    Args:
+        vulnerability (Vulnerability): The vulnerability entry from the CycloneDX SBOM to convert to an observation entry in the CyTRICS SBOM.
+
+    Returns:
+        Observation: The Observation object that was created.
+    """
+    
+    vbomref = vulnerability.bom_ref.value
+    v_uuid = str(uuid.uuid4())
+    v_uuid = vbomref # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+    cve = vulnerability.id
+    cvss = vulnerability.ratings.score
+    cwe = vulnerability.cwes
+    description = vulnerability.description
+    mitigations = vulnerability.recommendation
+    url = vulnerability.source.url
+
+    sw_observation = Observation(
+        UUID=v_uuid,
+        CWEClass=cwe,
+        potentialEffectOrImpact=description,
+        CVE=cve,
+        CVSS=cvss,
+        toRecreate=url,
+        mitigationSuggestions=mitigations
+    )
+
+    return sw_observation
