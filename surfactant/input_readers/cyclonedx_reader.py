@@ -147,7 +147,7 @@ def convert_cyclonedx_component_to_software(
     sw_components: List[SoftwareComponent] = []
     for subcomp in component.components:
         sw_comp = convert_cyclonedx_subcomponent_to_software_components(subcomp)
-        sw_components.append[sw_comp]
+        sw_components.append(sw_comp)
 
     # Add remaining data that is exclusive to CycloneDX component entries into the metadata section of the CyTRICS software entry
     metadata = {}
