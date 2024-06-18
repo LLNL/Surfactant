@@ -1,12 +1,12 @@
 # CLI Usage
-The surfactant cli interface allows users to easily and quickly find, add, and edit entries within a given SBOM.
+The Surfactant CLI interface allows users to easily and quickly find, add, and edit entries within a given SBOM.
 Some functionality we support includes:
-- Specify a file to either find, add, or edit its entry in a given SBOM
+- Specify a file to find, add, or edit its entry in a given SBOM
 - Fix up path prefixes, i.e. installPath or containerPath
 - Add relationships
 
 ## surfactant cli find
-The **cli find** command allows users to find specific entries within a SBOM. This will allow users to do a few things:
+The **cli find** command allows users to find specific entries within a SBOM. This will allow users to:
 - Verify entries exist within the SBOM
 - Manually inspect one or more related entries within a SBOM for errors or bad formatting
 - Provide a subset of entries to supply to the `cli edit` or `cli add` commands.
@@ -40,7 +40,7 @@ surfactant cli find --installpath C:/Users/Test/Downloads/
 ```
 
 ## surfactant cli add
-The **cli add** command will allow users to easily add manual entries to an SBOM. This command should allow users to do a few things:
+The **cli add** command will allow users to easily add manual entries to an SBOM. This command should allow users to:
 - Add key value pairs to existing SBOM entries
 - Add whole new entries to the SBOM
 - Add new installPaths based on existing containerPaths
