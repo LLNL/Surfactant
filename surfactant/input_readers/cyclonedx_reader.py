@@ -40,7 +40,7 @@ def read_sbom(infile) -> SBOM:
 
     for xdependency in bom.dependencies:
         xbomref = xdependency.ref.value
-        if xbomref not in uuids.keys():
+        if xbomref not in uuids:
             new_uuid = str(uuid.uuid4())
             uuids[xbomref] = new_uuid
         xuuid = uuids[xbomref]
@@ -48,7 +48,7 @@ def read_sbom(infile) -> SBOM:
 
         for ydependency in xdependency.dependencies:
             ybomref = ydependency.ref.value
-            if ybomref not in uuids.keys():
+            if ybomref not in uuids:
                 new_uuid = str(uuid.uuid4())
                 uuids[ybomref] = new_uuid
             yuuid = uuids[ybomref]
