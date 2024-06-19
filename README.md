@@ -92,6 +92,10 @@ pip install -e ".[test,dev]"
 
 `pip install` with the `-e` or `--editable` option can also be used to install Surfactant plugins for development.
 
+```bash
+pip install -e plugins/fuzzyhashes
+```
+
 ## Usage
 
 ### Identify sample file
