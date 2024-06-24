@@ -17,6 +17,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
     from surfactant.infoextractors import (
         a_out_file,
         coff_file,
+        docker_image,
         elf_file,
         java_file,
         js_file,
@@ -43,6 +44,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         id_extension,
         a_out_file,
         coff_file,
+        docker_image,
         elf_file,
         java_file,
         js_file,

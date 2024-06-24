@@ -43,6 +43,8 @@ To install optional dependencies required for running pytest and pre-commit:
 pip install -e ".[test,dev]"
 ```
 
+`pip install` with the `-e` or `--editable` option can also be used to install Surfactant plugins for development.
+
 ## Code of Conduct
 
 All participants in the Surfactant community are expected to follow our [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html).

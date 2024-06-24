@@ -28,17 +28,39 @@ or decompilation.
 
 ### For Users:
 
-1. Create a virtual environment with python >= 3.8 [Optional, but recommended]
+For ease of use, we recommend using [pipx](https://github.com/pypa/pipx) since it transparently handles creating and using Python virtual environments, which helps avoid dependency conflicts with other installed Python apps. Install `pipx` by following [their installation instructions](https://github.com/pypa/pipx#install-pipx).
+
+1. Install Surfactant using `pipx install` (with python >= 3.8)
+
+```bash
+pipx install surfactant
+```
+
+2. Install plugins using `pipx inject surfactant`. As an example, this is how the fuzzy hashing plugin could be installed from a git repository (PyPI package names, local source directories, or wheel files can also be used).
+
+```bash
+pipx inject surfactant git+https://github.com/LLNL/Surfactant#subdirectory=plugins/fuzzyhashes
+```
+
+If for some reason manually managing virtual environments is desired, the following steps can be used instead:
+
+1. Create a virtual environment with python >= 3.8 and activate it [Optional, but highly recommended over a global install]
 
 ```bash
 python -m venv cytrics_venv
 source cytrics_venv/bin/activate
 ```
 
-2. Install Surfactant with pip
+2. Install Surfactant with `pip install`
 
 ```bash
 pip install surfactant
+```
+
+3. Install plugins using `pip install`. As an example, this is how the fuzzy hashing plugin could be installed from a git repository (PyPI package names, local source directories, or wheel files can also be used).
+
+```bash
+pip install git+https://github.com/LLNL/Surfactant#subdirectory=plugins/fuzzyhashes
 ```
 
 ### For Developers:
@@ -66,6 +88,12 @@ To install optional dependencies required for running pytest and pre-commit:
 
 ```bash
 pip install -e ".[test,dev]"
+```
+
+`pip install` with the `-e` or `--editable` option can also be used to install Surfactant plugins for development.
+
+```bash
+pip install -e plugins/fuzzyhashes
 ```
 
 ## Usage
@@ -349,7 +377,7 @@ Details on the merge command can be found in the docs page [here](./docs/basic_u
 ## Plugins
 
 Surfactant supports using plugins to add additional features. For users, installing and enabling a plugin usually just involves
-doing a `pip install` of the plugin.
+doing a `pipx inject surfactant` when using pipx or `pip install` of the plugin if manually managing virtual environments.
 
 Detailed information on configuration options for the plugin system and how to develop new plugins can be found [here](./docs/plugins.md).
 
