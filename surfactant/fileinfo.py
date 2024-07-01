@@ -70,3 +70,25 @@ def calc_file_hashes(filename):
         "sha1": sha1_hash.hexdigest(),
         "md5": md5_hash.hexdigest(),
     }
+
+
+def sha256sum(filename):
+    """Calculate sha256 hash for the file specified. May throw a FileNotFound exception.
+
+    Args:
+        filename (str): Name of file.
+
+    Returns:
+        Optional[str]: The sha256 hash of the file.
+
+    Raises:
+        FileNotFoundError: If the given filename could not be found.
+    """
+    h = sha256()
+    with open(filename, "rb") as f:
+        # Reading is buffered by default (https://docs.python.org/3/library/functions.html#open)
+        chunk = f.read(h.block_size)
+        while chunk:
+            h.update(chunk)
+            chunk = f.read(h.block_size)
+    return h.hexdigest()

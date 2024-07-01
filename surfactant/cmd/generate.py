@@ -13,6 +13,7 @@ import click
 from loguru import logger
 
 from surfactant import ContextEntry
+from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
@@ -260,8 +261,10 @@ def sbom(
     if not skip_gather:
         # List of directory symlinks; 2-sized tuples with (source, dest)
         dir_symlinks: List[Tuple[str, str]] = []
-        # List of file symlinks; keys are SHA256 hashes, values are source paths
+        # List of file install path symlinks; keys are SHA256 hashes, values are source paths
         file_symlinks: Dict[str, List[str]] = {}
+        # List of filename symlinks; keys are SHA256 hashes, values are file names
+        filename_symlinks: Dict[str, List[str]] = {}
         while not context.empty():
             entry: ContextEntry = context.get()
             if entry.archive:
@@ -330,14 +333,32 @@ def sbom(
                         # os.path.join will insert an OS specific separator between cdir and f
                         # need to make sure that separator is a / and not a \ on windows
                         filepath = pathlib.Path(cdir, f).as_posix()
-                        file_is_symlink = False
                         # TODO: add CI tests for generating SBOMs in scenarios with symlinks... (and just generally more CI tests overall...)
+                        # Record symlink details but don't run info extractors on them
                         if os.path.islink(filepath):
+                            # NOTE: resolve_link function could print warning if symlink goes outside of extract path dir
                             true_filepath = resolve_link(filepath, cdir, epath, entry.installPrefix)
                             # Dead/infinite links will error so skip them
                             if true_filepath is None:
                                 continue
-                            # Otherwise add them and skip adding the entry
+                            # Compute sha256 hash of the file; skip if the file pointed by the symlink can't be opened
+                            try:
+                                true_file_sha256 = sha256sum(true_filepath)
+                            except FileNotFoundError:
+                                logger.warning(
+                                    f"Unable to open symlink {filepath} pointing to {true_filepath}"
+                                )
+                                continue
+                            # Record the symlink name to be added as a file name
+                            # Dead links would appear as a file, so need to check the true path to see
+                            # if the thing pointed to is a file or a directory
+                            if os.path.isfile(true_filepath):
+                                if true_file_sha256 and true_file_sha256 not in filename_symlinks:
+                                    filename_symlinks[true_file_sha256] = []
+                                symlink_base_name = pathlib.PurePath(filepath).name
+                                if symlink_base_name not in filename_symlinks[true_file_sha256]:
+                                    filename_symlinks[true_file_sha256].append(symlink_base_name)
+                            # Record symlink install path if an install prefix is given
                             if entry.installPrefix:
                                 install_filepath = real_path_to_install_path(
                                     epath, entry.installPrefix, filepath
@@ -348,13 +369,18 @@ def sbom(
                                 # A dead link shows as a file so need to test if it's a
                                 # file or a directory once rebased
                                 if os.path.isfile(true_filepath):
-                                    # file_symlinks.append((install_filepath, install_dest))
-                                    file_is_symlink = True
+                                    if true_file_sha256 and true_file_sha256 not in file_symlinks:
+                                        file_symlinks[true_file_sha256] = []
+                                    file_symlinks[true_file_sha256].append(install_filepath)
                                 else:
                                     dir_symlinks.append((install_filepath, install_dest))
-                                    continue
-                            # We need get_software_entry to look at the true filepath
-                            filepath = true_filepath
+                            # NOTE Two cases that don't get recorded (but maybe should?) are:
+                            # 1. If the file pointed to is outside the extract paths, it won't
+                            # appear in the SBOM at all -- is that desirable? If it were included,
+                            # should the true path also be included as an install path?
+                            # 2. Does a symlink "exist" inside an archive/installer, or only after
+                            # unpacking/installation?
+                            continue
 
                         if entry.installPrefix or entry.installPrefix == "":
                             install_path = entry.installPrefix
@@ -380,16 +406,9 @@ def sbom(
                             except Exception as e:
                                 raise RuntimeError(f"Unable to process: {filepath}") from e
 
-                            if file_is_symlink and entry.installPrefix:
-                                # Track the symlink, but don't add to list of entries
-                                # as it'll be processed later anyways
-                                if sw_parent.sha256 not in file_symlinks:
-                                    file_symlinks[sw_parent.sha256] = []
-                                file_symlinks[sw_parent.sha256].append(install_filepath)
-                            else:
-                                entries.append(sw_parent)
-                                for sw in sw_children:
-                                    entries.append(sw)
+                            entries.append(sw_parent)
+                            for sw in sw_children:
+                                entries.append(sw)
 
                     if entries:
                         # if a software entry already exists with a matching file hash, augment the info in the existing entry
@@ -426,17 +445,23 @@ def sbom(
                                         )
                                 # TODO a pass later on to check for and remove duplicate relationships should be added just in case
 
-        # Add file symlinks to install paths
+        # Add symlinks to install paths and file names
         for software in new_sbom.software:
+            if software.sha256 in filename_symlinks:
+                filename_symlinks_added = []
+                for filename in filename_symlinks[software.sha256]:
+                    if filename not in software.fileName:
+                        software.fileName.append(filename)
+                        filename_symlinks_added.append(filename)
+                if filename_symlinks_added:
+                    # Store information on which file names are symlinks
+                    software.metadata.append({"fileNameSymlinks": filename_symlinks_added})
             if software.sha256 in file_symlinks:
                 symlinks_added = []
                 for full_path in file_symlinks[software.sha256]:
                     if full_path not in software.installPath:
                         software.installPath.append(full_path)
                         symlinks_added.append(full_path)
-                    base_name = pathlib.PurePath(full_path).name
-                    if base_name not in software.fileName:
-                        software.fileName.append(base_name)
                 if symlinks_added:
                     # Store information on which install paths are symlinks
                     software.metadata.append({"installPathSymlinks": symlinks_added})
