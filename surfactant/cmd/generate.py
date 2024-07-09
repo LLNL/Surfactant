@@ -186,7 +186,7 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     help="SBOM output format, see --list-output-formats for list of options; default is CyTRICS",
 )
 @click.option(
-    "--list-output-formats",
+    "--list_output_formats",
     is_flag=True,
     callback=print_output_formats,
     expose_value=False,
@@ -200,7 +200,7 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
     help="Input SBOM format, see --list-input-formats for list of options; default is CyTRICS",
 )
 @click.option(
-    "--list-input-formats",
+    "--list_input_formats",
     is_flag=True,
     callback=print_input_formats,
     expose_value=False,
