@@ -242,9 +242,7 @@ def get_assembly_info(asm_info):
 def get_assemblyref_info(asmref_info):
     asmref: Dict[str, Any] = {}
     add_core_assembly_info(asmref, asmref_info)
-    asmref["HashValue"] = (
-        asmref_info.HashValue.raw_data
-    )
+    asmref["HashValue"] = asmref_info.HashValue.raw_data
     add_assembly_flags_info(asmref, asmref_info)
     return asmref
 
