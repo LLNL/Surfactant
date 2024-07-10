@@ -2,14 +2,14 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-from typing import List, Optional
-from loguru import logger
+import gzip
 import subprocess
 import tempfile
-import gzip
+from typing import List, Optional
+
+from loguru import logger
 
 import surfactant.plugin
-from surfactant.plugin.manager import get_plugin_manager
 from surfactant.sbomtypes import SBOM, Software
 
 
@@ -33,7 +33,7 @@ def run_grype(filename: str) -> object:
         return None
     output = result.stdout.decode()
     to_ret = []
-    for line in output.split('\n'):
+    for line in output.split("\n"):
         columns = line.split()
         # Skip empty lines and the header
         if len(columns) == 0 or columns[0] == "NAME":
@@ -51,13 +51,15 @@ def run_grype(filename: str) -> object:
             type_ = columns[3]
             vuln = columns[4]
             severity = columns[5]
-        to_ret.append({
-            "name": name,
-            "fixed_in": fixed_in,
-            "type": type_,
-            "vulnerability": vuln,
-            "severity": severity
-        })
+        to_ret.append(
+            {
+                "name": name,
+                "fixed_in": fixed_in,
+                "type": type_,
+                "vulnerability": vuln,
+                "severity": severity,
+            }
+        )
     return {"grype_output": to_ret}
 
 
