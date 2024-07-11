@@ -10,7 +10,7 @@ To install this plugin within the same virtual environment as Surfactant, use th
 
 For developers modifying the plugin, the editable installation can be achieved with `pip install -e .`.
 
-Since the plugin is designed to run in `--offline` mode, before your initial run of the script please run the command `cve-bin-tool --update now`. This will provide you a freshly updated local database that the script will check against in the offline mode.
+Since the plugin is designed to run in `--offline` mode, before your initial run of the script please run the command `cve-bin-tool --update now .`. This will provide you a freshly updated local database that the script will check against in the offline mode.
 
 After the plugin installation, run Surfactant as you normally would to create an SBOM. For binary files analyzed by this plugin, additional JSON files will be generated containing vulnerability data extracted from the binaries. If there are duplicate hashed files, the extractor will skip the entry.
 
