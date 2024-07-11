@@ -41,7 +41,7 @@ def run_cve_bin_tool(input_file_path, shaHash, output_dir):
             f"Error running CVE-bin-tool: {e}\nOutput: {e.output}\nError: {e.stderr}",
             file=sys.stderr,
         )
-        return None
+    return None
 
 
 def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
