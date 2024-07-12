@@ -14,6 +14,7 @@ from typing import Any, Dict
 
 import defusedxml.ElementTree
 import dnfile
+from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -91,7 +92,7 @@ def extract_pe_info(filename):
             file_details["peMachine"] = pe_machine_types[pe.FILE_HEADER.Machine]
         else:
             file_details["peMachine"] = pe.FILE_HEADER.Machine
-            print("[WARNING] Unknown machine type encountered in PE file header")
+            logger.warning("Unknown machine type encountered in PE file header")
     if pe.OPTIONAL_HEADER is not None:
         file_details["peOperatingSystemVersion"] = (
             f"{pe.OPTIONAL_HEADER.MajorOperatingSystemVersion}.{pe.OPTIONAL_HEADER.MinorOperatingSystemVersion}"
@@ -103,7 +104,7 @@ def extract_pe_info(filename):
             file_details["peSubsystem"] = pe_subsystem_types[pe.OPTIONAL_HEADER.Subsystem]
         else:
             file_details["peSubsystem"] = pe.OPTIONAL_HEADER.Subsystem
-            print("[WARNING] Unknown Windows Subsystem type encountered in PE file header")
+            logger.warning("Unknown Windows Subsystem type encountered in PE file header")
         file_details["peLinkerVersion"] = (
             f"{pe.OPTIONAL_HEADER.MajorLinkerVersion}.{pe.OPTIONAL_HEADER.MinorLinkerVersion}"
         )
@@ -190,19 +191,20 @@ def extract_pe_info(filename):
 
 
 def add_core_assembly_info(asm_dict, asm_info):
-    asm_dict["Name"] = asm_info.Name.value if hasattr(asm_info.Name, "value") else asm_info.Name
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
+    # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
+    asm_dict["Name"] = asm_info.Name.value if asm_info.Name.value else asm_info.raw_data.hex()
     asm_dict["Culture"] = (
-        asm_info.Culture.value if hasattr(asm_info.Culture, "value") else asm_info.Culture
+        asm_info.Culture.value if asm_info.Culture.value else asm_info.Culture.raw_data.hex()
     )
     asm_dict["Version"] = (
         f"{asm_info.MajorVersion}.{asm_info.MinorVersion}.{asm_info.BuildNumber}.{asm_info.RevisionNumber}"
     )
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
+    # HeapItemBinary value is the bytes following the compressed int (indicating the length)
     asm_dict["PublicKey"] = (
-        asm_info.PublicKey.hex()
-        if hasattr(asm_info.PublicKey, "hex")
-        else (
-            asm_info.PublicKey.value if hasattr(asm_info.PublicKey, "value") else asm_info.PublicKey
-        )
+        # raw_data attribute of PublicKey includes leading byte with length of data, value attr removes it
+        asm_info.PublicKey.value.hex()
     )
 
 
@@ -233,7 +235,9 @@ def add_assembly_flags_info(asm_dict, asm_info):
 def get_assembly_info(asm_info):
     asm: Dict[str, Any] = {}
     add_core_assembly_info(asm, asm_info)
-    asm["HashAlgId"] = asm_info.HashAlgId
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/fcccdaf/src/dnfile/enums.py#L851-L863
+    # HashAlgID is a dnfile enum, based on possible .NET hash algs
+    asm["HashAlgId"] = asm_info.HashAlgId.name
     add_assembly_flags_info(asm, asm_info)
     return asm
 
@@ -241,18 +245,25 @@ def get_assembly_info(asm_info):
 def get_assemblyref_info(asmref_info):
     asmref: Dict[str, Any] = {}
     add_core_assembly_info(asmref, asmref_info)
-    asmref["HashValue"] = (
-        asmref_info.HashValue.hex()
-        if hasattr(asmref_info.HashValue, "hex")
-        else asmref_info.HashValue
-    )
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
+    # HeapItemBinary value is the bytes following the compressed int (indicating the length)
+    # raw_data attribute has the compressed int indicating length included
+    asmref["HashValue"] = asmref_info.HashValue.value.hex()
     add_assembly_flags_info(asmref, asmref_info)
     return asmref
 
 
 def insert_implmap_info(im_info, imp_modules):
-    dllName = im_info.ImportScope.row.Name
-    methodName = im_info.ImportName
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
+    # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
+    dllName = (
+        im_info.ImportScope.row.Name.value
+        if im_info.ImportScope.row.Name.value
+        else im_info.ImportScope.row.Name.raw_data.hex()
+    )
+    methodName = (
+        im_info.ImportName.value if im_info.ImportName.value else im_info.ImportName.raw_data.hex()
+    )
     if dllName:
         for imp_module in imp_modules:
             if imp_module["Name"] == dllName:
@@ -276,7 +287,7 @@ def get_windows_manifest_info(filename):
     binary_filepath = pathlib.Path(filename)
     manifest_filepath = binary_filepath.with_suffix(binary_filepath.suffix + ".manifest")
     if manifest_filepath.exists():
-        print("Found application manifest file for " + filename)
+        logger.info("Found application manifest file for " + filename)
         et = defusedxml.ElementTree.parse(manifest_filepath)
         manifest_info = {}
 
@@ -288,8 +299,8 @@ def get_windows_manifest_info(filename):
             asm_xmlns, asm_tag = get_xmlns_and_tag(asm_e)
             if asm_tag == "assemblyIdentity":
                 if "assemblyIdentity" in manifest_info:
-                    print(
-                        "[WARNING] duplicate assemblyIdentity element found in the manifest file: "
+                    logger.warning(
+                        "duplicate assemblyIdentity element found in the manifest file: "
                         + str(manifest_filepath)
                     )
                 manifest_info["assemblyIdentity"] = asm_e.attrib
@@ -299,8 +310,8 @@ def get_windows_manifest_info(filename):
                 manifest_info["file"].append(asm_e.attrib)
             if asm_tag == "dependency":
                 if "dependency" in manifest_info:
-                    print(
-                        "[WARNING] duplicate dependency element found in the manifest file: "
+                    logger.warning(
+                        "duplicate dependency element found in the manifest file: "
                         + str(manifest_filepath)
                     )
                 dependency_info: Dict[str, Any] = {}
@@ -321,28 +332,28 @@ def get_windows_manifest_info(filename):
 def get_dependentAssembly_info(da_et, config_filepath=""):
     daet_xmlns, daet_tag = get_xmlns_and_tag(da_et)
     if daet_tag != "dependentAssembly":
-        print("[WARNING] element tree given was not for a dependentAssembly element tag")
+        logger.warning("element tree given was not for a dependentAssembly element tag")
     da_info = {}
     for da_e in da_et:
         da_xmlns, da_tag = get_xmlns_and_tag(da_e)
         if da_tag == "assemblyIdentity":
             if "assemblyIdentity" in da_info:
-                print(
-                    "[WARNING] duplicate assemblyIdentity element found in the app config file: "
+                logger.warning(
+                    "duplicate assemblyIdentity element found in the app config file: "
                     + str(config_filepath)
                 )
             da_info["assemblyIdentity"] = da_e.attrib
         if da_tag == "codeBase":
             if "codeBase" in da_info:
-                print(
-                    "[WARNING] duplicate codeBase element found in the app config file: "
+                logger.warning(
+                    "duplicate codeBase element found in the app config file: "
                     + str(config_filepath)
                 )
             da_info["codeBase"] = da_e.attrib
         if da_tag == "bindingRedirect":
             if "bindingRedirect" in da_info:
-                print(
-                    "[WARNING] duplicate bindingRedirect element found in the app config file: "
+                logger.warning(
+                    "duplicate bindingRedirect element found in the app config file: "
                     + str(config_filepath)
                 )
             da_info["bindingRedirect"] = da_e.attrib
@@ -356,7 +367,7 @@ def get_dependentAssembly_info(da_et, config_filepath=""):
 def get_assemblyBinding_info(ab_et, config_filepath=""):
     xmlns, tag = get_xmlns_and_tag(ab_et)
     if tag != "assemblyBinding":
-        print("[WARNING] element tree given was not for an assemblyBinding tag")
+        logger.warning("element tree given was not for an assemblyBinding tag")
 
     ab_info = {}
 
@@ -373,8 +384,8 @@ def get_assemblyBinding_info(ab_et, config_filepath=""):
         # privatePath: "bin;bin2\subbin;bin3"
         if ab_tag == "probing":
             if "probing" in ab_info:
-                print(
-                    "[WARNING] duplicate probing element found in the app config file: "
+                logger.warning(
+                    "duplicate probing element found in the app config file: "
                     + str(config_filepath)
                 )
             ab_info["probing"] = ab_e.attrib
@@ -406,8 +417,8 @@ def get_assemblyBinding_info(ab_et, config_filepath=""):
         # - fullName: "math,version=...,publicKeyToken=...,culture=neutral"
         if ab_tag == "qualifyAssembly":
             if "qualifyAssembly" in ab_info:
-                print(
-                    "[WARNING] duplicate qualifyAssembly element found in the app config file: "
+                logger.warning(
+                    "duplicate qualifyAssembly element found in the app config file: "
                     + str(config_filepath)
                 )
             ab_info["qualifyAssembly"] = ab_e.attrib
@@ -429,7 +440,7 @@ def get_windows_application_config_info(filename):
     binary_filepath = pathlib.Path(filename)
     config_filepath = binary_filepath.with_suffix(binary_filepath.suffix + ".config")
     if config_filepath.exists():
-        print("Found application configuration file for " + filename)
+        logger.info("Found application configuration file for " + filename)
         et = defusedxml.ElementTree.parse(config_filepath)
         app_config_info = {}
 
@@ -484,15 +495,15 @@ def get_windows_application_config_info(filename):
                 xmlns, tag = get_xmlns_and_tag(win_child)
                 if tag == "probing":
                     if "probing" in windows_info:
-                        print(
-                            "[WARNING] duplicate windows/probing element was found in the app config file: "
+                        logger.warning(
+                            "duplicate windows/probing element was found in the app config file: "
                             + str(config_filepath)
                         )
                     if "privatePath" in win_child.attrib:
                         windows_info["probing"] = {"privatePath": win_child.attrib["privatePath"]}
                     else:
-                        print(
-                            "[WARNING] windows/probing element missing privatePath attribute in app config file: "
+                        logger.warning(
+                            "windows/probing element missing privatePath attribute in app config file: "
                             + str(config_filepath)
                         )
                 if tag == "assemblyBinding":
@@ -521,8 +532,8 @@ def get_windows_application_config_info(filename):
                     # attribute is either 'true' or 'false' (string)
                     # Causes runtime to search directory given in DEVPATH env var for assemblies first (skips signature checks)
                     if "developmentMode" in runtime_info:
-                        print(
-                            "[WARNING] duplicate developmentMode element was found in the app config file: "
+                        logger.warning(
+                            "duplicate developmentMode element was found in the app config file: "
                             + str(config_filepath)
                         )
                     if "developerInstallation" in rt_child.attrib:
@@ -530,8 +541,8 @@ def get_windows_application_config_info(filename):
                             "developerInstallation": rt_child.attrib["developerInstallation"]
                         }
                     else:
-                        print(
-                            "[WARNING] developmentMode element missing developerInstallation attribute in app config file: "
+                        logger.warning(
+                            "developmentMode element missing developerInstallation attribute in app config file: "
                             + str(config_filepath)
                         )
                 if tag == "assemblyBinding":
