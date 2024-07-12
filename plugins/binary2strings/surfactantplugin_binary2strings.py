@@ -33,7 +33,7 @@ def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str
     # Performing check to see if file has been analyzed already
     existing_json = None
     output_name = None
-    for f in Path.cwd().glob("*.json"):
+    for f in Path.cwd().glob("*_additional_metadata.json"):
         flist.append((f.stem).split("_")[0])
         if shaHash == (f.stem).split("_")[0]:
             existing_json = f

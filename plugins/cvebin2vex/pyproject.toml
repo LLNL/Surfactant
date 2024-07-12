@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surfactantplugin-cvebintool2vex"
+authors = [
+    {name = "Tyler Williams", email = "tyler.williams@pnnl.gov"},
+]
+description = "Surfactant binary scanner with vex creation"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["surfactant"]
+license = {text = "MIT License"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "cve-bin-tool",
+    "surfactant",
+]
+dynamic = ["version"]
+
+[project.entry-points."surfactant"]
+"surfactantplugin_cvebintool2vex" = "surfactantplugin_cvebintool2vex"
+
+[tool.setuptools]
+py-modules=["surfactantplugin_cvebintool2vex"]
