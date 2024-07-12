@@ -256,8 +256,14 @@ def get_assemblyref_info(asmref_info):
 def insert_implmap_info(im_info, imp_modules):
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
     # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
-    dllName = im_info.ImportScope.row.Name.value if im_info.ImportScope.row.Name.value else im_info.ImportScope.row.Name.raw_data.hex()
-    methodName = im_info.ImportName.value if im_info.ImportName.value else im_info.ImportName.raw_data.hex()
+    dllName = (
+        im_info.ImportScope.row.Name.value
+        if im_info.ImportScope.row.Name.value
+        else im_info.ImportScope.row.Name.raw_data.hex()
+    )
+    methodName = (
+        im_info.ImportName.value if im_info.ImportName.value else im_info.ImportName.raw_data.hex()
+    )
     if dllName:
         for imp_module in imp_modules:
             if imp_module["Name"] == dllName:
