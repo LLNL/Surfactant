@@ -191,19 +191,20 @@ def extract_pe_info(filename):
 
 
 def add_core_assembly_info(asm_dict, asm_info):
-    asm_dict["Name"] = asm_info.Name.value if hasattr(asm_info.Name, "value") else asm_info.Name
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
+    # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
+    asm_dict["Name"] = asm_info.Name.value if asm_info.Name.value else asm_info.raw_data.hex()
     asm_dict["Culture"] = (
-        asm_info.Culture.value if hasattr(asm_info.Culture, "value") else asm_info.Culture
+        asm_info.Culture.value if asm_info.Culture.value else asm_info.Culture.raw_data.hex()
     )
     asm_dict["Version"] = (
         f"{asm_info.MajorVersion}.{asm_info.MinorVersion}.{asm_info.BuildNumber}.{asm_info.RevisionNumber}"
     )
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
+    # HeapItemBinary value is the bytes following the compressed int (indicating the length)
     asm_dict["PublicKey"] = (
-        asm_info.PublicKey.hex()
-        if hasattr(asm_info.PublicKey, "hex")
-        else (
-            asm_info.PublicKey.value if hasattr(asm_info.PublicKey, "value") else asm_info.PublicKey
-        )
+        # raw_data attribute of PublicKey includes leading byte with length of data, value attr removes it
+        asm_info.PublicKey.value.hex()
     )
 
 
@@ -234,7 +235,9 @@ def add_assembly_flags_info(asm_dict, asm_info):
 def get_assembly_info(asm_info):
     asm: Dict[str, Any] = {}
     add_core_assembly_info(asm, asm_info)
-    asm["HashAlgId"] = asm_info.HashAlgId
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/fcccdaf/src/dnfile/enums.py#L851-L863
+    # HashAlgID is a dnfile enum, based on possible .NET hash algs
+    asm["HashAlgId"] = asm_info.HashAlgId.name
     add_assembly_flags_info(asm, asm_info)
     return asm
 
@@ -242,14 +245,19 @@ def get_assembly_info(asm_info):
 def get_assemblyref_info(asmref_info):
     asmref: Dict[str, Any] = {}
     add_core_assembly_info(asmref, asmref_info)
-    asmref["HashValue"] = asmref_info.HashValue.raw_data
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
+    # HeapItemBinary value is the bytes following the compressed int (indicating the length)
+    # raw_data attribute has the compressed int indicating length included
+    asmref["HashValue"] = asmref_info.HashValue.value.hex()
     add_assembly_flags_info(asmref, asmref_info)
     return asmref
 
 
 def insert_implmap_info(im_info, imp_modules):
-    dllName = im_info.ImportScope.row.Name
-    methodName = im_info.ImportName
+    # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
+    # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
+    dllName = im_info.ImportScope.row.Name.value if im_info.ImportScope.row.Name.value else im_info.ImportScope.row.Name.raw_data.hex()
+    methodName = im_info.ImportName.value if im_info.ImportName.value else im_info.ImportName.raw_data.hex()
     if dllName:
         for imp_module in imp_modules:
             if imp_module["Name"] == dllName:
