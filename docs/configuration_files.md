@@ -1,12 +1,45 @@
 # Configuration Files
 
 There are several files for configuring different aspects of Surfactant functionality based on the subcommand used.
-This page currently describes the format for the file used to generate an SBOM, but will eventually cover other
-configuration files as well.
+This page currently describes sample configuration files, and the Surfactant settings configuration file. The sample configuration file is used to generate an SBOM for a particular software/firmware sample, and will be the most frequently written by users. The Surfactant settings configuration file is used to turn on and off various Surfactant features, including settings for controlling functionality in Surfactant plugins.
 
-## Build configuration file
+## Settings Configuration File
 
-A configuration file contains the information about the sample to gather information from. Example JSON configuration files can be found in the examples folder of this repository.
+Surfactant settings can be changed using the `surfactant config` subcommand, or by hand editing the settings configuration file (this is not the same as the JSON file used to configure settings for a particular sample that is described later).
+
+### Command Line
+
+Using `surfactant config` is very similar to basic use of `git config`. The key whose value is being accessed will be in the form `section.option` where `section` is typically a plugin name or `core`, and `option` is the option to set. As an example, a plugin that includes an entire copy of the original files as part of the generated SBOM might provide an option to specify the format.
+
+Setting the configuration option to `base64` could be done using:
+
+```bash
+surfactant config include_entire_file.format base64
+```
+
+Getting the currently set value for the option would then be done with:
+
+```bash
+surfactant config include_entire_file.format
+```
+
+### Manual Editing
+
+If desired, the settings config file can also be manually edited. The location of the file will depend on your platform.
+On Unix-like platforms (including macOS), the XDG directory specification is followed and settings will be stored in
+`${XDG_CONFIG_HOME}/surfactant/config.toml`. If the `XDG_CONFIG_HOME` environment variable is not set, the location defaults
+to `~/.config`. On Windows, the file is stored in the Roaming AppData folder at `%APPDATA%\\surfactant\\config.toml`.
+
+The file itself is a TOML file, and for the previously mentioned example plugin may look something like this:
+
+```toml
+[include_entire_file]
+format = "base64"
+```
+
+## Build sample configuration file
+
+A sample configuration file contains the information about the sample to gather information from. Example JSON sample configuration files can be found in the examples folder of this repository.
 
 **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file (Note that even on Windows, Unix style `/` directory separators should be used in paths)\
 **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
