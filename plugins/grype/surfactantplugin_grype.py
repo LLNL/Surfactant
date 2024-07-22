@@ -35,7 +35,7 @@ def run_grype(filename: str) -> object:
     to_ret = []
     # skip the header on the first line
     for line in output.split("\n")[1:]:
-        columns = [s.strip() for s in line.split('  ') if s.strip()]
+        columns = [s.strip() for s in line.split("  ") if s.strip()]
         # Skip empty lines
         if len(columns) == 0:
             continue
