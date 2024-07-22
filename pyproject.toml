@@ -39,19 +39,20 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "dataclasses_json",
-    "pyelftools",
-    "pefile",
-    "dnfile==0.15.0",
-    "olefile",
-    "defusedxml",
+    "dataclasses_json==0.6.*",
+    "pyelftools==0.31.*",
+    # This isn't semver so fix it to a specific release
+    "pefile==2023.2.7",
+    "dnfile==0.15.*",
+    "olefile==0.47.*",
+    "defusedxml==0.7.*",
     "spdx-tools==0.8.*",
     "cyclonedx-python-lib==7.5.1",
-    "pluggy",
-    "click",
+    "pluggy==1.*",
+    "click==8.*",
     "javatools>=1.6.0",
-    "loguru",
-    "flask"
+    "loguru==0.7.*",
+    "flask==3.*"
 ]
 dynamic = ["version"]
 
