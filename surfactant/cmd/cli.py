@@ -175,7 +175,7 @@ class cli_add:
         self.sbom.software.append(Software.from_dict(entry))
 
     def add_installpath(self, prefixes: tuple):
-        cleaned_prefixes = tuple([p.strip("/") for p in prefixes])
+        cleaned_prefixes = tuple([p.rstrip("/") for p in prefixes])
         containerPathPrefix, installPathPrefix = cleaned_prefixes
         for sw in self.sbom.software:
             for path in sw.containerPath:
