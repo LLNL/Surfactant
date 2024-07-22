@@ -33,10 +33,11 @@ def run_grype(filename: str) -> object:
         return None
     output = result.stdout.decode()
     to_ret = []
-    for line in output.split("\n"):
-        columns = line.split()
-        # Skip empty lines and the header
-        if len(columns) == 0 or columns[0] == "NAME":
+    # skip the header on the first line
+    for line in output.split("\n")[1:]:
+        columns = [s.strip() for s in line.split('  ') if s.strip()]
+        # Skip empty lines
+        if len(columns) == 0:
             continue
         # Assume that the "Fixed In" field is missing if there's only 5 entries
         name = columns[0]
@@ -54,6 +55,7 @@ def run_grype(filename: str) -> object:
         to_ret.append(
             {
                 "name": name,
+                "installed": installed,
                 "fixed_in": fixed_in,
                 "type": type_,
                 "vulnerability": vuln,
