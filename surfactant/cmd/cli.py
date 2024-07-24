@@ -1,11 +1,14 @@
 import hashlib
 import sys
+from pathlib import Path
 
 import click
 from loguru import logger
 
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
+from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
+from surfactant.sbomtypes._software import Software
 
 
 @click.argument("sbom", type=click.File("r"), required=True)
@@ -52,16 +55,132 @@ def find(sbom, output_format, input_format, **kwargs):
     output_writer.write_sbom(out_sbom, sys.stdout)
 
 
+@click.argument("sbom", required=True)
+@click.option(
+    "--output",
+    default=None,
+    is_flag=False,
+    help="Specifies the file to output new sbom. Default replaces the input file.",
+)
+@click.option("--file", is_flag=False, help="Adds entry for file to sbom")
+@click.option("--relationship", is_flag=False, type=str, help="Adds relationship to sbom")
+@click.option("--entry", is_flag=False, type=str, help="Adds software entry to sbom")
+@click.option(
+    "--installPath",
+    is_flag=False,
+    type=str,
+    nargs=2,
+    help="Adds new installPath by finding and replacing a containerPath prefix (1st arg) with a new prefix (2nd arg)",
+)
+@click.option(
+    "--output_format",
+    is_flag=False,
+    default="surfactant.output.cytrics_writer",
+    help="SBOM output format, options=[cytrics|csv|spdx|cyclonedx]",
+)
+@click.option(
+    "--input_format",
+    is_flag=False,
+    default="surfactant.input_readers.cytrics_reader",
+    help="SBOM input format, options=[cytrics|cyclonedx|spdx]",
+)
+@click.command("add")
+def add(sbom, output, output_format, input_format, **kwargs):
+    "CLI command to add specific entry(s) to a supplied SBOM"
+    pm = get_plugin_manager()
+    output_writer = find_io_plugin(pm, output_format, "write_sbom")
+    input_reader = find_io_plugin(pm, input_format, "read_sbom")
+    with open(Path(sbom), "r") as f:
+        in_sbom = input_reader.read_sbom(f)
+    # Remove None values
+    filtered_kwargs = dict({(k, v) for k, v in kwargs.items() if v is not None})
+    out_sbom = cli_add().execute(in_sbom, **filtered_kwargs)
+    # Write to the input file if no output specified
+    if output is None:
+        with open(Path(sbom), "w") as f:
+            output_writer.write_sbom(out_sbom, f)
+    else:
+        try:
+            with open(Path(output), "w") as f:
+                output_writer.write_sbom(out_sbom, f)
+        except OSError as e:
+            logger.error(f"Could not open file {output} in write mode - {e}")
+
+
 @click.argument("sbom", type=click.File("r"), required=True)
 @click.command("edit")
-def edit(sbom):
+def edit(sbom, output_format, input_format, **kwargs):
     "CLI command to edit specific entry(s) in a supplied SBOM"
 
 
-@click.argument("sbom", type=click.File("r"), required=True)
-@click.command("add")
-def add(sbom):
-    "CLI command to add specific entry(s) to a supplied SBOM"
+class cli_add:
+    """
+    A class that implements the surfactant cli add functionality
+
+    Attributes:
+    match_functions         A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
+    camel_case_conversions  A dictionary of string conversions from all lowercase to camelcase. Used to convert python click options to match the SBOM attribute's case
+    sbom                    An internal record of sbom entries the class adds to as it finds more matches.
+    """
+
+    camel_case_conversions: dict
+    match_functions: dict
+    sbom: SBOM
+
+    def __init__(self):
+        """Initializes the cli_add class"""
+        self.match_functions = {
+            "relationship": self.add_relationship,
+            "file": self.add_file,
+            "installPath": self.add_installpath,
+            "entry": self.add_entry,
+        }
+        self.camel_case_conversions = {
+            "uuid": "UUID",
+            "filename": "fileName",
+            "installpath": "installPath",
+            "capturetime": "captureTime",
+            "relationshipassertion": "relationshipAssertion",
+        }
+
+    def handle_kwargs(self, kwargs: dict) -> dict:
+        converted_kwargs = {}
+        for k, v in kwargs.items():  # Convert key values to camelcase where appropriate
+            key = self.camel_case_conversions[k] if k in self.camel_case_conversions else k
+            converted_kwargs[key] = v
+        return converted_kwargs
+
+    def execute(self, input_sbom: SBOM, **kwargs):
+        """Executes the main functionality of the cli_find class
+        param: input_sbom   The sbom to add entries to
+        param: kwargs:      Dictionary of key/value pairs indicating what features to match on
+        """
+        converted_kwargs = self.handle_kwargs(kwargs)
+        self.sbom = input_sbom
+
+        for key, value in converted_kwargs.items():
+            if key in self.match_functions:
+                self.match_functions[key](value)
+            else:
+                logger.warning(f"Paramter {key} is not supported")
+        return self.sbom
+
+    def add_relationship(self, value: dict) -> bool:
+        self.sbom.add_relationship(Relationship(**value))
+
+    def add_file(self, path):
+        self.sbom.software.append(Software.create_software_from_file(path))
+
+    def add_entry(self, entry):
+        self.sbom.software.append(Software.from_dict(entry))
+
+    def add_installpath(self, prefixes: tuple):
+        cleaned_prefixes = (p.rstrip("/") for p in prefixes)
+        containerPathPrefix, installPathPrefix = cleaned_prefixes
+        for sw in self.sbom.software:
+            for path in sw.containerPath:
+                if containerPathPrefix in path:
+                    sw.installPath.append(path.replace(containerPathPrefix, installPathPrefix))
 
 
 class cli_find:
@@ -69,8 +188,9 @@ class cli_find:
     A class that implements the surfactant cli find functionality
 
     Attributes:
-    match_functions     A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
-    sbom                An internal record of sbom entries the class adds to as it finds more matches.
+    match_functions         A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
+    camel_case_conversions  A dictionary of string conversions from all lowercase to camelcase. Used to convert python click options to match the SBOM attribute's case
+    sbom                    An internal record of sbom entries the class adds to as it finds more matches.
     """
 
     match_functions: dict
