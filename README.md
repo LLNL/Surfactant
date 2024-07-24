@@ -136,9 +136,9 @@ recorded_institution = "LLNL"
 
 In order to test out surfactant, you will need a sample file/folder. If you don't have one on hand, you can download and use the portable .zip file from <https://github.com/ShareX/ShareX/releases> or the Linux .tar.gz file from <https://github.com/GMLC-TDC/HELICS/releases>. Alternatively, you can pick a sample from https://lc.llnl.gov/gitlab/cir-software-assurance/unpacker-to-sbom-test-files
 
-### Build sample configuration file
+### Build configuration file for sample
 
-A sample configuration file contains the information about the sample to gather information from. Example JSON sample configuration files can be found in the examples folder of this repository.
+A configuration file for a sample contains the information about the sample to gather information from. Example JSON sample configuration files can be found in the examples folder of this repository.
 
 **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file (Note that even on Windows, Unix style `/` directory separators should be used in paths)\
 **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
