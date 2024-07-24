@@ -19,9 +19,8 @@ For systems that use `XDG_CONFIG_HOME`, if the environment variable is not set t
 Here is an example of what the configuration file might look like:
 
 ```toml
-[some_plugin]
-format = "base64"
-collect_emails = true
+[core]
+recorded_institution = "LLNL"
 ```
 
 ### Initialization

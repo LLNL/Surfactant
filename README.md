@@ -102,18 +102,18 @@ Surfactant settings can be changed using the `surfactant config` subcommand, or 
 
 ### Command Line
 
-Using `surfactant config` is very similar to basic use of `git config`. The key whose value is being accessed will be in the form `section.option` where `section` is typically a plugin name or `core`, and `option` is the option to set. As an example, a plugin that includes an entire copy of the original files as part of the generated SBOM might provide an option to specify the format.
+Using `surfactant config` is very similar to the basic use of `git config`. The key whose value is being accessed will be in the form `section.option` where `section` is typically a plugin name or `core`, and `option` is the option to set. As an example, the `core.recorded_institution` option can be used to configure the recorded institution used to identify who the creator of a generated SBOM was.
 
-Setting the configuration option to `base64` could be done using:
+Setting this option to `LLNL` could be done with the following command:
 
 ```bash
-surfactant config include_entire_file.format base64
+surfactant config core.recorded_institution LLNL
 ```
 
 Getting the currently set value for the option would then be done with:
 
 ```bash
-surfactant config include_entire_file.format
+surfactant config core.recorded_institution
 ```
 
 ### Manual Editing
@@ -126,8 +126,8 @@ to `~/.config`. On Windows, the file is stored in the Roaming AppData folder at 
 The file itself is a TOML file, and for the previously mentioned example plugin may look something like this:
 
 ```toml
-[include_entire_file]
-format = "base64"
+[core]
+recorded_institution = "LLNL"
 ```
 
 ## Usage
