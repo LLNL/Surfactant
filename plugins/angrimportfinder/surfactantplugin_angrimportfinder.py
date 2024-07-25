@@ -34,7 +34,7 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
     # Performing check to see if file has been analyzed already
     existing_json = None
     output_name = None
-    for f in Path.cwd().glob("*.json"):
+    for f in Path.cwd().glob("*_additional_metadata.json"):
         flist.append((f.stem).split("_")[0])
         if filehash == (f.stem).split("_")[0]:
             existing_json = f

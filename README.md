@@ -28,17 +28,39 @@ or decompilation.
 
 ### For Users:
 
-1. Create a virtual environment with python >= 3.8 [Optional, but recommended]
+For ease of use, we recommend using [pipx](https://github.com/pypa/pipx) since it transparently handles creating and using Python virtual environments, which helps avoid dependency conflicts with other installed Python apps. Install `pipx` by following [their installation instructions](https://github.com/pypa/pipx#install-pipx).
+
+1. Install Surfactant using `pipx install` (with python >= 3.8)
+
+```bash
+pipx install surfactant
+```
+
+2. Install plugins using `pipx inject surfactant`. As an example, this is how the fuzzy hashing plugin could be installed from a git repository (PyPI package names, local source directories, or wheel files can also be used).
+
+```bash
+pipx inject surfactant git+https://github.com/LLNL/Surfactant#subdirectory=plugins/fuzzyhashes
+```
+
+If for some reason manually managing virtual environments is desired, the following steps can be used instead:
+
+1. Create a virtual environment with python >= 3.8 and activate it [Optional, but highly recommended over a global install]
 
 ```bash
 python -m venv cytrics_venv
 source cytrics_venv/bin/activate
 ```
 
-2. Install Surfactant with pip
+2. Install Surfactant with `pip install`
 
 ```bash
 pip install surfactant
+```
+
+3. Install plugins using `pip install`. As an example, this is how the fuzzy hashing plugin could be installed from a git repository (PyPI package names, local source directories, or wheel files can also be used).
+
+```bash
+pip install git+https://github.com/LLNL/Surfactant#subdirectory=plugins/fuzzyhashes
 ```
 
 ### For Developers:
@@ -68,15 +90,55 @@ To install optional dependencies required for running pytest and pre-commit:
 pip install -e ".[test,dev]"
 ```
 
+`pip install` with the `-e` or `--editable` option can also be used to install Surfactant plugins for development.
+
+```bash
+pip install -e plugins/fuzzyhashes
+```
+
+## Settings
+
+Surfactant settings can be changed using the `surfactant config` subcommand, or by hand editing the settings configuration file (this is not the same as the JSON file used to configure settings for a particular sample that is described later).
+
+### Command Line
+
+Using `surfactant config` is very similar to the basic use of `git config`. The key whose value is being accessed will be in the form `section.option` where `section` is typically a plugin name or `core`, and `option` is the option to set. As an example, the `core.recorded_institution` option can be used to configure the recorded institution used to identify who the creator of a generated SBOM was.
+
+Setting this option to `LLNL` could be done with the following command:
+
+```bash
+surfactant config core.recorded_institution LLNL
+```
+
+Getting the currently set value for the option would then be done with:
+
+```bash
+surfactant config core.recorded_institution
+```
+
+### Manual Editing
+
+If desired, the settings config file can also be manually edited. The location of the file will depend on your platform.
+On Unix-like platforms (including macOS), the XDG directory specification is followed and settings will be stored in
+`${XDG_CONFIG_HOME}/surfactant/config.toml`. If the `XDG_CONFIG_HOME` environment variable is not set, the location defaults
+to `~/.config`. On Windows, the file is stored in the Roaming AppData folder at `%APPDATA%\\surfactant\\config.toml`.
+
+The file itself is a TOML file, and for the previously mentioned example plugin may look something like this:
+
+```toml
+[core]
+recorded_institution = "LLNL"
+```
+
 ## Usage
 
 ### Identify sample file
 
 In order to test out surfactant, you will need a sample file/folder. If you don't have one on hand, you can download and use the portable .zip file from <https://github.com/ShareX/ShareX/releases> or the Linux .tar.gz file from <https://github.com/GMLC-TDC/HELICS/releases>. Alternatively, you can pick a sample from https://lc.llnl.gov/gitlab/cir-software-assurance/unpacker-to-sbom-test-files
 
-### Build configuration file
+### Build configuration file for sample
 
-A configuration file contains the information about the sample to gather information from. Example JSON configuration files can be found in the examples folder of this repository.
+A configuration file for a sample contains the information about the sample to gather information from. Example JSON sample configuration files can be found in the examples folder of this repository.
 
 **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file (Note that even on Windows, Unix style `/` directory separators should be used in paths)\
 **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
@@ -349,7 +411,7 @@ Details on the merge command can be found in the docs page [here](./docs/basic_u
 ## Plugins
 
 Surfactant supports using plugins to add additional features. For users, installing and enabling a plugin usually just involves
-doing a `pip install` of the plugin.
+doing a `pipx inject surfactant` when using pipx or `pip install` of the plugin if manually managing virtual environments.
 
 Detailed information on configuration options for the plugin system and how to develop new plugins can be found [here](./docs/plugins.md).
 

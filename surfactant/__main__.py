@@ -12,6 +12,7 @@ import click
 from loguru import logger
 
 from surfactant.cmd.cli import add, edit, find
+from surfactant.cmd.config import config
 from surfactant.cmd.createconfig import create_config
 from surfactant.cmd.generate import sbom as generate
 from surfactant.cmd.merge import merge_command
@@ -55,6 +56,7 @@ def cli():
 # Main Commands
 main.add_command(generate)
 main.add_command(version)
+main.add_command(config)
 main.add_command(stat)
 main.add_command(merge_command)
 main.add_command(create_config)

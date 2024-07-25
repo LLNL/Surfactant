@@ -2,7 +2,9 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+import json
 import pathlib
+import tarfile
 from enum import Enum, auto
 from typing import Optional
 
@@ -17,6 +19,30 @@ class ExeType(Enum):
     JAVA_MACHOFAT = auto()
     MACHO32 = auto()
     MACHO64 = auto()
+
+
+def is_docker_archive(filepath: str) -> bool:
+    # pylint: disable=too-many-return-statements
+    with tarfile.open(filepath) as tar:
+        try:
+            manifest_info = tar.getmember("manifest.json")
+            if not manifest_info.isfile():
+                return False
+            with tar.extractfile(manifest_info) as manifest_file:
+                manifest = json.load(manifest_file)
+                # There's one entry in the list for each image
+                if not isinstance(manifest, list):
+                    return False
+                for data in manifest:
+                    # Just check if this data member exists
+                    _ = tar.getmember(data["Config"])
+                    # Now check that each of the layers exist
+                    for layer in data["Layers"]:
+                        _ = tar.getmember(layer)
+                # Everything seems to exist and be in order; this is most likely a Docker archive
+                return True
+        except KeyError:
+            return False
 
 
 @surfactant.plugin.hookimpl(tryfirst=True)
@@ -76,8 +102,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 ".tar.gz",
                 ".cab.gz",
             ]:
+                if is_docker_archive(filepath):
+                    return "DOCKER_GZIP"
                 return "GZIP"
             if magic_bytes[257:265] == b"ustar\x0000" or magic_bytes[257:265] == b"ustar  \x00":
+                if is_docker_archive(filepath):
+                    return "DOCKER_TAR"
                 return "TAR"
             if magic_bytes[:4] in [b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"]:
                 suffix = pathlib.Path(filepath).suffix.lower()
