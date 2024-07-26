@@ -10,14 +10,16 @@ from surfactant.sbomtypes import SBOM, Software
 from surfactant.filetypeid import id_magic
 
 def supports_file(filetype) -> bool:
-    if filetype == "PE":
-        return filetype == "PE"
+    # if filetype == "PE":
+    #     return filetype == "PE"
     
-    if filetype == "ELF":
-        return filetype == "ELF"
+    # if filetype == "ELF":
+    #     return filetype == "ELF"
     
-    if filetype == "MACH-O":
-        return filetype == "MACH-O"
+    # if filetype == "MACH-O":
+    #     return filetype == "MACH-O"
+
+    return identify_file_type(filetype)
 
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
