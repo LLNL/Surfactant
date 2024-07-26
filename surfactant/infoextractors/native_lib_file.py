@@ -7,8 +7,8 @@ from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.filetypeid import id_magic
 
-#START WITH CHECKING IF THEY'RE PE, ELF, OR MACH-O FILES
 def supports_file(filetype) -> bool:
     if filetype == "PE":
         return filetype == "PE"
