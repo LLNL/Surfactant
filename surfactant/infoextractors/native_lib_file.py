@@ -8,18 +8,12 @@ from loguru import logger
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 from surfactant.filetypeid import id_magic
+#from enum import Enum, auto
 
 def supports_file(filetype) -> bool:
-    # if filetype == "PE":
-    #     return filetype == "PE"
-    
-    # if filetype == "ELF":
-    #     return filetype == "ELF"
-    
-    # if filetype == "MACH-O":
-    #     return filetype == "MACH-O"
+    return filetype in ("PE", "ELF", "MACHO32", "MACHO64")
+    #return filetype in {ExeType.PE, ExeType.ELF, ExeType.MACHO32}
 
-    return identify_file_type(filetype)
 
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
@@ -29,7 +23,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 def extract_native_lib_info(filename):
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
-    native_lib_file = pathlib.Path(__file__).parent / "native_lib_patterns.cfg"
+    native_lib_file = pathlib.Path(__file__).parent / "native_lib_patterns.json"
 
     try:
         with open(native_lib_file, "r") as regex:
