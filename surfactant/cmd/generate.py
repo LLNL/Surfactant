@@ -13,8 +13,8 @@ import click
 from loguru import logger
 
 from surfactant import ContextEntry
-from surfactant.infoextractors import mach_o_file
 from surfactant.configmanager import ConfigManager
+from surfactant.infoextractors import mach_o_file
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
