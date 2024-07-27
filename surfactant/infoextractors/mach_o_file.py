@@ -17,13 +17,13 @@ except ModuleNotFoundError:
     pass
 
 import surfactant.plugin
-from surfactant.sbomtypes import SBOM, Software
 from surfactant.configmanager import ConfigManager
+from surfactant.sbomtypes import SBOM, Software
 
 __config_manager = ConfigManager()
 
-__include_bindings_exports = __config_manager.get('macho', 'include_bindings_exports', False)
-__include_signature_content = __config_manager.get('macho', 'include_signature_content', False)
+__include_bindings_exports = __config_manager.get("macho", "include_bindings_exports", False)
+__include_signature_content = __config_manager.get("macho", "include_signature_content", False)
 
 
 def supports_file(filetype) -> bool:
