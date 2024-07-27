@@ -18,10 +18,12 @@ except ModuleNotFoundError:
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.configmanager import ConfigManager
 
-# TODO: This is temporary until plug-in level configuration is added
-include_bindings_exports = False
-include_signature_content = False
+__config_manager = ConfigManager()
+
+__include_bindings_exports = __config_manager.get('macho', 'include_bindings_exports', False)
+__include_signature_content = __config_manager.get('macho', 'include_signature_content', False)
 
 
 def supports_file(filetype) -> bool:
@@ -95,7 +97,7 @@ def extract_mach_o_info(filename: str) -> object:
                 "size": signature.data_size,
                 "type": signature_type,
             }
-            if include_signature_content:
+            if __include_signature_content:
                 details["signature"]["content"] = signature.content
 
         # Extract library dependencies
@@ -119,7 +121,7 @@ def extract_mach_o_info(filename: str) -> object:
         if binary.has_dyld_environment:
             details["dyld"]["environment"] = binary.dyld_environment.value
         # https://github.com/qyang-nj/llios/blob/main/dynamic_linking/chained_fixups.md
-        if include_bindings_exports:
+        if __include_bindings_exports:
             if binary.has_dyld_info:
                 details["dyld"]["info"] = {
                     "bindings": [],
