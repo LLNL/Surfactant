@@ -12,7 +12,6 @@ from surfactant.filetypeid import id_magic
 
 def supports_file(filetype) -> bool:
     return filetype in ("PE", "ELF", "MACHO32", "MACHO64")
-    #return filetype in {ExeType.PE, ExeType.ELF, ExeType.MACHO32}
 
 
 @surfactant.plugin.hookimpl
