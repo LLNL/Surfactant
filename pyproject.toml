@@ -52,11 +52,13 @@ dependencies = [
     "click==8.*",
     "javatools>=1.6,==1.*",
     "loguru==0.7.*",
-    "flask==3.*"
+    "flask==3.*",
+    "tomlkit==0.13.*",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
+macho = ["lief==0.13.2"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]
