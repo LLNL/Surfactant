@@ -1,9 +1,10 @@
+from typing import Optional
+
 import numbat
-import pathlib
 
 import surfactant.plugin
-from typing import Optional
 from surfactant.sbomtypes import SBOM
+
 
 @surfactant.plugin.hookimpl
 def write_sbom(sbom: SBOM, outfile) -> None:
@@ -20,10 +21,11 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         for name in soft.fileName:
             db.record_method(name=name, parent_id=soft_id)
     for relation in sbom.relationships:
-        if relation.relationship == 'Uses':
+        if relation.relationship == "Uses":
             db.record_ref_usage(soft_ids[relation.xUUID], soft_ids[relation.yUUID])
     db.commit()
     db.close()
+
 
 @surfactant.plugin.hookimpl
 def short_name() -> Optional[str]:
