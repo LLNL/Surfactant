@@ -29,5 +29,7 @@ Field -> Install path
 
 Method -> File name
 
+Typedef -> Symlink
+
 ## Uninstalling
 The plugin can be uninstalled with `pip uninstall surfactantplugin-sourcetrail-db-output`. If pipx was used, it can be uninstalled with `pipx uninject surfactant surfactantplugin-sourcetrail-db-output`.
