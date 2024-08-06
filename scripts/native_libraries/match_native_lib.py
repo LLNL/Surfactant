@@ -1,16 +1,6 @@
 import json
 import re
 
-import requests
-
-
-def get_test_file():
-    url = "https://cdnjs.cloudflare.com/ajax/libs/select2/3.5.4/select2.min.js"
-    response = requests.get(url)
-    if response.status_code == 200:
-        with open("testFile.js", "w") as js:
-            js.write(response.text)
-
 
 def find_js_match(expressions: dict, filename: str) -> str:
     for name, library in expressions.items():
@@ -31,13 +21,11 @@ def find_js_match(expressions: dict, filename: str) -> str:
     return None
 
 
-get_test_file()
 
-# with open("js_library_patterns.json", "r") as f:
-#     patterns = json.load(f)
-
-with open("/Users/tenzing1/surfactant_new_venv/Surfactant/surfactant/infoextractors/js_library_patterns.json", "r") as f:
+with open("/Users/tenzing1/surfactant_new_venv/Surfactant/surfactant/infoextractors/native_lib_patterns.json", "r") as f:
     patterns = json.load(f)
 
-library_name = find_js_match(patterns, "testFile.js")
+#print("this is patterns: ", patterns)
+
+library_name = find_js_match(patterns, "7z_win32.exe")
 print(library_name)
