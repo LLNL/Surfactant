@@ -7,12 +7,13 @@ import os
 import pathlib
 import queue
 import re
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
 
 from surfactant import ContextEntry
+from surfactant.configmanager import ConfigManager
 from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
@@ -144,6 +145,20 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
         )
 
 
+def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
+    """Retrive a core config option for use as default argument value.
+
+    Args:
+        option (str): The core config option to get.
+        fallback (Optional[Any]): The fallback value if the option is not found.
+
+    Returns:
+            Any: The configuration value or 'NoneType' if the key doesn't exist.
+    """
+    config_manager = ConfigManager()
+    return config_manager.get("core", option, fallback=fallback)
+
+
 @click.command("generate")
 @click.argument(
     "config_file",
@@ -177,13 +192,13 @@ def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software])
 @click.option(
     "--recorded_institution",
     is_flag=False,
-    default="LLNL",
+    default=get_default_from_config("recorded_institution"),
     help="Name of user's institution",
 )
 @click.option(
     "--output_format",
     is_flag=False,
-    default="surfactant.output.cytrics_writer",
+    default=get_default_from_config("output_format", fallback="surfactant.output.cytrics_writer"),
     help="SBOM output format, see --list-output-formats for list of options; default is CyTRICS",
 )
 @click.option(
@@ -221,7 +236,7 @@ def sbom(
 ):
     """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
 
-    An optional INPUT_SBOM can be supplied to use as a base for subsequent operations
+    An optional INPUT_SBOM can be supplied to use as a base for subsequent operations.
     """
 
     pm = get_plugin_manager()
