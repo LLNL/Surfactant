@@ -33,10 +33,7 @@ def find_js_match(expressions: dict, filename: str) -> str:
 
 get_test_file()
 
-# with open("js_library_patterns.json", "r") as f:
-#     patterns = json.load(f)
-
-with open("/Users/tenzing1/surfactant_new_venv/Surfactant/surfactant/infoextractors/js_library_patterns.json", "r") as f:
+with open("js_library_patterns.json", "r") as f:
     patterns = json.load(f)
 
 library_name = find_js_match(patterns, "testFile.js")

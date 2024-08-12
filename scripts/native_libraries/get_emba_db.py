@@ -27,14 +27,15 @@ def parse_cfg_file(content):
         
         # Custom name pattern combined with the original name
         #name = [f"{lib_name}-\\b(lib|lib[A-Za-z0-9_\\-]+)\\.(dll|so|dylib)\\b(?:\\s*\\d+\\.\\d+(\\.\\d+)?)?"]
-        name = []
+        name_patterns = []
 
+        # Remove double quotes, if any
         filecontent = fields[3].strip('"') if len(fields) > 3 else ''
         
-        # Create a dictionary for this entry and add it to the database
+        # Create a dictionary for this entry and add it to the database-> 'grape' instead of '"grape"'
         if lib_name not in database:
             database[lib_name] = {
-                'filename': name,
+                'filename': name_patterns,
                 'filecontent': [filecontent],
             }
         else:
