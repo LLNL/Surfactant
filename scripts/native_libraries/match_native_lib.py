@@ -28,5 +28,5 @@ with open("/Users/tenzing1/surfactant_new_venv/Surfactant/surfactant/infoextract
 
 #print("this is patterns: ", patterns)
 
-library_name = find_native_match(patterns, "binutils-2.13.92.tar.bz2")
+library_name = find_native_match(patterns, "/Users/tenzing1/surfactant_new_venv/Surfactant/scripts/native_libraries/busybox-1_36_1.tar.bz2")
 print(library_name)
