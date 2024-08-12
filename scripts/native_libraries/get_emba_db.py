@@ -27,17 +27,8 @@ def parse_cfg_file(content):
         
         # Custom name pattern combined with the original name
         name = [f"{lib_name}-\\b(lib|lib[A-Za-z0-9_\\-]+)\\.(dll|so|dylib)\\b(?:\\s*\\d+\\.\\d+(\\.\\d+)?)?"]
-        
-        ### usually package names will have this pattern
-        ### ^libexample-(\d+\.\d+\.\d+)$ OR ^libexample-(\d+\.\d+\.\d+)\.(dll|so|dylib)$    
-        # May look like this:
 
-        # DLL or SO Files: libexample-1.0.0.dll, mylibrary-2.3.4.so
-        # Package Archives: example-library-1.2.3.tar.gz, my-toolkit-v1.0.0.zip
-
-        #filecontent = fields[2] if len(fields) > 2 else ''
         filecontent = fields[3].strip('"') if len(fields) > 3 else ''
-        #transformation_rule = fields[4].strip('"') if len(fields) > 4 else ''
         
         # Create a dictionary for this entry and add it to the database
         if lib_name not in database:
