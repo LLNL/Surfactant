@@ -26,7 +26,8 @@ def parse_cfg_file(content):
         lib_name = fields[0]
         
         # Custom name pattern combined with the original name
-        name = [f"{lib_name}-\\b(lib|lib[A-Za-z0-9_\\-]+)\\.(dll|so|dylib)\\b(?:\\s*\\d+\\.\\d+(\\.\\d+)?)?"]
+        #name = [f"{lib_name}-\\b(lib|lib[A-Za-z0-9_\\-]+)\\.(dll|so|dylib)\\b(?:\\s*\\d+\\.\\d+(\\.\\d+)?)?"]
+        name = []
 
         filecontent = fields[3].strip('"') if len(fields) > 3 else ''
         
@@ -35,7 +36,6 @@ def parse_cfg_file(content):
             database[lib_name] = {
                 'filename': name,
                 'filecontent': [filecontent],
-                #'transformation_rule': transformation_rule
             }
         else:
             database[lib_name]['filecontent'].append(filecontent)
