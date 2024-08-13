@@ -7,14 +7,16 @@ def find_native_match(expressions: dict, filename: str) -> str:
         if "filename" in library:
             for pattern in library["filename"]:
                 if re.search(pattern, filename):
+                    print("found")
                     return name
     try:
-        with open(filename, "r", encoding="ISO-8859-1") as jsfile:
-            contents = jsfile.read()
+        with open(filename, "r", encoding="ISO-8859-1") as nativefile:
+            contents = nativefile.read()
         for name, library in expressions.items():
             if "filecontent" in library:
                 for pattern in library["filecontent"]:
                     if re.search(pattern, contents):
+                        print("found 2")
                         return name
     except FileNotFoundError:
         print(f"File not found: {filename}")
