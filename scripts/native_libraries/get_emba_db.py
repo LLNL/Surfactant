@@ -36,11 +36,11 @@ def parse_cfg_file(content):
             if fields[1] == "strict":
                 if lib_name not in database:
                     database[lib_name] = {
-                        'filename': lib_name,
+                        'filename': [lib_name],
                         'filecontent': [],
                     }
-                else:
-                    database[lib_name]['filecontent'].append(filecontent)
+                #else:
+                #    database[lib_name]['filecontent'].append(filecontent)
             else:
                 if lib_name not in database:
                     database[lib_name] = {
@@ -56,10 +56,8 @@ def parse_cfg_file(content):
 url = "https://raw.githubusercontent.com/e-m-b-a/emba/master/config/bin_version_strings.cfg"
 json_file_path = "/Users/tenzing1/surfactant_new_venv/Surfactant/surfactant/infoextractors/native_lib_patterns.json"
 
-# Load the content from the URL
 file_content = load_database(url)
 
-# Parse the content
 parsed_data = parse_cfg_file(file_content)
 
 for key in parsed_data:
@@ -70,10 +68,11 @@ for key in parsed_data:
         if filecontent_list[i].startswith('^'):
             filecontent_list[i] = filecontent_list[i][1:]
 
-        if filecontent_list[i].endswith('$'):
-            filecontent_list[i] = filecontent_list[i][:-1]
+        if filecontent_list[i].endswith('\\$'):
+            pass
+        else:
+            if filecontent_list[i].endswith('$'):
+                filecontent_list[i] = filecontent_list[i][:-1]
 
-
-# Write the parsed data to a JSON file
 with open(json_file_path, 'w') as json_file:
     json.dump(parsed_data, json_file, indent=4)
