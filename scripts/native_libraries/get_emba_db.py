@@ -25,27 +25,36 @@ def parse_cfg_file(content):
         # Name of library
         lib_name = fields[0]
         
-        # Custom name pattern combined with the original name
-        #name = [f"{lib_name}-\\b(lib|lib[A-Za-z0-9_\\-]+)\\.(dll|so|dylib)\\b(?:\\s*\\d+\\.\\d+(\\.\\d+)?)?"]
+        # Empty filename because EMBA doesn't need filename patterns
         name_patterns = []
 
-        # Remove double quotes, if any
+        # Remove double quotes, if any-> 'grape' instead of '"grape"'
         filecontent = fields[3].strip('"') if len(fields) > 3 else ''
         
-        # Create a dictionary for this entry and add it to the database-> 'grape' instead of '"grape"'
-        if lib_name not in database:
-            database[lib_name] = {
-                'filename': name_patterns,
-                'filecontent': [filecontent],
-            }
-        else:
-            database[lib_name]['filecontent'].append(filecontent)
+        # Create a dictionary for this entry and add it to the database
+        if fields[1] == '' or fields[1] == "strict":
+            if fields[1] == "strict":
+                if lib_name not in database:
+                    database[lib_name] = {
+                        'filename': lib_name,
+                        'filecontent': [],
+                    }
+                else:
+                    database[lib_name]['filecontent'].append(filecontent)
+            else:
+                if lib_name not in database:
+                    database[lib_name] = {
+                        'filename': name_patterns,
+                        'filecontent': [filecontent],
+                    }
+                else:
+                    database[lib_name]['filecontent'].append(filecontent)
 
     return database
 
 
 url = "https://raw.githubusercontent.com/e-m-b-a/emba/master/config/bin_version_strings.cfg"
-json_file_path = "surfactant/infoextractors/native_lib_patterns.json"
+json_file_path = "/Users/tenzing1/surfactant_new_venv/Surfactant/surfactant/infoextractors/native_lib_patterns.json"
 
 # Load the content from the URL
 file_content = load_database(url)
