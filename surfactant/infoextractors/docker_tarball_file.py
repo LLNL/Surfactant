@@ -42,7 +42,7 @@ def portable_path_list(*paths: str):
 
 
 def supports_file(filename: str, filetype: str) -> bool:
-    EXPECTED_FILETYPE = "TAR"
+    EXPECTED_FILETYPE = "DOCKER_TAR"
 
     expected_members = portable_path_list(
         "index.json",
