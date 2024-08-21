@@ -28,8 +28,7 @@ __include_signature_content = __config_manager.get("macho", "include_signature_c
 
 
 def supports_file(filetype) -> bool:
-    # TODO: It could be decided whether to keep it this way or separate into cases
-    return "MACHO" in filetype  # Covers MACHOFAT, MACHOFAT64, MACHO32, MACHO64
+    return filetype in ("MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
 
 
 @surfactant.plugin.hookimpl
