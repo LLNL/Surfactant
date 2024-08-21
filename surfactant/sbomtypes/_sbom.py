@@ -79,6 +79,45 @@ class SBOM:
             self.software_lookup_by_sha256[sw.sha256] = sw
         self.software.append(sw)
 
+    def add_software_entries(
+        self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
+    ):
+        """Add software entries to the SBOM, merging into existing entries as needed.
+
+        Args:
+            entries (Optional[List[Software]]): A list of Software entries to add to the SBOM.
+            parent_entry (Optional[Software]): An optional parent software entry to add "Contains" relationships to.
+        """
+        if not entries:
+            return
+        # if a software entry already exists with a matching file hash, augment the info in the existing entry
+        for e in entries:
+            existing_sw = self.find_software(e.sha256)
+            if Software.check_for_hash_collision(existing_sw, e):
+                logger.warning(
+                    f"Hash collision between {existing_sw.name} and {e.name}; unexpected results may occur"
+                )
+            if not existing_sw:
+                self.add_software(e)
+            else:
+                existing_uuid, entry_uuid = existing_sw.merge(e)
+                # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs)
+                for rel in self.relationships:
+                    if rel.xUUID == entry_uuid:
+                        rel.xUUID = existing_uuid
+                    if rel.yUUID == entry_uuid:
+                        rel.yUUID = existing_uuid
+            # if a parent/container was specified for the file, add the new entry as a "Contains" relationship
+            if parent_entry:
+                parent_uuid = parent_entry.UUID
+                child_uuid = existing_uuid if existing_sw else e.UUID
+                # avoid duplicate relationships if the software entry already existed
+                if not existing_sw or not self.find_relationship(
+                    parent_uuid, child_uuid, "Contains"
+                ):
+                    self.create_relationship(parent_uuid, child_uuid, "Contains")
+            # TODO a pass later on to check for and remove duplicate relationships should be added just in case
+
     # pylint: disable=too-many-arguments
     def create_software(
         self,
