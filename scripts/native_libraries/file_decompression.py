@@ -12,12 +12,6 @@ import os
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
-# Check if it's a tar file or zip file
-# if tar, check if it's just .tar or a compressed tar
-# extract accordingly
-
-# if zip: use zipfile module 
-
 def check_compression_type(filename):
     mode = ''
 
@@ -36,34 +30,36 @@ def check_compression_type(filename):
         return
     
     if mode:
-        decompress_file(filename, mode)
+        decompress_tar_file(filename, mode)
 
-    if filename.endswith('.zip'):
-        decompress_zip_file(filename)
-
-
-def create_temp_dir(filename):
-    with tempfile.TemporaryDirectory() as temp:
-        pass
+def create_temp_dir():
+    # Create a temporary directory
+    temp_dir = tempfile.mkdtemp()
+    #with tempfile.TemporaryDirectory() as temp:
+    return temp_dir
 
 
 def decompress_zip_file(filename):
     # use temp dir
     pass
     
-def decompress_file(filename, compression_type):
+def decompress_tar_file(filename, compression_type):
     # use temp dir
+    temp_dir = create_temp_dir()
     with tarfile.open(filename, compression_type) as tar:
-        tar.exrtactall()
+        # insert extract path
+        tar.exrtactall(path=temp_dir)
+        # return extracted file to native_lib_file ? so the func should return this dir
 
 def open_tar_file(filename):
     #use temp dir
+    temp_dir = create_temp_dir()
     try:
         if tar_file():
             contents = {}
             with tarfile.open(filename, 'r') as tar:
                 print("Opened tarfile")
-                tar.extractall(path="scripts/native_libraries/new_dir")
+                tar.extractall(path=temp_dir)
                 print("All files extracted")
                                
     except FileNotFoundError:
