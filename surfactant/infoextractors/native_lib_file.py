@@ -8,7 +8,6 @@ from loguru import logger
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 from surfactant.filetypeid import id_magic
-#from enum import Enum, auto
 
 def check_compression(filename):
     if is_tar_file() or is_zip_file:
@@ -22,6 +21,7 @@ def supports_file(filetype) -> bool:
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
     if not supports_file(filetype):
+        #call check_compression() here?
         return None
     return extract_native_lib_info(filename)
 
