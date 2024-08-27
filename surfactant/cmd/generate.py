@@ -228,7 +228,7 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 @click.option(
     "--include_all_files",
     is_flag=True,
-    default=False,
+    default=get_default_from_config("include_all_files", fallback=False),
     required=False,
     help="Include all files in the SBOM, not just those recognized by Surfactant",
 )
