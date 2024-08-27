@@ -54,7 +54,7 @@ def get_software_entry(
         filetype=filetype,
         context=context,
         children=sw_children,
-        include_all_files=include_all_files
+        include_all_files=include_all_files,
     )
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
@@ -230,7 +230,7 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
     is_flag=True,
     default=False,
     required=False,
-    help="Include all files in the SBOM, not just those recognized by Surfactant"
+    help="Include all files in the SBOM, not just those recognized by Surfactant",
 )
 def sbom(
     config_file,
@@ -415,7 +415,10 @@ def sbom(
                         else:
                             install_path = None
 
-                        if ftype := pm.hook.identify_file_type(filepath=filepath) or include_all_files:
+                        if (
+                            ftype := pm.hook.identify_file_type(filepath=filepath)
+                            or include_all_files
+                        ):
                             try:
                                 sw_parent, sw_children = get_software_entry(
                                     context,
@@ -427,7 +430,7 @@ def sbom(
                                     container_uuid=parent_uuid,
                                     install_path=install_path,
                                     user_institution_name=recorded_institution,
-                                    include_all_files=include_all_files or entry.includeAllFiles
+                                    include_all_files=include_all_files or entry.includeAllFiles,
                                 )
                             except Exception as e:
                                 raise RuntimeError(f"Unable to process: {filepath}") from e
