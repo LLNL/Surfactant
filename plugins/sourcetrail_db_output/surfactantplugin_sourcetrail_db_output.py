@@ -15,6 +15,8 @@ def write_sbom(sbom: SBOM, outfile) -> None:
             soft_id = db.record_class(name=soft.name)
         elif len(soft.fileName) > 0:
             soft_id = db.record_class(name=soft.fileName[0])
+        else:
+            continue
         soft_ids[soft.UUID] = soft_id
         for path in soft.installPath:
             db.record_field(name=path, parent_id=soft_id)
