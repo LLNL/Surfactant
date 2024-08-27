@@ -404,26 +404,26 @@ def sbom(
                             install_path = epath + "/"
                         else:
                             install_path = None
+                        if os.path.isfile(filepath):
+                            if ftype := pm.hook.identify_file_type(filepath=filepath):
+                                try:
+                                    sw_parent, sw_children = get_software_entry(
+                                        context,
+                                        pm,
+                                        new_sbom,
+                                        filepath,
+                                        filetype=ftype,
+                                        root_path=epath,
+                                        container_uuid=parent_uuid,
+                                        install_path=install_path,
+                                        user_institution_name=recorded_institution,
+                                    )
+                                except Exception as e:
+                                    raise RuntimeError(f"Unable to process: {filepath}") from e
 
-                        if ftype := pm.hook.identify_file_type(filepath=filepath):
-                            try:
-                                sw_parent, sw_children = get_software_entry(
-                                    context,
-                                    pm,
-                                    new_sbom,
-                                    filepath,
-                                    filetype=ftype,
-                                    root_path=epath,
-                                    container_uuid=parent_uuid,
-                                    install_path=install_path,
-                                    user_institution_name=recorded_institution,
-                                )
-                            except Exception as e:
-                                raise RuntimeError(f"Unable to process: {filepath}") from e
-
-                            entries.append(sw_parent)
-                            for sw in sw_children:
-                                entries.append(sw)
+                                entries.append(sw_parent)
+                                for sw in sw_children:
+                                    entries.append(sw)
 
                     if entries:
                         # if a software entry already exists with a matching file hash, augment the info in the existing entry
