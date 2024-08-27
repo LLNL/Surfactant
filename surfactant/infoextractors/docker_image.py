@@ -5,8 +5,8 @@
 import gzip
 import json
 import subprocess
-import tempfile
 import tarfile
+import tempfile
 from typing import IO, Any, Union
 
 from loguru import logger
@@ -14,7 +14,6 @@ from loguru import logger
 ### ===============================
 ### Utility Predicates
 ### ===============================
-
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
@@ -30,35 +29,39 @@ def is_docker_scout_installed():
     except FileNotFoundError:
         return False
 
+
 def is_oci_archive(filename: str) -> bool:
-    """Return True if given file is a tarball 
+    """Return True if given file is a tarball
     roughly matching the OCI specification"""
 
-    with tarfile.open(filename) as this_tarfile: # oci-layout only path ensured
-       return "oci-layout" in this_tarfile.getmembers()
+    with tarfile.open(filename) as this_tarfile:  # oci-layout only path ensured
+        return "oci-layout" in this_tarfile.getmembers()
+
 
 def supports_file(filetype: str) -> bool:
     return filetype in ("DOCKER_TAR", "DOCKER_GZIP")
+
 
 ### ===============================
 ### Archive Utilities
 ### ===============================
 def gunzip_tarball(filename: str) -> object:
-    """ Unzip a gzipped tarball to a temporary file
-    and return the name of the corresponding file. """
+    """Unzip a gzipped tarball to a temporary file
+    and return the name of the corresponding file."""
 
     with open(filename, "rb") as gzip_in:
         gzip_data = gzip_in.read()
     with tempfile.NamedTemporaryFile() as gzip_out:
         gzip_out.write(gzip.decompress(gzip_data))
         return gzip_out.name
-    
+
+
 ### ===============================
 ### Extraction Procedures
 ### ===============================
 def extract_info_via_docker_scout(filename: str) -> object:
-    """ Dispatch to `docker-scout` subprocess,
-        returning captured SPDX output""" 
+    """Dispatch to `docker-scout` subprocess,
+    returning captured SPDX output"""
     result = subprocess.run(
         ["docker", "scout", "sbom", "--format", "spdx", f"fs://{filename}"],
         capture_output=True,
@@ -70,16 +73,16 @@ def extract_info_via_docker_scout(filename: str) -> object:
     spdx_out = json.loads(result.stdout)
     return spdx_out
 
+
 def extract_configs(filename: str):
     """Return image configuration objects mapped by their paths."""
+
     def get_manifest_file_from_tarball(tarball: tarfile.TarFile) -> IO[bytes] | None:
         return tarball.extractfile(
             {tarinfo.name: tarinfo for tarinfo in tarball.getmembers()}["manifest.json"]
         )
 
-    def get_config_file_from_tarball(
-        tarball: tarfile.TarFile, path: str
-    ) -> Union[IO[bytes], None]:
+    def get_config_file_from_tarball(tarball: tarfile.TarFile, path: str) -> Union[IO[bytes], None]:
         return tarball.extractfile(
             {tarinfo.name: tarinfo for tarinfo in tarball.getmembers()}[path]
         )
@@ -92,7 +95,7 @@ def extract_configs(filename: str):
     def get_repo_tags_from_manifest(manifest: list[dict[str, Any]]) -> list[str]:
         path = "RepoTags"
         return [entry[path] for entry in manifest]
-    
+
     image_configs = []
     with tarfile.open(filename) as tarball:
         # we know the manifest file is present or we wouldn't be this far
@@ -104,19 +107,21 @@ def extract_configs(filename: str):
             image_configs.append(config)
     return image_configs
 
+
 ### =================================
 ### Hook Implementation
 ### =================================
+
 
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
     if not supports_file(filetype):
         return None
-    
+
     ## Conditionally extract tarball if gzipped
     filename = gunzip_tarball(filename) if filetype == "DOCKER_GZIP" else filename
-    
-    ## Establish metadata object 
+
+    ## Establish metadata object
     metadata = {}
 
     ## Extract config files
