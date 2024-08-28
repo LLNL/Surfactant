@@ -36,6 +36,8 @@ For ease of use, we recommend using [pipx](https://github.com/pypa/pipx) since i
 pipx install surfactant
 ```
 
+> Note: Mach-O file support requires installing Surfactant with the `lief` optional dependencies (e.g. `pipx install surfactant[lief]`).
+
 2. Install plugins using `pipx inject surfactant`. As an example, this is how the fuzzy hashing plugin could be installed from a git repository (PyPI package names, local source directories, or wheel files can also be used).
 
 ```bash
@@ -98,7 +100,7 @@ pip install -e plugins/fuzzyhashes
 
 ## Settings
 
-Surfactant settings can be changed using the `surfactant config` subcommand, or by hand editing the settings configuration file (this is not the same as the JSON file used to configure settings for a particular sample that is described later).
+Surfactant settings can be changed using the `surfactant config` subcommand, or by hand editing the settings configuration file (this is not the same as the JSON file used to configure settings for a particular sample that is described later). The [settings documentation page](https://surfactant.readthedocs.io/en/latest/settings.html) has a list of available options that are built-into Surfactant.
 
 ### Command Line
 

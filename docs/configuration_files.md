@@ -5,7 +5,7 @@ This page currently describes sample configuration files, and the Surfactant set
 
 ## Settings Configuration File
 
-Surfactant settings can be changed using the `surfactant config` subcommand, or by hand editing the settings configuration file (this is not the same as the JSON file used to configure settings for a particular sample that is described later).
+Surfactant settings can be changed using the `surfactant config` subcommand, or by hand editing the settings configuration file (this is not the same as the JSON file used to configure settings for a particular sample that is described later). See the [settings page](settings.md) for a list of available config settings to control functionality that comes with Surfactant.
 
 ### Command Line
 
