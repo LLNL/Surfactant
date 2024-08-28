@@ -50,6 +50,8 @@ def extract_js_info(filename):
         js_info["jsLibraries"] = libs
     except FileNotFoundError:
         logger.warning(f"File not found: {filename}")
+    except UnicodeDecodeError:
+        logger.warning(f"File does not appear to be UTF-8: {filename}")
     return js_info
 
 
