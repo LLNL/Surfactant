@@ -2,6 +2,7 @@
 
 This page details the non-plugin settings available within the Surfactant configuration file.
 Each subsection should be prepended to the option name to form the complete option, e.g., `core.output_format`.
+See the [this page](configuration_files.md#settings-configuration-file) for details on how to change settings using `surfactant config`.
 
 ## core
 
@@ -12,7 +13,7 @@ Each subsection should be prepended to the option name to form the complete opti
 
 ## macho
 
-> Note: Mach-O file support requires installing Surfactant with the `lief` optional dependencies (e.g. `pipx install surfactant[lief]`).
+> Note: Mach-O file support requires installing Surfactant with the `lief` optional dependency (e.g. `pipx install surfactant[lief]`).
 
 - include_bindings_exports
     - Include bindings/exports information for Mach-O files.

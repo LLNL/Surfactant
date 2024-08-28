@@ -17,7 +17,7 @@ For ease of use, we recommend using [pipx](https://github.com/pypa/pipx) since i
 pipx install surfactant
 ```
 
-> Note: Mach-O file support requires installing Surfactant with the `lief` optional dependencies (e.g. `pipx install surfactant[lief]`).
+> Note: Mach-O file support requires installing Surfactant with the `lief` optional dependency (e.g. `pipx install surfactant[lief]`).
 
 2. Install plugins using `pipx inject surfactant`. As an example, this is how the fuzzy hashing plugin could be installed from a git repository (PyPI package names, local source directories, or wheel files can also be used).
 
