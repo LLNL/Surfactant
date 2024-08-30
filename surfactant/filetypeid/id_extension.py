@@ -25,6 +25,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
         ".html": "HTML",
         ".htm": "HTML",
         ".php": "PHP",
+        ".bat": "BATCH",
     }
     _interpreters = {
         b"sh": "SHELL",
