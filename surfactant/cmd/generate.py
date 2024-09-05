@@ -414,6 +414,22 @@ def sbom(
                             install_path = epath + "/"
                         else:
                             install_path = None
+                        if os.path.isfile(filepath):
+                            if ftype := pm.hook.identify_file_type(filepath=filepath):
+                                try:
+                                    sw_parent, sw_children = get_software_entry(
+                                        context,
+                                        pm,
+                                        new_sbom,
+                                        filepath,
+                                        filetype=ftype,
+                                        root_path=epath,
+                                        container_uuid=parent_uuid,
+                                        install_path=install_path,
+                                        user_institution_name=recorded_institution,
+                                    )
+                                except Exception as e:
+                                    raise RuntimeError(f"Unable to process: {filepath}") from e
 
                         if (
                             ftype := pm.hook.identify_file_type(filepath=filepath)

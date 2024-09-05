@@ -202,10 +202,11 @@ def add_core_assembly_info(asm_dict, asm_info):
     )
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
     # HeapItemBinary value is the bytes following the compressed int (indicating the length)
-    asm_dict["PublicKey"] = (
-        # raw_data attribute of PublicKey includes leading byte with length of data, value attr removes it
-        asm_info.PublicKey.value.hex()
-    )
+    if asm_info.PublicKey is not None:
+        asm_dict["PublicKey"] = (
+            # raw_data attribute of PublicKey includes leading byte with length of data, value attr removes it
+            asm_info.PublicKey.value.hex()
+        )
 
 
 def add_assembly_flags_info(asm_dict, asm_info):
