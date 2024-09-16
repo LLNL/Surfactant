@@ -11,3 +11,4 @@ class ContextEntry:
     extractPaths: List[str]
     archive: Optional[str] = None
     installPrefix: Optional[str] = None
+    includeAllFiles: Optional[bool] = None
