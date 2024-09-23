@@ -1,5 +1,6 @@
 import os
 import platform
+from json.decoder import JSONDecodeError
 from pathlib import Path
 
 from loguru import logger
@@ -12,10 +13,13 @@ class Cli:
     A base class that implements the surfactant cli basic functionality
 
     Attributes:
-    match_functions         A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
-    camel_case_conversions  A dictionary of string conversions from all lowercase to camelcase. Used to convert python click options to match the SBOM attribute's case
     sbom                    An internal record of sbom entries the class adds to as it finds more matches.
     subset                  An internal record of the subset of sbom entries from the last cli find call.
+    sbom_filename:          A string value of the filename where the loaded sbom is stored.
+    subset_filename:        A string value of the filename where the current subset result from the "cli find" command is stored.
+    match_functions         A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
+    camel_case_conversions  A dictionary of string conversions from all lowercase to camelcase. Used to convert python click options to match the SBOM attribute's case
+
     """
 
     sbom: SBOM = None
@@ -45,16 +49,25 @@ class Cli:
         data_dir = data_dir / "surfactant"
         return data_dir
 
-    def serialize(self, sbom: SBOM) -> bool:
-        """Serializes the internal sbom and subset sbom (if it exists) and saves them to the filesystem"""
-        try:
+    def serialize(self, sbom: SBOM) -> str:
+        """Serializes a given sbom.
+
+        Returns:
+            str: A string representation of the serialized SBOM.
+        """
+        if isinstance(sbom, SBOM):
             return sbom.to_json(indent=2).encode("utf-8")
-        except Exception as e:
-            logger.error(f"Could not serialize sbom - {e}")
+        logger.error(f"Could not serialize sbom - {type(sbom)} is not of type SBOM")
+        return None
 
     def deserialize(self, data) -> SBOM:
-        """Deserializes the sbom and subset sbom (if it exists) and saves them in the class instance"""
+        """Deserializes the given data and saves them in the SBOM class instance
+
+        Returns:
+            SBOM: A SBOM instance.
+        """
         try:
             return SBOM.from_json(data.decode("utf-8"))
-        except Exception as e:
+        except JSONDecodeError as e:
             logger.error(f"Could not deserialize sbom from given data - {e}")
+            return None
