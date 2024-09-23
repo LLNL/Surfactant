@@ -5,6 +5,12 @@ from dataclasses import Field
 from loguru import logger
 
 from surfactant.configmanager import ConfigManager
+from pathlib import Path
+import json
+import os
+import platform
+from loguru import logger
+
 from surfactant.sbomtypes._sbom import SBOM
 
 
@@ -28,7 +34,7 @@ class Cli:
     subset_filename: str
     match_functions: dict
     camel_case_conversions: dict
-
+    
     def __init__(self):
         self.sbom_filename = "sbom_cli"
         self.subset_filename = "subset_cli"

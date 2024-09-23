@@ -1,8 +1,8 @@
+from loguru import logger
 from pathlib import Path
 
-from surfactant.cmd.cli_commands.cli_base import Cli
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
-
+from surfactant.cmd.cli_commands.cli_base import Cli
 
 class Save(Cli):
     """
