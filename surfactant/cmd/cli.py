@@ -141,7 +141,6 @@ def handle_cli_add(sbom, output, output_format, input_format, **kwargs):
 @click.command("edit")
 def handle_cli_edit(sbom, output_format, input_format, **kwargs):
     "CLI command to edit specific entry(s) in a supplied SBOM"
-    pass
 
 
 @click.argument("outfile", type=click.File("w"), required=True)
