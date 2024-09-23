@@ -6,7 +6,4 @@
 from .cli_add import Load
 from .cli_find import Save
 
-__all__ = [
-    "Load",
-    "Save"
-]
+__all__ = ["Load", "Save"]
