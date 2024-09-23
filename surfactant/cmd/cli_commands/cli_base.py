@@ -1,7 +1,7 @@
-from pathlib import Path
-import json
 import os
 import platform
+from pathlib import Path
+
 from loguru import logger
 
 from surfactant.sbomtypes._sbom import SBOM
@@ -17,13 +17,14 @@ class Cli:
     sbom                    An internal record of sbom entries the class adds to as it finds more matches.
     subset                  An internal record of the subset of sbom entries from the last cli find call.
     """
+
     sbom: SBOM = None
     subset: SBOM = None
     sbom_filename: str
     subset_filename: str
     match_functions: dict
     camel_case_conversions: dict
-    
+
     def __init__(self):
         self.sbom_filename = "sbom_cli"
         self.subset_filename = "subset_cli"
@@ -42,22 +43,18 @@ class Cli:
         else:
             data_dir = Path(os.getenv("XDG_DATA_HOME", os.path.expanduser("~/.local/share")))
         data_dir = data_dir / "surfactant"
-        return data_dir 
-
+        return data_dir
 
     def serialize(self, sbom: SBOM) -> bool:
-        """Serializes the internal sbom and subset sbom (if it exists) and saves them to the filesystem
-        """
-        try:    
+        """Serializes the internal sbom and subset sbom (if it exists) and saves them to the filesystem"""
+        try:
             return sbom.to_json(indent=2).encode("utf-8")
         except Exception as e:
             logger.error(f"Could not serialize sbom - {e}")
 
     def deserialize(self, data) -> SBOM:
-        """Deserializes the sbom and subset sbom (if it exists) and saves them in the class instance
-        """ 
-        try:   
+        """Deserializes the sbom and subset sbom (if it exists) and saves them in the class instance"""
+        try:
             return SBOM.from_json(data.decode("utf-8"))
         except Exception as e:
             logger.error(f"Could not deserialize sbom from given data - {e}")
-

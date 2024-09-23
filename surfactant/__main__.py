@@ -11,7 +11,13 @@ import sys
 import click
 from loguru import logger
 
-from surfactant.cmd.cli import handle_cli_add, handle_cli_edit, handle_cli_find, handle_cli_load, handle_cli_save
+from surfactant.cmd.cli import (
+    handle_cli_add,
+    handle_cli_edit,
+    handle_cli_find,
+    handle_cli_load,
+    handle_cli_save,
+)
 from surfactant.cmd.config import config
 from surfactant.cmd.config_tui import config_tui
 from surfactant.cmd.createconfig import create_config
