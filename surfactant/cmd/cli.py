@@ -5,8 +5,7 @@ from pathlib import Path
 import click
 from loguru import logger
 
-# from surfactant.cmd.cli_commands.cli_load import Load
-from surfactant.cmd.cli_commands import *
+from surfactant.cmd.cli_commands import Load, Save
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
@@ -126,7 +125,6 @@ def handle_cli_add(sbom, output, output_format, input_format, **kwargs):
 @click.command("edit")
 def handle_cli_edit(sbom, output_format, input_format, **kwargs):
     "CLI command to edit specific entry(s) in a supplied SBOM"
-    pass
 
 
 @click.argument("outfile", type=click.File("w"), required=True)
