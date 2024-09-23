@@ -84,7 +84,7 @@ def handle_cli_find(sbom, output_format, input_format, **kwargs):
 
     # Remove None values
     filtered_kwargs = dict({(k, v) for k, v in kwargs.items() if v is not None})
-    out_sbom = find().execute(in_sbom, **filtered_kwargs)
+    out_sbom = cli_find().execute(in_sbom, **filtered_kwargs)
     if not out_sbom.software:
         logger.warning("No software matches found with given parameters.")
     output_writer.write_sbom(out_sbom, sys.stdout)
@@ -129,7 +129,7 @@ def handle_cli_add(sbom, output, output_format, input_format, **kwargs):
         in_sbom = input_reader.read_sbom(f)
     # Remove None values
     filtered_kwargs = dict({(k, v) for k, v in kwargs.items() if v is not None})
-    out_sbom = add().execute(in_sbom, **filtered_kwargs)
+    out_sbom = cli_add().execute(in_sbom, **filtered_kwargs)
     # Write to the input file if no output specified
     if output is None:
         with open(Path(sbom), "w") as f:
