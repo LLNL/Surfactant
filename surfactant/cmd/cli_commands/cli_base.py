@@ -30,7 +30,7 @@ class Cli:
     subset_filename: str
     match_functions: dict
     camel_case_conversions: dict
-
+    
     def __init__(self):
         self.sbom_filename = "sbom_cli"
         self.subset_filename = "subset_cli"

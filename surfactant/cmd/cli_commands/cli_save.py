@@ -11,7 +11,6 @@ class Save(Cli):
     Attributes:
         output_format (str): The format of the sbom to be outputted
     """
-
     def __init__(self, *args, output_format, **kwargs):
         """Executes the load class constructor
 
