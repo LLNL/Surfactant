@@ -11,7 +11,7 @@ import sys
 import click
 from loguru import logger
 
-from surfactant.cmd.cli import add, edit, find
+from surfactant.cmd.cli import handle_cli_add, handle_cli_edit, handle_cli_find, handle_cli_load, handle_cli_save
 from surfactant.cmd.config import config
 from surfactant.cmd.config_tui import config_tui
 from surfactant.cmd.createconfig import create_config
@@ -79,9 +79,11 @@ main.add_command(plugin)
 main.add_command(config_tui)
 
 # CLI Subcommands
-cli.add_command(find)
-cli.add_command(edit)
-cli.add_command(add)
+cli.add_command(handle_cli_find)
+cli.add_command(handle_cli_edit)
+cli.add_command(handle_cli_add)
+cli.add_command(handle_cli_load)
+cli.add_command(handle_cli_save)
 
 # Plugin Subcommands
 plugin.add_command(plugin_list_cmd)
