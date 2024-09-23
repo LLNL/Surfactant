@@ -1,14 +1,15 @@
-from loguru import logger
 from pathlib import Path
 
-from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.cmd.cli_commands.cli_base import Cli
+from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
+
 
 class Load(Cli):
     """
     A class that implements the surfactant cli load functionality
 
     """
+
     def __init__(self, *args, input_format, **kwargs):
         """Executes the load class constructor
 
