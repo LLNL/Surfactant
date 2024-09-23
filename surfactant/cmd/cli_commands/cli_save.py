@@ -9,7 +9,6 @@ class Save(Cli):
     A class that implements the surfactant cli save functionality
 
     """
-
     def __init__(self, *args, output_format, **kwargs):
         """Executes the load class constructor
 

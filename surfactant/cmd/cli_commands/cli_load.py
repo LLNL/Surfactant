@@ -9,7 +9,6 @@ class Load(Cli):
     A class that implements the surfactant cli load functionality
 
     """
-
     def __init__(self, *args, input_format, **kwargs):
         """Executes the load class constructor
 

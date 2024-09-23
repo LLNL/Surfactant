@@ -1,9 +1,12 @@
 import hashlib
 import sys
+import os
+import platform
 from pathlib import Path
 
 import click
 from loguru import logger
+import json
 
 from surfactant.cmd.cli_commands import Load, Save
 from surfactant.configmanager import ConfigManager
@@ -11,6 +14,21 @@ from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
 from surfactant.sbomtypes._software import Software
+# from surfactant.cmd.cli_commands.cli_load import Load
+from surfactant.cmd.cli_commands import *
+
+
+@click.argument("sbom", type=click.File("r"), required=True)
+@click.option(
+    "--input_format",
+    is_flag=False,
+    default="surfactant.input_readers.cytrics_reader",
+    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
+)
+@click.command("load")
+def handle_cli_load(sbom, input_format):
+    "CLI command to load supplied SBOM into cli"
+    Load(input_format=input_format).execute(sbom)
 
 
 @click.argument("sbom", type=click.File("r"), required=True)
@@ -66,7 +84,7 @@ def handle_cli_find(sbom, output_format, input_format, **kwargs):
 
     # Remove None values
     filtered_kwargs = dict({(k, v) for k, v in kwargs.items() if v is not None})
-    out_sbom = cli_find().execute(in_sbom, **filtered_kwargs)
+    out_sbom = find().execute(in_sbom, **filtered_kwargs)
     if not out_sbom.software:
         logger.warning("No software matches found with given parameters.")
     output_writer.write_sbom(out_sbom, sys.stdout)
@@ -111,7 +129,7 @@ def handle_cli_add(sbom, output, output_format, input_format, **kwargs):
         in_sbom = input_reader.read_sbom(f)
     # Remove None values
     filtered_kwargs = dict({(k, v) for k, v in kwargs.items() if v is not None})
-    out_sbom = cli_add().execute(in_sbom, **filtered_kwargs)
+    out_sbom = add().execute(in_sbom, **filtered_kwargs)
     # Write to the input file if no output specified
     if output is None:
         with open(Path(sbom), "w") as f:
@@ -128,6 +146,7 @@ def handle_cli_add(sbom, output, output_format, input_format, **kwargs):
 @click.command("edit")
 def handle_cli_edit(sbom, output_format, input_format, **kwargs):
     "CLI command to edit specific entry(s) in a supplied SBOM"
+    pass
 
 
 @click.argument("outfile", type=click.File("w"), required=True)
@@ -143,7 +162,6 @@ def handle_cli_edit(sbom, output_format, input_format, **kwargs):
 def handle_cli_save(outfile, output_format):
     "CLI command to save SBOM to a user specified file"
     Save(output_format=output_format).execute(outfile)
-
 
 class cli_add:
     """
