@@ -431,10 +431,16 @@ def sbom(
                                 except Exception as e:
                                     raise RuntimeError(f"Unable to process: {filepath}") from e
 
+                        if not entry.includeFileExts:
+                            entry.includeFileExts = []
+                        if not entry.excludeFileExts:
+                            entry.excludeFileExts = []
+
                         if (
                             ftype := pm.hook.identify_file_type(filepath=filepath)
                             or include_all_files
-                        ):
+                            or os.path.splitext(filepath)[1] in entry.includeFileExts
+                        ) and os.path.splitext(filepath)[1] not in entry.excludeFileExts:
                             try:
                                 sw_parent, sw_children = get_software_entry(
                                     context,
