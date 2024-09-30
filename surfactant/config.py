@@ -12,3 +12,5 @@ class ContextEntry:
     archive: Optional[str] = None
     installPrefix: Optional[str] = None
     includeAllFiles: Optional[bool] = None
+    includeFileExts: Optional[List[str]] = None
+    excludeFileExts: Optional[List[str]] = None
