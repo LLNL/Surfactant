@@ -37,7 +37,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     if not supports_file(filetype):
         return None
     if "lief" not in modules:
-        logger.warning("LIEF not installed - MACHO file Skipped.")
+        logger.warning("LIEF not installed - Skipped extracting Mach-O file info.")
         return None
     return extract_mach_o_info(filename)
 
