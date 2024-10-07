@@ -4,9 +4,10 @@
 
 from enum import IntEnum
 
-CPU_ARCH_MASK = 0xff000000 # Mask for architecture bits
-CPU_ARCH_ABI64 = 0x01000000 # 64 bit ABI
-CPU_ARCH_ABI64_32 = 0x02000000 # ILP32 ABI on 64-bit hardware
+CPU_ARCH_MASK = 0xFF000000  # Mask for architecture bits
+CPU_ARCH_ABI64 = 0x01000000  # 64 bit ABI
+CPU_ARCH_ABI64_32 = 0x02000000  # ILP32 ABI on 64-bit hardware
+
 
 # original #define for cpu types in MacOS SDK start with CPU_TYPE_
 # original #define for cpu sybtypes in MacOS SDK start with CPU_SUBTYPE_
@@ -15,10 +16,10 @@ class CPU_Type(IntEnum):
     VAX = 1
     MC680x0 = 6
     X86 = 7
-    I386 = X86 # compatibility
+    I386 = X86  # compatibility
     X86_64 = X86 | CPU_ARCH_ABI64
     MIPS = 8
-    MC98000 = 10 # Old Motorola PowerPC
+    MC98000 = 10  # Old Motorola PowerPC
     HPPA = 11
     ARM = 12
     ARM64 = ARM | CPU_ARCH_ABI64
@@ -30,9 +31,11 @@ class CPU_Type(IntEnum):
     POWERPC = 18
     POWERPC64 = POWERPC | CPU_ARCH_ABI64
 
-CPU_SUBTYPE_MASK = 0xff000000 # Mask for feature flags
-CPU_SUBTYPE_LIB64 = 0x80000000 # 64 bit libraries
-CPU_SUBTYPE_PTRAUTH_ABI = 0x80000000 # pointer authentication with versioned ABI
+
+CPU_SUBTYPE_MASK = 0xFF000000  # Mask for feature flags
+CPU_SUBTYPE_LIB64 = 0x80000000  # 64 bit libraries
+CPU_SUBTYPE_PTRAUTH_ABI = 0x80000000  # pointer authentication with versioned ABI
+
 
 class cpuSubtype_VAX(IntEnum):
     VAX_ALL = 0
@@ -49,20 +52,25 @@ class cpuSubtype_VAX(IntEnum):
     VAX8800 = 11
     UVAXIII = 12
 
+
 class cpuSubtype_MC680x0(IntEnum):
     MC680x0_ALL = 1
     MC68030 = MC680x0_ALL
     MC68040 = 2
     MC68030_ONLY = 3
 
+
 def CPU_SUBTYPE_INTEL(f, m):
     return f + (m << 4)
+
 
 def CPU_SUBTYPE_INTEL_FAMILY(x):
     return x & 15
 
+
 def CPU_SUBTYPE_INTEL_MODEL(x):
     return x >> 4
+
 
 class cpuSubtype_I386(IntEnum):
     I386_ALL = CPU_SUBTYPE_INTEL(3, 0)
@@ -87,43 +95,51 @@ class cpuSubtype_I386(IntEnum):
     XEON = CPU_SUBTYPE_INTEL(12, 0)
     XEON_MP = CPU_SUBTYPE_INTEL(12, 1)
 
+
 class cpuSubtype_X86(IntEnum):
     X86_ALL = 3
     X86_64_ALL = 3
     X86_64_ARCH1 = 4
-    X86_64_H = 8 # Haswell feature subset
+    X86_64_H = 8  # Haswell feature subset
+
 
 class cpuSubtype_MIPS(IntEnum):
     MIPS_ALL = 0
     MIPS_R2300 = 1
     MIPS_R2600 = 2
     MIPS_R2800 = 3
-    MIPS_R2000a = 4 # pmax
+    MIPS_R2000a = 4  # pmax
     MIPS_R2000 = 5
-    MIPS_R3000a = 6 # 3max
+    MIPS_R3000a = 6  # 3max
     MIPS_R3000 = 7
+
 
 class cpuSubtype_MC98000(IntEnum):
     MC980000_ALL = 0
     MC98601 = 1
 
+
 # Hewlett-Packard HP-PA processors
 class cpuSubtype_HPPA(IntEnum):
     HPPA_ALL = 0
-    HPPA_7100 = HPPA_ALL # compatibility
+    HPPA_7100 = HPPA_ALL  # compatibility
     HPPA_7100LC = 1
+
 
 class cpuSubtype_MC88000(IntEnum):
     MC88000_ALL = 0
     MC88100 = 1
     MC88110 = 2
 
+
 class cpuSubtype_SPARC(IntEnum):
     SPARC_ALL = 0
+
 
 class cpuSubtype_I860(IntEnum):
     I860_ALL = 0
     I860_860 = 1
+
 
 class cpuSubtype_PowerPC(IntEnum):
     POWERPC_ALL = 0
@@ -140,15 +156,16 @@ class cpuSubtype_PowerPC(IntEnum):
     POWERPC_7450 = 11
     POWERPC_970 = 100
 
+
 class cpuSubtype_ARM(IntEnum):
     ARM_ALL = 0
     ARM_V4T = 5
     ARM_V6 = 6
-    ARM_V5TEJ = 7 # also ARM_V5TEJ
+    ARM_V5TEJ = 7  # also ARM_V5TEJ
     ARM_XSCALE = 8
-    ARM_V7 = 9 # ARMv7-A and ARMv7-R
-    ARM_V7F = 10 # Cortex A8
-    ARM_V7S = 11 # Swift
+    ARM_V7 = 9  # ARMv7-A and ARMv7-R
+    ARM_V7F = 10  # Cortex A8
+    ARM_V7S = 11  # Swift
     ARM_V7K = 12
     ARM_V8 = 13
     ARM_V6M = 14
@@ -205,7 +222,7 @@ def get_cpu_type_name(cpuType: CPU_Type) -> str:
             cpuType = CPU_Type(cpuType)
         except ValueError:
             return "UNKNOWN"
-        
+
     if isinstance(cpuType, CPU_Type):
         return cpuType.name
     else:

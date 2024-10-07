@@ -18,13 +18,14 @@ except ModuleNotFoundError:
 
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
+from surfactant.infoextractors.__macho_cpuSubtypes import get_cpu_subtype_name, get_cpu_type_name
 from surfactant.sbomtypes import SBOM, Software
-from surfactant.infoextractors.__macho_cpuSubtypes import get_cpu_type_name, get_cpu_subtype_name
 
 __config_manager = ConfigManager()
 
 __include_bindings_exports = __config_manager.get("macho", "include_bindings_exports", False)
 __include_signature_content = __config_manager.get("macho", "include_signature_content", False)
+
 
 def supports_file(filetype) -> bool:
     # TODO: It could be decided whether to keep it this way or separate into cases
@@ -57,7 +58,7 @@ def extract_mach_o_info(filename: str) -> object:
             "header": {
                 "cpuType": get_cpu_type_name(header.cpu_type.value),
                 "cpuTypeValue": header.cpu_type.value,
-                "cpuSubtype": get_cpu_subtype_name(header.cpu_type.value, 20+header.cpu_subtype),
+                "cpuSubtype": get_cpu_subtype_name(header.cpu_type.value, 20 + header.cpu_subtype),
                 "cpuSubtypeValue": header.cpu_subtype,
                 "fileType": header.file_type.__name__,
                 "fileTypeValue": header.file_type.value,
