@@ -33,6 +33,7 @@ def get_software_entry(
     pluginmanager,
     parent_sbom: SBOM,
     filepath,
+    *,  # arguments past this point are keyword-only
     filetype=None,
     container_uuid=None,
     root_path=None,
@@ -248,6 +249,8 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
     required=False,
     help="Include all files in the SBOM, not just those recognized by Surfactant",
 )
+# Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
+# pylint: disable-next=too-many-positional-arguments
 def sbom(
     config_file,
     sbom_outfile,
