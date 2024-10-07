@@ -227,7 +227,8 @@ def create_system_object(sbom: SBOM, config=None, system_uuid=None) -> Tuple[Sys
         system["UUID"] = str(uuid_module.uuid4())
     # check if the UUID appears valid based on the CyTRICS schema
     elif not sbom.is_valid_uuid4(system["UUID"]):
-        logger.error(f"Invalid uuid4 given ({system["UUID"]}) for the system")
+        invalid_uuid = system["UUID"]
+        logger.error(f"Invalid uuid4 given ({invalid_uuid}) for the system")
 
     if "name" not in system:
         system["name"] = ""
