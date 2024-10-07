@@ -29,6 +29,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
 
 
 @hookspec
+# pylint: disable-next=too-many-positional-arguments
 def extract_file_info(
     sbom: SBOM,
     software: Software,
