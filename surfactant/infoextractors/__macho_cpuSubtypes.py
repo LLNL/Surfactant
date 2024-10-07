@@ -225,5 +225,4 @@ def get_cpu_type_name(cpuType: CPU_Type) -> str:
 
     if isinstance(cpuType, CPU_Type):
         return cpuType.name
-    else:
-        return "UNKNOWN"
+    return "UNKNOWN"
