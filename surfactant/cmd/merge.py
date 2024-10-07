@@ -1,4 +1,5 @@
 import json
+from typing import Tuple
 import uuid as uuid_module
 from collections import deque
 from typing import Dict, List
@@ -6,6 +7,7 @@ from typing import Dict, List
 import click
 from loguru import logger
 
+from surfactant.configmanager import ConfigManager
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
@@ -23,7 +25,7 @@ from surfactant.sbomtypes._system import System
 @click.option(
     "--output_format",
     is_flag=False,
-    default="surfactant.output.cytrics_writer",
+    default=ConfigManager().get("core", "output_format", fallback="surfactant.output.cytrics_writer"),
     help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx]_writer",
 )
 @click.option(
@@ -31,6 +33,11 @@ from surfactant.sbomtypes._system import System
     is_flag=False,
     default="surfactant.input_readers.cytrics_reader",
     help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=surfactant.input_readers.[cytrics|cyclonedx|spdx]_reader",
+)
+@click.option(
+    "--system_uuid",
+    is_flag=False,
+    help="System UUID to use for relationships to a top-level system object",
 )
 @click.option(
     "--system_relationship",
@@ -46,12 +53,14 @@ from surfactant.sbomtypes._system import System
     help="Create a top-level system entry for tying together the merged SBOM components. When disabled, relationships will still be created to a provided system UUID",
 )
 @click.command("merge")
+# pylint: disable-next=too-many-positional-arguments
 def merge_command(
     input_sboms,
     sbom_outfile,
     config_file,
     output_format,
     input_format,
+    system_uuid,
     system_relationship,
     add_system,
 ):
@@ -69,14 +78,16 @@ def merge_command(
     config = None
     if config_file:
         config = json.load(config_file)
-    merge(sboms, sbom_outfile, config, output_writer, system_relationship, add_system)
+    merge(sboms, sbom_outfile, config, output_writer, system_uuid, system_relationship, add_system)
 
 
+# pylint: disable-next=too-many-positional-arguments
 def merge(
     input_sboms,
     sbom_outfile,
     config,
     output_writer,
+    system_uuid=None,
     system_relationship="Contains",
     add_system=True,
 ):
@@ -96,17 +107,20 @@ def merge(
                     add_system = False
                     break
     # Even if not adding the system, create a dummy/placeholder with the UUID for creating relationships
-    system = create_system_object(merged_sbom, config)
+    system, using_random_uuid = create_system_object(merged_sbom, config, system_uuid)
     if add_system:
         merged_sbom.systems.append(system)
 
     # Add a system relationship to each root software/systems entry identified
-    if config and "systemRelationship" in config:
-        system_relationship = config["systemRelationship"]
-    for r in roots:
-        merged_sbom.relationships.add(
-            Relationship(xUUID=system.UUID, yUUID=r, relationship=system_relationship)
-        )
+    if not using_random_uuid or add_system:
+        if config and "systemRelationship" in config:
+            system_relationship = config["systemRelationship"]
+        for r in roots:
+            merged_sbom.relationships.add(
+                Relationship(xUUID=system.UUID, yUUID=r, relationship=system_relationship)
+            )
+    else:
+        logger.warning("No top-level system relationships added; enable the add system option to randomly generate a UUID, or specify a system UUID")
 
     output_writer.write_sbom(merged_sbom, sbom_outfile)
 
@@ -185,7 +199,7 @@ def get_roots_check_cycles(rel_graph):
     return roots
 
 
-def create_system_object(sbom: SBOM, config=None) -> System:
+def create_system_object(sbom: SBOM, config=None, system_uuid=None) -> Tuple[System, bool]:
     """Function to create an accurate system object
 
     Positional arguments:
@@ -197,11 +211,21 @@ def create_system_object(sbom: SBOM, config=None) -> System:
     """
 
     system = {}
+    using_random_uuid = False
     if config and "system" in config:
         system = config["system"]
-    # make sure the required fields are present and at least mostly valid
-    if ("UUID" not in system) or not sbom.is_valid_uuid4(system["UUID"]):
+
+    # system_uuid supplied via command line overrides config file UUID
+    if system_uuid:
+        system["UUID"] = system_uuid
+    elif ("UUID" not in system):
+        # No UUID, generate a random one...
+        using_random_uuid = True
         system["UUID"] = str(uuid_module.uuid4())
+    # check if the UUID appears valid based on the CyTRICS schema
+    elif not sbom.is_valid_uuid4(system["UUID"]):
+        logger.error(f"Invalid uuid4 given ({system["UUID"]}) for the system")
+
     if "name" not in system:
         system["name"] = ""
     captureStart = -1
@@ -217,4 +241,4 @@ def create_system_object(sbom: SBOM, config=None) -> System:
         system["captureStart"] = captureStart
     if "captureEnd" not in system or not system["captureEnd"]:
         system["captureEnd"] = captureEnd
-    return System(**system)
+    return System(**system), using_random_uuid
