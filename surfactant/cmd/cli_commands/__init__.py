@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from .cli_add import Load
-from .cli_find import Save
+from .cli_load import Load
+from .cli_save import Save
 
 __all__ = ["Load", "Save"]
