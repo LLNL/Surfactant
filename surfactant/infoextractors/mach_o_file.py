@@ -19,12 +19,12 @@ except ModuleNotFoundError:
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.infoextractors.__macho_cpuSubtypes import get_cpu_type_name, get_cpu_subtype_name
 
 __config_manager = ConfigManager()
 
 __include_bindings_exports = __config_manager.get("macho", "include_bindings_exports", False)
 __include_signature_content = __config_manager.get("macho", "include_signature_content", False)
-
 
 def supports_file(filetype) -> bool:
     # TODO: It could be decided whether to keep it this way or separate into cases
@@ -53,12 +53,15 @@ def extract_mach_o_info(filename: str) -> object:
     for binary in binaries:
         header = binary.header
         details = {
-            "format": binary.format.name,
+            "format": binary.format.__name__,
             "header": {
-                "cpuType": header.cpu_type.value,
-                "cpuSubtype": header.cpu_subtype,
-                "fileType": header.file_type.value,
-                "flags": [flag.name for flag in header.flags_list],
+                "cpuType": get_cpu_type_name(header.cpu_type.value),
+                "cpuTypeValue": header.cpu_type.value,
+                "cpuSubtype": get_cpu_subtype_name(header.cpu_type.value, 20+header.cpu_subtype),
+                "cpuSubtypeValue": header.cpu_subtype,
+                "fileType": header.file_type.__name__,
+                "fileTypeValue": header.file_type.value,
+                "flags": [flag.__name__ for flag in header.flags_list],
                 "numCommands": header.nb_cmds,
             },
             "build": {},
@@ -73,14 +76,15 @@ def extract_mach_o_info(filename: str) -> object:
         if binary.has_build_version:
             build = binary.build_version
             details["build"] = {
-                "platform": build.platform.value,
+                "platform": build.platform.__name__,
+                "platformValue": build.platform.value,
                 "minOSVersion": ".".join(map(str, build.minos)),
                 "sdkVersion": ".".join(map(str, build.sdk)),
                 "tools": [],
             }
             for tool in build.tools:
                 details["build"]["tools"].append(
-                    {"tool": tool.tool.name, "version": ".".join(map(str, tool.version))}
+                    {"tool": tool.tool.__name__, "version": ".".join(map(str, tool.version))}
                 )
 
         # Extract info from code signature
@@ -119,7 +123,8 @@ def extract_mach_o_info(filename: str) -> object:
         if binary.has_dylinker:
             details["dyld"]["linker"] = binary.dylinker.name
         if binary.has_dyld_environment:
-            details["dyld"]["environment"] = binary.dyld_environment.value
+            details["dyld"]["environment"] = binary.dyld_environment.__name__
+            details["dyld"]["environmentValue"] = binary.dyld_environment.value
         # https://github.com/qyang-nj/llios/blob/main/dynamic_linking/chained_fixups.md
         if __include_bindings_exports:
             if binary.has_dyld_info:
@@ -131,13 +136,13 @@ def extract_mach_o_info(filename: str) -> object:
                 details["dyld"]["info"]["bindings"] = bindings
                 for export in binary.dyld_info.exports:
                     details["dyld"]["info"]["exports"].append(
-                        {"address": export.address, "kind": export.kind.name}
+                        {"address": export.address, "kind": export.kind.__name__}
                     )
             elif binary.has_dyld_exports_trie and binary.has_dyld_chained_fixups:
                 details["dyld"]["exports"] = []
                 for export in binary.dyld_exports_trie.exports:
                     details["dyld"]["exports"].append(
-                        {"address": export.address, "kind": export.kind.name}
+                        {"address": export.address, "kind": export.kind.__name__}
                     )
                 fixups = binary.dyld_chained_fixups
                 details["dyld"]["chainedFixups"] = {"chainedStartsInSegment": [], "bindings": []}
@@ -146,7 +151,8 @@ def extract_mach_o_info(filename: str) -> object:
                         {
                             "maxValidPointer": chainedStarts.max_valid_pointer,
                             "pageSize": chainedStarts.page_size,
-                            "pointerFormat": chainedStarts.pointer_format.value,
+                            "pointerFormat": chainedStarts.pointer_format.__name__,
+                            "pointerFormatValue": chainedStarts.pointer_format.value,
                             "segment": chainedStarts.segment.name,
                         }
                     )
