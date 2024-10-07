@@ -21,6 +21,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         elf_file,
         java_file,
         js_file,
+        mach_o_file,
         ole_file,
         pe_file,
     )
@@ -47,6 +48,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         docker_image,
         elf_file,
         java_file,
+        mach_o_file,
         js_file,
         pe_file,
         ole_file,
