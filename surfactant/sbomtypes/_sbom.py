@@ -121,7 +121,7 @@ class SBOM:
     # pylint: disable=too-many-arguments
     def create_software(
         self,
-        *, # all arguments are keyword-only
+        *,  # all arguments are keyword-only
         name: Optional[str] = None,
         size: Optional[int] = None,
         sha1: Optional[str] = None,

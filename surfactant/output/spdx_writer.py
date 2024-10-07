@@ -349,7 +349,7 @@ def create_spdx_package(
     name: str,
     summary,
     supplier,
-    *, # all remaining arguments are keyword-only
+    *,  # all remaining arguments are keyword-only
     file_name: Optional[str] = None,
     version: Optional[str] = None,
     sha1: Optional[str] = None,
