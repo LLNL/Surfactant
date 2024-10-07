@@ -249,8 +249,9 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
     required=False,
     help="Include all files in the SBOM, not just those recognized by Surfactant",
 )
+# Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
+# pylint: disable-next=too-many-positional-arguments
 def sbom(
-    *,  # all arguments are keyword-only
     config_file,
     sbom_outfile,
     input_sbom,
