@@ -1,8 +1,7 @@
 import json
-from typing import Tuple
 import uuid as uuid_module
 from collections import deque
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import click
 from loguru import logger
@@ -25,7 +24,9 @@ from surfactant.sbomtypes._system import System
 @click.option(
     "--output_format",
     is_flag=False,
-    default=ConfigManager().get("core", "output_format", fallback="surfactant.output.cytrics_writer"),
+    default=ConfigManager().get(
+        "core", "output_format", fallback="surfactant.output.cytrics_writer"
+    ),
     help="SBOM output format, options=surfactant.output.[cytrics|csv|spdx]_writer",
 )
 @click.option(
@@ -120,7 +121,9 @@ def merge(
                 Relationship(xUUID=system.UUID, yUUID=r, relationship=system_relationship)
             )
     else:
-        logger.warning("No top-level system relationships added; enable the add system option to randomly generate a UUID, or specify a system UUID")
+        logger.warning(
+            "No top-level system relationships added; enable the add system option to randomly generate a UUID, or specify a system UUID"
+        )
 
     output_writer.write_sbom(merged_sbom, sbom_outfile)
 
@@ -218,7 +221,7 @@ def create_system_object(sbom: SBOM, config=None, system_uuid=None) -> Tuple[Sys
     # system_uuid supplied via command line overrides config file UUID
     if system_uuid:
         system["UUID"] = system_uuid
-    elif ("UUID" not in system):
+    elif "UUID" not in system:
         # No UUID, generate a random one...
         using_random_uuid = True
         system["UUID"] = str(uuid_module.uuid4())
