@@ -9,10 +9,6 @@ import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 from surfactant.filetypeid import id_magic
 
-def check_compression(filename):
-    if is_tar_file() or is_zip_file:
-        # call file_decompression
-        pass
 
 def supports_file(filetype) -> bool:
     return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
@@ -21,74 +17,54 @@ def supports_file(filetype) -> bool:
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
     if not supports_file(filetype):
-        #call check_compression() here?
         return None
     return extract_native_lib_info(filename)
 
 def extract_native_lib_info(filename):
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
     native_lib_patterns = pathlib.Path(__file__).parent / "native_lib_patterns.json"
-    with open(native_lib_patterns, "r") as f:
-        patterns = json.load(f)
 
-    for name, library in patterns.items():
-        if "filename" in library:
-            for pattern in library["filename"]:
+    # Load regex patterns into database var
+    try:
+        with open(native_lib_patterns, "r") as regex:
+            database = json.load(regex)
+    except FileNotFoundError:
+        logger.warning(f"File not found: {native_lib_patterns}")
+        return None
+
+    # Match based on filename
+    filenames_list = match_by_attribute("filename", filename, database)
+    if len(filenames_list) > 0:
+        #native_lib_info["nativeLibraries"] = filenames_list
+        native_lib_info["nativeLibraries"].extend(filenames_list)
+
+    #Match based on filecontent
+    try:
+        with open(filename, "rb") as native_file:
+            filecontent = native_file.read()
+        filecontent_list = match_by_attribute("filecontent", filecontent, database)
+
+        #this overwrites the list, need to extend the list
+        #native_lib_info["nativeLibraries"] = filecontent_list
+        native_lib_info["nativeLibraries"].extend(filecontent_list)
+
+    except FileNotFoundError:
+        logger.warning(f"File not found: {filename}")
+    return native_lib_info
+
+def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
+    libs = []
+    for name, library in database.items():
+        if attribute in library:
+            for pattern in library[attribute]:
+                if attribute == "filename":
+                    matches = re.search(pattern, content)
+                else:
+                    matches = re.search(pattern.encode('utf-8'), content)
                 try:
-                    if re.search(pattern, filename):
-                        print("found through filename")
-                        return name
+                    if matches:
+                        #libs.append({"library": name, "version": matches.group(1)})
+                        libs.append({"library": name})
                 except re.error as e:
                     print(f"Invalid regex filename pattern '{pattern}': {e}")
-
-    try:
-        #try to use tempfile module here so it takes care of cleanup
-        # first check to see if file is compressed? .tar is not compressed
-        # if not compressed, keep it here
-        # if compressed, call tar_decompression() -> 
-        
-        # check to see if file is compressed (tar or zip file)
-        
-
-
-
-        with tarfile.open(filename, "r:bz2") as tar:
-            tar.extractall(path="/Users/tenzing1/surfactant_new_venv/Surfactant/scripts/native_libraries/decompressed_files_5")
-
-        match_list = []
-        
-        for name, library in expressions.items():
-            if "filecontent" in library:
-                for pattern in library["filecontent"]:
-                    try:
-                        # Save all decompressed files in temp dir
-                        # loop through all files in temp dir and search against patterns below
-                        for root, dirs, files in os.walk("/Users/tenzing1/surfactant_new_venv/Surfactant/scripts/native_libraries/decompressed_files_5"):
-                            for file_name in files:
-                                file_path = os.path.join(root, file_name)
-                                try:
-                                    with open(file_path, "r", encoding="ISO-8859-1") as f:
-                                        contents = f.read()
-                                        if re.search(pattern, contents):
-                                            print("found through filecontent")
-                                            match_list.append(name)
-                                except Exception as e:
-                                    print(f"Could not read file {file_path}: {e}")            
-                    except re.error as e:
-                        print(f"Regex error with filecontent pattern '{pattern}': {e}")     
-        return match_list  
-    
-    # Delete all temp files after matches are found to keep dir clean?
-                                     
-    except FileNotFoundError:
-        print(f"File not found: {filename}")
-    print("No matches found.")
-    return None
-
-def is_tar_file(filename: str) -> bool:
-    pattern = r'\.tar(\.(gz|bz2|xz))?$'
-    return bool(re.search(pattern, filename))
-
-def is_zip_file(filename: str) -> bool:
-    pattern = r'\.zip$'
-    return bool(re.search(pattern, filename))
+    return libs

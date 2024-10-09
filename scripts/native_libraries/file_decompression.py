@@ -16,22 +16,26 @@ def check_compression_type(filename):
     mode = ''
 
     if filename.endswith('.zip'):
-        decompress_zip_file(filename)
+        print("It's a zip file")
+        temp_folder = decompress_zip_file(filename)
     elif filename.endswith('.tar'):
-        open_tar_file(filename)
+        print("this is a tar file")
+        temp_folder = extract_tar_file(filename)
     elif filename.endswith('.tar.gz'):
         mode = 'r:gz'
     elif filename.endswith('.tar.bz2'):
-        print("hello")
+        print("Mode is bz2")
         mode = 'r:bz2'
     elif filename.endswith('.tar.xz'):
         mode = 'r:xz'
     else:
-        print('not supported')
+        print("Compression format not supported")
     
     if mode:
-        print("we have mode")
-        decompress_tar_file(filename, mode)
+        print("Calling decompress tar file")
+        temp_folder = decompress_tar_file(filename, mode)
+        print("After calling decompress_tar_file: ", temp_folder)
+    return temp_folder
 
 def create_temp_dir():
     # Create a temporary directory
@@ -39,36 +43,34 @@ def create_temp_dir():
     #with tempfile.TemporaryDirectory() as temp:
     return temp_dir
 
-
 def decompress_zip_file(filename):
     # use temp dir
-    pass
+    print("Decompressing zip files")
+    temp_folder = create_temp_dir()
+    with zipfile.ZipFile(filename, 'r') as zip:
+        zip.extractall(path=temp_folder)
+    return temp_folder
     
 def decompress_tar_file(filename, compression_type):
-    # use temp dir
-    temp_dir = create_temp_dir()
+    print("Inside decompress_tar_file")
+    temp_folder = create_temp_dir()
     with tarfile.open(filename, compression_type) as tar:
         # insert extract path
-        tar.extractall(path=temp_dir)
-        print("extracted")
-        # return extracted file to native_lib_file ? so the func should return this dir
+        tar.extractall(path=temp_folder)
+        print("this is Temp Folder: ", temp_folder)
+        print("Finished extraction")
+    return temp_folder
 
-def open_tar_file(filename):
-    #use temp dir
+def extract_tar_file(filename):
     temp_dir = create_temp_dir()
     try:
-        contents = {}
         with tarfile.open(filename, 'r') as tar:
             print("Opened tarfile")
             tar.extractall(path=temp_dir)
-            print("All files extracted")
-                               
+            print("All files extracted of tar file")      
     except FileNotFoundError:
         print(f"File not found: {filename}")
+    except tarfile.TarError as e:
+        print(f"Error extracting tar file: {e}")
 
-
-
-
-
-# tar_file = open_tar_file("/Users/tenzing1/surfactant_new_venv/Surfactant/scripts/native_libraries/bgpd.pl-0.08.tar")
-# print(tar_file)
+    return temp_dir
