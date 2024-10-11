@@ -1,6 +1,7 @@
 import json
 import uuid as uuid_module
 from collections import deque
+from typing import Dict, List
 
 import click
 from loguru import logger
@@ -83,7 +84,7 @@ def construct_relationship_graph(sbom: SBOM):
         sbom (SBOM): The sbom to generate relationship graph from.
     """
     # construct a graph for adding a system relationship to all root software entries
-    rel_graph = {}
+    rel_graph: Dict[str, List[str]] = {}
     # add all UUIDs as nodes in the graph
     for system in sbom.systems:
         rel_graph[system.UUID] = []

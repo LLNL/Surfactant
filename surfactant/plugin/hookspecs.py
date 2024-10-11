@@ -38,7 +38,7 @@ def extract_file_info(
     context: "Queue[ContextEntry]",
     children: List[Software],
     include_all_files: bool,
-) -> Optional[list]:
+) -> object:
     """Extracts information from the given file to add to the given software entry. Return an
     object to be included as part of the metadata field, and potentially used as part of
     selecting default values for other Software entry fields. Returning `None` will not add
@@ -92,6 +92,7 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
 
 @hookspec
+# type: ignore[empty-body]
 def read_sbom(infile) -> SBOM:
     """Reads the contents of the input SBOM from the given input SBOM file.
 

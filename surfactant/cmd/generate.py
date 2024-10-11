@@ -7,7 +7,7 @@ import os
 import pathlib
 import queue
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
@@ -51,11 +51,11 @@ def get_software_entry(
         else:
             sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + "/", filepath)]
     sw_entry.recordedInstitution = user_institution_name
-    sw_children = []
+    sw_children: List[Software] = []
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
-    extracted_info_results = pluginmanager.hook.extract_file_info(
+    extracted_info_results: List[object] = pluginmanager.hook.extract_file_info(
         sbom=parent_sbom,
         software=sw_entry,
         filename=filepath,
@@ -66,7 +66,18 @@ def get_software_entry(
     )
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
+        # None as details doesn't add any useful info...
+        if file_details is None:
+            continue
+
+        # ensure metadata exists for the software entry
+        if sw_entry.metadata is None:
+            sw_entry.metadata = []
         sw_entry.metadata.append(file_details)
+
+        # before checking for keys, make sure the file details object is a dictionary
+        if not isinstance(file_details, Dict):
+            continue
 
         # common case is Windows PE file has these details under FileInfo, otherwise fallback default value is fine
         if "FileInfo" in file_details:
@@ -90,6 +101,9 @@ def get_software_entry(
             if "revision_number" in file_details["ole"]:
                 sw_entry.version = file_details["ole"]["revision_number"]
             if "author" in file_details["ole"]:
+                # ensure the vendor list has been created
+                if sw_entry.vendor is None:
+                    sw_entry.vendor = []
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
@@ -149,9 +163,9 @@ def determine_install_prefix(
             Optional[str]: The install prefix to use, or 'NoneType' if an install path shouldn't be listed.
     """
     install_prefix = None
-    if entry.installPrefix or entry.installPrefix == "":
+    if entry and (entry.installPrefix or entry.installPrefix == ""):
         install_prefix = entry.installPrefix
-    elif not skip_extract_path:
+    elif not skip_extract_path and extract_path is not None:
         # pathlib doesn't include the trailing slash
         epath = pathlib.Path(extract_path)
         if epath.is_file():
@@ -252,16 +266,16 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 # Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
 # pylint: disable-next=too-many-positional-arguments
 def sbom(
-    config_file,
-    sbom_outfile,
-    input_sbom,
-    skip_gather,
-    skip_relationships,
-    skip_install_path,
-    recorded_institution,
-    output_format,
-    input_format,
-    include_all_files,
+    config_file: str,
+    sbom_outfile: click.File,
+    input_sbom: click.File,
+    skip_gather: bool,
+    skip_relationships: bool,
+    skip_install_path: bool,
+    recorded_institution: str,
+    output_format: str,
+    input_format: str,
+    include_all_files: bool,
 ):
     """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
 
@@ -289,11 +303,13 @@ def sbom(
     if not validate_config(config):
         return
 
-    context = queue.Queue()
+    context: queue.Queue[ContextEntry] = queue.Queue()
 
-    for entry in config:
-        context.put(ContextEntry(**entry))
+    for cfg_entry in config:
+        context.put(ContextEntry(**cfg_entry))
 
+    # define the new_sbom variable type
+    new_sbom: SBOM
     if not input_sbom:
         new_sbom = SBOM()
     else:
@@ -322,7 +338,11 @@ def sbom(
                     user_institution_name=recorded_institution,
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
-                if Software.check_for_hash_collision(archive_entry, parent_entry):
+                if (
+                    archive_entry
+                    and parent_entry
+                    and Software.check_for_hash_collision(archive_entry, parent_entry)
+                ):
                     logger.warning(
                         f"Hash collision between {archive_entry.name} and {parent_entry.name}; unexpected results may occur"
                     )
@@ -351,17 +371,20 @@ def sbom(
                     )
                     entry.installPrefix = entry.installPrefix.replace("\\", "\\\\")
 
-            for epath in entry.extractPaths:
+            for epath_str in entry.extractPaths:
                 # convert to pathlib.Path, ensures trailing "/" won't be present and some more consistent path formatting
-                epath = pathlib.Path(epath)
+                epath = pathlib.Path(epath_str)
                 install_prefix = determine_install_prefix(
                     entry, epath, skip_extract_path=skip_install_path
                 )
                 logger.trace("Extracted Path: " + epath.as_posix())
 
+                # variable used to track software entries to add to the SBOM
+                entries: List[Software]
+
                 # handle individual file case, since os.walk doesn't
                 if epath.is_file():
-                    entries: List[Software] = []
+                    entries = []
                     filepath = epath.as_posix()
                     # breakpoint()
                     try:
@@ -404,11 +427,11 @@ def sbom(
                                     )
                                     dir_symlinks.append((install_source, install_dest))
 
-                    entries: List[Software] = []
-                    for f in files:
+                    entries = []
+                    for file in files:
                         # os.path.join will insert an OS specific separator between cdir and f
                         # need to make sure that separator is a / and not a \ on windows
-                        filepath = pathlib.Path(cdir, f).as_posix()
+                        filepath = pathlib.Path(cdir, file).as_posix()
                         # TODO: add CI tests for generating SBOMs in scenarios with symlinks... (and just generally more CI tests overall...)
                         # Record symlink details but don't run info extractors on them
                         if os.path.islink(filepath):
@@ -488,6 +511,14 @@ def sbom(
 
         # Add symlinks to install paths and file names
         for software in new_sbom.software:
+            # ensure fileName, installPath, and metadata lists for the software entry have been created
+            # for a user supplied input SBOM, there are no guarantees
+            if software.fileName is None:
+                software.fileName = []
+            if software.installPath is None:
+                software.installPath = []
+            if software.metadata is None:
+                software.metadata = []
             if software.sha256 in filename_symlinks:
                 filename_symlinks_added = []
                 for filename in filename_symlinks[software.sha256]:
@@ -511,6 +542,8 @@ def sbom(
         for software in new_sbom.software:
             # NOTE: this probably doesn't actually add any containerPath symlinks
             for paths in (software.containerPath, software.installPath):
+                if paths is None:
+                    continue
                 paths_to_add = []
                 for path in paths:
                     for link_source, link_dest in dir_symlinks:
@@ -521,10 +554,14 @@ def sbom(
                             paths_to_add.append(path.replace(link_dest, link_source, 1))
                 if paths_to_add:
                     found_md_installpathsymlinks = False
-                    for md in software.metadata:
-                        if "installPathSymlinks" in md:
-                            found_md_installpathsymlinks = True
-                            md["installPathSymlinks"] += paths_to_add
+                    # make sure software.metadata list has been initialized
+                    if software.metadata is None:
+                        software.metadata = []
+                    if isinstance(software.metadata, Iterable):
+                        for md in software.metadata:
+                            if isinstance(md, Dict) and "installPathSymlinks" in md:
+                                found_md_installpathsymlinks = True
+                                md["installPathSymlinks"] += paths_to_add
                     if not found_md_installpathsymlinks:
                         software.metadata.append({"installPathSymlinks": paths_to_add})
                     paths += paths_to_add
@@ -542,7 +579,7 @@ def sbom(
 
 
 def resolve_link(
-    path: str, cur_dir: str, extract_dir: str, install_prefix: str = None
+    path: str, cur_dir: str, extract_dir: str, install_prefix: Optional[str] = None
 ) -> Union[str, None]:
     assert cur_dir.startswith(extract_dir)
     # Links seen before

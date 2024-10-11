@@ -80,8 +80,9 @@ def print_plugins(pm: pluggy.PluginManager):
     print("PLUGINS")
     for p in pm.get_plugins():
         print("-------")
-        print("canonical name: " + pm.get_canonical_name(p))
-        print("name: " + pm.get_name(p))
+        print(f"canonical name: {pm.get_canonical_name(p)}")
+        plugin_name = pm.get_name(p) if pm.get_name(p) else ""
+        print(f"name: {plugin_name}")
 
 
 def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):

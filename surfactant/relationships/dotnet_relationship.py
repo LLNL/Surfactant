@@ -95,7 +95,7 @@ def establish_relationships(
                     if isinstance(e.installPath, Iterable):
                         for ifile in e.installPath:
                             if ref_abspath == pathlib.PureWindowsPath(ifile):
-                                relationships.extend(Relationship(dependent_uuid, e.uuid, "Uses"))
+                                relationships.append(Relationship(dependent_uuid, e.UUID, "Uses"))
                 continue
 
             probedirs = []

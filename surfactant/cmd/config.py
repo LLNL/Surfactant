@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import click
 
@@ -31,7 +31,7 @@ def config(key: str, values: Optional[List[str]]):
     else:
         # Set the configuration value
         # Convert 'true' and 'false' strings to boolean
-        converted_values = []
+        converted_values: List[Any] = []
         for value in values:
             if value.lower() == "true":
                 converted_values.append(True)

@@ -14,10 +14,12 @@ from ._provenance import AnalysisDataProvenance
 
 @dataclass
 class AnalysisData:
+    # origin, testName, and testVersion are not optional
+    # user must provide the info, not really a "safe" default value
+    origin: str
+    testName: str
+    testVersion: str
     UUID: str = field(default_factory=lambda: str(uuid.uuid4()))
-    origin: str = None
-    testName: str = None
-    testVersion: str = None
     specificEnvironment: Optional[str] = None
     files: Optional[List[File]] = None
     linksToKnownVulnerabilities: Optional[str] = None

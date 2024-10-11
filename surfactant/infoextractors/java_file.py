@@ -67,7 +67,7 @@ def handle_java_class(info: Dict[str, Any], class_info: javatools.JavaClassInfo)
 
 
 def extract_java_info(filename: str, filetype: str) -> object:
-    info = {"javaClasses": {}}
+    info: Dict[str, Any] = {"javaClasses": {}}
     if filetype in ("JAR", "EAR", "WAR"):
         with javatools.jarinfo.JarInfo(filename) as jarinfo:
             for class_ in jarinfo.get_classes():
