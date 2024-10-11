@@ -10,7 +10,7 @@
 
 import pathlib
 import re
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import defusedxml.ElementTree
 import dnfile
@@ -79,8 +79,7 @@ pe_subsystem_types = {
 }
 
 
-def extract_pe_info(filename):
-    dnfile.fast_load = False
+def extract_pe_info(filename: str) -> object:
     try:
         pe = dnfile.dnPE(filename, fast_load=False)
     except (OSError, dnfile.PEFormatError):
@@ -169,7 +168,7 @@ def extract_pe_info(filename):
                     assembly_refs.append(get_assemblyref_info(ar_info))
                 file_details["dotnetAssemblyRef"] = assembly_refs
             if implmap_info := getattr(dnet_mdtables, "ImplMap", None):
-                imp_modules = []
+                imp_modules: List[Dict[str, Any]] = []
                 for im_info in implmap_info:
                     insert_implmap_info(im_info, imp_modules)
                 file_details["dotnetImplMap"] = imp_modules
@@ -190,7 +189,7 @@ def extract_pe_info(filename):
     return file_details
 
 
-def add_core_assembly_info(asm_dict, asm_info):
+def add_core_assembly_info(asm_dict: Dict[str, Any], asm_info):
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
     # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
     asm_dict["Name"] = asm_info.Name.value if asm_info.Name.value else asm_info.raw_data.hex()
@@ -233,7 +232,7 @@ def add_assembly_flags_info(asm_dict, asm_info):
         }
 
 
-def get_assembly_info(asm_info):
+def get_assembly_info(asm_info) -> Dict[str, Any]:
     asm: Dict[str, Any] = {}
     add_core_assembly_info(asm, asm_info)
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/fcccdaf/src/dnfile/enums.py#L851-L863
@@ -243,7 +242,7 @@ def get_assembly_info(asm_info):
     return asm
 
 
-def get_assemblyref_info(asmref_info):
+def get_assemblyref_info(asmref_info) -> Dict[str, Any]:
     asmref: Dict[str, Any] = {}
     add_core_assembly_info(asmref, asmref_info)
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
@@ -254,7 +253,7 @@ def get_assemblyref_info(asmref_info):
     return asmref
 
 
-def insert_implmap_info(im_info, imp_modules):
+def insert_implmap_info(im_info, imp_modules: List[Dict[str, Any]]):
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
     # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
     dllName = (
@@ -284,7 +283,7 @@ def get_xmlns_and_tag(uri):
 
 # check for manifest file on Windows (note: could also be a resource contained within an exe/dll)
 # return any info that could be useful for establishing "Uses" relationships later
-def get_windows_manifest_info(filename):
+def get_windows_manifest_info(filename: str) -> Optional[Dict[str, Any]]:
     binary_filepath = pathlib.Path(filename)
     manifest_filepath = binary_filepath.with_suffix(binary_filepath.suffix + ".manifest")
     if manifest_filepath.exists():
@@ -428,7 +427,7 @@ def get_assemblyBinding_info(ab_et, config_filepath=""):
 
 # DLL redirection summary: redirection file with name_of_exe.local (contents are ignored) makes a check for mydll.dll happen in the application directory first,
 # regardless of what the full path specified for LoadLibrary or LoadLibraryEx is (if no dll found in local directory, uses the typical search order)
-def check_windows_dll_redirection_local(filename):
+def check_windows_dll_redirection_local(filename: str):
     binary_filepath = pathlib.Path(filename)
     config_filepath = binary_filepath.with_suffix(binary_filepath.suffix + ".local")
     return config_filepath.exists()
@@ -437,7 +436,7 @@ def check_windows_dll_redirection_local(filename):
 # check for an application configuration file and return (potentially) useful information
 # https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies#application-configuration-file
 # https://learn.microsoft.com/en-us/windows/win32/sbscs/application-configuration-files
-def get_windows_application_config_info(filename):
+def get_windows_application_config_info(filename: str):
     binary_filepath = pathlib.Path(filename)
     config_filepath = binary_filepath.with_suffix(binary_filepath.suffix + ".config")
     if config_filepath.exists():

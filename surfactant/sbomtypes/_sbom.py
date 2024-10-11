@@ -56,7 +56,10 @@ class SBOM:
         return Relationship(xUUID, yUUID, relationship) in self.relationships
 
     def has_relationship(
-        self, xUUID: str = None, yUUID: str = None, relationship: str = None
+        self,
+        xUUID: Optional[str] = None,
+        yUUID: Optional[str] = None,
+        relationship: Optional[str] = None,
     ) -> bool:
         for rel in self.relationships:
             # We iterate until we find a relationship that meets all the conditions
@@ -93,7 +96,7 @@ class SBOM:
         # if a software entry already exists with a matching file hash, augment the info in the existing entry
         for e in entries:
             existing_sw = self.find_software(e.sha256)
-            if Software.check_for_hash_collision(existing_sw, e):
+            if existing_sw and Software.check_for_hash_collision(existing_sw, e):
                 logger.warning(
                     f"Hash collision between {existing_sw.name} and {e.name}; unexpected results may occur"
                 )
@@ -167,8 +170,7 @@ class SBOM:
         self.software.append(sw)
         return sw
 
-    def merge(self, sbom_m: SBOM) -> SBOM:
-        # merged_sbom = SBOM()
+    def merge(self, sbom_m: SBOM):
         # merged/old to new UUID map
         uuid_updates = {}
 
@@ -237,20 +239,20 @@ class SBOM:
                 self.observations.append(observation)
         # merge starRelationships
         if sbom_m.starRelationships:
-            for rel in sbom_m.starRelationships:
+            for star_rel in sbom_m.starRelationships:
                 # rewrite UUIDs before doing the search
-                if rel.xUUID in uuid_updates:
-                    rel.xUUID = uuid_updates[rel.xUUID]
-                if rel.yUUID in uuid_updates:
-                    rel.yUUID = uuid_updates[rel.yUUID]
-                if existing_rel := self._find_star_relationship_entry(
-                    xUUID=rel.xUUID,
-                    yUUID=rel.yUUID,
-                    relationship=rel.relationship,
+                if star_rel.xUUID in uuid_updates:
+                    star_rel.xUUID = uuid_updates[star_rel.xUUID]
+                if star_rel.yUUID in uuid_updates:
+                    star_rel.yUUID = uuid_updates[star_rel.yUUID]
+                if existing_star_rel := self._find_star_relationship_entry(
+                    xUUID=star_rel.xUUID,
+                    yUUID=star_rel.yUUID,
+                    relationship=star_rel.relationship,
                 ):
-                    logger.info(f"DUPLICATE STAR RELATIONSHIP: {existing_rel}")
+                    logger.info(f"DUPLICATE STAR RELATIONSHIP: {existing_star_rel}")
                 else:
-                    self.starRelationships.add(rel)
+                    self.starRelationships.add(star_rel)
 
     def _find_systems_entry(
         self, uuid: Optional[str] = None, name: Optional[str] = None
