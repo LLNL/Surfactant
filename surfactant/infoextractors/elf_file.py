@@ -52,7 +52,7 @@ _EI_OSABI_NAME = {
 }
 
 
-def extract_elf_info(filename):
+def extract_elf_info(filename: str) -> object:
     with open(filename, "rb") as f:
         try:
             elf = ELFFile(f)
