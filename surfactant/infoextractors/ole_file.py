@@ -21,7 +21,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     return extract_ole_info(filename)
 
 
-def extract_ole_info(filename):
+def extract_ole_info(filename: str) -> object:
     file_details: Dict[str, Any] = {}
 
     ole = olefile.OleFileIO(filename)

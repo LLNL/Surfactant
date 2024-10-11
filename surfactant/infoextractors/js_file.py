@@ -24,7 +24,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     return extract_js_info(filename)
 
 
-def extract_js_info(filename):
+def extract_js_info(filename: str) -> object:
     js_info: Dict[str, Any] = {"jsLibraries": []}
     js_lib_file = pathlib.Path(__file__).parent / "js_library_patterns.json"
 

@@ -2,7 +2,7 @@ import os
 import platform
 from pathlib import Path
 from threading import Lock
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import tomlkit
 
@@ -19,7 +19,8 @@ class ConfigManager:
         config_file_path (Path): The path to the configuration file.
     """
 
-    _instances = {}
+    _initialized: bool = False
+    _instances: Dict[str, "ConfigManager"] = {}
     _lock = Lock()
 
     def __new__(

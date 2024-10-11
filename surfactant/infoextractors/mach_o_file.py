@@ -47,7 +47,7 @@ def extract_mach_o_info(filename: str) -> object:
     except OSError:
         return {}
 
-    file_details: Dict[str:Any] = {"OS": "MacOS", "numBinaries": binaries.size, "binaries": []}
+    file_details: Dict[str, Any] = {"OS": "MacOS", "numBinaries": binaries.size, "binaries": []}
 
     # Iterate over all binaries in the FAT binary
     for binary in binaries:
