@@ -47,7 +47,6 @@ class Find(Cli):
 
     def execute(self, **kwargs):
         """Executes the main functionality of the cli_find class
-        param: self.sbom   The sbom to find matches within
         param: kwargs:      Dictionary of key/value pairs indicating what features to match on
         """
         self.sbom = self.load_current_sbom()
@@ -73,7 +72,7 @@ class Find(Cli):
         if not self.subset.software:
             logger.warning("No software matches found with given parameters.")
             return False
-        self.save_subset()
+        self.save_changes()
         return True
 
     def match_single_value(self, first, second) -> bool:

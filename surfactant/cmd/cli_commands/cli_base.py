@@ -108,14 +108,16 @@ class Cli:
             return None
 
     def save_changes(self):
-        """Serializes the sbom and saves it in the designated directory"""
-        with open(Path(self.data_dir, self.sbom_filename), "wb") as f:
-            f.write(self.serialize(self.sbom))
-    
-    def save_subset(self):
-        """Serializes the sbom subset and saves it in the designated directory"""
-        with open(Path(self.data_dir, self.subset_filename), "wb") as f:
-            f.write(self.serialize(self.subset))
+        """Saves changes made to the working sbom by serializing and storing on the filesystem"""
+        # Save full sbom
+        if self.sbom is not None:
+            with open(Path(self.data_dir, self.sbom_filename), "wb") as f:
+                f.write(self.serialize(self.sbom))
+        
+        # Save subset
+        if self.subset is not None:
+            with open(Path(self.data_dir, self.subset_filename), "wb") as f:
+                f.write(self.serialize(self.subset))
 
     def get_sbom(self):
         """Gets the sbom attribute"""
