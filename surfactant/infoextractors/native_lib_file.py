@@ -7,7 +7,6 @@ from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
-from surfactant.filetypeid import id_magic
 
 
 def supports_file(filetype) -> bool:
@@ -19,6 +18,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     if not supports_file(filetype):
         return None
     return extract_native_lib_info(filename)
+
 
 def extract_native_lib_info(filename):
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
@@ -34,7 +34,7 @@ def extract_native_lib_info(filename):
 
     found_libraries = set()
 
-     # Match based on filename
+    # Match based on filename
     filenames_list = match_by_attribute("filename", filename, database)
     if len(filenames_list) > 0:
         for match in filenames_list:
@@ -61,6 +61,7 @@ def extract_native_lib_info(filename):
 
     return native_lib_info
 
+
 def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
     libs = []
     for name, library in database.items():
@@ -69,7 +70,7 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                 if attribute == "filename":
                     matches = re.search(pattern, content)
                 else:
-                    matches = re.search(pattern.encode('utf-8'), content)
+                    matches = re.search(pattern.encode("utf-8"), content)
                 try:
                     if matches:
                         libs.append({"library": name})
