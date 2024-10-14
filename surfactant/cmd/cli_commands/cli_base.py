@@ -34,6 +34,8 @@ class Cli:
     def __init__(self):
         self.sbom_filename = "sbom_cli"
         self.subset_filename = "subset_cli"
+        self.sbom = None
+        self.subset = None
         # Create data directory
         self.data_dir = ConfigManager().get_data_dir_path()
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -79,3 +81,48 @@ class Cli:
         except pickle.UnpicklingError as e:
             logger.error(f"Could not deserialize sbom from given data - {e}")
             return None
+    
+    def load_current_sbom(self) -> SBOM:
+        """Deserializes the currently loaded sbom for use within the cli command
+
+        Returns:
+            SBOM: A SBOM instance.
+        """
+        try:
+            with open(Path(self.data_dir, self.sbom_filename), "rb") as f:
+                return self.deserialize(f.read())
+        except FileNotFoundError:
+            return None
+    
+    def load_current_subset(self) -> SBOM:
+        """Deserializes the currently loaded subset sbom for use within the cli command
+
+        Returns:
+            SBOM: A SBOM instance.
+        """
+        try: 
+            with open(Path(self.data_dir, self.subset_filename), "rb") as f:
+                return self.deserialize(f.read())
+        except FileNotFoundError:
+            logger.warning("No subset sbom exists.")
+            return None
+
+    def save_changes(self):
+        """Serializes the sbom and saves it in the designated directory"""
+        with open(Path(self.data_dir, self.sbom_filename), "wb") as f:
+            f.write(self.serialize(self.sbom))
+    
+    def save_subset(self):
+        """Serializes the sbom subset and saves it in the designated directory"""
+        with open(Path(self.data_dir, self.subset_filename), "wb") as f:
+            f.write(self.serialize(self.subset))
+
+    def get_sbom(self):
+        """Gets the sbom attribute"""
+        return self.sbom
+
+    def get_subset(self):
+        """Gets the subset attribute"""
+        return self.subset
+
+

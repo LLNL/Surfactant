@@ -1,4 +1,3 @@
-import hashlib
 import sys
 import os
 import platform
@@ -8,8 +7,8 @@ import click
 from loguru import logger
 import json
 
-from surfactant.cmd.cli_commands import Load, Save
 from surfactant.configmanager import ConfigManager
+from surfactant.cmd.cli_commands import *
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
@@ -46,22 +45,6 @@ def handle_cli_load(sbom, input_format):
     Load(input_format=input_format).execute(sbom)
 
 
-@click.argument("sbom", type=click.File("r"), required=True)
-@click.option(
-    "--input_format",
-    is_flag=False,
-    default=ConfigManager().get(
-        "core", "input_format", fallback="surfactant.input_readers.cytrics_reader"
-    ),
-    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
-)
-@click.command("load")
-def handle_cli_load(sbom, input_format):
-    "CLI command to load supplied SBOM into cli"
-    Load(input_format=input_format).execute(sbom)
-
-
-@click.argument("sbom", type=click.File("r"), required=True)
 @click.option("--file", is_flag=False, help="File of the entry to find")
 @click.option("--sha256", is_flag=False, type=str, help="sha256 hash of the entry to find")
 @click.option("--uuid", is_flag=False, type=str, help="uuid of the entry to find")
@@ -77,32 +60,17 @@ def handle_cli_load(sbom, input_format):
     type=str,
     help="Matches all entries with a container path or partial container path match",
 )
-@click.option(
-    "--output_format",
-    is_flag=False,
-    default="surfactant.output.cytrics_writer",
-    help="SBOM output format, options=[cytrics|csv|spdx|cyclonedx]",
-)
-@click.option(
-    "--input_format",
-    is_flag=False,
-    default="surfactant.input_readers.cytrics_reader",
-    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
-)
 @click.command("find")
-def handle_cli_find(sbom, output_format, input_format, **kwargs):
+def handle_cli_find(**kwargs):
     "CLI command to find specific entry(s) within a supplied SBOM"
-    pm = get_plugin_manager()
-    output_writer = find_io_plugin(pm, output_format, "write_sbom")
-    input_reader = find_io_plugin(pm, input_format, "read_sbom")
-    in_sbom = input_reader.read_sbom(sbom)
-
     # Remove None values
     filtered_kwargs = dict({(k, v) for k, v in kwargs.items() if v is not None})
-    out_sbom = find().execute(in_sbom, **filtered_kwargs)
-    if not out_sbom.software:
-        logger.warning("No software matches found with given parameters.")
-    output_writer.write_sbom(out_sbom, sys.stdout)
+    find = Find()
+    success = find.execute(**filtered_kwargs)
+    # Write result to stdout in the cytrics format
+    if success:
+        output_writer = find_io_plugin(get_plugin_manager(), "surfactant.output.cytrics_writer", "write_sbom")
+        output_writer.write_sbom(find.get_subset(), sys.stdout)
 
 
 @click.argument("sbom", required=True)
