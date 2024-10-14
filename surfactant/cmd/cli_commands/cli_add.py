@@ -1,7 +1,8 @@
 from loguru import logger
 
 from surfactant.cmd.cli_commands.cli_base import Cli
-from surfactant.sbomtypes._sbom import SBOM
+from surfactant.sbomtypes import SBOM
+from surfactant.sbomtypes import Software
 
 class Add(Cli):
     """
@@ -28,6 +29,7 @@ class Add(Cli):
             "capturetime": "captureTime",
             "relationshipassertion": "relationshipAssertion",
         }
+        super(Add, self).__init__()
 
     def handle_kwargs(self, kwargs: dict) -> dict:
         converted_kwargs = {}
@@ -36,34 +38,48 @@ class Add(Cli):
             converted_kwargs[key] = v
         return converted_kwargs
 
-    def execute(self, input_sbom: SBOM, **kwargs):
+    def execute(self, **kwargs):
         """Executes the main functionality of the cli_find class
-        param: input_sbom   The sbom to add entries to
         param: kwargs:      Dictionary of key/value pairs indicating what features to match on
         """
+        working_sbom = None
+        self.subset = self.load_current_subset()
+        if not self.subset:
+            self.sbom = self.load_current_sbom()
+            if not self.sbom:
+                logger.error("No sbom currently loaded. Load an sbom with `surfactant cli load`")
+                return False
+            else:
+                working_sbom = self.sbom
+        else:
+            working_sbom = self.subset
+            
         converted_kwargs = self.handle_kwargs(kwargs)
-        self.sbom = input_sbom
 
         for key, value in converted_kwargs.items():
             if key in self.match_functions:
-                self.match_functions[key](value)
+                self.match_functions[key](working_sbom, value)
             else:
                 logger.warning(f"Parameter {key} is not supported")
-        return self.sbom
+        self.save_changes()
+        return True
 
-    def add_relationship(self, value: dict) -> bool:
-        self.sbom.add_relationship(Relationship(**value))
+    def add_relationship(self, sbom: SBOM, value: dict) -> bool:
+        sbom.add_relationship(Relationship(**value))
 
-    def add_file(self, path):
-        self.sbom.software.append(Software.create_software_from_file(path))
+    def add_file(self, sbom: SBOM, path):
+        sbom.software.append(Software.create_software_from_file(path))
 
-    def add_entry(self, entry):
-        self.sbom.software.append(Software.from_dict(entry))
+    def add_entry(self, sbom: SBOM, entry):
+        try:
+            sbom.software.append(Software.from_dict(entry))
+        except AttributeError:
+            logger.warning("Entry not valid, could not add.")
 
-    def add_installpath(self, prefixes: tuple):
+    def add_installpath(self, sbom: SBOM, prefixes: tuple):
         cleaned_prefixes = (p.rstrip("/") for p in prefixes)
         containerPathPrefix, installPathPrefix = cleaned_prefixes
-        for sw in self.sbom.software:
+        for sw in sbom.software:
             for path in sw.containerPath:
                 if containerPathPrefix in path:
                     sw.installPath.append(path.replace(containerPathPrefix, installPathPrefix))
