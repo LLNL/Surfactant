@@ -32,24 +32,33 @@ def extract_native_lib_info(filename):
         logger.warning(f"File not found: {native_lib_patterns}")
         return None
 
-    # Match based on filename
+    found_libraries = set()
+
+     # Match based on filename
     filenames_list = match_by_attribute("filename", filename, database)
     if len(filenames_list) > 0:
-        #native_lib_info["nativeLibraries"] = filenames_list
-        native_lib_info["nativeLibraries"].extend(filenames_list)
+        for match in filenames_list:
+            library_name = match["library"]
+            if library_name not in found_libraries:
+                native_lib_info["nativeLibraries"].append(match)
+                found_libraries.add(library_name)
 
-    #Match based on filecontent
+    # Match based on filecontent
     try:
         with open(filename, "rb") as native_file:
             filecontent = native_file.read()
         filecontent_list = match_by_attribute("filecontent", filecontent, database)
 
-        #this overwrites the list, need to extend the list
-        #native_lib_info["nativeLibraries"] = filecontent_list
-        native_lib_info["nativeLibraries"].extend(filecontent_list)
+        # Extend the list and add the new libraries found
+        for match in filecontent_list:
+            library_name = match["library"]
+            if library_name not in found_libraries:
+                native_lib_info["nativeLibraries"].append(match)
+                found_libraries.add(library_name)
 
     except FileNotFoundError:
         logger.warning(f"File not found: {filename}")
+
     return native_lib_info
 
 def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
@@ -63,7 +72,6 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                     matches = re.search(pattern.encode('utf-8'), content)
                 try:
                     if matches:
-                        #libs.append({"library": name, "version": matches.group(1)})
                         libs.append({"library": name})
                 except re.error as e:
                     print(f"Invalid regex filename pattern '{pattern}': {e}")
