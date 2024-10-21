@@ -17,7 +17,9 @@ from surfactant.sbomtypes._software import Software
 @click.option(
     "--input_format",
     is_flag=False,
-    default="surfactant.input_readers.cytrics_reader",
+    default=ConfigManager().get(
+        "core", "input_format", fallback="surfactant.input_readers.cytrics_reader"
+    ),
     help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
 )
 @click.command("load")
