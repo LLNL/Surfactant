@@ -16,7 +16,9 @@ from surfactant.sbomtypes._software import Software
 @click.option(
     "--input_format",
     is_flag=False,
-    default="surfactant.input_readers.cytrics_reader",
+    default=ConfigManager().get(
+        "core", "input_format", fallback="surfactant.input_readers.cytrics_reader"
+    ),
     help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
 )
 @click.command("load")
@@ -131,7 +133,9 @@ def handle_cli_edit(sbom, output_format, input_format, **kwargs):
 @click.option(
     "--output_format",
     is_flag=False,
-    default="surfactant.output.cytrics_writer",
+    default=ConfigManager().get(
+        "core", "output_format", fallback="surfactant.output.cytrics_writer"
+    ),
     help="SBOM output format, options=[cytrics|csv|spdx|cyclonedx]",
 )
 @click.command("save")
