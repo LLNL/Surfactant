@@ -6,6 +6,7 @@ import click
 from loguru import logger
 
 from surfactant.cmd.cli_commands import Load, Save
+from surfactant.configmanager import ConfigManager
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
