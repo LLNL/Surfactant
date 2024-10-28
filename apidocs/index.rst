@@ -14,7 +14,7 @@ documentation for details.
 .. toctree::
    :maxdepth: 4
    :caption: Contents:
-   
+
    modules
    fileinfo
    merge_sbom
