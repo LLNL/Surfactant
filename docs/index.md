@@ -21,8 +21,10 @@ Some links to pages that may be useful are:
 
 ```{eval-rst}
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
+   :caption: Contents
 
+   
    self
    getting_started
    basic_usage
@@ -31,6 +33,8 @@ Some links to pages that may be useful are:
    settings
    contribution_guide
    changelog
+   fileinfo
+   Surfactant
 ```
 
 ## Support
