@@ -7,8 +7,8 @@ import os
 import sys
 
 # Add custom paths for modules
-sys.path.insert(1, os.path.abspath('../scripts'))
-sys.path.insert(2, os.path.abspath('../Surfactant'))
+sys.path.insert(1, os.path.abspath("../scripts"))
+sys.path.insert(2, os.path.abspath("../Surfactant"))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -22,20 +22,20 @@ author = "Ryan Mast, Kendall Harter, Micaela Gallegos, Shayna Kapadia, Apoorv Po
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',      # Automatically generate documentation from docstrings
-    'sphinx.ext.napoleon',     
-    'sphinx.ext.viewcode',    
-    'sphinx.ext.intersphinx',  
-    'sphinx.ext.githubpages'  
+    "sphinx.ext.autodoc",  # Automatically generate documentation from docstrings
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.githubpages",
 ]
 
-templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 html_theme_options = {
     "description": "Surfactant",
     "github_user": "LLNL",
@@ -45,7 +45,7 @@ html_theme_options = {
     "badge_branch": "main",
     "fixed_sidebar": "false",
 }
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 # -- Extension configuration -------------------------------------------------
 

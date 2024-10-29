@@ -5,4 +5,3 @@ merge_sbom module
    :members:
    :undoc-members:
    :show-inheritance:
-
