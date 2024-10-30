@@ -24,7 +24,7 @@ Some links to pages that may be useful are:
    :maxdepth: 4
    :caption: Contents
 
-   
+
    self
    getting_started
    basic_usage
