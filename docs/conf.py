@@ -17,6 +17,7 @@ author = "Ryan Mast, Kendall Harter, Micaela Gallegos, Shayna Kapadia, Apoorv Po
 extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary"
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
@@ -45,6 +46,7 @@ html_theme_options = {
 # Napoleon settings for NumPy and Google style docstrings
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
+autosummary_generate = True
 html_logo = "./logos/surfactant-logo-light.png"
 html_favicon = html_logo
 html_sidebars = {"**": ["globaltoc.html", "relations.html", "searchbox.html"]}

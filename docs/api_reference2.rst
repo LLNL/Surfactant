@@ -1,7 +1,8 @@
 Surfactant
 =================
 
-.. automodule:: surfactant
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary::
+   :toctree: _autosummary
+   :recursive:
+
+   surfactant
