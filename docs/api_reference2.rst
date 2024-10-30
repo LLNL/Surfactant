@@ -1,8 +1,11 @@
 Surfactant
 =================
 
+.. currentmodule:: surfactant
+
 .. autosummary::
    :toctree: _autosummary
    :recursive:
-
-   surfactant
+   
+   environment.BuildEnvironment
+   util.relative_uri
