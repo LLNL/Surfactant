@@ -1,7 +1,7 @@
 fileinfo module
 ===============
 
-.. automodule:: fileinfo
+.. automodule:: surfactant.fileinfo
    :members:
    :undoc-members:
    :show-inheritance:
