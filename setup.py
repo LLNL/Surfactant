@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-# For compatibility with old versions of tools
 from setuptools import setup
 
 setup()
