@@ -22,7 +22,7 @@ Some links to pages that may be useful are:
 ```{eval-rst}
 .. toctree::
    :maxdepth: 2
-   
+
    self
    getting_started
    basic_usage
