@@ -1,4 +1,4 @@
-api_reference
+API Reference
 ===============
 
 .. automodule:: surfactant.fileinfo
