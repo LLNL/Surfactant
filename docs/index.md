@@ -31,6 +31,7 @@ Some links to pages that may be useful are:
    settings
    contribution_guide
    changelog
+   api_reference
 ```
 
 ## Support
