@@ -1,12 +1,17 @@
 api_reference
 ===============
 
-.. automodule:: fileinfo
+.. automodule:: surfactant.fileinfo
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: Surfactant
+.. automodule:: surfactant.configmanager
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: surfactant
    :members:
    :undoc-members:
    :show-inheritance:
