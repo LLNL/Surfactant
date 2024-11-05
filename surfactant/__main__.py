@@ -72,7 +72,7 @@ cli.add_command(edit)
 cli.add_command(add)
 
 # Plugin Subcommands
-plugin.add_command(list)
+plugin.add_command(display)
 
 if __name__ == "__main__":
     main()
