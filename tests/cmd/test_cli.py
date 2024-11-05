@@ -158,8 +158,7 @@ def test_add_installpath(test_sbom):
 
 
 def test_cli_base_serialization(test_sbom):
-    c = Cli()
-    serialized = c.serialize(test_sbom)
-    deserialized = c.deserialize(serialized)
+    serialized = Cli.serialize(test_sbom)
+    deserialized = Cli.deserialize(serialized)
     assert test_sbom == deserialized
     assert test_sbom.to_dict() == deserialized.to_dict()
