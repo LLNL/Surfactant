@@ -6,6 +6,5 @@
 from .cli_base import Cli
 from .cli_load import Load
 from .cli_save import Save
-from .cli_base import Cli
 
 __all__ = ["Load", "Save", "Cli"]
