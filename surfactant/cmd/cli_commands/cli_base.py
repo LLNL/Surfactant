@@ -2,8 +2,9 @@ import os
 import platform
 from json.decoder import JSONDecodeError
 from pathlib import Path
-
+import pickle
 from loguru import logger
+from types import MappingProxyType
 
 from surfactant.sbomtypes._sbom import SBOM
 
@@ -56,7 +57,9 @@ class Cli:
             str: A string representation of the serialized SBOM.
         """
         if isinstance(sbom, SBOM):
-            return sbom.to_json(indent=2).encode("utf-8")
+            for k, v in sbom.__dataclass_fields__.items():
+                v.metadata = {}
+            return pickle.dumps(sbom)
         logger.error(f"Could not serialize sbom - {type(sbom)} is not of type SBOM")
         return None
 
@@ -67,7 +70,10 @@ class Cli:
             SBOM: A SBOM instance.
         """
         try:
-            return SBOM.from_json(data.decode("utf-8"))
-        except JSONDecodeError as e:
+            sbom = pickle.loads(data)
+            for k, v in sbom.__dataclass_fields__.items():
+                v.metadata = MappingProxyType({})
+            return sbom
+        except UnpackException as e:
             logger.error(f"Could not deserialize sbom from given data - {e}")
             return None
