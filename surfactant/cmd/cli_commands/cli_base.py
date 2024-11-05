@@ -1,10 +1,10 @@
 import os
-import platform
-from json.decoder import JSONDecodeError
-from pathlib import Path
 import pickle
-from loguru import logger
+import platform
+from pathlib import Path
 from types import MappingProxyType
+
+from loguru import logger
 
 from surfactant.sbomtypes._sbom import SBOM
 
