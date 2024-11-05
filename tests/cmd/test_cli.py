@@ -8,7 +8,7 @@ import pathlib
 import pytest
 
 from surfactant.cmd.cli import cli_add, cli_find
-from surfactant.cmd.cli_commands import Cli
+from surfactant.cmd.cli_commands import Load, Save, Cli
 from surfactant.sbomtypes import SBOM, Relationship
 
 
