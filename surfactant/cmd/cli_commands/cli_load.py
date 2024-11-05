@@ -26,6 +26,6 @@ class Load(Cli):
         input_reader = find_io_plugin(pm, self.input_format, "read_sbom")
         self.sbom = input_reader.read_sbom(input_file)
 
-        serialized_sbom = self.serialize(self.sbom)
+        serialized_sbom = Cli.serialize(self.sbom)
         with open(Path(self.data_dir, self.sbom_filename), "wb") as f:
             f.write(serialized_sbom)

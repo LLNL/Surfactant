@@ -27,5 +27,5 @@ class Save(Cli):
 
         with open(Path(self.data_dir, self.sbom_filename), "rb") as f:
             data = f.read()
-        self.sbom = self.deserialize(data)
+        self.sbom = Cli.deserialize(data)
         output_writer.write_sbom(self.sbom, output_file)
