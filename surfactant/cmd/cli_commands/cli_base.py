@@ -51,7 +51,8 @@ class Cli:
         data_dir = data_dir / "surfactant"
         return data_dir
 
-    def serialize(self, sbom: SBOM) -> str:
+    @staticmethod
+    def serialize(sbom: SBOM) -> str:
         """Serializes a given sbom.
 
         Returns:
@@ -65,7 +66,8 @@ class Cli:
         logger.error(f"Could not serialize sbom - {type(sbom)} is not of type SBOM")
         return None
 
-    def deserialize(self, data) -> SBOM:
+    @staticmethod
+    def deserialize(data) -> SBOM:
         """Deserializes the given data and saves them in the SBOM class instance
 
         Returns:
