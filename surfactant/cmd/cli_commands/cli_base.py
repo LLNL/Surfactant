@@ -6,6 +6,7 @@ import json
 import os
 import platform
 from loguru import logger
+from types import MappingProxyType
 
 from surfactant.sbomtypes._sbom import SBOM
 from surfactant.configmanager import ConfigManager
