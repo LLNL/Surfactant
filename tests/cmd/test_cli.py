@@ -19,6 +19,26 @@ def fixture_test_sbom():
         return sbom
 
 
+def _compare_sboms(one: SBOM, two: SBOM) -> bool:
+    # Sort software list
+    one.software = sorted(one.software, key=lambda x: x.UUID)
+    two.software = sorted(two.software, key=lambda x: x.UUID)
+
+    # Sort hardware list
+    one.hardware = sorted(one.hardware, key=lambda x: x.UUID)
+    two.hardware = sorted(two.hardware, key=lambda x: x.UUID)
+
+    # Sort system list
+    one.systems = sorted(one.systems, key=lambda x: x.UUID)
+    two.systems = sorted(two.systems, key=lambda x: x.UUID)
+
+    # Sort relationship list
+    one.relationships = sorted(one.relationships, key=lambda x: x.yUUID)
+    two.relationships = sorted(two.relationships, key=lambda x: x.yUUID)
+
+    return one.to_dict() == two.to_dict()
+
+
 bad_sbom = SBOM(
     {
         "software": [
@@ -161,4 +181,4 @@ def test_cli_base_serialization(test_sbom):
     serialized = Cli.serialize(test_sbom)
     deserialized = Cli.deserialize(serialized)
     assert test_sbom == deserialized
-    assert test_sbom.to_dict() == deserialized.to_dict()
+    assert _compare_sboms(test_sbom, deserialized)
