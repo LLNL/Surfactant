@@ -8,6 +8,7 @@ import pathlib
 import pytest
 
 from surfactant.cmd.cli import cli_add, cli_find
+from surfactant.cmd.cli_commands import Load, Save, Cli
 from surfactant.sbomtypes import SBOM, Relationship
 
 
@@ -154,3 +155,12 @@ def test_add_installpath(test_sbom):
     for sw in out_bom.software:
         if containerPathPrefix in sw.containerPath:
             assert installPathPrefix in sw.installPath
+
+
+def test_cli_base_serialization(test_sbom):
+    c = Cli()
+    serialized = c.serialize(test_sbom)
+    deserialized = c.deserialize(serialized)
+    assert test_sbom == deserialized
+    assert test_sbom.to_dict() == deserialized.to_dict()
+    
