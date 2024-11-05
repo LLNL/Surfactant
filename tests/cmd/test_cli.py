@@ -8,7 +8,7 @@ import pathlib
 import pytest
 
 from surfactant.cmd.cli import cli_add, cli_find
-from surfactant.cmd.cli_commands import Load, Save, Cli
+from surfactant.cmd.cli_commands import Cli
 from surfactant.sbomtypes import SBOM, Relationship
 
 
@@ -163,4 +163,3 @@ def test_cli_base_serialization(test_sbom):
     deserialized = c.deserialize(serialized)
     assert test_sbom == deserialized
     assert test_sbom.to_dict() == deserialized.to_dict()
-    
