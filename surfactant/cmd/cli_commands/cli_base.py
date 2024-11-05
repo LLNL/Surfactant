@@ -1,9 +1,10 @@
+import dataclasses
 import os
 import pickle
 import platform
 from dataclasses import Field
 from pathlib import Path
-import dataclasses
+
 from loguru import logger
 
 from loguru import logger
@@ -74,7 +75,9 @@ class Cli:
         """
         try:
             sbom = pickle.loads(data)
-            return dataclasses.replace(sbom) # Create a copy to repopulate anything that got messed up in serialization
+            return dataclasses.replace(
+                sbom
+            )  # Create a copy to repopulate anything that got messed up in serialization
         except pickle.UnpicklingError as e:
             logger.error(f"Could not deserialize sbom from given data - {e}")
             return None
