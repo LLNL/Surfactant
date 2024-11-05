@@ -16,9 +16,10 @@ from surfactant.cmd.config import config
 from surfactant.cmd.createconfig import create_config
 from surfactant.cmd.generate import sbom as generate
 from surfactant.cmd.merge import merge_command
+from surfactant.cmd.plugin import list
 from surfactant.cmd.stat import stat
 from surfactant.cmd.ui import ui
-from surfactant.cmd.plugin import list
+
 
 @click.group()
 @click.version_option(
@@ -52,9 +53,11 @@ def version():
 def cli():
     """Commandline interface used to modify SBOM entries."""
 
+
 @main.group("plugin")
 def plugin():
-    """ Manage plugins """
+    """Manage plugins"""
+
 
 # Main Commands
 main.add_command(generate)

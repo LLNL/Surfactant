@@ -1,4 +1,5 @@
 import click
+
 from surfactant.plugin.manager import get_plugin_manager
 
 @click.command("display")
