@@ -2,7 +2,8 @@ import click
 from surfactant.plugin.manager import get_plugin_manager
 
 @click.command(name="list")
-def display():
+def plugin_list_cmd():
+    """Lists plugins."""
     pm = get_plugin_manager()
     print("-------")
     print("PLUGINS")
