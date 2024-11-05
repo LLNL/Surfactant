@@ -3,7 +3,7 @@ import pickle
 import platform
 from dataclasses import Field
 from pathlib import Path
-import dataclasses
+
 from loguru import logger
 
 from surfactant.sbomtypes._sbom import SBOM
