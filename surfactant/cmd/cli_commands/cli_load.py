@@ -27,5 +27,5 @@ class Load(Cli):
         self.sbom = input_reader.read_sbom(input_file)
 
         serialized_sbom = self.serialize(self.sbom)
-        with open(Path(self.data_dir, self.sbom_filename), "wb+") as f:
+        with open(Path(self.data_dir, self.sbom_filename), "wb") as f:
             f.write(serialized_sbom)
