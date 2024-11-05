@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from surfactant.sbomtypes._sbom import SBOM
 from surfactant.cmd.cli_commands.cli_base import Cli
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 

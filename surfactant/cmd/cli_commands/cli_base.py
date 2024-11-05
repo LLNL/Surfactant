@@ -1,12 +1,9 @@
 import dataclasses
 import pickle
+import platform
 from dataclasses import Field
 from pathlib import Path
-import json
-import os
-import platform
-from types import MappingProxyType
-
+import dataclasses
 from loguru import logger
 
 from surfactant.sbomtypes._sbom import SBOM
