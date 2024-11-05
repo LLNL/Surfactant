@@ -7,8 +7,6 @@ from pathlib import Path
 
 from loguru import logger
 
-from loguru import logger
-
 from surfactant.sbomtypes._sbom import SBOM
 
 
