@@ -1,6 +1,4 @@
 import click
-from surfactant.cmd.config import config
-from surfactant.plugin.manager import get_plugin_manager
 from surfactant.configmanager import ConfigManager
 @click.command(name="list")
 def plugin_list_cmd():
@@ -14,9 +12,22 @@ def plugin_list_cmd():
         plugin_name = pm.get_name(p) if pm.get_name(p) else ""
         print(f"name: {plugin_name}")
 
-import click
-from typing import List
+    # List disabled pluginsi
+    config_manager = ConfigManager()
+    section = 'core'
+    section_key = 'disable_plugins'
+    
+    # Retrieve the current list of plugins that should be blocked
+    current_blocked_plugins = config_manager.get(section, section_key, [])
+    
+    print("-------")
+    print("Disabled Plugins")
+    for disabled_plugin in current_blocked_plugins :
+        print("-------")
+        print(f"name: {disabled_plugin}")
 
+from typing import List
+from surfactant.plugin.manager import get_plugin_manager
 @click.command(name="disable")
 @click.argument('plugin_names', nargs=-1)
 def plugin_disable_cmd(plugin_names):
@@ -24,42 +35,23 @@ def plugin_disable_cmd(plugin_names):
     if not plugin_names:
         raise click.UsageError("At least one plugin name must be specified.")
     section = 'core'
-    section_key = 'blocked'
-    
-    pm = get_plugin_manager()
+    section_key = 'disable_plugins'
+
     config_manager = ConfigManager()
 
-    # Debugging: Print config file path and current config
-    #print(config_manager._get_config_file_path())
-    #config_manager.print_config()
-
-    # Retrieve the current list of blocked plugins
+    # Retrieve the current list of plugins that should be blocked
     current_blocked_plugins = config_manager.get(section, section_key, [])
 
     # Ensure current_blocked_plugins is a list
     if isinstance(current_blocked_plugins, str):
         current_blocked_plugins = [current_blocked_plugins]
-
-    for plugin_name in plugin_names:
-        # Check if the plugin is already blocked
-        if pm.is_blocked(plugin_name):
-            print(f"Plugin '{plugin_name}' is already disabled.")
-            continue
-
-        # Unregister the plugin
-        plugin = pm.unregister(name=plugin_name)
-        if plugin is None:
-            print(f"Plugin '{plugin_name}' not found.")
-            continue
-
-        # Block the plugin to prevent future registration
-        pm.set_blocked(plugin_name)
-
-        # Add the plugin to the blocked list if not already present
+	
+    # Add the plugin to the blocked list if not already present
+    for plugin_name in plugin_names :
         if plugin_name not in current_blocked_plugins:
             current_blocked_plugins.append(plugin_name)
 
-    # Update the configuration to reflect the disabled status
+    # Update the configuration to add plugins to be disabled
     if current_blocked_plugins:
         config_manager.set(section, section_key, current_blocked_plugins)
         click.echo(f"Updated blocked plugins: {current_blocked_plugins}")
