@@ -16,6 +16,7 @@ from surfactant.cmd.config import config
 from surfactant.cmd.createconfig import create_config
 from surfactant.cmd.generate import sbom as generate
 from surfactant.cmd.merge import merge_command
+from surfactant.cmd.plugin import plugin_list_cmd
 from surfactant.cmd.stat import stat
 from surfactant.cmd.ui import ui
 
@@ -53,6 +54,11 @@ def cli():
     """Commandline interface used to modify SBOM entries."""
 
 
+@main.group("plugin")
+def plugin():
+    """Manage plugins."""
+
+
 # Main Commands
 main.add_command(generate)
 main.add_command(version)
@@ -61,11 +67,15 @@ main.add_command(stat)
 main.add_command(merge_command)
 main.add_command(create_config)
 main.add_command(ui)
+main.add_command(plugin)
 
 # CLI Subcommands
 cli.add_command(find)
 cli.add_command(edit)
 cli.add_command(add)
+
+# Plugin Subcommands
+plugin.add_command(plugin_list_cmd)
 
 if __name__ == "__main__":
     main()
