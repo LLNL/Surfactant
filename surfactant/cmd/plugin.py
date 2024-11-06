@@ -21,7 +21,7 @@ def plugin_list_cmd():
     current_blocked_plugins = config_manager.get(section, section_key, [])
     
     print("-------")
-    print("Disabled Plugins")
+    print("DISABLED PLUGINS")
     for disabled_plugin in current_blocked_plugins :
         print("-------")
         print(f"name: {disabled_plugin}")
