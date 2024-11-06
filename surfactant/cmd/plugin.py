@@ -23,16 +23,18 @@ def plugin_disable_cmd(plugin_names):
     """Disables one or more plugins."""
     if not plugin_names:
         raise click.UsageError("At least one plugin name must be specified.")
-
+    section = 'core'
+    section_key = 'blocked'
+    
     pm = get_plugin_manager()
     config_manager = ConfigManager()
 
     # Debugging: Print config file path and current config
-    print(config_manager._get_config_file_path())
-    config_manager.print_config()
+    #print(config_manager._get_config_file_path())
+    #config_manager.print_config()
 
     # Retrieve the current list of blocked plugins
-    current_blocked_plugins = config_manager.get('plugins', 'blocked', [])
+    current_blocked_plugins = config_manager.get(section, section_key, [])
 
     # Ensure current_blocked_plugins is a list
     if isinstance(current_blocked_plugins, str):
@@ -59,5 +61,5 @@ def plugin_disable_cmd(plugin_names):
 
     # Update the configuration to reflect the disabled status
     if current_blocked_plugins:
-        config_manager.set('plugins', 'blocked', current_blocked_plugins)
+        config_manager.set(section, section_key, current_blocked_plugins)
         click.echo(f"Updated blocked plugins: {current_blocked_plugins}")
