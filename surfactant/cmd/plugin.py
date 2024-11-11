@@ -1,7 +1,8 @@
 import click
-from typing import List
-from surfactant.plugin.manager import get_plugin_manager
+
 from surfactant.configmanager import ConfigManager
+from surfactant.plugin.manager import get_plugin_manager
+
 
 @click.command(name="list")
 def plugin_list_cmd():
@@ -17,26 +18,27 @@ def plugin_list_cmd():
 
     # List disabled pluginsi
     config_manager = ConfigManager()
-    section = 'core'
-    section_key = 'disable_plugins'
-    
+    section = "core"
+    section_key = "disable_plugins"
+
     # Retrieve the current list of plugins that should be blocked
     current_blocked_plugins = config_manager.get(section, section_key, [])
-    
+
     print("-------")
     print("DISABLED PLUGINS")
-    for disabled_plugin in current_blocked_plugins :
+    for disabled_plugin in current_blocked_plugins:
         print("-------")
         print(f"name: {disabled_plugin}")
 
+
 @click.command(name="enable")
-@click.argument('plugin_names', nargs=-1)
+@click.argument("plugin_names", nargs=-1)
 def plugin_enable_cmd(plugin_names):
     """Enables one or more plugins."""
     if not plugin_names:
         raise click.UsageError("At least one plugin name must be specified.")
-    section = 'core'
-    section_key = 'disable_plugins'
+    section = "core"
+    section_key = "disable_plugins"
 
     config_manager = ConfigManager()
 
@@ -58,13 +60,13 @@ def plugin_enable_cmd(plugin_names):
 
 
 @click.command(name="disable")
-@click.argument('plugin_names', nargs=-1)
+@click.argument("plugin_names", nargs=-1)
 def plugin_disable_cmd(plugin_names):
     """Disables one or more plugins."""
     if not plugin_names:
         raise click.UsageError("At least one plugin name must be specified.")
-    section = 'core'
-    section_key = 'disable_plugins'
+    section = "core"
+    section_key = "disable_plugins"
 
     config_manager = ConfigManager()
 

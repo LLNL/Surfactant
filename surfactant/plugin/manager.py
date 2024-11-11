@@ -7,8 +7,9 @@ import sys
 import pluggy
 from loguru import logger
 
-from surfactant.plugin import hookspecs
 from surfactant.configmanager import ConfigManager
+from surfactant.plugin import hookspecs
+
 
 def _register_plugins(pm: pluggy.PluginManager) -> None:
     # pylint: disable=import-outside-toplevel
@@ -64,9 +65,9 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
     )
     for plugin in internal_plugins:
         pm.register(plugin)
-    
+
     config_manager = ConfigManager()
-    
+
     # Retrieve the current list of blocked plugins
     current_blocked_plugins = config_manager.get("core", "disable_plugins", [])
     for plugin_name in current_blocked_plugins:
