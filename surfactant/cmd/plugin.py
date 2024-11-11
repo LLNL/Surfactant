@@ -27,8 +27,7 @@ def plugin_list_cmd():
     print("-------")
     print("DISABLED PLUGINS")
     for disabled_plugin in current_blocked_plugins:
-        print("-------")
-        print(f"name: {disabled_plugin}")
+        print(f"\tname: {disabled_plugin}")
 
 
 @click.command(name="enable")
