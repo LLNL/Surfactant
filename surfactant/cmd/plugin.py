@@ -16,7 +16,7 @@ def plugin_list_cmd():
         plugin_name = pm.get_name(p) if pm.get_name(p) else ""
         print(f"name: {plugin_name}")
 
-    # List disabled pluginsi
+    # List disabled plugins
     config_manager = ConfigManager()
     section = "core"
     section_key = "disable_plugins"
