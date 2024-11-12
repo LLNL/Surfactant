@@ -1,8 +1,11 @@
-import click
 import subprocess
 import sys
+
+import click
+
 from surfactant.configmanager import ConfigManager
 from surfactant.plugin.manager import get_plugin_manager, print_plugins
+
 
 @click.command(name="list")
 def plugin_list_cmd():
@@ -78,6 +81,7 @@ def plugin_disable_cmd(plugin_names):
     if current_blocked_plugins:
         config_manager.set(section, section_key, current_blocked_plugins)
         click.echo(f"Updated blocked plugins: {current_blocked_plugins}")
+
 
 @click.command(name="install")
 @click.argument("plugin_name")

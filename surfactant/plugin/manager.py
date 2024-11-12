@@ -66,7 +66,8 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
     for plugin in internal_plugins:
         pm.register(plugin)
 
-def set_blocked_plugins(pm: pluggy.PluginManager) :
+
+def set_blocked_plugins(pm: pluggy.PluginManager):
     """Gets the current list of blocked plugins from the config manager, then blocks and unregisters them with the plugin manager."""
     config_manager = ConfigManager()
 
@@ -87,6 +88,7 @@ def set_blocked_plugins(pm: pluggy.PluginManager) :
         # Block the plugin to prevent future registration
         pm.set_blocked(plugin_name)
 
+
 def get_plugin_manager() -> pluggy.PluginManager:
     pm = pluggy.PluginManager("surfactant")
     pm.add_hookspecs(hookspecs)
@@ -103,6 +105,7 @@ def print_plugins(pm: pluggy.PluginManager):
         print(f"\t> canonical name: {pm.get_canonical_name(p)}")
         plugin_name = pm.get_name(p) if pm.get_name(p) else ""
         print(f"\t  name: {plugin_name}")
+
 
 def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):
     found_plugin = pm.get_plugin(io_format)
