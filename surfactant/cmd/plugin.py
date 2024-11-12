@@ -1,22 +1,16 @@
 import click
-
+import subprocess
+import sys
 from surfactant.configmanager import ConfigManager
-from surfactant.plugin.manager import get_plugin_manager
-
+from surfactant.plugin.manager import get_plugin_manager, print_plugins
 
 @click.command(name="list")
 def plugin_list_cmd():
     """Lists plugins."""
     pm = get_plugin_manager()
-    print("-------")
-    print("PLUGINS")
-    for p in pm.get_plugins():
-        print("-------")
-        print(f"canonical name: {pm.get_canonical_name(p)}")
-        plugin_name = pm.get_name(p) if pm.get_name(p) else ""
-        print(f"name: {plugin_name}")
+    print_plugins(pm)
 
-    # List disabled pluginsi
+    # List disabled plugins
     config_manager = ConfigManager()
     section = "core"
     section_key = "disable_plugins"
@@ -24,11 +18,9 @@ def plugin_list_cmd():
     # Retrieve the current list of plugins that should be blocked
     current_blocked_plugins = config_manager.get(section, section_key, [])
 
-    print("-------")
-    print("DISABLED PLUGINS")
+    print("\nDISABLED PLUGINS")
     for disabled_plugin in current_blocked_plugins:
-        print("-------")
-        print(f"name: {disabled_plugin}")
+        print(f"\tname: {disabled_plugin}")
 
 
 @click.command(name="enable")
@@ -86,3 +78,24 @@ def plugin_disable_cmd(plugin_names):
     if current_blocked_plugins:
         config_manager.set(section, section_key, current_blocked_plugins)
         click.echo(f"Updated blocked plugins: {current_blocked_plugins}")
+
+@click.command(name="install")
+@click.argument("plugin_name")
+def plugin_install_cmd(plugin_name):
+    """Installs a plugin."""
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", plugin_name])
+        click.echo(f"Successfully installed {plugin_name}.")
+    except subprocess.CalledProcessError as e:
+        click.echo(f"Failed to install {plugin_name}: {e}", err=True)
+
+
+@click.command(name="uninstall")
+@click.argument("plugin_name")
+def plugin_uninstall_cmd(plugin_name):
+    """Uninstalls a plugin."""
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", plugin_name])
+        click.echo(f"Successfully uninstalled {plugin_name}.")
+    except subprocess.CalledProcessError as e:
+        click.echo(f"Failed to uninstall {plugin_name}: {e}", err=True)
