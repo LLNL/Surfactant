@@ -82,7 +82,7 @@ def set_blocked_plugins(pm: pluggy.PluginManager):
         # Unregister the plugin
         plugin = pm.unregister(name=plugin_name)
         if plugin is None:
-            print(f"Plugin '{plugin_name}' not found.")
+            logger.info(f"Disabled plugin '{plugin_name}' not found.")
             continue
 
         # Block the plugin to prevent future registration
