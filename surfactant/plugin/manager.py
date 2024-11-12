@@ -65,7 +65,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
     )
     for plugin in internal_plugins:
         pm.register(plugin)
- 
+
 def set_blocked_plugins(pm: pluggy.PluginManager) :
     """Gets the current list of blocked plugins from the config manager, then blocks and unregisters them with the plugin manager."""
     config_manager = ConfigManager()
