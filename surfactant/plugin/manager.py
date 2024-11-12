@@ -76,7 +76,7 @@ def set_blocked_plugins(pm: pluggy.PluginManager):
     for plugin_name in current_blocked_plugins:
         # Check if the plugin is already blocked
         if pm.is_blocked(plugin_name):
-            print(f"Plugin '{plugin_name}' is already disabled.")
+            logger.info(f"Plugin '{plugin_name}' is already disabled.")
             continue
 
         # Unregister the plugin
