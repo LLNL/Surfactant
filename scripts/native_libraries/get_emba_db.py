@@ -1,7 +1,9 @@
 import json
 
+import os
 import requests
 
+from surfactant.configmanager import ConfigManager
 
 def load_database(url):
     response = requests.get(url)
@@ -20,6 +22,8 @@ def parse_cfg_file(content):
 
     for line in filtered_lines:
         line = line.strip()
+        if line.startswith("vx"):
+            print("this is line1: ", line)
 
         # Split by semicolons
         fields = line.split(";")
@@ -30,9 +34,22 @@ def parse_cfg_file(content):
         # Empty filename because EMBA doesn't need filename patterns
         name_patterns = []
 
-        # Remove double quotes, if any-> 'grape' instead of '"grape"'
-        filecontent = fields[3].strip('"') if len(fields) > 3 else ""
+        if line.startswith("vx"):
+            print("before strip: ", line)
 
+        # Remove double quotes, if any-> 'grape' instead of '"grape"'
+        # filecontent = fields[3].strip('"') if len(fields) > 3 else ''
+        # if filecontent.startswith("Vx"):
+        #     print("after strip: ", filecontent)
+
+        # Check if it starts with one double quote and ends with two double quotes
+        if fields[3].startswith('"') and fields[3].endswith('""'):
+            filecontent = fields[3][1:-1]  
+        elif fields[3].endswith('""'):
+            filecontent = fields[3][:-1]  
+        else:
+            filecontent = fields[3].strip('"')  
+        
         # Create a dictionary for this entry and add it to the database
         if fields[1] == "" or fields[1] == "strict":
             if fields[1] == "strict":
@@ -55,10 +72,11 @@ def parse_cfg_file(content):
     return database
 
 
-url = "https://raw.githubusercontent.com/e-m-b-a/emba/master/config/bin_version_strings.cfg"
-json_file_path = "/Users/tenzing1/surfactant_new_venv/Surfactant/surfactant/infoextractors/native_lib_patterns.json"
+emba_database_url = "https://raw.githubusercontent.com/e-m-b-a/emba/master/config/bin_version_strings.cfg"
+json_file_path = ConfigManager().get_data_dir_path() / "native_lib_patterns"/ "emba.json"
+print("this is json file path: ", json_file_path)
 
-file_content = load_database(url)
+file_content = load_database(emba_database_url)
 
 parsed_data = parse_cfg_file(file_content)
 
@@ -76,5 +94,6 @@ for key in parsed_data:
             if filecontent_list[i].endswith("$"):
                 filecontent_list[i] = filecontent_list[i][:-1]
 
-with open(json_file_path, "w") as json_file:
+os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
+with open(json_file_path, 'w') as json_file:
     json.dump(parsed_data, json_file, indent=4)

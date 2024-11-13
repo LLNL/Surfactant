@@ -7,6 +7,8 @@ from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.configmanager import ConfigManager
+from surfactant.filetypeid import id_magic
 
 
 def supports_file(filetype) -> bool:
@@ -22,7 +24,8 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 def extract_native_lib_info(filename):
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
-    native_lib_patterns = pathlib.Path(__file__).parent / "native_lib_patterns.json"
+    #native_lib_patterns = pathlib.Path(__file__).parent / "native_lib_patterns.json"
+    native_lib_patterns = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
 
     # Load regex patterns into database var
     try:
@@ -70,7 +73,8 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                 if attribute == "filename":
                     matches = re.search(pattern, content)
                 else:
-                    matches = re.search(pattern.encode("utf-8"), content)
+                    print(f"problem pattern: {pattern}")
+                    matches = re.search(pattern.encode('utf-8'), content)
                 try:
                     if matches:
                         libs.append({"library": name})
