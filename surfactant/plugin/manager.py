@@ -7,6 +7,7 @@ import sys
 import pluggy
 from loguru import logger
 
+from surfactant.configmanager import ConfigManager
 from surfactant.plugin import hookspecs
 
 
@@ -66,23 +67,44 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         pm.register(plugin)
 
 
+def set_blocked_plugins(pm: pluggy.PluginManager):
+    """Gets the current list of blocked plugins from the config manager, then blocks and unregisters them with the plugin manager."""
+    config_manager = ConfigManager()
+
+    # Retrieve the current list of blocked plugins
+    current_blocked_plugins = config_manager.get("core", "disable_plugins", [])
+    for plugin_name in current_blocked_plugins:
+        # Check if the plugin is already blocked
+        if pm.is_blocked(plugin_name):
+            logger.info(f"Plugin '{plugin_name}' is already disabled.")
+            continue
+
+        # Unregister the plugin
+        plugin = pm.unregister(name=plugin_name)
+        if plugin is None:
+            logger.info(f"Disabled plugin '{plugin_name}' not found.")
+            continue
+
+        # Block the plugin to prevent future registration
+        pm.set_blocked(plugin_name)
+
+
 def get_plugin_manager() -> pluggy.PluginManager:
     pm = pluggy.PluginManager("surfactant")
     pm.add_hookspecs(hookspecs)
     pm.load_setuptools_entrypoints("surfactant")
     _register_plugins(pm)
+    set_blocked_plugins(pm)
     pm.check_pending()
     return pm
 
 
 def print_plugins(pm: pluggy.PluginManager):
-    print("-------")
     print("PLUGINS")
     for p in pm.get_plugins():
-        print("-------")
-        print(f"canonical name: {pm.get_canonical_name(p)}")
+        print(f"\t> canonical name: {pm.get_canonical_name(p)}")
         plugin_name = pm.get_name(p) if pm.get_name(p) else ""
-        print(f"name: {plugin_name}")
+        print(f"\t  name: {plugin_name}")
 
 
 def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):
