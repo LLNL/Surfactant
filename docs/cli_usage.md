@@ -91,7 +91,7 @@ Our SBOM after the `cli add` command:
 ```
 
 ## surfactant cli save
-The **cli save** command saves the edited sbom to the output file specified. 
+The **cli save** command saves the edited sbom to the output file specified.
 
 ### Example:
 ```bash
