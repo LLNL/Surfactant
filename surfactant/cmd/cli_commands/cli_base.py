@@ -58,6 +58,11 @@ class Cli:
         Returns:
             str: A string representation of the serialized SBOM.
         """
+        # NOTE: python pickle cannot pickle MappingProxyType, which is inherently included in the Field type. 
+        # Pickling is much faster than converting to json or msgpack (see MR for timings: https://github.com/LLNL/Surfactant/pull/261
+        # To workaround the issue we replace the metadata attribute of the Field type (which is default mappingproxytype) with an empty dict
+        # Upon deserialization, we recreate the class with dataclasses.replace() to ensure the unpickled class instance is intact. Without this, 
+        # the class function to_json() and to_dict() does not work as the Field type is no longer recongized.
         if isinstance(sbom, SBOM):
             for _, v in sbom.__dataclass_fields__.items():
                 if isinstance(v, Field):
