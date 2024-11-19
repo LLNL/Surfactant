@@ -16,7 +16,6 @@ from surfactant.cmd.config import config
 from surfactant.cmd.createconfig import create_config
 from surfactant.cmd.generate import sbom as generate
 from surfactant.cmd.merge import merge_command
-
 from surfactant.cmd.plugin import (
     plugin_disable_cmd,
     plugin_enable_cmd,
@@ -24,7 +23,6 @@ from surfactant.cmd.plugin import (
     plugin_list_cmd,
     plugin_uninstall_cmd,
 )
-
 from surfactant.cmd.stat import stat
 from surfactant.cmd.ui import ui
 
