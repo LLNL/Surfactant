@@ -103,3 +103,22 @@ def plugin_uninstall_cmd(plugin_name):
         click.echo(f"Successfully uninstalled {plugin_name}.")
     except subprocess.CalledProcessError as e:
         click.echo(f"Failed to uninstall {plugin_name}: {e}", err=True)
+
+@click.command(name="update-db")
+@click.argument("plugin_name")
+def plugin_update_db_cmd(plugin_name):
+    """Updates the database for a specified plugin."""
+    pm = get_plugin_manager()
+
+    # Check if the plugin has implemented the update_db hook
+    if not pm.has_plugin(plugin_name):
+        click.echo(f"Plugin '{plugin_name}' not found.", err=True)
+        return
+
+    # Call the update_db hook for the specified plugin
+    update_result = pm.hook.update_db(plugin=plugin_name)
+
+    if update_result:
+        click.echo(f"Update result for {plugin_name}: {update_result}")
+    else:
+        click.echo(f"No update operation performed for {plugin_name}.")
