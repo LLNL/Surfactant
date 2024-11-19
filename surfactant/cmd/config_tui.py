@@ -108,7 +108,7 @@ class ExtractPathAdder(textual.widgets.Static):
     @textual.on(textual.widgets.Button.Pressed, "#add_path")
     def on_add_path(self):
         entries = self.app.query_one("#config_entries", textual.containers.ScrollableContainer)
-        self.paths.append(ExtractPathSelector(''))
+        self.paths.append(ExtractPathSelector(""))
         entries.mount(self.paths[-1])
 
 
