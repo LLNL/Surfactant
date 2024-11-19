@@ -257,6 +257,8 @@ class ConfigTUI(textual.app.App):
         if os.path.exists(config_path):
             with open(config_path, "r") as config_file:
                 self.config_json = json.load(config_file)
+        else:
+            self.config_json = {}
 
         self.config_path = config_path
         self.sub_title = config_path
