@@ -97,6 +97,7 @@ class ExtractPathContent(textual.widgets.Static):
         yield textual.widgets.Button("Select Path", id="select_path")
         yield textual.widgets.Label(f"Path: {self.path}", id="path")
 
+
 class ExtractPathSelector(textual.widgets.Static):
     def __init__(self, path, **kwargs):
         super().__init__(**kwargs)
