@@ -6,12 +6,13 @@ from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
+from pluggy import HookimplMarker
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
-from pluggy import HookimplMarker
 hookimpl = HookimplMarker("surfactant")
+
 
 def run_cve_bin_tool(input_file_path, shaHash, output_dir):
     cvebin_file_name = f"{shaHash}_{input_file_path.stem}.json"
@@ -212,6 +213,7 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
 
     # Clean up extra files
     delete_extra_files(cdxvex_file_path, vex_file_path, json_file_path)
+
 
 @hookimpl
 def update_db():
