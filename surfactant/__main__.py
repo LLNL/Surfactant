@@ -22,7 +22,7 @@ from surfactant.cmd.plugin import (
     plugin_install_cmd,
     plugin_list_cmd,
     plugin_uninstall_cmd,
-    plugin_update_db_cmd
+    plugin_update_db_cmd,
 )
 from surfactant.cmd.stat import stat
 from surfactant.cmd.ui import ui

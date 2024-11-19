@@ -111,6 +111,7 @@ def short_name() -> Optional[str]:
         Optional[str]: The name to register the hook with.
     """
 
+
 @hookspec
 def update_db() -> Optional[str]:
     """Updates the database for the plugin.

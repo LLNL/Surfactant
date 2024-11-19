@@ -104,6 +104,7 @@ def plugin_uninstall_cmd(plugin_name):
     except subprocess.CalledProcessError as e:
         click.echo(f"Failed to uninstall {plugin_name}: {e}", err=True)
 
+
 @click.command(name="update-db")
 @click.argument("plugin_name")
 def plugin_update_db_cmd(plugin_name):
