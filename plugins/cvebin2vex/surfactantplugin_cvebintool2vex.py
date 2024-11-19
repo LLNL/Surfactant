@@ -210,3 +210,16 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
 
     # Clean up extra files
     delete_extra_files(cdxvex_file_path, vex_file_path, json_file_path)
+
+from pluggy import HookimplMarker
+
+hookimpl = HookimplMarker("surfactant")
+
+@hookimpl
+def update_db():
+    # Example update logic
+    try:
+        subprocess.check_call(["cve-bin-tool", "--update", "now", "."])
+        return "Database updated successfully."
+    except subprocess.CalledProcessError as e:
+        return f"Failed to update database: {e}"
