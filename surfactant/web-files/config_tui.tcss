@@ -45,3 +45,7 @@ InstallPrefix {
 .selected {
    background: red;
 }
+
+SelectFileButtons {
+   layout: horizontal;
+}

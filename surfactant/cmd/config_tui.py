@@ -39,12 +39,26 @@ class YesNoScreen(textual.screen.Screen[bool]):
         self.dismiss(False)
 
 
+class SelectFileButtons(textual.widgets.Static):
+    def __init__(self, allow_folder_selection: bool):
+        super().__init__()
+        self.allow_folder_selection = allow_folder_selection
+
+    def compose(self) -> textual.app.ComposeResult:
+        yield textual.widgets.Button("Go up a directory", id="up_dir")
+        if self.allow_folder_selection:
+            yield textual.widgets.Button("Select directory", id="select_dir")
+
 class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTree.FileSelected]]):
     """Pop-up to select a file"""
+    def __init__(self, allow_folder_selection: bool):
+        super().__init__()
+        self.allow_folder_selection = allow_folder_selection
+        self.dir_selected = './'
 
     def compose(self) -> textual.app.ComposeResult:
         yield textual.widgets.DirectoryTree("./", id="file_dir")
-        yield textual.widgets.Button("Go up a directory", id="up_dir")
+        yield SelectFileButtons(self.allow_folder_selection)
 
     @textual.on(textual.widgets.Button.Pressed, "#up_dir")
     def handle_up_dir(self):
@@ -52,13 +66,22 @@ class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTr
         tree.path = tree.path.parent.resolve()
         tree.reload()
 
+    @textual.on(textual.widgets.Button.Pressed, "#select_dir")
+    def handle_select_dir(self):
+        self.dismiss(self.dir_selected)
+
+    def on_directory_tree_directory_selected(
+        self, path: textual.widgets.DirectoryTree.DirectorySelected
+    ) -> None:
+        self.dir_selected = path.path.as_posix()
+
     def on_directory_tree_file_selected(
         self, path: textual.widgets.DirectoryTree.FileSelected
     ) -> None:
-        self.dismiss(path)
+        self.dir_selected = path.path.as_posix()
 
     def on_key(self, event: textual.events.Key):
-        if event.key == "escape":
+        if event.key == "escape" :
             self.dismiss(None)
 
 
@@ -77,10 +100,10 @@ class ExtractPathSelector(textual.widgets.Static):
     def on_select_path(self):
         def set_path(path: Optional[textual.widgets.DirectoryTree.FileSelected]):
             if path:
-                self.path = path.path.as_posix()
+                self.path = path
                 self.get_child_by_id("path", textual.widgets.Label).update(f"Path: {self.path}")
 
-        self.app.push_screen(SelectFile(), set_path)
+        self.app.push_screen(SelectFile(True), set_path)
 
     @textual.on(textual.widgets.Button.Pressed, "#delete_path")
     def on_delete_path(self):
@@ -125,13 +148,12 @@ class ArchiveEntry(textual.widgets.Static):
     def on_archive_button(self):
         def set_archive(path: Optional[textual.widgets.DirectoryTree.FileSelected]):
             if path:
-                loc = path.path.as_posix()
-                self.archive_loc = loc
+                self.archive_loc = path
                 self.get_child_by_id("archive_label", textual.widgets.Label).update(
-                    f"Archive: {loc}"
+                    f"Archive: {path}"
                 )
 
-        self.app.push_screen(SelectFile(), set_archive)
+        self.app.push_screen(SelectFile(False), set_archive)
 
 
 class InstallPrefix(textual.widgets.Static):
