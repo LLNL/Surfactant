@@ -27,10 +27,6 @@ MainBody #add_entry_scrollable {
    width: 1fr;
 }
 
-ExtractPathSelector {
-   layout: horizontal;
-}
-
 ArchiveEntry {
    layout: horizontal;
    height: 5;
@@ -47,5 +43,9 @@ InstallPrefix {
 }
 
 SelectFileButtons {
+   layout: horizontal;
+}
+
+ExtractPathContent {
    layout: horizontal;
 }

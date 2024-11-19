@@ -87,6 +87,16 @@ class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTr
             self.dismiss(None)
 
 
+class ExtractPathContent(textual.widgets.Static):
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
+
+    def compose(self) -> textual.app.ComposeResult:
+        yield textual.widgets.Button("Delete Path", id="delete_path")
+        yield textual.widgets.Button("Select Path", id="select_path")
+        yield textual.widgets.Label(f"Path: {self.path}", id="path")
+
 class ExtractPathSelector(textual.widgets.Static):
     def __init__(self, path, **kwargs):
         super().__init__(**kwargs)
@@ -94,9 +104,8 @@ class ExtractPathSelector(textual.widgets.Static):
         self.alive = True
 
     def compose(self) -> textual.app.ComposeResult:
-        yield textual.widgets.Button("Delete Path", id="delete_path")
-        yield textual.widgets.Button("Select Path", id="select_path")
-        yield textual.widgets.Label(f"Path: {self.path}", id="path")
+        yield ExtractPathContent(self.path)
+        yield textual.widgets.Rule()
 
     @textual.on(textual.widgets.Button.Pressed, "#select_path")
     def on_select_path(self):
@@ -124,17 +133,18 @@ class ExtractPathAdder(textual.widgets.Static):
 
     def compose(self) -> textual.app.ComposeResult:
         yield textual.widgets.Button("Add Extract Path", id="add_path")
-        yield textual.containers.Container(id="extract_path_holder")
+
+    def on_mount(self):
         entries = self.app.query_one("#config_entries", textual.containers.ScrollableContainer)
         for path in self.paths:
             if path.alive:
-                entries.mount(path)
+                entries.mount(path, before="#add_path")
 
     @textual.on(textual.widgets.Button.Pressed, "#add_path")
     def on_add_path(self):
         entries = self.app.query_one("#config_entries", textual.containers.ScrollableContainer)
         self.paths.append(ExtractPathSelector(""))
-        entries.mount(self.paths[-1])
+        entries.mount(self.paths[-1], before="#add_path")
 
 
 class ArchiveEntry(textual.widgets.Static):
