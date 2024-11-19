@@ -49,12 +49,14 @@ class SelectFileButtons(textual.widgets.Static):
         if self.allow_folder_selection:
             yield textual.widgets.Button("Select directory", id="select_dir")
 
+
 class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTree.FileSelected]]):
     """Pop-up to select a file"""
+
     def __init__(self, allow_folder_selection: bool):
         super().__init__()
         self.allow_folder_selection = allow_folder_selection
-        self.dir_selected = './'
+        self.dir_selected = "./"
 
     def compose(self) -> textual.app.ComposeResult:
         yield textual.widgets.DirectoryTree("./", id="file_dir")
@@ -81,7 +83,7 @@ class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTr
         self.dir_selected = path.path.as_posix()
 
     def on_key(self, event: textual.events.Key):
-        if event.key == "escape" :
+        if event.key == "escape":
             self.dismiss(None)
 
 
