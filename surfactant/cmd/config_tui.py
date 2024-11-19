@@ -80,7 +80,7 @@ class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTr
     def on_directory_tree_file_selected(
         self, path: textual.widgets.DirectoryTree.FileSelected
     ) -> None:
-        self.dir_selected = path.path.as_posix()
+        self.dismiss(path.path.as_posix())
 
     def on_key(self, event: textual.events.Key):
         if event.key == "escape":
