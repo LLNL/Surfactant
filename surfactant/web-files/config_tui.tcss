@@ -1,0 +1,47 @@
+YesNoScreen {
+   layout: grid;
+   grid-size: 2 2;
+   align: center bottom;
+}
+
+YesNoScreen Button {
+   width: 1fr;
+}
+
+YesNoScreen > Label {
+   margin: 1;
+   text-align: center;
+   column-span: 2;
+   width: 1fr;
+}
+
+MainBody {
+   layout: horizontal;
+}
+
+MainBody #config_entries {
+   width: 9fr;
+}
+
+MainBody #add_entry_scrollable {
+   width: 1fr;
+}
+
+ExtractPathSelector {
+   layout: horizontal;
+}
+
+ArchiveEntry {
+   layout: horizontal;
+   height: 5;
+}
+
+InstallPrefix {
+   layout: horizontal;
+   height: 5;
+   content-align: center middle;
+}
+
+.selected {
+   background: red;
+}

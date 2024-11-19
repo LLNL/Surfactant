@@ -54,6 +54,7 @@ dependencies = [
     "loguru==0.7.*",
     "flask==3.*",
     "tomlkit==0.13.*",
+    "textual-dev==1.*",
 ]
 dynamic = ["version"]
 

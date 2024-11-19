@@ -25,6 +25,7 @@ from surfactant.cmd.plugin import (
 )
 from surfactant.cmd.stat import stat
 from surfactant.cmd.ui import ui
+from surfactant.cmd.config_tui import config_tui
 
 
 @click.group()
@@ -74,6 +75,7 @@ main.add_command(merge_command)
 main.add_command(create_config)
 main.add_command(ui)
 main.add_command(plugin)
+main.add_command(config_tui)
 
 # CLI Subcommands
 cli.add_command(find)
