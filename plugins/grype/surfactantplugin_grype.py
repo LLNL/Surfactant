@@ -12,6 +12,7 @@ from loguru import logger
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
+
 def check_if_grype_installed() -> bool:
     try:
         result = subprocess.run(["grype", "--help"], capture_output=True, check=False).returncode
@@ -77,6 +78,7 @@ def extract_file_info(
             gzip_out.write(gzip.decompress(gzip_data))
             return run_grype(gzip_out.name)
     return run_grype(filename)
+
 
 @surfactant.plugin.hookimpl
 def update_db():
