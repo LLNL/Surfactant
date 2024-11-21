@@ -6,7 +6,6 @@ from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
-from pluggy import HookimplMarker
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -210,6 +209,7 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str)
 
     # Clean up extra files
     delete_extra_files(cdxvex_file_path, vex_file_path, json_file_path)
+
 
 @surfactant.plugin.hookimpl
 def update_db():
