@@ -6,10 +6,10 @@ from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
-from pluggy import HookimplMarker
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
+
 
 def run_cve_bin_tool(input_file_path, shaHash, output_dir):
     cvebin_file_name = f"{shaHash}_{input_file_path.stem}.json"
