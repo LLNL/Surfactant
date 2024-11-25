@@ -1,9 +1,10 @@
 import json
-
 import os
+
 import requests
 
 from surfactant.configmanager import ConfigManager
+
 
 def load_database(url):
     response = requests.get(url)
@@ -34,12 +35,12 @@ def parse_cfg_file(content):
 
         # Check if it starts with one double quote and ends with two double quotes
         if fields[3].startswith('"') and fields[3].endswith('""'):
-            filecontent = fields[3][1:-1]  
+            filecontent = fields[3][1:-1]
         elif fields[3].endswith('""'):
-            filecontent = fields[3][:-1]  
+            filecontent = fields[3][:-1]
         else:
-            filecontent = fields[3].strip('"')  
-        
+            filecontent = fields[3].strip('"')
+
         # Create a dictionary for this entry and add it to the database
         if fields[1] == "" or fields[1] == "strict":
             if fields[1] == "strict":
@@ -59,9 +60,10 @@ def parse_cfg_file(content):
 
     return database
 
+
 # Use database from specific commit
 emba_database_url = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
-json_file_path = ConfigManager().get_data_dir_path() / "native_lib_patterns"/ "emba.json"
+json_file_path = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
 
 file_content = load_database(emba_database_url)
 
@@ -72,13 +74,13 @@ for key, value in parsed_data.items():
 
     # Remove leading ^ from each string in the filecontent list
     for i, content in enumerate(filecontent_list):  # Use enumerate to get index and value
-            if content.startswith("^"):
-                filecontent_list[i] = content[1:]
+        if content.startswith("^"):
+            filecontent_list[i] = content[1:]
 
-            if not content.endswith("\\$"):
-                if content.endswith("$"):
-                    filecontent_list[i] = content[:-1]
+        if not content.endswith("\\$"):
+            if content.endswith("$"):
+                filecontent_list[i] = content[:-1]
 
 os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
-with open(json_file_path, 'w') as json_file:
+with open(json_file_path, "w") as json_file:
     json.dump(parsed_data, json_file, indent=4)
