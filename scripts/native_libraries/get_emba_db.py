@@ -61,7 +61,7 @@ def parse_cfg_file(content):
     return database
 
 
-# Use database from specific commit
+# Use database from this specific commit
 emba_database_url = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
 json_file_path = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
 
