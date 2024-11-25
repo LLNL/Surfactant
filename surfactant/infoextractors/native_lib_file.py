@@ -1,14 +1,12 @@
 import json
-import pathlib
 import re
 from typing import Any, Dict, List
 
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.sbomtypes import SBOM, Software
 from surfactant.configmanager import ConfigManager
-from surfactant.filetypeid import id_magic
+from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype) -> bool:
@@ -65,15 +63,11 @@ def extract_native_lib_info(filename):
 
     # Create the single entry for isLibrary
     if library_names:
-        native_lib_info["nativeLibraries"].append({
-            "isLibrary": library_names
-        })
+        native_lib_info["nativeLibraries"].append({"isLibrary": library_names})
 
     # Create the single entry for containsLibrary
     if contains_library_names:
-        native_lib_info["nativeLibraries"].append({
-            "containsLibrary": contains_library_names
-        })
+        native_lib_info["nativeLibraries"].append({"containsLibrary": contains_library_names})
 
     return native_lib_info
 
@@ -87,9 +81,9 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                     matches = re.search(pattern, content)
                     if matches:
                         libs.append({"isLibrary": name})
-                #else:
+                # else:
                 elif attribute == "filecontent":
-                    matches = re.search(pattern.encode('utf-8'), content)
+                    matches = re.search(pattern.encode("utf-8"), content)
                     if matches:
                         libs.append({"containsLibrary": name})
     return libs
