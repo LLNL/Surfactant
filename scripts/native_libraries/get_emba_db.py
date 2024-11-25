@@ -69,17 +69,17 @@ file_content = load_database(emba_database_url)
 
 parsed_data = parse_cfg_file(file_content)
 
-for key, value in parsed_data.items():
+for _, value in parsed_data.items():
     filecontent_list = value["filecontent"]
 
     # Remove leading ^ from each string in the filecontent list
-    for i, content in enumerate(filecontent_list):  # Use enumerate to get index and value
-        if content.startswith("^"):
-            filecontent_list[i] = content[1:]
+    for i, pattern in enumerate(filecontent_list):  # Use enumerate to get index and value
+            if pattern.startswith("^"):
+                filecontent_list[i] = pattern[1:]
 
-        if not content.endswith("\\$"):
-            if content.endswith("$"):
-                filecontent_list[i] = content[:-1]
+            if not pattern.endswith("\\$"):
+                if pattern.endswith("$"):
+                    filecontent_list[i] = pattern[:-1]
 
 os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
 with open(json_file_path, "w") as json_file:
