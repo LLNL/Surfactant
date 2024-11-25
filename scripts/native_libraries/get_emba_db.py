@@ -74,12 +74,12 @@ for _, value in parsed_data.items():
 
     # Remove leading ^ from each string in the filecontent list
     for i, pattern in enumerate(filecontent_list):  # Use enumerate to get index and value
-            if pattern.startswith("^"):
-                filecontent_list[i] = pattern[1:]
+        if pattern.startswith("^"):
+            filecontent_list[i] = pattern[1:]
 
-            if not pattern.endswith("\\$"):
-                if pattern.endswith("$"):
-                    filecontent_list[i] = pattern[:-1]
+        if not pattern.endswith("\\$"):
+            if pattern.endswith("$"):
+                filecontent_list[i] = pattern[:-1]
 
 os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
 with open(json_file_path, "w") as json_file:
