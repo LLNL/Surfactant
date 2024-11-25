@@ -24,7 +24,6 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 def extract_native_lib_info(filename):
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
-    #native_lib_patterns = pathlib.Path(__file__).parent / "native_lib_patterns.json"
     native_lib_patterns = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
 
     # Load regex patterns into database var
@@ -36,14 +35,16 @@ def extract_native_lib_info(filename):
         return None
 
     found_libraries = set()
+    library_names = []
+    contains_library_names = []
 
     # Match based on filename
     filenames_list = match_by_attribute("filename", filename, database)
     if len(filenames_list) > 0:
         for match in filenames_list:
-            library_name = match["library"]
+            library_name = match["isLibrary"]
             if library_name not in found_libraries:
-                native_lib_info["nativeLibraries"].append(match)
+                library_names.append(library_name)  # Collect library names
                 found_libraries.add(library_name)
 
     # Match based on filecontent
@@ -54,30 +55,59 @@ def extract_native_lib_info(filename):
 
         # Extend the list and add the new libraries found
         for match in filecontent_list:
-            library_name = match["library"]
+            library_name = match["containsLibrary"]
             if library_name not in found_libraries:
-                native_lib_info["nativeLibraries"].append(match)
+                contains_library_names.append(library_name)  # Collect containsLibrary names
                 found_libraries.add(library_name)
 
     except FileNotFoundError:
         logger.warning(f"File not found: {filename}")
 
+    # Create the single entry for isLibrary
+    if library_names:
+        native_lib_info["nativeLibraries"].append({
+            "isLibrary": library_names  # Store all libraries in a list under isLibrary
+        })
+
+    # Create the single entry for containsLibrary
+    if contains_library_names:
+        native_lib_info["nativeLibraries"].append({
+            "containsLibrary": contains_library_names  # Store all containsLibrary in a list
+        })
+
     return native_lib_info
+
+
+
+
+
+
+
+
+
+
+
 
 
 def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
     libs = []
     for name, library in database.items():
+        # name:  lspci
+        # library:  {'filename': [], 'filecontent': ['lspci\\ version\\ [0-9](\\.[0-9]+)+?']}
         if attribute in library:
             for pattern in library[attribute]:
                 if attribute == "filename":
                     matches = re.search(pattern, content)
-                else:
-                    print(f"problem pattern: {pattern}")
-                    matches = re.search(pattern.encode('utf-8'), content)
-                try:
                     if matches:
-                        libs.append({"library": name})
-                except re.error as e:
-                    print(f"Invalid regex filename pattern '{pattern}': {e}")
+                        libs.append({"isLibrary": name})
+                #else:
+                elif attribute == "filecontent":
+                    matches = re.search(pattern.encode('utf-8'), content)
+                    if matches:
+                        libs.append({"containsLibrary": name})
+                # try:
+                #     if matches:
+                #         libs.append({"library": name})
+                # # except re.error as e:
+                # #     print(f"Invalid regex filename pattern '{pattern}': {e}")
     return libs
