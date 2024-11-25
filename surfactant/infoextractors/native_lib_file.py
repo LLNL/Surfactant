@@ -44,7 +44,7 @@ def extract_native_lib_info(filename):
         for match in filenames_list:
             library_name = match["isLibrary"]
             if library_name not in found_libraries:
-                library_names.append(library_name)  # Collect library names
+                library_names.append(library_name)
                 found_libraries.add(library_name)
 
     # Match based on filecontent
@@ -57,7 +57,7 @@ def extract_native_lib_info(filename):
         for match in filecontent_list:
             library_name = match["containsLibrary"]
             if library_name not in found_libraries:
-                contains_library_names.append(library_name)  # Collect containsLibrary names
+                contains_library_names.append(library_name)
                 found_libraries.add(library_name)
 
     except FileNotFoundError:
@@ -66,34 +66,21 @@ def extract_native_lib_info(filename):
     # Create the single entry for isLibrary
     if library_names:
         native_lib_info["nativeLibraries"].append({
-            "isLibrary": library_names  # Store all libraries in a list under isLibrary
+            "isLibrary": library_names
         })
 
     # Create the single entry for containsLibrary
     if contains_library_names:
         native_lib_info["nativeLibraries"].append({
-            "containsLibrary": contains_library_names  # Store all containsLibrary in a list
+            "containsLibrary": contains_library_names
         })
 
     return native_lib_info
 
 
-
-
-
-
-
-
-
-
-
-
-
 def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
     libs = []
     for name, library in database.items():
-        # name:  lspci
-        # library:  {'filename': [], 'filecontent': ['lspci\\ version\\ [0-9](\\.[0-9]+)+?']}
         if attribute in library:
             for pattern in library[attribute]:
                 if attribute == "filename":
@@ -105,9 +92,4 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                     matches = re.search(pattern.encode('utf-8'), content)
                     if matches:
                         libs.append({"containsLibrary": name})
-                # try:
-                #     if matches:
-                #         libs.append({"library": name})
-                # # except re.error as e:
-                # #     print(f"Invalid regex filename pattern '{pattern}': {e}")
     return libs
