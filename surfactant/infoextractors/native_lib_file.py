@@ -18,8 +18,8 @@ def load_pattern_db():
     # Load regex patterns into database var
     try:
         with open(native_lib_patterns, "r") as regex:
-            database = json.load(regex)
-            return database
+            emba_patterns = json.load(regex)
+            return emba_patterns
     except FileNotFoundError:
         logger.warning(f"File not found for native library detection: {native_lib_patterns}")
         return None
@@ -84,9 +84,9 @@ def extract_native_lib_info(filename):
     return native_lib_info
 
 
-def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
+def match_by_attribute(attribute: str, content: str, patterns_database: Dict) -> List[Dict]:
     libs = []
-    for name, library in database.items():
+    for name, library in patterns_database.items():
         if attribute in library:
             for pattern in library[attribute]:
                 if attribute == "filename":
