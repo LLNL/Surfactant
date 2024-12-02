@@ -24,9 +24,11 @@ def load_pattern_db():
         logger.warning(f"File not found for native library detection: {native_lib_patterns}")
         return None
 
+
 # Load the pattern database once at module import
 native_lib_patterns = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
 database = load_pattern_db()
+
 
 def supports_file(filetype) -> bool:
     return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
