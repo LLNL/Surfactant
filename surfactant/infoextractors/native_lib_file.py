@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -8,6 +8,25 @@ import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
 
+
+@surfactant.plugin.hookimpl
+def short_name() -> Optional[str]:
+    return "native_lib_patterns"
+
+
+def load_pattern_db():
+    # Load regex patterns into database var
+    try:
+        with open(native_lib_patterns, "r") as regex:
+            database = json.load(regex)
+            return database
+    except FileNotFoundError:
+        logger.warning(f"File not found for native library detection: {native_lib_patterns}")
+        return None
+
+# Load the pattern database once at module import
+native_lib_patterns = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
+database = load_pattern_db()
 
 def supports_file(filetype) -> bool:
     return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
@@ -22,14 +41,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 def extract_native_lib_info(filename):
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
-    native_lib_patterns = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
-
-    # Load regex patterns into database var
-    try:
-        with open(native_lib_patterns, "r") as regex:
-            database = json.load(regex)
-    except FileNotFoundError:
-        logger.warning(f"File not found: {native_lib_patterns}")
+    if not database:
         return None
 
     found_libraries = set()
