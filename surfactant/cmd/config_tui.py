@@ -96,7 +96,7 @@ class ExtractPathContent(textual.widgets.Static):
         if len(self.par.path) > 0:
             yield textual.widgets.Label(f"{self.par.path}", id="path")
         else:
-            yield textual.widgets.Label(f"(Click to set extract path)", id="path")
+            yield textual.widgets.Label("(Click to set extract path)", id="path")
 
     def on_click(self):
         def set_path(path: Optional[textual.widgets.DirectoryTree.FileSelected]):
@@ -231,6 +231,7 @@ def add_entry(app: textual.app.App) -> ConfigEntry:
     app.config_entries[app.entry_id] = ConfigEntry(app.entry_id)
     app.entry_id += 1
     return app.config_entries[app.entry_id - 1]
+
 
 class AddEntry(textual.widgets.Static):
     """A widget for adding another config entry"""
