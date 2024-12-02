@@ -8,6 +8,10 @@ YesNoScreen Button {
    width: 1fr;
 }
 
+Button {
+   background: midnightblue;
+}
+
 YesNoScreen > Label {
    margin: 1;
    text-align: center;
@@ -15,26 +19,31 @@ YesNoScreen > Label {
    width: 1fr;
 }
 
-MainBody {
-   layout: horizontal;
-}
-
-MainBody #config_entries {
+ConfigTUI #config_entries {
    width: 9fr;
 }
 
-MainBody #add_entry_scrollable {
+ConfigTUI #add_entry_scrollable {
    width: 1fr;
+}
+
+ConfigTUI Button {
+   border: hidden;
+   padding: 0;
+}
+
+ConfigTUI Input {
+   border: hidden;
+   padding: 0;
+   height: 1;
 }
 
 ArchiveEntry {
    layout: horizontal;
-   height: 5;
 }
 
 InstallPrefix {
    layout: horizontal;
-   height: 5;
    content-align: center middle;
 }
 
@@ -46,6 +55,10 @@ SelectFileButtons {
    layout: horizontal;
 }
 
-ExtractPathContent {
+ExtractPathSelector {
    layout: horizontal;
+}
+
+ConfigEntry {
+   border: solid;
 }
