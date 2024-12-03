@@ -26,7 +26,7 @@ In order to create a plugin, you will need to write your implementation for one 
 
 ### Step 2. Write pyproject.toml File
 
-Once you have written your plugin, you will need to write a pyproject.toml file. Include any relevant project metadata/dependencies for your plugin, as well as an entry-point specification (example below) to make the plugin discoverable by surfactant. Once you write your .toml file, you can `surfactant plugin install <plugin name>` to install your plugin. Alternatively, you can `pip install .` your plugin.
+Once you have written your plugin, you will need to write a pyproject.toml file. Include any relevant project metadata/dependencies for your plugin, as well as an entry-point specification (example below) to make the plugin discoverable by surfactant. Once you write your .toml file, you can `surfactant plugin install <path to plugin's folder>` to install your plugin. Alternatively, you can `pip install <path to plugin's folder>` your plugin.
 
 More information on entry points can be found [here](https://setuptools.pypa.io/en/latest/userguide/entry_point.html#entry-points-syntax)
 
