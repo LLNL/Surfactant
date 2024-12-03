@@ -47,7 +47,7 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 [project.entry-points."surfactant"]
 sampleplugin = "sampleplugin"
 ```
-Run `surfactant plugin install <path to plugin's folder>` to install the plugin. Surfactant will automatically load and use the plugin. Alternatively, from the same folder as your sampleplugin files, run `pip install .`. 
+Run `surfactant plugin install <path to plugin's folder>` to install the plugin. Surfactant will automatically load and use the plugin. Alternatively, from the same folder as your sampleplugin files, run `pip install .`.
 
 Consider uploading your plugin to PyPI for easy sharing and to enable installation using the PyPI package name of the plugin. If the package is on PyPI, run `surfactant plugin install <plugin name>`.
 
