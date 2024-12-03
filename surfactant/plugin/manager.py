@@ -23,6 +23,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         java_file,
         js_file,
         mach_o_file,
+        native_lib_file,
         ole_file,
         pe_file,
     )
@@ -62,6 +63,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         cyclonedx_writer,
         spdx_writer,
         cytrics_reader,
+        native_lib_file,
     )
     for plugin in internal_plugins:
         pm.register(plugin)
