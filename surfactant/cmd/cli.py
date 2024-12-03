@@ -103,6 +103,12 @@ def handle_cli_edit(sbom, output_format, input_format, **kwargs):
 
 @click.argument("outfile", type=click.File("w"), required=True)
 @click.option(
+    "--save_subset",
+    is_flag=True,
+    default=False,
+    help="When True, cli will save subset, otherwise it will save full sbom",
+)
+@click.option(
     "--output_format",
     is_flag=False,
     default=ConfigManager().get(
@@ -111,9 +117,9 @@ def handle_cli_edit(sbom, output_format, input_format, **kwargs):
     help="SBOM output format, options=[cytrics|csv|spdx|cyclonedx]",
 )
 @click.command("save")
-def handle_cli_save(outfile, output_format):
+def handle_cli_save(outfile, save_subset, output_format):
     "CLI command to save SBOM to a user specified file"
-    Save(output_format=output_format).execute(outfile)
+    Save(output_format=output_format).execute(outfile, save_subset)
 
 class cli_add:
     """

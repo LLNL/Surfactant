@@ -20,7 +20,7 @@ class Save(Cli):
         self.output_format = output_format
         super().__init__(*args, **kwargs)
 
-    def execute(self, output_file):
+    def execute(self, output_file, save_subset):
         """Executes the main functionality of the load class
 
         Args:
@@ -28,7 +28,11 @@ class Save(Cli):
         """
         pm = get_plugin_manager()
         output_writer = find_io_plugin(pm, self.output_format, "write_sbom")
-        with open(Path(self.data_dir, self.sbom_filename), "rb") as f:
-            data = f.read()
+        if save_subset:
+            with open(Path(self.data_dir, self.subset_filename), "rb") as f:
+                data = f.read()
+        else:
+            with open(Path(self.data_dir, self.sbom_filename), "rb") as f:
+                data = f.read()
         self.sbom = Cli.deserialize(data)
         output_writer.write_sbom(self.sbom, output_file)
