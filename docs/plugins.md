@@ -47,6 +47,8 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 [project.entry-points."surfactant"]
 sampleplugin = "sampleplugin"
 ```
-Run `surfactant plugin install sampleplugin` to install the plugin. Surfactant will automatically load and use the plugin. Alternatively, from the same folder as your sampleplugin files, run `pip install .`.
+Run `surfactant plugin install <path to plugin's folder>` to install the plugin. Surfactant will automatically load and use the plugin. Alternatively, from the same folder as your sampleplugin files, run `pip install .`. 
+
+Consider uploading your plugin to PyPI for easy sharing and to enable installation using the PyPI package name of the plugin. If the package is on PyPI, run `surfactant plugin install <plugin name>`.
 
 Another example can be found in the [plugins/checksec.py](https://github.com/LLNL/Surfactant/tree/main/plugins/checksec.py) folder. There you can see the [pyproject.toml](https://github.com/LLNL/Surfactant/tree/main/plugins/checksec.py/pyproject.toml) file with the `[project.entry-points."surfactant"]` entry. In the [surfactantplugin_checksec.py](https://github.com/LLNL/Surfactant/tree/main/plugins/checksec.py/surfactantplugin_checksec.py) file, you can identify the hooked functions with the `@surfactant.plugin.hookimpl` hook.
