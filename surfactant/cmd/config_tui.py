@@ -143,7 +143,7 @@ class ExtractPathAdder(textual.widgets.Static):
                 entries.mount(path, before=f"#add_path_{self.entry_id}")
 
     def on_button_pressed(self, event: textual.widgets.Button.Pressed) -> None:
-        if event.button.id == f"#add_path_{self.entry_id}":
+        if event.button.id == f"add_path_{self.entry_id}":
             entries = self.app.query_one("#config_entries", textual.containers.ScrollableContainer)
             self.paths.append(ExtractPathSelector(""))
             entries.mount(self.paths[-1], before=f"#add_path_{self.entry_id}")
