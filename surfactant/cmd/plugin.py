@@ -4,7 +4,7 @@ import sys
 import click
 
 from surfactant.configmanager import ConfigManager
-from surfactant.plugin.manager import get_plugin_manager, print_plugins
+from surfactant.plugin.manager import get_plugin_manager, print_plugins, find_plugin_by_name
 
 
 @click.command(name="list")
@@ -111,9 +111,20 @@ def plugin_update_db_cmd(plugin_name):
     """Updates the database for a specified plugin."""
     pm = get_plugin_manager()
 
-    # Check if the plugin has implemented the update_db hook
+    # Check if the plugin is registered
     if not pm.has_plugin(plugin_name):
         click.echo(f"Plugin '{plugin_name}' not found.", err=True)
+        return
+
+    # Check if the plugin has implemented the update_db hook
+    has_update_db_hook = False
+    for hookimpl in pm.get_hookimpls('update_db'):
+        if hookimpl.plugin_name == plugin_name:
+            has_update_db_hook = True
+            break
+
+    if not has_update_db_hook:
+        click.echo(f"Plugin '{plugin_name}' does not implement the 'update_db' hook.", err=True)
         return
 
     # Call the update_db hook for the specified plugin
