@@ -187,7 +187,7 @@ def find_plugin_by_name(pm: pluggy.PluginManager, name: str):
         short_name_lower = short_name.lower() if short_name else None
 
         # Check if any of the names match the given name
-        if (registered_name == name_lower) or (canonical_name == name_lower) or (short_name_lower == name_lower):
+        if name_lower in (registered_name, canonical_name, short_name_lower):
             return plugin
 
     return None
