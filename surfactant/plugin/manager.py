@@ -126,16 +126,15 @@ def print_plugins(pm: pluggy.PluginManager):
         print(f"\t> name: {plugin_name}")
         print(f"\t  canonical name: {pm.get_canonical_name(plugin)}")
 
-        short_name = None        
-        
+        short_name = None
+
         # Check if the plugin has implemented the short_name hook
-        hook_impl = is_hook_implemented(pm, plugin, 'short_name')
+        hook_impl = is_hook_implemented(pm, plugin, "short_name")
 
         if hook_impl:
-            short_name = plugin.short_name() # Get the short name
+            short_name = plugin.short_name()  # Get the short name
 
         print(f"\t  short name: {short_name}\n")
-
 
 
 def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):
@@ -178,10 +177,10 @@ def find_plugin_by_name(pm: pluggy.PluginManager, name: str):
 
         # Check if the plugin has implemented the short_name hook
         short_name = None
-        hook_impl = is_hook_implemented(pm, plugin, 'short_name')
+        hook_impl = is_hook_implemented(pm, plugin, "short_name")
 
         if hook_impl:
-            short_name = plugin.short_name() # Get the short name
+            short_name = plugin.short_name()  # Get the short name
 
         # Convert short_name to lowercase if it exists
         short_name_lower = short_name.lower() if short_name else None
