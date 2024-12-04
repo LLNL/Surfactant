@@ -78,3 +78,18 @@ def extract_file_info(
             gzip_out.write(gzip.decompress(gzip_data))
             return run_grype(gzip_out.name)
     return run_grype(filename)
+
+
+@surfactant.plugin.hookimpl
+def update_db():
+    # Example update logic
+    try:
+        subprocess.check_call(["grype", "db", "update"])
+        return "Database updated successfully."
+    except subprocess.CalledProcessError as e:
+        return f"Failed to update database: {e}"
+
+
+@surfactant.plugin.hookimpl
+def short_name():
+    return "grype"

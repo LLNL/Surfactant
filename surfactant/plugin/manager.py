@@ -99,12 +99,42 @@ def get_plugin_manager() -> pluggy.PluginManager:
     return pm
 
 
+def is_hook_implemented(pm: pluggy.PluginManager, plugin: object, hook_name: str) -> bool:
+    """
+    Checks if a specific hook is implemented by a given plugin.
+
+    Args:
+        pm (pluggy.PluginManager): The plugin manager instance.
+        plugin (object): The plugin object to check.
+        hook_name (str): The name of the hook to check for implementation.
+
+    Returns:
+        bool: True if the hook is implemented by the plugin, False otherwise.
+    """
+    hook_callers = pm.get_hookcallers(plugin)
+    if hook_callers:
+        for hook_caller in hook_callers:
+            if hook_caller.name == hook_name:
+                return True
+    return False
+
+
 def print_plugins(pm: pluggy.PluginManager):
     print("PLUGINS")
-    for p in pm.get_plugins():
-        print(f"\t> canonical name: {pm.get_canonical_name(p)}")
-        plugin_name = pm.get_name(p) if pm.get_name(p) else ""
-        print(f"\t  name: {plugin_name}")
+    for plugin in pm.get_plugins():
+        plugin_name = pm.get_name(plugin) if pm.get_name(plugin) else ""
+        print(f"\t> name: {plugin_name}")
+        print(f"\t  canonical name: {pm.get_canonical_name(plugin)}")
+
+        short_name = None
+
+        # Check if the plugin has implemented the short_name hook
+        hook_impl = is_hook_implemented(pm, plugin, "short_name")
+
+        if hook_impl:
+            short_name = plugin.short_name()  # Get the short name
+
+        print(f"\t  short name: {short_name}\n")
 
 
 def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):
@@ -126,3 +156,37 @@ def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str)
         sys.exit(1)
 
     return found_plugin
+
+
+def find_plugin_by_name(pm: pluggy.PluginManager, name: str):
+    """
+    Finds a plugin by matching the given name against the plugin's registered name,
+    canonical name, and its short name (if applicable).
+
+    :param pm: The plugin manager instance.
+    :param name: The name to match against the plugin's registered, canonical, and short names.
+    :return: The matched plugin instance or None if no match is found.
+    """
+    # Convert the name to lowercase for case-insensitive comparison
+    name_lower = name.lower()
+
+    for plugin in pm.get_plugins():
+        # Get the registered and canonical names
+        registered_name = pm.get_name(plugin).lower()
+        canonical_name = pm.get_canonical_name(plugin).lower()
+
+        # Check if the plugin has implemented the short_name hook
+        short_name = None
+        hook_impl = is_hook_implemented(pm, plugin, "short_name")
+
+        if hook_impl:
+            short_name = plugin.short_name()  # Get the short name
+
+        # Convert short_name to lowercase if it exists
+        short_name_lower = short_name.lower() if short_name else None
+
+        # Check if any of the names match the given name
+        if name_lower in (registered_name, canonical_name, short_name_lower):
+            return plugin
+
+    return None
