@@ -112,7 +112,9 @@ def plugin_uninstall_cmd(plugin_name):
 
 @click.command(name="update-db")
 @click.argument("plugin_name", required=False)
-@click.option('--all', is_flag=True, help="Update all plugin databases that implement the 'update_db' hook.")
+@click.option(
+    "--all", is_flag=True, help="Update all plugin databases that implement the 'update_db' hook."
+)
 def plugin_update_db_cmd(plugin_name, all):
     """Updates the database for a specified plugin or all plugins if --all is used."""
     pm = get_plugin_manager()
