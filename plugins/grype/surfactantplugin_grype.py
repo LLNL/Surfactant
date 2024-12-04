@@ -88,3 +88,7 @@ def update_db():
         return "Database updated successfully."
     except subprocess.CalledProcessError as e:
         return f"Failed to update database: {e}"
+
+@surfactant.plugin.hookimpl
+def short_name():
+    return "grype"
