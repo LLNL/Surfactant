@@ -137,6 +137,7 @@ def print_plugins(pm: pluggy.PluginManager):
         print(f"\t  short name: {short_name}\n")
 
 
+
 def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str):
     found_plugin = pm.get_plugin(io_format)
 
