@@ -111,29 +111,48 @@ def plugin_uninstall_cmd(plugin_name):
 
 
 @click.command(name="update-db")
-@click.argument("plugin_name")
-def plugin_update_db_cmd(plugin_name):
-    """Updates the database for a specified plugin."""
+@click.argument("plugin_name", required=False)
+@click.option('--all', is_flag=True, help="Update all plugin databases that implement the 'update_db' hook.")
+def plugin_update_db_cmd(plugin_name, all):
+    """Updates the database for a specified plugin or all plugins if --all is used."""
     pm = get_plugin_manager()
 
-    plugin = find_plugin_by_name(pm, plugin_name)  # Get an instance of the plugin
-
-    # Check if the plugin is registered
-    if not plugin:
-        click.echo(f"Plugin '{plugin_name}' not found.", err=True)
-        return
-
-    # Check if the plugin has implemented the update_db hook
-    has_update_db_hook = is_hook_implemented(pm, plugin, "update_db")
-
-    if not has_update_db_hook:
-        click.echo(f"Plugin '{plugin_name}' does not implement the 'update_db' hook.", err=True)
-        return
-
-    # Call the update_db hook for the specified plugin
-    update_result = plugin.update_db()
-
-    if update_result:
-        click.echo(f"Update result for {plugin_name}: {update_result}")
+    if all:
+        # Update all plugins that implement the update_db hook
+        for plugin in pm.get_plugins():
+            if is_hook_implemented(pm, plugin, "update_db"):
+                plugin_name = pm.get_name(plugin) or pm.get_canonical_name(plugin)
+                click.echo(f"Updating {plugin_name} ...")
+                update_result = plugin.update_db()
+                if update_result:
+                    click.echo(f"Update result for {plugin_name}: {update_result}")
+                else:
+                    click.echo(f"No update operation performed for {plugin_name}.")
     else:
-        click.echo(f"No update operation performed for {plugin_name}.")
+        if not plugin_name:
+            click.echo("Please specify a plugin name or use --all to update all plugins.", err=True)
+            return
+
+        plugin = find_plugin_by_name(pm, plugin_name)  # Get an instance of the plugin
+
+        # Check if the plugin is registered
+        if not plugin:
+            click.echo(f"Plugin '{plugin_name}' not found.", err=True)
+            return
+
+        # Check if the plugin has implemented the update_db hook
+        has_update_db_hook = is_hook_implemented(pm, plugin, "update_db")
+
+        if not has_update_db_hook:
+            click.echo(f"Plugin '{plugin_name}' does not implement the 'update_db' hook.", err=True)
+            return
+
+        # Call the update_db hook for the specified plugin
+        plugin_name = pm.get_name(plugin) or pm.get_canonical_name(plugin)
+        click.echo(f"Updating {plugin_name} ...")
+        update_result = plugin.update_db()
+
+        if update_result:
+            click.echo(f"Update result for {plugin_name}: {update_result}")
+        else:
+            click.echo(f"No update operation performed for {plugin_name}.")
