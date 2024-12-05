@@ -163,7 +163,7 @@ $  surfactant create-config [INPUT_PATH] --output new_output.json --install-pref
 
 #### Example configuration file
 
-Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
+Let's say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
 
 ##### Example 1: Simple Configuration File
 
