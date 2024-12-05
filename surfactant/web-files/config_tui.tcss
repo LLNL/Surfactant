@@ -23,10 +23,6 @@ ConfigTUI #config_entries {
    width: 100%;
 }
 
-ConfigTUI #add_entry_scrollable {
-   width: 1fr;
-}
-
 ConfigTUI Button {
    border: hidden;
    padding: 0;
@@ -45,10 +41,6 @@ ArchiveEntry {
 InstallPrefix {
    layout: horizontal;
    content-align: center middle;
-}
-
-.selected {
-   background: red;
 }
 
 SelectFileButtons {
