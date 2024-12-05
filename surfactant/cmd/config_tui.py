@@ -229,6 +229,7 @@ def add_entry(app: textual.app.App) -> ConfigEntry:
             "installPrefix": "",
         }
     app.config_entries[app.entry_id] = ConfigEntry(app.entry_id)
+    app.config_entries[app.entry_id].border_title = str(app.entry_id)
     app.entry_id += 1
     return app.config_entries[app.entry_id - 1]
 
@@ -315,7 +316,7 @@ class ConfigTUI(textual.app.App):
                         write_to["extractPaths"].append(selector.path)
 
         with open(self.config_path, "w") as f:
-            f.write(json.dumps(to_save))
+            f.write(json.dumps(to_save, indent=2))
 
     def action_quit(self) -> None:
         self.action_save_sbom()

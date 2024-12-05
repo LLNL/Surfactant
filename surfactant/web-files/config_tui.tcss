@@ -20,7 +20,7 @@ YesNoScreen > Label {
 }
 
 ConfigTUI #config_entries {
-   width: 9fr;
+   width: 100%;
 }
 
 ConfigTUI #add_entry_scrollable {
@@ -60,5 +60,5 @@ ExtractPathSelector {
 }
 
 ConfigEntry {
-   border: solid;
+   border: solid white;
 }
