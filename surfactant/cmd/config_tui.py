@@ -293,7 +293,7 @@ class ConfigTUI(textual.app.App):
 
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""
-        # pylink: disable=attribute-defined-outside-init
+        # pylint: disable=attribute-defined-outside-init
         self.dark = not self.dark
 
     def action_save_sbom(self) -> None:
