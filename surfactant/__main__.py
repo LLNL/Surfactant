@@ -13,6 +13,7 @@ from loguru import logger
 
 from surfactant.cmd.cli import add, edit, find
 from surfactant.cmd.config import config
+from surfactant.cmd.config_tui import config_tui
 from surfactant.cmd.createconfig import create_config
 from surfactant.cmd.generate import sbom as generate
 from surfactant.cmd.merge import merge_command
@@ -75,6 +76,7 @@ main.add_command(merge_command)
 main.add_command(create_config)
 main.add_command(ui)
 main.add_command(plugin)
+main.add_command(config_tui)
 
 # CLI Subcommands
 cli.add_command(find)

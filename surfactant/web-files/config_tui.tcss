@@ -1,0 +1,56 @@
+YesNoScreen {
+   layout: grid;
+   grid-size: 2 2;
+   align: center bottom;
+}
+
+YesNoScreen Button {
+   width: 1fr;
+}
+
+Button {
+   background: midnightblue;
+}
+
+YesNoScreen > Label {
+   margin: 1;
+   text-align: center;
+   column-span: 2;
+   width: 1fr;
+}
+
+ConfigTUI #config_entries {
+   width: 100%;
+}
+
+ConfigTUI Button {
+   border: hidden;
+   padding: 0;
+}
+
+ConfigTUI Input {
+   border: hidden;
+   padding: 0;
+   height: 1;
+}
+
+ArchiveEntry {
+   layout: horizontal;
+}
+
+InstallPrefix {
+   layout: horizontal;
+   content-align: center middle;
+}
+
+SelectFileButtons {
+   layout: horizontal;
+}
+
+ExtractPathSelector {
+   layout: horizontal;
+}
+
+ConfigEntry {
+   border: solid white;
+}
