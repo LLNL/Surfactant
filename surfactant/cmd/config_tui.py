@@ -40,6 +40,7 @@ class YesNoScreen(textual.screen.Screen[bool]):
 
 
 class SelectFileButtons(textual.widgets.Static):
+    # pylint: disable=too-few-public-methods
     def __init__(self, allow_folder_selection: bool):
         super().__init__()
         self.allow_folder_selection = allow_folder_selection
@@ -292,6 +293,7 @@ class ConfigTUI(textual.app.App):
 
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""
+        # pylink: disable=attribute-defined-outside-init
         self.dark = not self.dark
 
     def action_save_sbom(self) -> None:
