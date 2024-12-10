@@ -120,5 +120,5 @@ def update_db() -> Optional[str]:
     The implementation should perform the necessary update operations.
 
     Returns:
-        Optional[str]: A message indicating the result of the update operation, or None if no message is needed.
+        Optional[str]: A message indicating the result of the update operation, or None if no update was needed.
     """
