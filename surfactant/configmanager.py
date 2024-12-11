@@ -71,9 +71,9 @@ class ConfigManager:
             config_dir = Path(self.config_dir)
         else:
             if platform.system() == "Windows":
-                config_dir = Path(os.getenv("APPDATA", os.path.expanduser("~\\AppData\\Roaming")))
+                config_dir = Path(os.getenv("APPDATA", str(Path("~\\AppData\\Roaming"))))
             else:
-                config_dir = Path(os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config")))
+                config_dir = Path(os.getenv("XDG_CONFIG_HOME", str(Path("~/.config"))))
             config_dir = config_dir / self.app_name
         return config_dir / "config.toml"
 
@@ -149,8 +149,8 @@ class ConfigManager:
             Path: The path to the data directory.
         """
         if platform.system() == "Windows":
-            data_dir = Path(os.getenv("LOCALAPPDATA", os.path.expanduser("~\\AppData\\Local")))
+            data_dir = Path(os.getenv("LOCALAPPDATA", str(Path("~\\AppData\\Local"))))
         else:
-            data_dir = Path(os.getenv("XDG_DATA_HOME", os.path.expanduser("~/.local/share")))
+            data_dir = Path(os.getenv("XDG_DATA_HOME", str(Path("~/.local/share"))))
         data_dir = data_dir / self.app_name
         return data_dir

@@ -57,9 +57,10 @@ def test_config_file_creation(config_manager):
 @pytest.mark.skipif(platform.system() != "Windows", reason="Test specific to Windows platform")
 def test_windows_config_path():
     config_manager = ConfigManager(app_name="testapp")
-    config_path = config_manager._get_config_file_path()  # pylint: disable=protected-access
+    config_path = config_manager._get_config_file_path().expanduser()  # pylint: disable=protected-access
     expected_config_dir = Path(os.getenv("APPDATA", str(Path("~\\AppData\\Roaming").expanduser())))
     assert expected_config_dir in config_path.parents
+    assert config_path.parts[-2:] == ("testapp", "config.toml")
     # delete instance so other tests don't accidentally use it
     config_manager.delete_instance("testapp")
 
@@ -67,9 +68,32 @@ def test_windows_config_path():
 @pytest.mark.skipif(platform.system() == "Windows", reason="Test specific to Unix-like platforms")
 def test_unix_config_path():
     config_manager = ConfigManager(app_name="testapp")
-    config_path = config_manager._get_config_file_path()  # pylint: disable=protected-access
+    config_path = config_manager._get_config_file_path().expanduser()  # pylint: disable=protected-access
     expected_config_dir = Path(os.getenv("XDG_CONFIG_HOME", str(Path("~/.config").expanduser())))
     assert expected_config_dir in config_path.parents
+    assert config_path.parts[-2:] == ("testapp", "config.toml")
+    # delete instance so other tests don't accidentally use it
+    config_manager.delete_instance("testapp")
+
+
+@pytest.mark.skipif(platform.system() != "Windows", reason="Test specific to Windows platform")
+def test_windows_data_dir_path():
+    config_manager = ConfigManager(app_name="testapp")
+    data_dir = config_manager.get_data_dir_path().expanduser()  # pylint: disable=protected-access
+    expected_data_dir = Path(os.getenv("LOCALAPPDATA", str(Path("~\\AppData\\Local").expanduser())))
+    assert expected_data_dir in data_dir.parents
+    assert data_dir.name == "testapp"
+    # delete instance so other tests don't accidentally use it
+    config_manager.delete_instance("testapp")
+
+
+@pytest.mark.skipif(platform.system() == "Windows", reason="Test specific to Unix-like platforms")
+def test_unix_data_dir_path():
+    config_manager = ConfigManager(app_name="testapp")
+    data_dir = config_manager.get_data_dir_path().expanduser()  # pylint: disable=protected-access
+    expected_data_dir = Path(os.getenv("XDG_DATA_HOME", str(Path("~/.local/share").expanduser())))
+    assert expected_data_dir in data_dir.parents
+    assert data_dir.name == "testapp"
     # delete instance so other tests don't accidentally use it
     config_manager.delete_instance("testapp")
 
