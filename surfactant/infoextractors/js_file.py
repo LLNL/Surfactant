@@ -119,7 +119,7 @@ def update_db():
         with open("js_library_patterns.json", "w") as f:
             json.dump(cleaned, f, indent=4)
         return "Update complete."
-
+    return "No update occurred."
 
 @surfactant.plugin.hookimpl
 def short_name():
