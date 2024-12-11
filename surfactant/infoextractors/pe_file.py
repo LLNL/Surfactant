@@ -36,7 +36,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 pe_machine_types = {
     0x0: "UNKNOWN",
     0x184: "ALPHA",
-    0x284: "ALPHA64", # Also AXP64
+    0x284: "ALPHA64",  # Also AXP64
     0x1D3: "AM33",
     0x8664: "AMD64",
     0x1C0: "ARM",
@@ -55,8 +55,8 @@ pe_machine_types = {
     0x466: "MIPSFPU16",
     0x1F0: "POWERPC",
     0x1F1: "POWERPCFP",
-    0x160: "R3000", # Big-Endian
-    0x162: "R3000", # Little-Endian
+    0x160: "R3000",  # Big-Endian
+    0x162: "R3000",  # Little-Endian
     0x166: "R4000",
     0x168: "R10000",
     0x5032: "RISCV32",
