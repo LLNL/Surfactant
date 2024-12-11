@@ -144,7 +144,9 @@ def construct_relationship_graph(sbom: SBOM):
     # iterate through all relationships, adding edges to the adjacency list
     for rel in sbom.relationships:
         if rel.xUUID not in rel_graph or rel.yUUID not in rel_graph:
-            logger.error(f"Either the xUUID or yUUID for the relationship does not exist in the graph: {rel = }")
+            logger.error(
+                f"Either the xUUID or yUUID for the relationship does not exist in the graph: {rel = }"
+            )
             continue
         # consider also including relationship type for the edge
         # treat as directed graph, with inverted edges (pointing to parents) so dfs will eventually lead to the root parent node for a (sub)graph
