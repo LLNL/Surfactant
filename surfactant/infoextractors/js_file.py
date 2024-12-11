@@ -121,6 +121,7 @@ def update_db():
         return "Update complete."
     return "No update occurred."
 
+
 @surfactant.plugin.hookimpl
 def short_name():
     return "js_file"
