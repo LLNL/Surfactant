@@ -77,10 +77,12 @@ def load_database() -> dict:
     if response.status_code == 200:
         click.echo("Request successful!")
         return json.loads(response.text)
-    elif response.status_code == 404:
+    
+    if response.status_code == 404:
         click.echo("Resource not found.")
     else:
         click.echo("An error occurred.")
+    
     return None
 
 
