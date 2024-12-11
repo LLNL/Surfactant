@@ -143,10 +143,8 @@ def construct_relationship_graph(sbom: SBOM):
         rel_graph[sw.UUID] = []
     # iterate through all relationships, adding edges to the adjacency list
     for rel in sbom.relationships:
-        # check case where xUUID doesn't exist (and error if yUUID doesn't exist) in the graph
         if rel.xUUID not in rel_graph or rel.yUUID not in rel_graph:
-            logger.error("====ERROR xUUID or yUUID doesn't exist====")
-            logger.error(f"{rel = }")
+            logger.error(f"Either the xUUID or yUUID for the relationship does not exist in the graph: {rel = }")
             continue
         # consider also including relationship type for the edge
         # treat as directed graph, with inverted edges (pointing to parents) so dfs will eventually lead to the root parent node for a (sub)graph
@@ -210,7 +208,7 @@ def create_system_object(sbom: SBOM, config=None, system_uuid=None) -> Tuple[Sys
         config: The user specified config json (Optional).
 
     Returns:
-        System: The created system object.
+        Tuple[System, bool]: The created system object and a boolean indicating if a random UUID was used.
     """
 
     system = {}
