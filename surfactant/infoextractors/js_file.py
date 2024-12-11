@@ -7,11 +7,12 @@ import pathlib
 import re
 from typing import Any, Dict, List
 
+import requests
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
-import requests
+
 
 def supports_file(filetype) -> bool:
     return filetype == "JAVASCRIPT"
@@ -68,6 +69,7 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                         break
     return libs
 
+
 def load_database() -> dict:
     url = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
     response = requests.get(url)
@@ -100,9 +102,9 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 @surfactant.plugin.hookimpl
 def update_db():
-    """ Retrieves the javascript library CVE database used by retire.js (https://github.com/RetireJS/retire.js/blob/master/repository/jsrepository-master.json) and only keeps the contents under each library's "extractors" section, which contains file hashes and regexes relevant for detecting a specific javascript library by its file name or contents.
+    """Retrieves the javascript library CVE database used by retire.js (https://github.com/RetireJS/retire.js/blob/master/repository/jsrepository-master.json) and only keeps the contents under each library's "extractors" section, which contains file hashes and regexes relevant for detecting a specific javascript library by its file name or contents.
 
-The resulting smaller json is written to js_library_patterns.json in the same directory. This smaller file will be read from to make the checks later on."""
+    The resulting smaller json is written to js_library_patterns.json in the same directory. This smaller file will be read from to make the checks later on."""
     retirejs = load_database()
     if retirejs is not None:
         cleaned = strip_irrelevant_data(retirejs)
