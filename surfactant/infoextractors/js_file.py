@@ -67,3 +67,8 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                         # skip remaining patterns, move on to the next library
                         break
     return libs
+
+
+@surfactant.plugin.hookimpl
+def short_name():
+    return "js_file"
