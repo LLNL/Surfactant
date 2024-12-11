@@ -89,8 +89,8 @@ def merge(
     config,
     output_writer,
     system_uuid=None,
-    system_relationship="Contains",
-    add_system=True,
+    system_relationship="Contains", # remember: keep in-sync with click arg default
+    add_system=False,
 ):
     """Merge two or more SBOMs."""
     merged_sbom = input_sboms[0]
