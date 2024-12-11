@@ -12,7 +12,7 @@ from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
-
+import click
 
 def supports_file(filetype) -> bool:
     return filetype == "JAVASCRIPT"
@@ -74,7 +74,12 @@ def load_database() -> dict:
     url = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
     response = requests.get(url)
     if response.status_code == 200:
+        click.echo("Request successful!")
         return json.loads(response.text)
+    elif response.status_code == 404:
+        click.echo("Resource not found.")
+    else:
+        click.echo("An error occurred.")
     return None
 
 
@@ -110,6 +115,7 @@ def update_db():
         cleaned = strip_irrelevant_data(retirejs)
         with open("js_library_patterns.json", "w") as f:
             json.dump(cleaned, f, indent=4)
+        return "Update complete."
 
 
 @surfactant.plugin.hookimpl
