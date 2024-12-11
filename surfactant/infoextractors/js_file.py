@@ -7,12 +7,13 @@ import pathlib
 import re
 from typing import Any, Dict, List
 
+import click
 import requests
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
-import click
+
 
 def supports_file(filetype) -> bool:
     return filetype == "JAVASCRIPT"
