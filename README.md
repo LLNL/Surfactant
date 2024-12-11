@@ -49,8 +49,8 @@ If for some reason manually managing virtual environments is desired, the follow
 1. Create a virtual environment with python >= 3.8 and activate it [Optional, but highly recommended over a global install]
 
 ```bash
-python -m venv cytrics_venv
-source cytrics_venv/bin/activate
+python -m venv venv
+source venv/bin/activate
 ```
 
 2. Install Surfactant with `pip install`
@@ -70,8 +70,8 @@ pip install git+https://github.com/LLNL/Surfactant#subdirectory=plugins/fuzzyhas
 1. Create a virtual environment with python >= 3.8 [Optional, but recommended]
 
 ```bash
-python -m venv cytrics_venv
-source cytrics_venv/bin/activate
+python -m venv venv
+source venv/bin/activate
 ```
 
 2. Clone sbom-surfactant
@@ -413,8 +413,7 @@ Details on the merge command can be found in the docs page [here](./docs/basic_u
 
 ## Plugins
 
-Surfactant supports using plugins to add additional features. For users, installing and enabling a plugin usually just involves
-doing a `pipx inject surfactant` when using pipx or `pip install` of the plugin if manually managing virtual environments.
+Surfactant supports using plugins to add additional features. Users can install plugins with `surfactant plugin install` and disable or enable them with `surfactant plugin disable` and `surfactant plugin enable` respectively. `surfactant plugin install` detects the active virtual environment and runs the appropriate command i.e. `pipx` or `pip`. Alternatively, users can manually manage their environments with `pipx inject surfactant` when using pipx or `pip install`.
 
 Detailed information on configuration options for the plugin system and how to develop new plugins can be found [here](./docs/plugins.md).
 

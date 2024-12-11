@@ -23,6 +23,7 @@ from surfactant.cmd.plugin import (
     plugin_install_cmd,
     plugin_list_cmd,
     plugin_uninstall_cmd,
+    plugin_update_db_cmd,
 )
 
 from surfactant.cmd.stat import stat
@@ -88,6 +89,7 @@ plugin.add_command(plugin_enable_cmd)
 plugin.add_command(plugin_disable_cmd)
 plugin.add_command(plugin_install_cmd)
 plugin.add_command(plugin_uninstall_cmd)
+plugin.add_command(plugin_update_db_cmd)
 
 if __name__ == "__main__":
     main()

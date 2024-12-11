@@ -21,8 +21,8 @@ All contributions to Surfactant are made under the MIT license (MIT).
 1. Create a virtual environment with python >= 3.8 [Optional, but recommended]
 
 ```bash
-python -m venv cytrics_venv
-source cytrics_venv/bin/activate
+python -m venv venv
+source venv/bin/activate
 ```
 
 2. Clone sbom-surfactant
