@@ -100,6 +100,9 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 @surfactant.plugin.hookimpl
 def update_db():
+""" Retrieves the javascript library CVE database used by retire.js (https://github.com/RetireJS/retire.js/blob/master/repository/jsrepository-master.json) and only keeps the contents under each library's "extractors" section, which contains file hashes and regexes relevant for detecting a specific javascript library by its file name or contents.
+
+The resulting smaller json is written to js_library_patterns.json in the same directory. This smaller file will be read from to make the checks later on.""":x!
     retirejs = load_database()
     if retirejs is not None:
         cleaned = strip_irrelevant_data(retirejs)
