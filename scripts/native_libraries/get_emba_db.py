@@ -1,4 +1,5 @@
 import json
+import re
 import os
 
 import requests
@@ -42,6 +43,7 @@ def parse_cfg_file(content):
             filecontent = fields[3].strip('"')
 
         # Create a dictionary for this entry and add it to the database
+        # Strict mode is deprecated so those entries will be matched just by filename
         if fields[1] == "" or fields[1] == "strict":
             if fields[1] == "strict":
                 if lib_name not in database:
@@ -50,13 +52,17 @@ def parse_cfg_file(content):
                         "filecontent": [],
                     }
             else:
-                if lib_name not in database:
-                    database[lib_name] = {
-                        "filename": name_patterns,
-                        "filecontent": [filecontent],
-                    }
-                else:
-                    database[lib_name]["filecontent"].append(filecontent)
+                try:
+                    re.search(filecontent.encode("utf-8"), b"")
+                    if lib_name not in database:
+                        database[lib_name] = {
+                            "filename": name_patterns,
+                            "filecontent": [filecontent],
+                        }
+                    else:
+                        database[lib_name]["filecontent"].append(filecontent)
+                except re.error as e:
+                    print(f"Error parsing file content regexp {filecontent}: {e}")
 
     return database
 

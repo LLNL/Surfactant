@@ -1,5 +1,6 @@
 import json
 import re
+import os
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
@@ -51,7 +52,8 @@ def extract_native_lib_info(filename):
     contains_library_names = []
 
     # Match based on filename
-    filenames_list = match_by_attribute("filename", filename, database)
+    base_filename = os.path.basename(filename)
+    filenames_list = match_by_attribute("filename", base_filename, database)
     if len(filenames_list) > 0:
         for match in filenames_list:
             library_name = match["isLibrary"]
@@ -92,10 +94,9 @@ def match_by_attribute(attribute: str, content: str, patterns_database: Dict) ->
         if attribute in library:
             for pattern in library[attribute]:
                 if attribute == "filename":
-                    matches = re.search(pattern, content)
-                    if matches:
+                    if name == content:
                         libs.append({"isLibrary": name})
-                # else:
+                    
                 elif attribute == "filecontent":
                     matches = re.search(pattern.encode("utf-8"), content)
                     if matches:
