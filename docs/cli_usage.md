@@ -5,7 +5,7 @@ Some functionality we support includes:
 - Fix up path prefixes, i.e. installPath or containerPath
 - Add relationships
 
-## surfactnat cli load
+## surfactant cli load
 The ***cli load* command loads an sbom file into the cli and serializes it for faster processing when running other cli commands. On Unix-like platforms (including macOS), the XDG directory specification is followed and the serialized sbom will be stored in `${XDG_CONFIG_HOME}/surfactant/config.toml`. If the `XDG_CONFIG_HOME` environment variable is not set, the location defaults
 to `~/.config`. On Windows, the file is stored in the Roaming AppData folder at `%APPDATA%\\surfactant\\sbom_cli`.
 
