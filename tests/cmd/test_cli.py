@@ -8,6 +8,7 @@ import pathlib
 import pytest
 
 from surfactant.cmd.cli import cli_add, cli_find
+from surfactant.cmd.cli_commands import Cli
 from surfactant.sbomtypes import SBOM, Relationship
 
 
@@ -16,6 +17,26 @@ def fixture_test_sbom():
     with open(pathlib.Path(__file__).parent / "../data/sample_sboms/helics_sbom.json", "r") as f:
         sbom = SBOM.from_json(f.read())
         return sbom
+
+
+def _compare_sboms(one: SBOM, two: SBOM) -> bool:
+    # Sort software list
+    one.software = sorted(one.software, key=lambda x: x.UUID)
+    two.software = sorted(two.software, key=lambda x: x.UUID)
+
+    # Sort hardware list
+    one.hardware = sorted(one.hardware, key=lambda x: x.UUID)
+    two.hardware = sorted(two.hardware, key=lambda x: x.UUID)
+
+    # Sort system list
+    one.systems = sorted(one.systems, key=lambda x: x.UUID)
+    two.systems = sorted(two.systems, key=lambda x: x.UUID)
+
+    # Sort relationship list
+    one.relationships = sorted(one.relationships, key=lambda x: x.yUUID)
+    two.relationships = sorted(two.relationships, key=lambda x: x.yUUID)
+
+    return one.to_dict() == two.to_dict()
 
 
 bad_sbom = SBOM(
@@ -154,3 +175,10 @@ def test_add_installpath(test_sbom):
     for sw in out_bom.software:
         if containerPathPrefix in sw.containerPath:
             assert installPathPrefix in sw.installPath
+
+
+def test_cli_base_serialization(test_sbom):
+    serialized = Cli.serialize(test_sbom)
+    deserialized = Cli.deserialize(serialized)
+    assert test_sbom == deserialized
+    assert _compare_sboms(test_sbom, deserialized)
