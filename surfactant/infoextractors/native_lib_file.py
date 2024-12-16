@@ -94,7 +94,7 @@ def match_by_attribute(attribute: str, content: str, patterns_database: Dict) ->
         if attribute in library:
             for pattern in library[attribute]:
                 if attribute == "filename":
-                    if name == content:
+                    if name.lower() == content.lower():
                         libs.append({"isLibrary": name})
 
                 elif attribute == "filecontent":
