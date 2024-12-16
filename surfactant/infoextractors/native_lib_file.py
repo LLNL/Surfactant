@@ -1,6 +1,6 @@
 import json
-import re
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
@@ -96,7 +96,7 @@ def match_by_attribute(attribute: str, content: str, patterns_database: Dict) ->
                 if attribute == "filename":
                     if name == content:
                         libs.append({"isLibrary": name})
-                    
+
                 elif attribute == "filecontent":
                     matches = re.search(pattern.encode("utf-8"), content)
                     if matches:
