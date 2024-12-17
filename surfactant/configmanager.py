@@ -153,4 +153,4 @@ class ConfigManager:
         else:
             data_dir = Path(os.getenv("XDG_DATA_HOME", str(Path("~/.local/share"))))
         data_dir = data_dir / self.app_name
-        return data_dir
+        return data_dir.expanduser()

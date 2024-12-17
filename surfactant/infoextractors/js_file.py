@@ -14,6 +14,9 @@ from loguru import logger
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
+from surfactant.configmanager import ConfigManager
+import os
+from pathlib import Path
 
 def supports_file(filetype) -> bool:
     return filetype == "JAVASCRIPT"
@@ -28,10 +31,12 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 def extract_js_info(filename: str) -> object:
     js_info: Dict[str, Any] = {"jsLibraries": []}
-    js_lib_file = pathlib.Path(__file__).parent / "js_library_patterns.json"
+    js_lib_file = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
 
     # Load expressions from retire.js, should move this file elsewhere
     try:
+        path = ConfigManager().get_data_dir_path() / "infoextractors"
+        path.mkdir(parents=True, exist_ok=True)
         with open(js_lib_file, "r") as regex:
             database = json.load(regex)
     except FileNotFoundError:
@@ -116,7 +121,10 @@ def update_db():
     retirejs = load_database()
     if retirejs is not None:
         cleaned = strip_irrelevant_data(retirejs)
-        with open("js_library_patterns.json", "w") as f:
+        path = ConfigManager().get_data_dir_path() / "infoextractors"
+        path.mkdir(parents=True, exist_ok=True)
+        json_file_path = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+        with open(json_file_path, "w") as f:
             json.dump(cleaned, f, indent=4)
         return "Update complete."
     return "No update occurred."
@@ -125,3 +133,19 @@ def update_db():
 @surfactant.plugin.hookimpl
 def short_name():
     return "js_file"
+
+def load_db():
+    path = ConfigManager().get_data_dir_path() / "infoextractors"
+    path.mkdir(parents=True, exist_ok=True)
+    # os.makedirs(os.path.dirname(ConfigManager().get_data_dir_path() / "infoextractors"), exist_ok=True)
+    retirejs = load_database()
+    if retirejs is not None:
+        cleaned = strip_irrelevant_data(retirejs)
+        json_file_path = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+        with open(json_file_path, "w") as f:
+            json.dump(cleaned, f, indent=4)
+        logger.info(f"Javascript library CVE database loaded.")
+    else:
+        logger.warning(f"javascript library CVE database did not load.")
+
+load_db()
