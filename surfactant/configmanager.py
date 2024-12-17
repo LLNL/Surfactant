@@ -74,8 +74,8 @@ class ConfigManager:
                 config_dir = Path(os.getenv("APPDATA", str(Path("~\\AppData\\Roaming"))))
             else:
                 config_dir = Path(os.getenv("XDG_CONFIG_HOME", str(Path("~/.config"))))
-            config_dir = config_dir / self.app_name
-        return config_dir / "config.toml"
+            config_dir = config_dir / self.app_name / "config.toml"
+        return config_dir.expanduser()
 
     def _load_config(self) -> None:
         """Loads the configuration from the configuration file."""
