@@ -90,15 +90,15 @@ def extract_native_lib_info(filename):
 
 def match_by_attribute(attribute: str, content: str, patterns_database: Dict) -> List[Dict]:
     libs = []
-    for name, library in patterns_database.items():
-        if attribute in library:
-            for pattern in library[attribute]:
+    for lib_name, lib_info in patterns_database.items():
+        if attribute in lib_info:
+            for pattern in lib_info[attribute]:
                 if attribute == "filename":
-                    if name.lower() == content.lower():
-                        libs.append({"isLibrary": name})
+                    if pattern.lower() == content.lower():
+                        libs.append({"isLibrary": lib_name})
 
                 elif attribute == "filecontent":
                     matches = re.search(pattern.encode("utf-8"), content)
                     if matches:
-                        libs.append({"containsLibrary": name})
+                        libs.append({"containsLibrary": lib_name})
     return libs
