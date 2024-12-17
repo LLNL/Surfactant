@@ -28,7 +28,9 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 def extract_js_info(filename: str) -> object:
     js_info: Dict[str, Any] = {"jsLibraries": []}
-    js_lib_file = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+    js_lib_file = (
+        ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+    )
 
     # Load expressions from retire.js, should move this file elsewhere
     try:
@@ -141,7 +143,9 @@ def load_db():
     retirejs = load_database()
     if retirejs is not None:
         cleaned = strip_irrelevant_data(retirejs)
-        json_file_path = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+        json_file_path = (
+            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+        )
         with open(json_file_path, "w") as f:
             json.dump(cleaned, f, indent=4)
         logger.info("Javascript library CVE database loaded.")
