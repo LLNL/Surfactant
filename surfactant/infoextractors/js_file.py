@@ -137,7 +137,6 @@ def short_name():
 def load_db():
     path = ConfigManager().get_data_dir_path() / "infoextractors"
     path.mkdir(parents=True, exist_ok=True)
-    # os.makedirs(os.path.dirname(ConfigManager().get_data_dir_path() / "infoextractors"), exist_ok=True)
     retirejs = load_database()
     if retirejs is not None:
         cleaned = strip_irrelevant_data(retirejs)
