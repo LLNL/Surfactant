@@ -146,5 +146,6 @@ def load_db():
         return None
     return database
 
+
 already_showed_install_message = False
 js_lib_database = load_db()
