@@ -30,10 +30,6 @@ def extract_js_info(filename: str) -> object:
     js_info: Dict[str, Any] = {"jsLibraries": []}
 
     if js_lib_database is None:
-        if already_showed_install_message:
-            logger.warning(
-                "Javascript library pattern database database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
-            )
         return None
 
     # Try to match file name
@@ -142,9 +138,8 @@ def load_db():
         logger.warning(
             "Javascript library pattern database database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
         )
-        already_showed_install_message = True
         return None
     return database
 
-already_showed_install_message = False
+
 js_lib_database = load_db()
