@@ -152,4 +152,4 @@ def load_db():
         logger.warning("javascript library CVE database did not load.")
 
 
-load_db()
+js_lib_database = load_db()
