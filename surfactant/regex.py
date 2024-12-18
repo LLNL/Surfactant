@@ -25,7 +25,8 @@ def handle_escaped_literal(regex_pattern: str, i: int, length: int) -> Tuple[str
     next_char = regex_pattern[i + 1]
     # Try to catch all potential escape sequences with non-literal meaning
     # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
-    if next_char in "dDsSwWbBpPuk0123456789":
+    # https://en.wikipedia.org/wiki/Regular_expression
+    if next_char in "dDsSwWbBpPukAz0123456789":
         return None, 0
     if next_char in "rntvf0":
         escape_sequences = {"r": "\r", "n": "\n", "t": "\t", "v": "\v", "f": "\f", "0": "\0"}
