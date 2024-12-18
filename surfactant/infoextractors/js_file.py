@@ -141,7 +141,6 @@ def load_db():
         ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
     )
 
-    # Load expressions from retire.js, should move this file elsewhere
     try:
         path = ConfigManager().get_data_dir_path() / "infoextractors"
         path.mkdir(parents=True, exist_ok=True)
