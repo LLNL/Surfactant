@@ -75,7 +75,7 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
     return libs
 
 
-def load_database() -> dict:
+def download_database() -> dict:
     url = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
     response = requests.get(url)
     if response.status_code == 200:
