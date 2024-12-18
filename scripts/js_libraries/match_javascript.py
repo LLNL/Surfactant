@@ -3,6 +3,8 @@ import re
 
 import requests
 
+from surfactant.configmanager import ConfigManager
+
 
 def get_test_file():
     url = "https://cdnjs.cloudflare.com/ajax/libs/select2/3.5.4/select2.min.js"
@@ -32,8 +34,8 @@ def find_js_match(expressions: dict, filename: str) -> str:
 
 
 get_test_file()
-
-with open("js_library_patterns.json", "r") as f:
+json_file_path = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+with open(json_file_path, "r") as f:
     patterns = json.load(f)
 
 library_name = find_js_match(patterns, "testFile.js")

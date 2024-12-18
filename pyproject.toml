@@ -47,13 +47,14 @@ dependencies = [
     "olefile==0.47.*",
     "defusedxml==0.7.*",
     "spdx-tools==0.8.*",
-    "cyclonedx-python-lib==7.6.2",
+    "cyclonedx-python-lib==8.5.0",
     "pluggy==1.*",
     "click==8.*",
     "javatools>=1.6,==1.*",
     "loguru==0.7.*",
     "flask==3.*",
     "tomlkit==0.13.*",
+    "requests>=2.32.3",
 ]
 dynamic = ["version"]
 
