@@ -148,7 +148,9 @@ def load_db():
         with open(js_lib_file, "r") as regex:
             database = json.load(regex)
     except FileNotFoundError:
-        logger.warning(f"Javascript library pattern database database could not be loaded. Run `surfactant plugin update js_file` to fetch the pattern database.")
+        logger.warning(
+            "Javascript library pattern database database could not be loaded. Run `surfactant plugin update js_file` to fetch the pattern database."
+        )
         return None
     return database
 
