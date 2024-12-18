@@ -28,22 +28,15 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 
 def extract_js_info(filename: str) -> object:
     js_info: Dict[str, Any] = {"jsLibraries": []}
-    js_lib_file = (
-        ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
-    )
-
-    # Load expressions from retire.js, should move this file elsewhere
-    try:
-        path = ConfigManager().get_data_dir_path() / "infoextractors"
-        path.mkdir(parents=True, exist_ok=True)
-        with open(js_lib_file, "r") as regex:
-            database = json.load(regex)
-    except FileNotFoundError:
-        logger.warning(f"File not found: {js_lib_file}")
+    
+    if js_lib_database is None:
+        logger.warning(
+            "Javascript library pattern database database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
+        )
         return None
 
     # Try to match file name
-    libs = match_by_attribute("filename", filename, database)
+    libs = match_by_attribute("filename", filename, js_lib_database)
     if len(libs) > 0:
         js_info["jsLibraries"] = libs
         return js_info
@@ -52,7 +45,7 @@ def extract_js_info(filename: str) -> object:
     try:
         with open(filename, "r") as js_file:
             filecontent = js_file.read()
-        libs = match_by_attribute("filecontent", filecontent, database)
+        libs = match_by_attribute("filecontent", filecontent, js_lib_database)
         js_info["jsLibraries"] = libs
     except FileNotFoundError:
         logger.warning(f"File not found: {filename}")
@@ -148,7 +141,7 @@ def load_db():
             database = json.load(regex)
     except FileNotFoundError:
         logger.warning(
-            "Javascript library pattern database database could not be loaded. Run `surfactant plugin update js_file` to fetch the pattern database."
+            "Javascript library pattern database database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
         )
         return None
     return database
