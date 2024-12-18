@@ -137,19 +137,20 @@ def short_name():
 
 
 def load_db():
-    path = ConfigManager().get_data_dir_path() / "infoextractors"
-    path.mkdir(parents=True, exist_ok=True)
-    retirejs = load_database()
-    if retirejs is not None:
-        cleaned = strip_irrelevant_data(retirejs)
-        json_file_path = (
-            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
-        )
-        with open(json_file_path, "w") as f:
-            json.dump(cleaned, f, indent=4)
-        logger.info("Javascript library CVE database loaded.")
-    else:
-        logger.warning("javascript library CVE database did not load.")
+    js_lib_file = (
+        ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+    )
+
+    # Load expressions from retire.js, should move this file elsewhere
+    try:
+        path = ConfigManager().get_data_dir_path() / "infoextractors"
+        path.mkdir(parents=True, exist_ok=True)
+        with open(js_lib_file, "r") as regex:
+            database = json.load(regex)
+    except FileNotFoundError:
+        logger.warning(f"Javascript library pattern database database could not be loaded. Run `surfactant plugin update js_file` to fetch the pattern database.")
+        return None
+    return database
 
 
 js_lib_database = load_db()
