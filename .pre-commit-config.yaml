@@ -9,7 +9,7 @@ repos:
       # Run the formatter
       - id: ruff-format
   - repo: https://github.com/pycqa/pylint
-    rev: v3.3.2
+    rev: v3.3.3
     hooks:
       - id: pylint
   - repo: https://github.com/pre-commit/pre-commit-hooks
