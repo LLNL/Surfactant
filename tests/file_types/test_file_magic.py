@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: MIT
 import os
 import pathlib
-import zlib
 import sys
+import zlib
+
 import pytest
 
 from surfactant.filetypeid.id_magic import identify_file_type
@@ -41,13 +42,16 @@ def test_magic_id():
 def test_zlib_basic(tmp_path):
     for compress_level in range(10):
         write_to = tmp_path / f"basic_{compress_level}.zlib"
-        write_to.write_bytes(zlib.compress(b'hello', level=compress_level))
-        assert identify_file_type(write_to) == 'ZLIB'
+        write_to.write_bytes(zlib.compress(b"hello", level=compress_level))
+        assert identify_file_type(write_to) == "ZLIB"
 
-@pytest.mark.skipif(sys.version_info < (3, 11), reason="zlib.compress wbits only available from Python 3.11+")
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 11), reason="zlib.compress wbits only available from Python 3.11+"
+)
 def test_zlib_window(tmp_path):
     for compress_level in range(10):
         for window_size in range(9, 16):
             write_to = tmp_path / f"window_{compress_level}_{window_size}.zlib"
-            write_to.write_bytes(zlib.compress(b'hello', level=compress_level, wbits=window_size))
-            assert identify_file_type(write_to) == 'ZLIB'
+            write_to.write_bytes(zlib.compress(b"hello", level=compress_level, wbits=window_size))
+            assert identify_file_type(write_to) == "ZLIB"
