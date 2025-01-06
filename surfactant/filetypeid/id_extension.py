@@ -27,7 +27,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
         ".php": "PHP",
         ".bat": "BATCH",
         ".pl": "PERL",
-        ".pm": "PERL_MODULE"
+        ".pm": "PERL_MODULE",
     }
     _interpreters = {
         b"sh": "SHELL",
