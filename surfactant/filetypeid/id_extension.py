@@ -26,6 +26,8 @@ def identify_file_type(filepath: str) -> Optional[str]:
         ".htm": "HTML",
         ".php": "PHP",
         ".bat": "BATCH",
+        ".pl": "PERL",
+        ".pm": "PERL_MODULE"
     }
     _interpreters = {
         b"sh": "SHELL",
@@ -34,6 +36,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
         b"php": "PHP",
         b"python": "PYTHON",
         b"python3": "PYTHON",
+        b"perl": "PERL",
     }
     try:
         with open(filepath, "rb") as f:
