@@ -59,7 +59,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-macho = ["lief==0.15.1"]
+macho = ["lief==0.16.2"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]
