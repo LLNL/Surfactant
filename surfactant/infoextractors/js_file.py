@@ -14,6 +14,7 @@ import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
 
+
 class JSDatabaseManager:
     def __init__(self):
         self.js_lib_database = None
@@ -35,16 +36,20 @@ class JSDatabaseManager:
     def get_database(self):
         return self.js_lib_database
 
+
 js_db_manager = JSDatabaseManager()
+
 
 def supports_file(filetype) -> bool:
     return filetype == "JAVASCRIPT"
+
 
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
     if not supports_file(filetype):
         return None
     return extract_js_info(filename)
+
 
 def extract_js_info(filename: str) -> object:
     js_info: Dict[str, Any] = {"jsLibraries": []}
@@ -71,6 +76,7 @@ def extract_js_info(filename: str) -> object:
         logger.warning(f"File does not appear to be UTF-8: {filename}")
     return js_info
 
+
 def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
     libs = []
     for name, library in database.items():
@@ -83,6 +89,7 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                         # skip remaining patterns, move on to the next library
                         break
     return libs
+
 
 def download_database() -> dict:
     url = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
@@ -97,6 +104,7 @@ def download_database() -> dict:
         click.echo("An error occurred.")
 
     return None
+
 
 def strip_irrelevant_data(retirejs_db: dict) -> dict:
     clean_db = {}
@@ -119,6 +127,7 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
                     clean_db[library][entry] = entry_list
     return clean_db
 
+
 @surfactant.plugin.hookimpl
 def update_db():
     """Retrieves the javascript library CVE database used by retire.js (https://github.com/RetireJS/retire.js/blob/master/repository/jsrepository-master.json) and only keeps the contents under each library's "extractors" section, which contains file hashes and regexes relevant for detecting a specific javascript library by its file name or contents.
@@ -137,9 +146,11 @@ def update_db():
         return "Update complete."
     return "No update occurred."
 
+
 @surfactant.plugin.hookimpl
 def short_name():
     return "js_file"
+
 
 @surfactant.plugin.hookimpl
 def init_hook(command_name=None):
