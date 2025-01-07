@@ -1,4 +1,5 @@
 from pathlib import Path
+from loguru import logger
 
 from surfactant.cmd.cli_commands.cli_base import Cli
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
@@ -29,10 +30,11 @@ class Save(Cli):
         pm = get_plugin_manager()
         output_writer = find_io_plugin(pm, self.output_format, "write_sbom")
         if save_subset:
-            with open(Path(self.data_dir, self.subset_filename), "rb") as f:
-                data = f.read()
+            self.sbom = self.load_current_subset()
         else:
-            with open(Path(self.data_dir, self.sbom_filename), "rb") as f:
-                data = f.read()
-        self.sbom = Cli.deserialize(data)
-        output_writer.write_sbom(self.sbom, output_file)
+            self.sbom = self.load_current_sbom()
+        if self.sbom :
+            output_writer.write_sbom(self.sbom, output_file)
+            return
+        logger.error("Failed to save sbom - no data found")
+        

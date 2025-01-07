@@ -92,6 +92,7 @@ class Cli:
             with open(Path(self.data_dir, self.sbom_filename), "rb") as f:
                 return self.deserialize(f.read())
         except FileNotFoundError:
+            logger.debug("No sbom loaded.")
             return None
     
     def load_current_subset(self) -> SBOM:
@@ -104,7 +105,7 @@ class Cli:
             with open(Path(self.data_dir, self.subset_filename), "rb") as f:
                 return self.deserialize(f.read())
         except FileNotFoundError:
-            logger.warning("No subset sbom exists.")
+            logger.debug("No subset sbom exists.")
             return None
 
     def save_changes(self):

@@ -16,6 +16,7 @@ from surfactant.cmd.cli import (
     handle_cli_edit,
     handle_cli_find,
     handle_cli_load,
+    handle_cli_unload,
     handle_cli_save,
 )
 from surfactant.cmd.config import config
@@ -89,6 +90,7 @@ cli.add_command(handle_cli_find)
 cli.add_command(handle_cli_edit)
 cli.add_command(handle_cli_add)
 cli.add_command(handle_cli_load)
+cli.add_command(handle_cli_unload)
 cli.add_command(handle_cli_save)
 
 # Plugin Subcommands
