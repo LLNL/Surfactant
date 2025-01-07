@@ -80,81 +80,83 @@ def extract_elf_info(filename: str) -> object:
         # Get a human readable name for the OS
         file_details["OS"] = _EI_OSABI_NAME.get(file_details["elfOsAbi"], "")
 
-        for section in elf.iter_sections():
-            if section.name == ".interp":
-                file_details["elfInterpreter"].append(section.data().rstrip(b"\x00").decode())
-            if section.name == ".comment":
-                for v in section.data().rstrip(b"\x00").split(b"\x00"):
-                    file_details["elfComment"].append(v.decode())
-            if isinstance(section, NoteSection):
-                for note in section.iter_notes():
-                    # Info on contents of NetBSD and PaX notes: https://www.netbsd.org/docs/kernel/elf-notes.html
-                    # Heuristics used by Avast RetDec to identify compiler/OS: https://github.com/avast/retdec/commit/d55b541c26fb110381b2203dc7baa50928e3f473
-                    note_info = {}
-                    note_info["sectionName"] = section.name
-                    note_info["name"] = note.n_name
-                    note_info["type"] = note.n_type
-                    if note.n_name == "GNU":
-                        if note.n_type == "NT_GNU_ABI_TAG":
-                            note_info["os"] = note.n_desc.abi_os
-                            note_info["abi"] = (
-                                f"{note.n_desc.abi_major}.{note.n_desc.abi_minor}.{note.n_desc.abi_tiny}"
-                            )
-                        elif note.n_type in ("NT_GNU_BUILD_ID", "NT_GNU_GOLD_VERSION"):
-                            note_info["desc"] = note.n_desc
+        # Skip if the section header string table (.shstrtab) is missing
+        if elf._section_header_stringtable != None:
+            for section in elf.iter_sections():
+                if section.name == ".interp":
+                    file_details["elfInterpreter"].append(section.data().rstrip(b"\x00").decode())
+                if section.name == ".comment":
+                    for v in section.data().rstrip(b"\x00").split(b"\x00"):
+                        file_details["elfComment"].append(v.decode())
+                if isinstance(section, NoteSection):
+                    for note in section.iter_notes():
+                        # Info on contents of NetBSD and PaX notes: https://www.netbsd.org/docs/kernel/elf-notes.html
+                        # Heuristics used by Avast RetDec to identify compiler/OS: https://github.com/avast/retdec/commit/d55b541c26fb110381b2203dc7baa50928e3f473
+                        note_info = {}
+                        note_info["sectionName"] = section.name
+                        note_info["name"] = note.n_name
+                        note_info["type"] = note.n_type
+                        if note.n_name == "GNU":
+                            if note.n_type == "NT_GNU_ABI_TAG":
+                                note_info["os"] = note.n_desc.abi_os
+                                note_info["abi"] = (
+                                    f"{note.n_desc.abi_major}.{note.n_desc.abi_minor}.{note.n_desc.abi_tiny}"
+                                )
+                            elif note.n_type in ("NT_GNU_BUILD_ID", "NT_GNU_GOLD_VERSION"):
+                                note_info["desc"] = note.n_desc
+                            else:
+                                note_info["descdata"] = note.n_descdata.decode("unicode_escape")
                         else:
                             note_info["descdata"] = note.n_descdata.decode("unicode_escape")
-                    else:
-                        note_info["descdata"] = note.n_descdata.decode("unicode_escape")
-                    file_details["elfNote"].append(note_info)
-            if isinstance(section, DynamicSection):
-                for tag in section.iter_tags():
-                    if tag.entry.d_tag == "DT_NEEDED":
-                        # Shared libraries
-                        file_details["elfDependencies"].append(tag.needed)
-                    elif tag.entry.d_tag == "DT_RPATH":
-                        # Library rpath
-                        file_details["elfRpath"].append(tag.rpath)
-                    elif tag.entry.d_tag == "DT_RUNPATH":
-                        # Library runpath
-                        file_details["elfRunpath"].append(tag.runpath)
-                    elif tag.entry.d_tag == "DT_SONAME":
-                        # Library soname (for linking)
-                        file_details["elfSoname"].append(tag.soname)
-                    elif tag.entry.d_tag == "DT_FLAGS":
-                        # Dynamic Flags, DT_FLAGS
-                        dt_flags_entry: Dict[str, Any] = {}
-                        dt_flags_entry["value"] = hex(tag.entry.d_val)
-                        # $ORIGIN processing is required
-                        dt_flags_entry["DF_ORIGIN"] = bool(
-                            tag.entry.d_val & ENUM_DT_FLAGS["DF_ORIGIN"]
-                        )
-                        # Perform complete relocation processing (part of Full RELRO)
-                        dt_flags_entry["DF_BIND_NOW"] = bool(
-                            tag.entry.d_val & ENUM_DT_FLAGS["DF_BIND_NOW"]
-                        )
-                        file_details["elfDynamicFlags"].append(dt_flags_entry)
-                    elif tag.entry.d_tag == "DT_FLAGS_1":
-                        # Dynamic Flags, DT_FLAGS_1 (custom entry first added by binutils)
-                        dt_flags_1_entry: Dict[str, Any] = {}
-                        dt_flags_1_entry["value"] = hex(tag.entry.d_val)
-                        # Position-Independent Executable file
-                        dt_flags_1_entry["DF_1_PIE"] = bool(
-                            tag.entry.d_val & ENUM_DT_FLAGS_1["DF_1_PIE"]
-                        )
-                        # Perform complete relocation processing
-                        dt_flags_1_entry["DF_1_NOW"] = bool(
-                            tag.entry.d_val & ENUM_DT_FLAGS_1["DF_1_NOW"]
-                        )
-                        # $ORIGIN processing is required
-                        dt_flags_1_entry["DF_1_ORIGIN"] = bool(
-                            tag.entry.d_val & ENUM_DT_FLAGS_1["DF_1_ORIGIN"]
-                        )
-                        # Ignore the default library search path
-                        dt_flags_1_entry["DF_1_NODEFLIB"] = bool(
-                            tag.entry.d_val & ENUM_DT_FLAGS_1["DF_1_NODEFLIB"]
-                        )
-                        file_details["elfDynamicFlags1"].append(dt_flags_1_entry)
+                        file_details["elfNote"].append(note_info)
+                if isinstance(section, DynamicSection):
+                    for tag in section.iter_tags():
+                        if tag.entry.d_tag == "DT_NEEDED":
+                            # Shared libraries
+                            file_details["elfDependencies"].append(tag.needed)
+                        elif tag.entry.d_tag == "DT_RPATH":
+                            # Library rpath
+                            file_details["elfRpath"].append(tag.rpath)
+                        elif tag.entry.d_tag == "DT_RUNPATH":
+                            # Library runpath
+                            file_details["elfRunpath"].append(tag.runpath)
+                        elif tag.entry.d_tag == "DT_SONAME":
+                            # Library soname (for linking)
+                            file_details["elfSoname"].append(tag.soname)
+                        elif tag.entry.d_tag == "DT_FLAGS":
+                            # Dynamic Flags, DT_FLAGS
+                            dt_flags_entry: Dict[str, Any] = {}
+                            dt_flags_entry["value"] = hex(tag.entry.d_val)
+                            # $ORIGIN processing is required
+                            dt_flags_entry["DF_ORIGIN"] = bool(
+                                tag.entry.d_val & ENUM_DT_FLAGS["DF_ORIGIN"]
+                            )
+                            # Perform complete relocation processing (part of Full RELRO)
+                            dt_flags_entry["DF_BIND_NOW"] = bool(
+                                tag.entry.d_val & ENUM_DT_FLAGS["DF_BIND_NOW"]
+                            )
+                            file_details["elfDynamicFlags"].append(dt_flags_entry)
+                        elif tag.entry.d_tag == "DT_FLAGS_1":
+                            # Dynamic Flags, DT_FLAGS_1 (custom entry first added by binutils)
+                            dt_flags_1_entry: Dict[str, Any] = {}
+                            dt_flags_1_entry["value"] = hex(tag.entry.d_val)
+                            # Position-Independent Executable file
+                            dt_flags_1_entry["DF_1_PIE"] = bool(
+                                tag.entry.d_val & ENUM_DT_FLAGS_1["DF_1_PIE"]
+                            )
+                            # Perform complete relocation processing
+                            dt_flags_1_entry["DF_1_NOW"] = bool(
+                                tag.entry.d_val & ENUM_DT_FLAGS_1["DF_1_NOW"]
+                            )
+                            # $ORIGIN processing is required
+                            dt_flags_1_entry["DF_1_ORIGIN"] = bool(
+                                tag.entry.d_val & ENUM_DT_FLAGS_1["DF_1_ORIGIN"]
+                            )
+                            # Ignore the default library search path
+                            dt_flags_1_entry["DF_1_NODEFLIB"] = bool(
+                                tag.entry.d_val & ENUM_DT_FLAGS_1["DF_1_NODEFLIB"]
+                            )
+                            file_details["elfDynamicFlags1"].append(dt_flags_1_entry)
 
         # Check for presence of special segments (e.g. PT_GNU_RELRO)
         for segment in elf.iter_segments():
