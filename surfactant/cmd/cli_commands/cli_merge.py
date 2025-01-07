@@ -8,11 +8,11 @@ class Merge(Cli):
     """
 
     def __init__(self):
-        """Initializes the cli_find class"""
-        super().__init__(*args, **kwargs)
+        """Initializes the cli_merge class"""
+        super(Merge, self).__init__()
 
     def execute(self, **kwargs):
-        """Executes the main functionality of the cli_find class
+        """Executes the main functionality of the cli_merge class
         param: kwargs:      Dictionary of key/value pairs indicating what features to match on
         """
         self.sbom = self.load_current_sbom()
