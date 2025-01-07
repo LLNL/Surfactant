@@ -192,3 +192,19 @@ def find_plugin_by_name(pm: pluggy.PluginManager, name: str):
             return plugin
 
     return None
+
+def call_init_hooks(pm, hook_filter=None, command_name=None):
+    """Call the initialization hook for plugins that implement it.
+
+    Args:
+        pm: The plugin manager instance.
+        hook_filter: A list of hook names to filter which plugins get initialized.
+        command_name: The name of the command invoking the initialization.
+    """
+    for plugin in pm.get_plugins():
+        print("call_init_hooks:", pm.get_name(plugin), is_hook_implemented(pm, plugin, "init_hook"))
+            # Check if the plugin implements any of the hooks in the filter
+            if hook_filter:
+                if not any(is_hook_implemented(pm, plugin, hook) for hook in hook_filter):
+                    continue
+            plugin.init_hook(command_name=command_name) 

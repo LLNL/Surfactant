@@ -122,3 +122,16 @@ def update_db() -> Optional[str]:
     Returns:
         Optional[str]: A message indicating the result of the update operation, or None if no update was needed.
     """
+
+
+@hookspec
+def init_hook(command_name: Optional[str] = None) -> None:
+    """Initialization hook for plugins.
+
+    This hook is called to perform any necessary initialization for the plugin,
+    such as loading databases or setting up resources.
+
+    Args:
+        command_name (Optional[str]): The name of the command invoking the initialization,
+                                      which can be used to conditionally initialize based on the context.
+    """
