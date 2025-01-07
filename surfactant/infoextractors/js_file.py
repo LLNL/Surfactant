@@ -1,5 +1,5 @@
 # Copyright 2023 Lawrence Livermore National Security, LLC
-# SEe the top-level LICENSE file for details.
+# See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
 import json
@@ -14,12 +14,31 @@ import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
 
-js_lib_database = None  # Initialize as None
+class JSDatabaseManager:
+    def __init__(self):
+        self.js_lib_database = None
 
+    def load_db(self):
+        js_lib_file = (
+            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+        )
+
+        try:
+            with open(js_lib_file, "r") as regex:
+                self.js_lib_database = json.load(regex)
+        except FileNotFoundError:
+            logger.warning(
+                "Javascript library pattern database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
+            )
+            self.js_lib_database = None
+
+    def get_database(self):
+        return self.js_lib_database
+
+js_db_manager = JSDatabaseManager()
 
 def supports_file(filetype) -> bool:
     return filetype == "JAVASCRIPT"
-
 
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
@@ -27,9 +46,9 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
         return None
     return extract_js_info(filename)
 
-
 def extract_js_info(filename: str) -> object:
     js_info: Dict[str, Any] = {"jsLibraries": []}
+    js_lib_database = js_db_manager.get_database()
 
     if js_lib_database is None:
         return None
@@ -52,7 +71,6 @@ def extract_js_info(filename: str) -> object:
         logger.warning(f"File does not appear to be UTF-8: {filename}")
     return js_info
 
-
 def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
     libs = []
     for name, library in database.items():
@@ -65,7 +83,6 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
                         # skip remaining patterns, move on to the next library
                         break
     return libs
-
 
 def download_database() -> dict:
     url = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
@@ -80,7 +97,6 @@ def download_database() -> dict:
         click.echo("An error occurred.")
 
     return None
-
 
 def strip_irrelevant_data(retirejs_db: dict) -> dict:
     clean_db = {}
@@ -103,7 +119,6 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
                     clean_db[library][entry] = entry_list
     return clean_db
 
-
 @surfactant.plugin.hookimpl
 def update_db():
     """Retrieves the javascript library CVE database used by retire.js (https://github.com/RetireJS/retire.js/blob/master/repository/jsrepository-master.json) and only keeps the contents under each library's "extractors" section, which contains file hashes and regexes relevant for detecting a specific javascript library by its file name or contents.
@@ -122,33 +137,14 @@ def update_db():
         return "Update complete."
     return "No update occurred."
 
-
 @surfactant.plugin.hookimpl
 def short_name():
     return "js_file"
 
-
-def load_db():
-    js_lib_file = (
-        ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
-    )
-
-    try:
-        with open(js_lib_file, "r") as regex:
-            database = json.load(regex)
-    except FileNotFoundError:
-        logger.warning(
-            "Javascript library pattern database database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
-        )
-        return None
-    return database
-
-
 @surfactant.plugin.hookimpl
 def init_hook(command_name=None):
     """Initialization hook to load the JavaScript library database."""
-    global js_lib_database
     if command_name != "update-db":  # Do not load the database if only updating the database.
         click.echo("Initializing js_file...")
-        js_lib_database = load_db()
+        js_db_manager.load_db()
         click.echo("Initializing js_file complete.")
