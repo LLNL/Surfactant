@@ -207,4 +207,4 @@ def call_init_hooks(pm, hook_filter=None, command_name=None):
             if hook_filter:
                 if not any(is_hook_implemented(pm, plugin, hook) for hook in hook_filter):
                     continue
-            plugin.init_hook(command_name=command_name) 
+            plugin.init_hook(command_name=command_name)
