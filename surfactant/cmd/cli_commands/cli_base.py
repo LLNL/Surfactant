@@ -128,4 +128,9 @@ class Cli:
         """Gets the subset attribute"""
         return self.subset
 
+    def delete_subset(self):
+        """Deletes the subset attribute"""
+        subset_path = Path(self.data_dir, self.subset_filename)
+        if os.path.exists(subset_path):
+            os.remove(subset_path)
 

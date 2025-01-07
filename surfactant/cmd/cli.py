@@ -92,7 +92,6 @@ def handle_cli_add(**kwargs):
     filtered_kwargs = dict({(k, v) for k, v in kwargs.items() if v is not None})
     add = Add()
     success = add.execute(**filtered_kwargs)
-    # Write result to stdout in the cytrics format
     if success:
         logger.info("Changes successfully added.")
 
@@ -103,6 +102,12 @@ def handle_cli_edit(sbom, output_format, input_format, **kwargs):
     "CLI command to edit specific entry(s) in a supplied SBOM"
     pass
 
+@click.command("merge")
+def handle_cli_merge():
+    "CLI command to merge subset sbom into main sbom"
+    success = Merge().execute()
+    if success:
+        logger.info("Merge successful.")
 
 @click.argument("outfile", type=click.File("w"), required=True)
 @click.option(
