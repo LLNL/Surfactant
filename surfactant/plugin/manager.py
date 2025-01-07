@@ -202,9 +202,9 @@ def call_init_hooks(pm, hook_filter=None, command_name=None):
         command_name: The name of the command invoking the initialization.
     """
     for plugin in pm.get_plugins():
-        print("call_init_hooks:", pm.get_name(plugin), is_hook_implemented(pm, plugin, "init_hook"))
+        if is_hook_implemented(pm, plugin, "init_hook"):
             # Check if the plugin implements any of the hooks in the filter
             if hook_filter:
                 if not any(is_hook_implemented(pm, plugin, hook) for hook in hook_filter):
                     continue
-            plugin.init_hook(command_name=command_name) 
+            plugin.init_hook(command_name=command_name)
