@@ -5,11 +5,11 @@ import click
 
 from surfactant.configmanager import ConfigManager
 from surfactant.plugin.manager import (
+    call_init_hooks,
     find_plugin_by_name,
     get_plugin_manager,
     is_hook_implemented,
     print_plugins,
-    call_init_hooks,
 )
 
 
