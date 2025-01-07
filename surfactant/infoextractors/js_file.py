@@ -146,8 +146,8 @@ def load_db():
 
 @surfactant.plugin.hookimpl
 def init_hook(command_name=None):
+    """Initialization hook to load the JavaScript library database."""
     if command_name != "update-db":  # Do not load the database if only updating the database.
-        """Initialization hook to load the JavaScript library database."""
         click.echo("Initializing js_file...")
         global js_lib_database
         js_lib_database = load_db()
