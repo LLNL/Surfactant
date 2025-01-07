@@ -193,6 +193,7 @@ def find_plugin_by_name(pm: pluggy.PluginManager, name: str):
 
     return None
 
+
 def call_init_hooks(pm, hook_filter=None, command_name=None):
     """Call the initialization hook for plugins that implement it.
 
