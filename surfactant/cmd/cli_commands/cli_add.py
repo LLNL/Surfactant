@@ -1,8 +1,8 @@
 from loguru import logger
 
 from surfactant.cmd.cli_commands.cli_base import Cli
-from surfactant.sbomtypes import SBOM
-from surfactant.sbomtypes import Software
+from surfactant.sbomtypes import SBOM, Relationship, Software
+
 
 class Add(Cli):
     """
@@ -29,7 +29,7 @@ class Add(Cli):
             "capturetime": "captureTime",
             "relationshipassertion": "relationshipAssertion",
         }
-        super(Add, self).__init__()
+        super().__init__()
 
     def handle_kwargs(self, kwargs: dict) -> dict:
         converted_kwargs = {}
@@ -49,11 +49,10 @@ class Add(Cli):
             if not self.sbom:
                 logger.error("No sbom currently loaded. Load an sbom with `surfactant cli load`")
                 return False
-            else:
-                working_sbom = self.sbom
+            working_sbom = self.sbom
         else:
             working_sbom = self.subset
-            
+
         converted_kwargs = self.handle_kwargs(kwargs)
 
         for key, value in converted_kwargs.items():

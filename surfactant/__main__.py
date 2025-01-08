@@ -16,9 +16,9 @@ from surfactant.cmd.cli import (
     handle_cli_edit,
     handle_cli_find,
     handle_cli_load,
-    handle_cli_unload,
-    handle_cli_save,
     handle_cli_merge,
+    handle_cli_save,
+    handle_cli_unload,
 )
 from surfactant.cmd.config import config
 from surfactant.cmd.config_tui import config_tui

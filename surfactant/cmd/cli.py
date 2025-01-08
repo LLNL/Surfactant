@@ -1,37 +1,12 @@
 import sys
-import os
-import platform
-from pathlib import Path
 
 import click
 from loguru import logger
-import json
 
+from surfactant.cmd.cli_commands import Add, Find, Load, Merge, Save, Unload
 from surfactant.configmanager import ConfigManager
-from surfactant.cmd.cli_commands import *
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
-from surfactant.sbomtypes._relationship import Relationship
-from surfactant.sbomtypes._sbom import SBOM
-from surfactant.sbomtypes._software import Software
-from surfactant.cmd.cli_commands import *
 
-
-@click.argument("sbom", type=click.File("r"), required=True)
-@click.option(
-    "--input_format",
-    is_flag=False,
-    default="surfactant.input_readers.cytrics_reader",
-    help="SBOM input format, assumes that all input SBOMs being merged have the same format, options=[cytrics|cyclonedx|spdx]",
-)
-@click.command("load")
-def handle_cli_load(sbom, input_format):
-    "CLI command to load supplied SBOM into cli"
-    Load(input_format=input_format).execute(sbom)
-
-@click.command("unload")
-def handle_cli_unload():
-    "CLI command to load supplied SBOM into cli"
-    Unload().execute()
 
 @click.argument("sbom", type=click.File("r"), required=True)
 @click.option(
@@ -46,6 +21,12 @@ def handle_cli_unload():
 def handle_cli_load(sbom, input_format):
     "CLI command to load supplied SBOM into cli"
     Load(input_format=input_format).execute(sbom)
+
+
+@click.command("unload")
+def handle_cli_unload():
+    "CLI command to unload sbom from cli"
+    Unload().execute()
 
 
 @click.option("--file", is_flag=False, help="File of the entry to find")
@@ -72,8 +53,11 @@ def handle_cli_find(**kwargs):
     success = find.execute(**filtered_kwargs)
     # Write result to stdout in the cytrics format
     if success:
-        output_writer = find_io_plugin(get_plugin_manager(), "surfactant.output.cytrics_writer", "write_sbom")
+        output_writer = find_io_plugin(
+            get_plugin_manager(), "surfactant.output.cytrics_writer", "write_sbom"
+        )
         output_writer.write_sbom(find.get_subset(), sys.stdout)
+
 
 @click.option("--file", is_flag=False, help="Adds entry for file to sbom")
 @click.option("--relationship", is_flag=False, type=str, help="Adds relationship to sbom")
@@ -100,7 +84,8 @@ def handle_cli_add(**kwargs):
 @click.command("edit")
 def handle_cli_edit(sbom, output_format, input_format, **kwargs):
     "CLI command to edit specific entry(s) in a supplied SBOM"
-    pass
+    logger.info("`surfactant cli edit` is not implemented yet.")
+
 
 @click.command("merge")
 def handle_cli_merge():
@@ -108,6 +93,7 @@ def handle_cli_merge():
     success = Merge().execute()
     if success:
         logger.info("Merge successful.")
+
 
 @click.argument("outfile", type=click.File("w"), required=True)
 @click.option(

@@ -30,7 +30,7 @@ class Cli:
     subset_filename: str
     match_functions: dict
     camel_case_conversions: dict
-    
+
     def __init__(self):
         self.sbom_filename = "sbom_cli"
         self.subset_filename = "subset_cli"
@@ -81,7 +81,7 @@ class Cli:
         except pickle.UnpicklingError as e:
             logger.error(f"Could not deserialize sbom from given data - {e}")
             return None
-    
+
     def load_current_sbom(self) -> SBOM:
         """Deserializes the currently loaded sbom for use within the cli command
 
@@ -94,14 +94,14 @@ class Cli:
         except FileNotFoundError:
             logger.debug("No sbom loaded.")
             return None
-    
+
     def load_current_subset(self) -> SBOM:
         """Deserializes the currently loaded subset sbom for use within the cli command
 
         Returns:
             SBOM: A SBOM instance.
         """
-        try: 
+        try:
             with open(Path(self.data_dir, self.subset_filename), "rb") as f:
                 return self.deserialize(f.read())
         except FileNotFoundError:
@@ -114,7 +114,7 @@ class Cli:
         if self.sbom is not None:
             with open(Path(self.data_dir, self.sbom_filename), "wb") as f:
                 f.write(self.serialize(self.sbom))
-        
+
         # Save subset
         if self.subset is not None:
             with open(Path(self.data_dir, self.subset_filename), "wb") as f:
@@ -133,4 +133,3 @@ class Cli:
         subset_path = Path(self.data_dir, self.subset_filename)
         if os.path.exists(subset_path):
             os.remove(subset_path)
-

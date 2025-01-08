@@ -1,8 +1,10 @@
-from loguru import logger
 import hashlib
+
+from loguru import logger
 
 from surfactant.cmd.cli_commands.cli_base import Cli
 from surfactant.sbomtypes._sbom import SBOM
+
 
 class Find(Cli):
     """
@@ -33,7 +35,7 @@ class Find(Cli):
             "capturetime": "captureTime",
             "relationshipassertion": "relationshipAssertion",
         }
-        super(Find, self).__init__()
+        super().__init__()
 
     def handle_kwargs(self, kwargs: dict) -> dict:
         converted_kwargs = {}

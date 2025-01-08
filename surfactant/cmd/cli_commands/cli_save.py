@@ -1,4 +1,3 @@
-from pathlib import Path
 from loguru import logger
 
 from surfactant.cmd.cli_commands.cli_base import Cli
@@ -12,6 +11,7 @@ class Save(Cli):
     Attributes:
         output_format (str): The format of the sbom to be outputted
     """
+
     def __init__(self, *args, output_format, **kwargs):
         """Executes the load class constructor
 
@@ -33,8 +33,7 @@ class Save(Cli):
             self.sbom = self.load_current_subset()
         else:
             self.sbom = self.load_current_sbom()
-        if self.sbom :
+        if self.sbom:
             output_writer.write_sbom(self.sbom, output_file)
             return
         logger.error("Failed to save sbom - no data found")
-        
