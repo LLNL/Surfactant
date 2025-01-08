@@ -6,14 +6,12 @@ import json
 import re
 from typing import Any, Dict, List
 
-import click
 import requests
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
-from loguru import logger
 
 
 class JSDatabaseManager:
