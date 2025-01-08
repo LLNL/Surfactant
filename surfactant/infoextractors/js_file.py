@@ -13,6 +13,7 @@ from loguru import logger
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
+from loguru import logger
 
 
 class JSDatabaseManager:
@@ -95,13 +96,13 @@ def download_database() -> dict:
     url = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
     response = requests.get(url)
     if response.status_code == 200:
-        click.echo("Request successful!")
+        logger.info("Request successful!")
         return json.loads(response.text)
 
     if response.status_code == 404:
-        click.echo("Resource not found.")
+        logger.error("Resource not found.")
     else:
-        click.echo("An error occurred.")
+        logger.error("An error occurred.")
 
     return None
 
@@ -156,6 +157,6 @@ def short_name():
 def init_hook(command_name=None):
     """Initialization hook to load the JavaScript library database."""
     if command_name != "update-db":  # Do not load the database if only updating the database.
-        click.echo("Initializing js_file...")
+        logger.info("Initializing js_file...")
         js_db_manager.load_db()
-        click.echo("Initializing js_file complete.")
+        logger.info("Initializing js_file complete.")
