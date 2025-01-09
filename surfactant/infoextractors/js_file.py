@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 import json
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import requests
 from loguru import logger
@@ -18,7 +18,7 @@ class JSDatabaseManager:
     def __init__(self):
         self.js_lib_database = None
 
-    def load_db(self):
+    def load_db(self) -> None:
         js_lib_file = (
             ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
         )
@@ -32,7 +32,7 @@ class JSDatabaseManager:
             )
             self.js_lib_database = None
 
-    def get_database(self):
+    def get_database(self) -> Optional[Dict[str, Any]]:
         return self.js_lib_database
 
 
@@ -90,7 +90,7 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
     return libs
 
 
-def download_database() -> dict:
+def download_database() -> Optional[Dict[str, Any]]:
     url = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
     response = requests.get(url)
     if response.status_code == 200:
@@ -128,7 +128,7 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 
 @surfactant.plugin.hookimpl
-def update_db():
+def update_db() -> str:
     """Retrieves the javascript library CVE database used by retire.js (https://github.com/RetireJS/retire.js/blob/master/repository/jsrepository-master.json) and only keeps the contents under each library's "extractors" section, which contains file hashes and regexes relevant for detecting a specific javascript library by its file name or contents.
 
     The resulting smaller json is written to js_library_patterns.json in the same directory. This smaller file will be read from to make the checks later on."""
@@ -147,12 +147,12 @@ def update_db():
 
 
 @surfactant.plugin.hookimpl
-def short_name():
+def short_name() -> str:
     return "js_file"
 
 
 @surfactant.plugin.hookimpl
-def init_hook(command_name=None):
+def init_hook(command_name: Optional[str]=None): 
     """Initialization hook to load the JavaScript library database."""
     if command_name != "update-db":  # Do not load the database if only updating the database.
         logger.info("Initializing js_file...")
