@@ -152,7 +152,7 @@ def short_name() -> str:
 
 
 @surfactant.plugin.hookimpl
-def init_hook(command_name: Optional[str]=None): 
+def init_hook(command_name: Optional[str] = None):
     """
     Initialization hook to load the JavaScript library database.
 

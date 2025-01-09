@@ -3,13 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 import sys
+from typing import Any, List, Optional
 
 import pluggy
 from loguru import logger
 
 from surfactant.configmanager import ConfigManager
 from surfactant.plugin import hookspecs
-from typing import List, Optional, Any
 
 
 def _register_plugins(pm: pluggy.PluginManager) -> None:
