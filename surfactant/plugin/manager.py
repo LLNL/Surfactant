@@ -145,18 +145,18 @@ def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str)
     Finds and returns a plugin that matches the specified input/output format and has the desired function.
 
     Args:
-    :parampm (pluggy.PluginManager): The plugin manager instance.
-    :param io_format (str) : The name that the plugin is registered as.
-    :param function_name (str) : The name of the function
-    
+        pm (pluggy.PluginManager): The plugin manager instance.
+        io_format (str): The name that the plugin is registered as.
+        function_name (str): The name of the function.
+
     Returns:
-    Optional[Any]: The found plugin instance that matches the specified `io_format` and 
-                    implements the `function_name`, or `None` if no such plugin is found. 
-                    If no plugin is found, an error is logged, and the program exits.
-        
+        Optional[Any]: The found plugin instance that matches the specified `io_format` and 
+                        implements the `function_name`, or `None` if no such plugin is found. 
+                        If no plugin is found, an error is logged, and the program exits.
+
     Raises:
-    SystemExit: If no plugin matching the criteria is found, the function logs an error message 
-                    and exits the program.
+        SystemExit: If no plugin matching the criteria is found, the function logs an error message 
+                     and exits the program.
     """
 
     found_plugin = pm.get_plugin(io_format)
@@ -184,9 +184,12 @@ def find_plugin_by_name(pm: pluggy.PluginManager, name: str) -> Optional[Any]:
     Finds a plugin by matching the given name against the plugin's registered name,
     canonical name, and its short name (if applicable).
 
-    :param pm (pluggy.PluginManager): The plugin manager instance.
-    :param name (str): The name to match against the plugin's registered, canonical, and short names.
-    :return (Any | None): The matched plugin instance or None if no match is found.
+    Args:
+        pm (pluggy.PluginManager): The plugin manager instance.
+        name (str): The name to match against the plugin's registered, canonical, and short names.
+
+    Returns:
+        Optional[Any]: The matched plugin instance or None if no match is found.
     """
     # Convert the name to lowercase for case-insensitive comparison
     name_lower = name.lower()
@@ -214,12 +217,13 @@ def find_plugin_by_name(pm: pluggy.PluginManager, name: str) -> Optional[Any]:
 
 
 def call_init_hooks(pm: pluggy.PluginManager, hook_filter: List[str]=None, command_name: str=None) -> None:
-    """Call the initialization hook for plugins that implement it.
+    """
+    Call the initialization hook for plugins that implement it.
 
     Args:
-        :param pm (pluggy.PluginManager): The plugin manager instance.
-        :param hook_filter (List[str]): A list of hook names to filter which plugins get initialized.
-        :param command_name (str): The name of the command invoking the initialization. 
+        pm (pluggy.PluginManager): The plugin manager instance.
+        hook_filter (List[str]): A list of hook names to filter which plugins get initialized.
+        command_name (str): The name of the command invoking the initialization.
     """
     for plugin in pm.get_plugins():
         if is_hook_implemented(pm, plugin, "init_hook"):
