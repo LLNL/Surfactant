@@ -3,13 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 import sys
+from typing import Any, List, Optional
 
 import pluggy
 from loguru import logger
 
 from surfactant.configmanager import ConfigManager
 from surfactant.plugin import hookspecs
-from typing import List, Optional, Any
 
 
 def _register_plugins(pm: pluggy.PluginManager) -> None:
@@ -148,14 +148,14 @@ def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str)
     :parampm (pluggy.PluginManager): The plugin manager instance.
     :param io_format (str) : The name that the plugin is registered as.
     :param function_name (str) : The name of the function
-    
+
     Returns:
-    Optional[Any]: The found plugin instance that matches the specified `io_format` and 
-                    implements the `function_name`, or `None` if no such plugin is found. 
+    Optional[Any]: The found plugin instance that matches the specified `io_format` and
+                    implements the `function_name`, or `None` if no such plugin is found.
                     If no plugin is found, an error is logged, and the program exits.
-        
+
     Raises:
-    SystemExit: If no plugin matching the criteria is found, the function logs an error message 
+    SystemExit: If no plugin matching the criteria is found, the function logs an error message
                     and exits the program.
     """
 
@@ -213,13 +213,15 @@ def find_plugin_by_name(pm: pluggy.PluginManager, name: str) -> Optional[Any]:
     return None
 
 
-def call_init_hooks(pm: pluggy.PluginManager, hook_filter: List[str]=None, command_name: str=None) -> None:
+def call_init_hooks(
+    pm: pluggy.PluginManager, hook_filter: List[str] = None, command_name: str = None
+) -> None:
     """Call the initialization hook for plugins that implement it.
 
     Args:
         :param pm (pluggy.PluginManager): The plugin manager instance.
         :param hook_filter (List[str]): A list of hook names to filter which plugins get initialized.
-        :param command_name (str): The name of the command invoking the initialization. 
+        :param command_name (str): The name of the command invoking the initialization.
     """
     for plugin in pm.get_plugins():
         if is_hook_implemented(pm, plugin, "init_hook"):
