@@ -150,12 +150,12 @@ def find_io_plugin(pm: pluggy.PluginManager, io_format: str, function_name: str)
         function_name (str): The name of the function.
 
     Returns:
-        Optional[Any]: The found plugin instance that matches the specified `io_format` and 
-                        implements the `function_name`, or `None` if no such plugin is found. 
+        Optional[Any]: The found plugin instance that matches the specified `io_format` and
+                        implements the `function_name`, or `None` if no such plugin is found.
                         If no plugin is found, an error is logged, and the program exits.
 
     Raises:
-        SystemExit: If no plugin matching the criteria is found, the function logs an error message 
+        SystemExit: If no plugin matching the criteria is found, the function logs an error message
                      and exits the program.
     """
 
@@ -216,7 +216,9 @@ def find_plugin_by_name(pm: pluggy.PluginManager, name: str) -> Optional[Any]:
     return None
 
 
-def call_init_hooks(pm: pluggy.PluginManager, hook_filter: List[str]=None, command_name: str=None) -> None:
+def call_init_hooks(
+    pm: pluggy.PluginManager, hook_filter: List[str] = None, command_name: str = None
+) -> None:
     """
     Call the initialization hook for plugins that implement it.
 

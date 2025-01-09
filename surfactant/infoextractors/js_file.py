@@ -157,7 +157,7 @@ def init_hook(command_name: Optional[str] = None):
     Initialization hook to load the JavaScript library database.
 
     Args:
-        command_name (Optional[str], optional): The name of the command invoking the initialization. 
+        command_name (Optional[str], optional): The name of the command invoking the initialization.
             If set to "update-db", the database will not be loaded.
 
     Returns:
