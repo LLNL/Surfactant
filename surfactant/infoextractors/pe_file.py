@@ -35,11 +35,15 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 # Values for CPU types that can appear in a PE file
 pe_machine_types = {
     0x0: "UNKNOWN",
+    0x184: "ALPHA",  # Alpha_AXP
+    0x284: "ALPHA64",  # Also AXP64
     0x1D3: "AM33",
-    0x8664: "AMD",
+    0x8664: "AMD64",
     0x1C0: "ARM",
     0xAA64: "ARM64",
     0x1C4: "ARMNT",
+    0xC0EE: "CEE",
+    0xCEF: "CEF",
     0xEBC: "EBC",
     0x14C: "I386",
     0x200: "IA64",
@@ -51,12 +55,21 @@ pe_machine_types = {
     0x466: "MIPSFPU16",
     0x1F0: "POWERPC",
     0x1F1: "POWERPCFP",
+    0x160: "R3000",  # Big-Endian
+    0x162: "R3000",  # Little-Endian
     0x166: "R4000",
+    0x168: "R10000",
     0x5032: "RISCV32",
     0x5064: "RISCV64",
     0x5128: "RISCV128",
     0x1A2: "SH3",
     0x1A3: "SH3DSP",
+    0x1A4: "SH3E",
+    0x1A6: "SH4",
+    0x1A8: "SH5",
+    0x1C2: "THUMB",
+    0x520: "TRICORE",
+    0x169: "WCEMIPSV2",
 }
 
 # https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#windows-subsystem
@@ -76,6 +89,7 @@ pe_subsystem_types = {
     13: "EFI_ROM",
     14: "XBOX",
     16: "WINDOWS_BOOT_APPLICATION",
+    17: "XBOX_CODE_CATALOG",
 }
 
 
