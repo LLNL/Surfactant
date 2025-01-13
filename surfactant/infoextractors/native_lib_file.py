@@ -1,7 +1,7 @@
 import json
+import os
 import re
 from typing import Any, Dict, List, Optional
-import os
 
 import requests
 from loguru import logger
@@ -11,22 +11,22 @@ from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
 
 
-class NativeLibDatabaseManager():
+class NativeLibDatabaseManager:
     def __init__(self):
         self.native_lib_database = None
 
     def load_db(self) -> None:
         # Load the pattern database once at module import
-        native_lib_file = (
-            ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
-        )
+        native_lib_file = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
 
         # Load regex patterns into database var
         try:
             with open(native_lib_file, "r") as regex:
                 self.native_lib_database = json.load(regex)
         except FileNotFoundError:
-            logger.warning(f"Native library pattern could not be loaded. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database.")
+            logger.warning(
+                "Native library pattern could not be loaded. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database."
+            )
             self.native_lib_database = None
 
     def get_database(self) -> Optional[Dict[str, Any]]:
@@ -183,7 +183,7 @@ def parse_cfg_file(content):
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
-    file_content  = download_database()
+    file_content = download_database()
     if file_content is not None:
         parsed_data = parse_cfg_file(file_content)
         if parsed_data is not None:
@@ -191,14 +191,15 @@ def update_db() -> str:
                 filecontent_list = value["filecontent"]
 
                 # Remove leading ^ from each string in the filecontent list
-                for i, pattern in enumerate(filecontent_list):  # Use enumerate to get index and value
+                for i, pattern in enumerate(
+                    filecontent_list
+                ):  # Use enumerate to get index and value
                     if pattern.startswith("^"):
                         filecontent_list[i] = pattern[1:]
 
                     if not pattern.endswith("\\$"):
                         if pattern.endswith("$"):
                             filecontent_list[i] = pattern[:-1]
-
 
             path = ConfigManager().get_data_dir_path() / "native_lib_patterns"
             path.mkdir(parents=True, exist_ok=True)
