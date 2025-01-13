@@ -197,12 +197,9 @@ def update_db() -> str:
                     if pattern.endswith("$"):
                         filecontent_list[i] = pattern[:-1]
 
-
         path = ConfigManager().get_data_dir_path() / "native_lib_patterns"
         path.mkdir(parents=True, exist_ok=True)
-        native_lib_file = (
-            ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
-        )
+        native_lib_file = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
         with open(native_lib_file, "w") as json_file:
             json.dump(parsed_data, json_file, indent=4)
         return "Update complete."
