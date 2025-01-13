@@ -53,7 +53,7 @@ def generate():
             config_file.flush()
 
             output_file_name = (
-                f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")}_generate.json'
+                f"{datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')}_generate.json"
             )
 
             with open(f"results/{output_file_name}", "w") as _:
@@ -86,7 +86,7 @@ def merge():
     # pylint: disable=broad-exception-caught, no-value-for-parameter
     try:
         req = flask.request.get_json()
-        output_file_name = f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")}_merge.json'
+        output_file_name = f"{datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')}_merge.json"
 
         with open(f"results/{output_file_name}", "w") as _:
             args = req["inputs"]

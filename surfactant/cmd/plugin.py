@@ -5,6 +5,7 @@ import click
 
 from surfactant.configmanager import ConfigManager
 from surfactant.plugin.manager import (
+    call_init_hooks,
     find_plugin_by_name,
     get_plugin_manager,
     is_hook_implemented,
@@ -121,6 +122,7 @@ def plugin_uninstall_cmd(plugin_name):
 def plugin_update_db_cmd(plugin_name, update_all):
     """Updates the database for a specified plugin or all plugins if --all is used."""
     pm = get_plugin_manager()
+    call_init_hooks(pm, hook_filter=["update_db"], command_name="update-db")
 
     if update_all:
         # Update all plugins that implement the update_db hook

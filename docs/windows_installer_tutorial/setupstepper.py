@@ -54,7 +54,7 @@ def launch_installer() -> Application:
 
     # Start application with proper arguments
     msiprefix = "msiexec /i " if (arguments["-type"] == "msi") else ""
-    app = app.start(f"{msiprefix}\"{arguments['-path']}\"")
+    app = app.start(f'{msiprefix}"{arguments["-path"]}"')
 
     # Wait for the application to start
     sleep(1.5 if (arguments["-type"] == "msi") else 0.75)
