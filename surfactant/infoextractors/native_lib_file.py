@@ -10,25 +10,29 @@ from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
 
 
-@surfactant.plugin.hookimpl
-def short_name() -> Optional[str]:
-    return "native_lib_patterns"
+class NativeLibDatabaseManager():
+    def __init__(self):
+        self.native_lib_database = None
+
+    def load_db(self) -> None:
+        # Load the pattern database once at module import
+        native_lib_file = (
+            ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
+        )
+
+        # Load regex patterns into database var
+        try:
+            with open(native_lib_file, "r") as regex:
+                self.native_lib_database = json.load(regex)
+        except FileNotFoundError:
+            logger.warning(f"File not found for native library detection: {native_lib_patterns}")
+            self.native_lib_database = None
+
+    def get_database(self) -> Optional[Dict[str, Any]]:
+        return self.native_lib_database
 
 
-def load_pattern_db():
-    # Load regex patterns into database var
-    try:
-        with open(native_lib_patterns, "r") as regex:
-            emba_patterns = json.load(regex)
-            return emba_patterns
-    except FileNotFoundError:
-        logger.warning(f"File not found for native library detection: {native_lib_patterns}")
-        return None
-
-
-# Load the pattern database once at module import
-native_lib_patterns = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
-database = load_pattern_db()
+native_lib_manager = NativeLibDatabaseManager()
 
 
 def supports_file(filetype) -> bool:
@@ -102,3 +106,26 @@ def match_by_attribute(attribute: str, content: str, patterns_database: Dict) ->
                     if matches:
                         libs.append({"containsLibrary": lib_name})
     return libs
+
+
+@surfactant.plugin.hookimpl
+def short_name() -> Optional[str]:
+    return "native_lib_patterns"
+
+
+@surfactant.plugin.hookimpl
+def init_hook(command_name: Optional[str] = None):
+    """
+    Initialization hook to load the native lib file.
+
+    Args:
+        command_name (Optional[str], optional): The name of the command invoking the initialization.
+            If set to "update-db", the database will not be loaded.
+
+    Returns:
+        None
+    """
+    if command_name != "update-db":  # Do not load the database if only updating the database.
+        logger.info("Initializing native_lib_file...")
+        native_lib_manager.load_db()
+        logger.info("Initializing native_lib_file complete.")
