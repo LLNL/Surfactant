@@ -176,7 +176,6 @@ def parse_cfg_file(content):
                         database[lib_name]["filecontent"].append(filecontent)
                 except re.error as e:
                     logger.error(f"Error parsing file content regexp {filecontent}: {e}")
-                    return None
 
     return database
 
@@ -186,28 +185,27 @@ def update_db() -> str:
     file_content  = download_database()
     if file_content is not None:
         parsed_data = parse_cfg_file(file_content)
-        if parsed_data is not None:
-            for _, value in parsed_data.items():
-                filecontent_list = value["filecontent"]
+        for _, value in parsed_data.items():
+            filecontent_list = value["filecontent"]
 
-                # Remove leading ^ from each string in the filecontent list
-                for i, pattern in enumerate(filecontent_list):  # Use enumerate to get index and value
-                    if pattern.startswith("^"):
-                        filecontent_list[i] = pattern[1:]
+            # Remove leading ^ from each string in the filecontent list
+            for i, pattern in enumerate(filecontent_list):  # Use enumerate to get index and value
+                if pattern.startswith("^"):
+                    filecontent_list[i] = pattern[1:]
 
-                    if not pattern.endswith("\\$"):
-                        if pattern.endswith("$"):
-                            filecontent_list[i] = pattern[:-1]
+                if not pattern.endswith("\\$"):
+                    if pattern.endswith("$"):
+                        filecontent_list[i] = pattern[:-1]
 
 
-            path = ConfigManager().get_data_dir_path() / "native_lib_patterns"
-            path.mkdir(parents=True, exist_ok=True)
-            native_lib_file = (
-                ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
-            )
-            with open(native_lib_file, "w") as json_file:
-                json.dump(parsed_data, json_file, indent=4)
-            return "Update complete."
+        path = ConfigManager().get_data_dir_path() / "native_lib_patterns"
+        path.mkdir(parents=True, exist_ok=True)
+        native_lib_file = (
+            ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
+        )
+        with open(native_lib_file, "w") as json_file:
+            json.dump(parsed_data, json_file, indent=4)
+        return "Update complete."
     return "No update occurred."
 
 
