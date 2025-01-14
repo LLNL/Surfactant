@@ -18,7 +18,6 @@ class DockerScoutManager:
     def __init__(self) -> None:
         self.disable_docker_scout = True
         self.docker_scout_installed = False
-        self.check_docker_scout_installed()
 
     def check_docker_scout_installed(self) -> None:
         """Check if Docker Scout is installed and update the state accordingly."""
