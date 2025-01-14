@@ -119,7 +119,7 @@ def download_database() -> Optional[str]:
     return None
 
 
-def parse_cfg_file(content: str):
+def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
     database: Dict[str, Dict[str, List[str]]] = {}
     lines = content.splitlines()
     filtered_lines: List[str] = []
@@ -171,7 +171,7 @@ def parse_cfg_file(content: str):
 def update_db() -> str:
     file_content = download_database()
     if file_content is not None:
-        parsed_data = parse_cfg_file(file_content)
+        parsed_data = parse_emba_cfg_file(file_content)
         for _, value in parsed_data.items():
             filecontent_list = value["filecontent"]
 
