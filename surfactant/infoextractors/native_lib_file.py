@@ -92,7 +92,7 @@ def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
 
 def match_by_attribute(
     attribute: str, content: Union[str, bytes], patterns_database: Dict[str, Any]
-) -> List[Dict[str, any]]:
+) -> List[Dict[str, Any]]:
     libs: List[Dict[str, str]] = []
     for lib_name, lib_info in patterns_database.items():
         if attribute in lib_info:
