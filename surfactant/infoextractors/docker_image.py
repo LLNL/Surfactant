@@ -6,6 +6,7 @@ import gzip
 import json
 import subprocess
 import tempfile
+from typing import Optional
 
 from loguru import logger
 
