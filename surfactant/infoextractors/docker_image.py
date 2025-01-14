@@ -31,7 +31,7 @@ class DockerScoutManager:
         if not self.docker_scout_installed:
             logger.warning("Install Docker Scout to scan containers for additional information")
 
-    def run_docker_scout(filename: str) -> object:
+    def run_docker_scout(self, filename: str) -> object:
         """Run Docker Scout on the given file and return the results."""
         try:
             result = subprocess.run(
