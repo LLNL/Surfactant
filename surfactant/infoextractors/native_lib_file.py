@@ -39,7 +39,9 @@ def supports_file(filetype: str) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> Optional[Dict[str, Any]]:
+def extract_file_info(
+    sbom: SBOM, software: Software, filename: str, filetype: str
+) -> Optional[Dict[str, Any]]:
     if not supports_file(filetype):
         return None
     return extract_native_lib_info(filename)
@@ -88,7 +90,9 @@ def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
     return native_lib_info
 
 
-def match_by_attribute(attribute: str, content: Union[str, bytes], patterns_database: Dict[str, Any]) -> List[Dict[str, any]]:
+def match_by_attribute(
+    attribute: str, content: Union[str, bytes], patterns_database: Dict[str, Any]
+) -> List[Dict[str, any]]:
     libs: List[Dict[str, str]] = []
     for lib_name, lib_info in patterns_database.items():
         if attribute in lib_info:
