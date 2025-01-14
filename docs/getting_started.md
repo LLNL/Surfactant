@@ -75,6 +75,14 @@ pip install -e ".[test,dev]"
 
 `pip install` with the `-e` or `--editable` option can also be used to install Surfactant plugins for development.
 
+## Generating an SBOM
+
+To create an SBOM, run the `surfactant generate` subcommand. For more details on the options it takes, please refer to this page on [basic usage](basic_usage.md). For more information on writing Surfactant configuration files for software specimens, see the [configuration files](configuration_files.md) page.
+
+The following diagram gives a high-level overview of what Surfactant does. The [internal implementation overview](internals_overview.md) page gives more detail about how Surfactant works internally.
+
+![Surfactant Overview Diagram](img/surfactant_overview_diagram.svg)
+
 ## Understanding the SBOM Output
 
 The following is a brief overview of the default SBOM file output format (which follows the CyTRICS schema). It is
