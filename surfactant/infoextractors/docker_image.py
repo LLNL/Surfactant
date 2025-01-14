@@ -31,6 +31,23 @@ class DockerScoutManager:
         if not self.docker_scout_installed:
             logger.warning("Install Docker Scout to scan containers for additional information")
 
+    def run_docker_scout(filename: str) -> object:
+        """Run Docker Scout on the given file and return the results."""
+        try:
+            result = subprocess.run(
+                ["docker", "scout", "sbom", "--format", "spdx", f"fs://{filename}"],
+                capture_output=True,
+                check=False,
+            )
+            if result.returncode != 0:
+                logger.warning(f"Running Docker Scout on {filename} failed")
+                return {}
+            spdx_out = json.loads(result.stdout)
+            return {"dockerSPDX": spdx_out}
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse Docker Scout output for {filename}: {e}")
+            return {}
+
 
 # Initialize DockerScoutManager to check installation status
 dsManager = DockerScoutManager()
@@ -57,26 +74,8 @@ def extract_docker_info(filetype: str, filename: str) -> object:
         with tempfile.NamedTemporaryFile() as gzip_out:
             gzip_out.write(gzip.decompress(gzip_data))
             gzip_out.flush()  # Ensure data is written before reading
-            return run_docker_scout(gzip_out.name)
-    return run_docker_scout(filename)
-
-
-def run_docker_scout(filename: str) -> object:
-    """Run Docker Scout on the given file and return the results."""
-    try:
-        result = subprocess.run(
-            ["docker", "scout", "sbom", "--format", "spdx", f"fs://{filename}"],
-            capture_output=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            logger.warning(f"Running Docker Scout on {filename} failed")
-            return {}
-        spdx_out = json.loads(result.stdout)
-        return {"dockerSPDX": spdx_out}
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Docker Scout output for {filename}: {e}")
-        return {}
+            return dsManager.run_docker_scout(gzip_out.name)
+    return dsManager.run_docker_scout(filename)
 
 
 @surfactant.plugin.hookimpl
