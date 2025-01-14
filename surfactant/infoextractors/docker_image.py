@@ -81,6 +81,4 @@ def extract_docker_info(filetype: str, filename: str) -> object:
 @surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:
     if command_name != "update-db":
-        logger.info("Initializing docker scout...")
         dsManager.check_docker_scout_installed()
-        logger.info("Initializing docker scout complete.")
