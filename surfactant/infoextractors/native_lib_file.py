@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import requests
 from loguru import logger
@@ -12,14 +12,12 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 class NativeLibDatabaseManager:
-    def __init__(self):
-        self.native_lib_database = None
+    def __init__(self) -> None:
+        self.native_lib_database: Optional[Dict[str, Any]] = None
 
     def load_db(self) -> None:
-        # Load the pattern database once at module import
         native_lib_file = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
 
-        # Load regex patterns into database var
         try:
             with open(native_lib_file, "r") as regex:
                 self.native_lib_database = json.load(regex)
@@ -36,29 +34,28 @@ class NativeLibDatabaseManager:
 native_lib_manager = NativeLibDatabaseManager()
 
 
-def supports_file(filetype) -> bool:
+def supports_file(filetype: str) -> bool:
     return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> Optional[Dict[str, Any]]:
     if not supports_file(filetype):
         return None
     return extract_native_lib_info(filename)
 
 
-def extract_native_lib_info(filename):
+def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
     native_lib_database = native_lib_manager.get_database()
 
     if native_lib_database is None:
         return None
 
-    found_libraries = set()
-    library_names = []
-    contains_library_names = []
+    found_libraries: set = set()
+    library_names: List[str] = []
+    contains_library_names: List[str] = []
 
-    # Match based on filename
     base_filename = os.path.basename(filename)
     filenames_list = match_by_attribute("filename", base_filename, native_lib_database)
     if len(filenames_list) > 0:
@@ -68,13 +65,11 @@ def extract_native_lib_info(filename):
                 library_names.append(library_name)
                 found_libraries.add(library_name)
 
-    # Match based on filecontent
     try:
         with open(filename, "rb") as native_file:
             filecontent = native_file.read()
         filecontent_list = match_by_attribute("filecontent", filecontent, native_lib_database)
 
-        # Extend the list and add the new libraries found
         for match in filecontent_list:
             library_name = match["containsLibrary"]
             if library_name not in found_libraries:
@@ -84,19 +79,17 @@ def extract_native_lib_info(filename):
     except FileNotFoundError:
         logger.warning(f"File not found: {filename}")
 
-    # Create the single entry for isLibrary
     if library_names:
         native_lib_info["nativeLibraries"].append({"isLibrary": library_names})
 
-    # Create the single entry for containsLibrary
     if contains_library_names:
         native_lib_info["nativeLibraries"].append({"containsLibrary": contains_library_names})
 
     return native_lib_info
 
 
-def match_by_attribute(attribute: str, content: str, patterns_database: Dict) -> List[Dict]:
-    libs = []
+def match_by_attribute(attribute: str, content: Union[str, bytes], patterns_database: Dict[str, Any]) -> List[Dict[str, any]]:
+    libs: List[Dict[str, str]] = []
     for lib_name, lib_info in patterns_database.items():
         if attribute in lib_info:
             for pattern in lib_info[attribute]:
@@ -111,7 +104,7 @@ def match_by_attribute(attribute: str, content: str, patterns_database: Dict) ->
     return libs
 
 
-def download_database() -> Optional[Dict[str, Any]]:
+def download_database() -> Optional[str]:
     emba_database_url = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
     response = requests.get(emba_database_url)
     if response.status_code == 200:
@@ -126,10 +119,10 @@ def download_database() -> Optional[Dict[str, Any]]:
     return None
 
 
-def parse_cfg_file(content):
-    database = {}
+def parse_cfg_file(content: str):
+    database: Dict[str, Dict[str, List[str]]] = {}
     lines = content.splitlines()
-    filtered_lines = []
+    filtered_lines: List[str] = []
 
     for line in lines:
         if not (line.startswith("#") or line.startswith("identifier")):
@@ -138,16 +131,12 @@ def parse_cfg_file(content):
     for line in filtered_lines:
         line = line.strip()
 
-        # Split by semicolons
         fields = line.split(";")
 
-        # Name of library
         lib_name = fields[0]
 
-        # Empty filename because EMBA doesn't need filename patterns
-        name_patterns = []
+        name_patterns: List[str] = []
 
-        # Check if it starts with one double quote and ends with two double quotes
         if fields[3].startswith('"') and fields[3].endswith('""'):
             filecontent = fields[3][1:-1]
         elif fields[3].endswith('""'):
@@ -155,8 +144,6 @@ def parse_cfg_file(content):
         else:
             filecontent = fields[3].strip('"')
 
-        # Create a dictionary for this entry and add it to the database
-        # Strict mode is deprecated so those entries will be matched just by filename
         if fields[1] == "" or fields[1] == "strict":
             if fields[1] == "strict":
                 if lib_name not in database:
@@ -188,8 +175,7 @@ def update_db() -> str:
         for _, value in parsed_data.items():
             filecontent_list = value["filecontent"]
 
-            # Remove leading ^ from each string in the filecontent list
-            for i, pattern in enumerate(filecontent_list):  # Use enumerate to get index and value
+            for i, pattern in enumerate(filecontent_list):
                 if pattern.startswith("^"):
                     filecontent_list[i] = pattern[1:]
 
@@ -212,18 +198,8 @@ def short_name() -> Optional[str]:
 
 
 @surfactant.plugin.hookimpl
-def init_hook(command_name: Optional[str] = None):
-    """
-    Initialization hook to load the native lib file.
-
-    Args:
-        command_name (Optional[str], optional): The name of the command invoking the initialization.
-            If set to "update-db", the database will not be loaded.
-
-    Returns:
-        None
-    """
-    if command_name != "update-db":  # Do not load the database if only updating the database.
+def init_hook(command_name: Optional[str] = None) -> None:
+    if command_name != "update-db":
         logger.info("Initializing native_lib_file...")
         native_lib_manager.load_db()
         logger.info("Initializing native_lib_file complete.")
