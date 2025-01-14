@@ -24,7 +24,7 @@ class DockerScoutManager:
         """Check if Docker Scout is installed and update the state accordingly."""
         try:
             result = subprocess.run(["docker", "scout"], capture_output=True, check=False)
-            self.docker_scout_installed = (result.returncode == 0)
+            self.docker_scout_installed = result.returncode == 0
         except FileNotFoundError:
             self.docker_scout_installed = False
 
