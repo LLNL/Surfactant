@@ -156,7 +156,7 @@ def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
                         "filecontent": [],
                     }
                 else:
-                    if not lib_name in database[lib_name]["filename"]:
+                    if lib_name not in database[lib_name]["filename"]:
                         database[lib_name]["filename"].append(lib_name)
             else:
                 try:
