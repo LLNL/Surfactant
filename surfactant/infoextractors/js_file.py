@@ -45,7 +45,6 @@ class JSDatabaseManager:
 
     def load_hash_and_timestamp(self) -> Optional[Dict[str, str]]:
         try:
-            print(self.hash_file_path)
             with open(self.hash_file_path, "r") as f:
                 hash_data = toml.load(f)
                 return hash_data.get("js_library_patterns", {}).get("js_library_patterns.json")
