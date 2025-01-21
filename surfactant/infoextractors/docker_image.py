@@ -11,18 +11,18 @@ from typing import Optional
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.sbomtypes import SBOM, Software
 from surfactant.configmanager import ConfigManager
+from surfactant.sbomtypes import SBOM, Software
 
 
 class DockerScoutManager:
     def __init__(self) -> None:
         # Initialize ConfigManager
         config_manager = ConfigManager()
-        
+
         # Retrieve the configuration option
         enable_docker_scout = config_manager.get("docker", "enable_docker_scout", True)
-        
+
         # Set disable_docker_scout based on the configuration
         self.disable_docker_scout = not enable_docker_scout
         self.docker_scout_installed = False
@@ -31,7 +31,7 @@ class DockerScoutManager:
         """Check if Docker Scout is installed and update the state accordingly."""
         if self.disable_docker_scout:
             return  # Do nothing if Docker Scout is disabled by config
-        
+
         try:
             result = subprocess.run(["docker", "scout"], capture_output=True, check=False)
             self.docker_scout_installed = result.returncode == 0
