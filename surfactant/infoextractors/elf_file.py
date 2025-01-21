@@ -157,7 +157,7 @@ def extract_elf_info(filename: str) -> object:
                             )
                             file_details["elfDynamicFlags1"].append(dt_flags_1_entry)
         except ELFParseError as e:
-            logger.warning(f"Error while parsing ELF sections: {repr(e)}")
+            logger.warning(f"Error while parsing ELF sections in {filename}: {repr(e)}")
 
         # Check for presence of special segments (e.g. PT_GNU_RELRO)
         for segment in elf.iter_segments():
