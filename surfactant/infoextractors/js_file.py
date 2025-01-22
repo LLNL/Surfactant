@@ -2,21 +2,22 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import hashlib
 import json
 import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import requests
-import toml
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
+from surfactant.database_manager.database_utils import (
+    calculate_hash,
+    load_hash_and_timestamp,
+    save_hash_and_timestamp,
+)
 from surfactant.sbomtypes import SBOM, Software
-
-from surfactant.database_manager.database_utils import calculate_hash, load_hash_and_timestamp, save_hash_and_timestamp
 
 
 class JSDatabaseManager:
@@ -45,7 +46,7 @@ class JSDatabaseManager:
 
     def get_database(self) -> Optional[Dict[str, Any]]:
         return self.js_lib_database
-    
+
 
 js_db_manager = JSDatabaseManager()
 
@@ -143,7 +144,9 @@ def update_db() -> str:
     raw_data = download_database()
     if raw_data is not None:
         new_hash = calculate_hash(raw_data)
-        current_data = load_hash_and_timestamp(js_db_manager.hash_file_path, js_db_manager.pattern_key, js_db_manager.pattern_file)
+        current_data = load_hash_and_timestamp(
+            js_db_manager.hash_file_path, js_db_manager.pattern_key, js_db_manager.pattern_file
+        )
         if current_data and new_hash == current_data.get("hash"):
             return "No update occurred. Database is up-to-date."
 
@@ -156,7 +159,14 @@ def update_db() -> str:
         json_file_path = path / "js_library_patterns.json"
         with open(json_file_path, "w") as f:
             json.dump(cleaned, f, indent=4)
-        save_hash_and_timestamp(js_db_manager.hash_file_path, js_db_manager.pattern_key, js_db_manager.pattern_file, js_db_manager.source, new_hash, download_timestamp)
+        save_hash_and_timestamp(
+            js_db_manager.hash_file_path,
+            js_db_manager.pattern_key,
+            js_db_manager.pattern_file,
+            js_db_manager.source,
+            new_hash,
+            download_timestamp,
+        )
         return "Update complete."
     return "No update occurred."
 
