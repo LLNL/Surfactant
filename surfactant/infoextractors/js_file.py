@@ -52,7 +52,16 @@ class JSDatabaseManager:
             return None
 
     def save_hash_and_timestamp(self, hash_value: str, timestamp: str) -> None:
-        hash_data = {
+        # Try to load existing data
+        try:
+            with open(self.hash_file_path, "r") as f:
+                hash_data = toml.load(f)
+        except FileNotFoundError:
+            # If the file does not exist, start with an empty dictionary
+            hash_data = {}
+
+        # Prepare the new data to be added/updated
+        new_data = {
             "js_library_patterns": {
                 "js_library_patterns.json": {
                     "source": "jsfile.retirejs",
@@ -61,6 +70,14 @@ class JSDatabaseManager:
                 }
             }
         }
+
+        # Update the existing data with the new data
+        if "js_library_patterns" in hash_data:
+            hash_data["js_library_patterns"].update(new_data["js_library_patterns"])
+        else:
+            hash_data.update(new_data)
+
+        # Save the updated data back to the file
         with open(self.hash_file_path, "w") as f:
             toml.dump(hash_data, f)
 
