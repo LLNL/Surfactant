@@ -19,13 +19,31 @@ from surfactant.database_manager.database_utils import calculate_hash, load_hash
 
 class JSDatabaseManager:
     def __init__(self):
-        self.js_lib_database = None
+        self._js_lib_database = None  # Use the private attribute
         self.hash_file_path = (
             ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.toml"
         )
         self.pattern_key = "js_library_patterns"
         self.pattern_file = "js_library_patterns.json"
         self.source = "jsfile.retirejs"
+        self.new_hash = None
+        self.download_timestamp = None
+
+    @property
+    def js_lib_database(self) -> Optional[Dict[str, Any]]:
+        if self._js_lib_database is None:
+            self.load_db()
+        return self._js_lib_database
+    
+    @property
+    def pattern_info(self) -> Dict[str, Any]:
+        return {
+            "pattern_key": self.pattern_key,
+            "pattern_file": self.pattern_file,
+            "source": self.source,
+            "hash_value": self.new_hash,
+            "timestamp": self.download_timestamp,
+        }
 
     def load_db(self) -> None:
         js_lib_file = (
@@ -140,21 +158,24 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 def update_db() -> str:
     raw_data = download_database()
     if raw_data is not None:
-        new_hash = calculate_hash(raw_data)
+        js_db_manager.new_hash = calculate_hash(raw_data)
         current_data = load_hash_and_timestamp(js_db_manager.hash_file_path, js_db_manager.pattern_key, js_db_manager.pattern_file)
-        if current_data and new_hash == current_data.get("hash"):
+        if current_data and js_db_manager.new_hash == current_data.get("hash"):
             return "No update occurred. Database is up-to-date."
 
         retirejs = json.loads(raw_data)
         cleaned = strip_irrelevant_data(retirejs)
-        download_timestamp = datetime.now().isoformat()
+        js_db_manager.download_timestamp = datetime.now().isoformat()
 
         path = ConfigManager().get_data_dir_path() / "infoextractors"
         path.mkdir(parents=True, exist_ok=True)
         json_file_path = path / "js_library_patterns.json"
         with open(json_file_path, "w") as f:
             json.dump(cleaned, f, indent=4)
-        save_hash_and_timestamp(js_db_manager.hash_file_path, js_db_manager.pattern_key, js_db_manager.pattern_file, js_db_manager.source, new_hash, download_timestamp)
+        print(js_db_manager.hash_file_path)
+
+        save_hash_and_timestamp(js_db_manager.hash_file_path, js_db_manager.pattern_info)
+        # save_hash_and_timestamp(js_db_manager.hash_file_path, js_db_manager.pattern_key, js_db_manager.pattern_file, js_db_manager.source, new_hash, download_timestamp)
         return "Update complete."
     return "No update occurred."
 

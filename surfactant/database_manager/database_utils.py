@@ -17,7 +17,7 @@ def load_hash_and_timestamp(hash_file_path, pattern_key: str, pattern_file: str)
     except FileNotFoundError:
         return None
 
-def save_hash_and_timestamp(hash_file_path, pattern_key: str, pattern_file: str, source: str, hash_value: str, timestamp: str) -> None:
+def save_hash_and_timestamp(hash_file_path, pattern_info: Dict[str, str]) -> None:
     """Save the hash and timestamp for a specific pattern to the specified TOML file."""
     try:
         with open(hash_file_path, "r") as f:
@@ -27,18 +27,18 @@ def save_hash_and_timestamp(hash_file_path, pattern_key: str, pattern_file: str,
 
     # Define the new data structure
     new_data = {
-        pattern_key: {
-            pattern_file: {
-                "source": source,
-                "hash": hash_value,
-                "timestamp": timestamp,
+        pattern_info['pattern_key']: {
+            pattern_info['pattern_file']: {
+                "source": pattern_info['source'],
+                "hash": pattern_info['hash_value'],
+                "timestamp": pattern_info['timestamp'],
             }
         }
     }
 
     # Update the existing data with the new data
-    if pattern_key in hash_data:
-        hash_data[pattern_key].update(new_data[pattern_key])
+    if pattern_info['pattern_key'] in hash_data:
+        hash_data[pattern_info['pattern_key']].update(new_data[pattern_info['pattern_key']])
     else:
         hash_data.update(new_data)
 
