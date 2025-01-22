@@ -2,14 +2,12 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import hashlib
 import json
 import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import requests
-import toml
 from loguru import logger
 
 import surfactant.plugin
