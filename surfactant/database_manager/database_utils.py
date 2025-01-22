@@ -1,13 +1,17 @@
-import toml
-from typing import Optional, Dict
 import hashlib
+from typing import Dict, Optional
+
+import toml
+
 
 def calculate_hash(data: str) -> str:
     """Calculate the SHA-256 hash of the given data."""
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
-def load_hash_and_timestamp(hash_file_path, pattern_key: str, pattern_file: str) -> Optional[Dict[str, str]]:
+def load_hash_and_timestamp(
+    hash_file_path, pattern_key: str, pattern_file: str
+) -> Optional[Dict[str, str]]:
     """Load the hash and timestamp for a specific pattern from the specified TOML file."""
     try:
         with open(hash_file_path, "r") as f:
