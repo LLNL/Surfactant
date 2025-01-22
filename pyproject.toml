@@ -55,6 +55,7 @@ dependencies = [
     "flask==3.*",
     "tomlkit==0.13.*",
     "requests>=2.32.3",
+    "toml>=0.10.2",
 ]
 dynamic = ["version"]
 
