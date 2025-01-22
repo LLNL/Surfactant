@@ -2,26 +2,27 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+import hashlib
 import json
 import re
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import requests
+import toml
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
 
-import hashlib
-import toml
-import requests
-from datetime import datetime
 
 class JSDatabaseManager:
     def __init__(self):
         self.js_lib_database = None
-        self.hash_file_path = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.toml"
+        self.hash_file_path = (
+            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.toml"
+        )
 
     def load_db(self) -> None:
         js_lib_file = (
@@ -41,7 +42,7 @@ class JSDatabaseManager:
         return self.js_lib_database
 
     def calculate_hash(self, data: str) -> str:
-        return hashlib.sha256(data.encode('utf-8')).hexdigest()
+        return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
     def load_hash_and_timestamp(self) -> Optional[Dict[str, str]]:
         try:
@@ -66,7 +67,7 @@ class JSDatabaseManager:
                 "js_library_patterns.json": {
                     "source": "jsfile.retirejs",
                     "hash": hash_value,
-                    "timestamp": timestamp
+                    "timestamp": timestamp,
                 }
             }
         }
@@ -94,6 +95,7 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
     if not supports_file(filetype):
         return None
     return extract_js_info(filename)
+
 
 def extract_js_info(filename: str) -> object:
     js_info: Dict[str, Any] = {"jsLibraries": []}
