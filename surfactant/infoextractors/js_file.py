@@ -55,15 +55,15 @@ class JSDatabaseManager:
 
         try:
             with open(js_lib_file, "r") as regex:
-                self.js_lib_database = json.load(regex)
+                self._js_lib_database = json.load(regex)
         except FileNotFoundError:
             logger.warning(
                 "Javascript library pattern database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
             )
-            self.js_lib_database = None
+            self._js_lib_database = None
 
     def get_database(self) -> Optional[Dict[str, Any]]:
-        return self.js_lib_database
+        return self._js_lib_database
 
 
 js_db_manager = JSDatabaseManager()
