@@ -194,12 +194,13 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 return "OMF_LIB"
             # zlib:
             # https://www.rfc-editor.org/rfc/rfc1950
-            cmf = magic_bytes[0]
-            flg = magic_bytes[1]
-            cm = cmf & 0x0F
-            if cm == 8:
-                if (cmf * 256 + flg) % 31 == 0:
-                    return "ZLIB"
+            if len(magic_bytes) >= 2:
+                cmf = magic_bytes[0]
+                flg = magic_bytes[1]
+                cm = cmf & 0x0F
+                if cm == 8:
+                    if (cmf * 256 + flg) % 31 == 0:
+                        return "ZLIB"
             return None
     except FileNotFoundError:
         return None
