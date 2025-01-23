@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: MIT
 import hashlib
 from typing import Dict, Optional
-import tomlkit
+
 
 def calculate_hash(data: str) -> str:
     """Calculate the SHA-256 hash of the given data."""
