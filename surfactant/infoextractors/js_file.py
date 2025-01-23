@@ -37,7 +37,7 @@ class JSDatabaseManager:
         if self._js_lib_database is None:
             self.load_db()
         return self._js_lib_database
-    
+
     @property
     def pattern_info(self) -> Dict[str, Any]:
         return {
