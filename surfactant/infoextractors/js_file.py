@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -170,7 +170,7 @@ def update_db() -> str:
 
         retirejs = json.loads(raw_data)
         cleaned = strip_irrelevant_data(retirejs)
-        js_db_manager.download_timestamp = datetime.now().isoformat()
+        js_db_manager.download_timestamp = datetime.now(timezone.utc)
 
         path = ConfigManager().get_data_dir_path() / "infoextractors"
         path.mkdir(parents=True, exist_ok=True)
