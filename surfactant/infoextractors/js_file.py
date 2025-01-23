@@ -179,7 +179,6 @@ def update_db() -> str:
             json.dump(cleaned, f, indent=4)
 
         save_hash_and_timestamp(js_db_manager.hash_file_path, js_db_manager.pattern_info)
-        # save_hash_and_timestamp(js_db_manager.hash_file_path, js_db_manager.pattern_key, js_db_manager.pattern_file, js_db_manager.source, new_hash, download_timestamp)
         return "Update complete."
     return "No update occurred."
 
