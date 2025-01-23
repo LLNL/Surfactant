@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: MIT
 import hashlib
 from typing import Dict, Optional
+import tomlkit
 
 
 def calculate_hash(data: str) -> str:
@@ -21,7 +22,7 @@ def load_hash_and_timestamp(
     """Load the hash and timestamp for a specific pattern from the specified TOML file."""
     try:
         with open(hash_file_path, "r") as f:
-            hash_data = toml.load(f)
+            hash_data = tomlkit.load(f)
             # Access the specific structure using the provided keys
             return hash_data.get(pattern_key, {}).get(pattern_file)
     except FileNotFoundError:
@@ -32,7 +33,7 @@ def save_hash_and_timestamp(hash_file_path, pattern_info: Dict[str, str]) -> Non
     """Save the hash and timestamp for a specific pattern to the specified TOML file."""
     try:
         with open(hash_file_path, "r") as f:
-            hash_data = toml.load(f)
+            hash_data = tomlkit.load(f)
     except FileNotFoundError:
         hash_data = {}
 
@@ -55,4 +56,4 @@ def save_hash_and_timestamp(hash_file_path, pattern_info: Dict[str, str]) -> Non
 
     # Write the updated data back to the TOML file
     with open(hash_file_path, "w") as f:
-        toml.dump(hash_data, f)
+        tomlkit.dump(hash_data, f)
