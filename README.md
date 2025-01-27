@@ -118,9 +118,7 @@ Getting the currently set value for the option would then be done with:
 surfactant config core.recorded_institution
 ```
 
-### Configuration Options
-
-- **docker.enable_docker_scout**: Controls whether Docker Scout is enabled. Default is `true`. To disable Docker Scout, run:
+Another example of a setting you might want to change is `docker.enable_docker_scout`, which controls whether Docker Scout is enabled. To disable Docker Scout (which also suppresses the warning message about installing Docker Scout), set this option to `false`:
 
 ```bash
 surfactant config docker.enable_docker_scout false
