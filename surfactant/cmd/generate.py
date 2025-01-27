@@ -15,7 +15,7 @@ from loguru import logger
 from surfactant import ContextEntry
 from surfactant.configmanager import ConfigManager
 from surfactant.fileinfo import sha256sum
-from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
+from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 
@@ -283,6 +283,9 @@ def sbom(
     """
 
     pm = get_plugin_manager()
+    call_init_hooks(
+        pm, hook_filter=["identify_file_type", "extract_file_info"], command_name="generate"
+    )
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
 
@@ -484,10 +487,18 @@ def sbom(
                             continue
 
                         if os.path.isfile(filepath):
+                            if not entry.includeFileExts:
+                                entry.includeFileExts = []
+                            if not entry.excludeFileExts:
+                                entry.excludeFileExts = []
                             if (
                                 ftype := pm.hook.identify_file_type(filepath=filepath)
                                 or include_all_files
-                            ):
+                                or os.path.splitext(filepath)[1].lower()
+                                in [ext.lower() for ext in entry.includeFileExts]
+                            ) and os.path.splitext(filepath)[1].lower() not in [
+                                ext.lower() for ext in entry.excludeFileExts
+                            ]:
                                 try:
                                     sw_parent, sw_children = get_software_entry(
                                         context,

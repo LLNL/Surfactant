@@ -11,6 +11,11 @@ See the [this page](configuration_files.md#settings-configuration-file) for deta
 - recorded_institution
     - Name of user's institution.
 
+## docker
+
+- enable_docker_scout
+    - Controls whether Docker Scout is enabled. Default is `true`. Docker Scout must be installed on the same system as Surfactant to work. To disable Docker Scout and/or suppress the message about installing Docker Scout, run `surfactant config docker.enable_docker_scout false`.
+
 ## macho
 
 > Note: Mach-O file support requires installing Surfactant with the `macho` optional dependencies (e.g. `pipx install surfactant[macho]`).

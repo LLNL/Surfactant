@@ -118,6 +118,12 @@ Getting the currently set value for the option would then be done with:
 surfactant config core.recorded_institution
 ```
 
+Another example of a setting you might want to change is `docker.enable_docker_scout`, which controls whether Docker Scout is enabled. To disable Docker Scout (which also suppresses the warning message about installing Docker Scout), set this option to `false`:
+
+```bash
+surfactant config docker.enable_docker_scout false
+```
+
 ### Manual Editing
 
 If desired, the settings config file can also be manually edited. The location of the file will depend on your platform.
@@ -142,10 +148,12 @@ In order to test out surfactant, you will need a sample file/folder. If you don'
 
 A configuration file for a sample contains the information about the sample to gather information from. Example JSON sample configuration files can be found in the examples folder of this repository.
 
-**extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file (Note that even on Windows, Unix style `/` directory separators should be used in paths)\
-**archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
-**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc (Note that even on Windows, Unix style `/` directory separators should be used in the path). If not given then the **extractPaths** will be used as the install paths
-**includeAllFiles**: (optional) If present and set to true, include all files in the SBOM, rather than only those recognized by Surfactant.
+- **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file. Note that even on Windows, Unix style `/` directory separators should be used in paths.
+- **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in `extractPaths` were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various `extractPaths`.
+- **installPrefix**: (optional) where the files in `extractPaths` would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc. Note that even on Windows, Unix style `/` directory separators should be used in the path. If not given then the `extractPaths` will be used as the install paths.
+- **includeAllFiles**: (optional) If present and set to true, include all files in the SBOM, rather than only those recognized by Surfactant.
+- **includeFileExts**: (optional) A list of file extensions to include, even if not recognized by Surfactant.
+- **excludeFileExts**: (optional) A list of file extensions to exclude, even if recognized by Surfactant. Note that if both `includeAllFiles` and `excludeFileExts` are set, the specified extensions in `excludeFileExts` will still be excluded.
 
 #### Create config command
 

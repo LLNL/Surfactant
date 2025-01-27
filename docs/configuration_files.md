@@ -41,10 +41,12 @@ recorded_institution = "LLNL"
 
 A sample configuration file contains the information about the sample to gather information from. Example JSON sample configuration files can be found in the examples folder of this repository.
 
-**extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file (Note that even on Windows, Unix style `/` directory separators should be used in paths)\
-**archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
-**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc (Note that even on Windows, Unix style `/` directory separators should be used in the path). If not given then the **extractPaths** will be used as the install paths
-**includeAllFiles**: (optional) If present and set to true, include all files in the SBOM, rather than only those recognized by Surfactant.
+- **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file. Note that even on Windows, Unix style `/` directory separators should be used in paths.
+- **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in `extractPaths` were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various `extractPaths`.
+- **installPrefix**: (optional) where the files in `extractPaths` would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc. Note that even on Windows, Unix style `/` directory separators should be used in the path. If not given then the `extractPaths` will be used as the install paths.
+- **includeAllFiles**: (optional) If present and set to true, include all files in the SBOM, rather than only those recognized by Surfactant.
+- **includeFileExts**: (optional) A list of file extensions to include, even if not recognized by Surfactant.
+- **excludeFileExts**: (optional) A list of file extensions to exclude, even if recognized by Surfactant. Note that if both `includeAllFiles` and `excludeFileExts` are set, the specified extensions in `excludeFileExts` will still be excluded.
 
 ## Example configuration files
 
