@@ -2,7 +2,6 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import json
 import os
 import pathlib
 import queue
@@ -13,6 +12,7 @@ import click
 from loguru import logger
 
 from surfactant import ContextEntry
+from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
 from surfactant.configmanager import ConfigManager
 from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
@@ -110,17 +110,6 @@ def get_software_entry(
     return (sw_entry, sw_children)
 
 
-def validate_config(config):
-    for line in config:
-        extract_path = line["extractPaths"]
-        for pth in extract_path:
-            extract_path_convert = pathlib.Path(pth)
-            if not extract_path_convert.exists():
-                logger.error("invalid path: " + str(pth))
-                return False
-    return True
-
-
 def print_output_formats(ctx, _, value):
     if not value or ctx.resilient_parsing:
         return
@@ -194,9 +183,9 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 
 @click.command("generate")
 @click.argument(
-    "config_file",
-    envvar="CONFIG_FILE",
-    type=click.Path(exists=True),
+    "specimen_config",
+    envvar="SPECIMEN_CONFIG",
+    type=SpecimenConfigParamType(),
     required=True,
 )
 @click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
@@ -266,7 +255,7 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 # Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
 # pylint: disable-next=too-many-positional-arguments
 def sbom(
-    config_file: str,
+    specimen_config: list,
     sbom_outfile: click.File,
     input_sbom: click.File,
     skip_gather: bool,
@@ -289,26 +278,9 @@ def sbom(
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
 
-    if pathlib.Path(config_file).is_file():
-        with click.open_file(config_file) as f:
-            try:
-                config = json.load(f)
-            except json.decoder.JSONDecodeError as err:
-                logger.exception(f"Invalid JSON in given config file ({config_file})")
-                raise SystemExit(f"Invalid JSON in given config file ({config_file})") from err
-            # TODO: what if it isn't a JSON config file, but a single file to generate an SBOM for? perhaps file == "archive"?
-    else:
-        # Emulate a configuration file with the path
-        config = []
-        config.append({"extractPaths": [config_file], "installPrefix": config_file})
-
-    # quit if invalid path found
-    if not validate_config(config):
-        return
-
     context: queue.Queue[ContextEntry] = queue.Queue()
 
-    for cfg_entry in config:
+    for cfg_entry in specimen_config:
         context.put(ContextEntry(**cfg_entry))
 
     # define the new_sbom variable type
