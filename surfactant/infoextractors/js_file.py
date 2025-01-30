@@ -163,7 +163,9 @@ def update_db() -> str:
     if raw_data is not None:
         js_db_manager.new_hash = calculate_hash(raw_data)
         current_data = load_hash_and_timestamp(
-            js_db_manager.database_version_file_path, js_db_manager.pattern_key, js_db_manager.pattern_file
+            js_db_manager.database_version_file_path,
+            js_db_manager.pattern_key,
+            js_db_manager.pattern_file,
         )
         if current_data and js_db_manager.new_hash == current_data.get("hash"):
             return "No update occurred. Database is up-to-date."
@@ -178,7 +180,9 @@ def update_db() -> str:
         with open(json_file_path, "w") as f:
             json.dump(cleaned, f, indent=4)
 
-        save_hash_and_timestamp(js_db_manager.database_version_file_path, js_db_manager.pattern_info)
+        save_hash_and_timestamp(
+            js_db_manager.database_version_file_path, js_db_manager.pattern_info
+        )
         return "Update complete."
     return "No update occurred."
 
