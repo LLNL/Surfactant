@@ -294,9 +294,7 @@ class ConfigTUI(textual.app.App):
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""
         # pylint: disable=attribute-defined-outside-init
-        self.theme = (
-            "textual-dark" if self.theme == "textual-light" else "textual-light"
-        )
+        self.theme = "textual-dark" if self.theme == "textual-light" else "textual-light"
 
     def action_save_sbom(self) -> None:
         """Saves the current SBOM to file"""

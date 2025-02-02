@@ -19,6 +19,7 @@ import textual.widgets.button
 import surfactant.cmd.generate
 import surfactant.cmd.merge
 
+
 class SelectFileButtons(textual.widgets.Static):
     # pylint: disable=too-few-public-methods
     def __init__(self, allow_folder_selection: bool):
@@ -76,7 +77,7 @@ class FileInput(textual.widgets.Static):
         self.label = label
         self.allow_file_selection = allow_file_selection
         self.allow_folder_selection = allow_folder_selection
-        self.input_path = ''
+        self.input_path = ""
 
     def compose(self) -> textual.app.ComposeResult:
         if len(self.input_path) == 0:
@@ -88,12 +89,13 @@ class FileInput(textual.widgets.Static):
         def set_path(path: Optional[textual.widgets.DirectoryTree.FileSelected]):
             if path:
                 self.input_path = path
-                self.query_one(textual.widgets.Label).update(
-                    f"{self.label} {path}"
-                )
+                self.query_one(textual.widgets.Label).update(f"{self.label} {path}")
 
-        base_dir = './' if len(self.input_path) == 0 else self.input_path
-        self.app.push_screen(SelectFile(self.allow_file_selection, self.allow_folder_selection, base_dir), set_path)
+        base_dir = "./" if len(self.input_path) == 0 else self.input_path
+        self.app.push_screen(
+            SelectFile(self.allow_file_selection, self.allow_folder_selection, base_dir), set_path
+        )
+
 
 class GenerateTab(textual.widgets.Static):
     def __init__(self):
@@ -107,25 +109,31 @@ class GenerateTab(textual.widgets.Static):
         self.input_format = textual.widgets.Select([("CyTRICS", "CyTRICS")], allow_blank=False)
         self.skip_install_path = textual.widgets.Checkbox("Skip Install Path")
         self.recorded_institution = textual.widgets.Input(placeholder="Recorded Institution")
-        self.output_format = textual.widgets.Select([
-            ("CyTRICS", "CyTRICS"),
-            ("SPDX", "SPDX"),
-            ("CSV", "CSV")
-        ], allow_blank=False)
+        self.output_format = textual.widgets.Select(
+            [("CyTRICS", "CyTRICS"), ("SPDX", "SPDX"), ("CSV", "CSV")], allow_blank=False
+        )
 
     def compose(self) -> textual.app.ComposeResult:
         yield self.file_input
         yield self.output_dir
-        yield textual.containers.HorizontalGroup(textual.widgets.Label("Output Filename: "), self.output_name)
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Output Filename: "), self.output_name
+        )
         yield textual.widgets.Rule()
         yield textual.widgets.Label("Optional options:")
         yield self.input_sbom
         yield self.skip_gather
         yield self.skip_relationships
-        yield textual.containers.HorizontalGroup(textual.widgets.Label("Input Format: "), self.input_format)
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Input Format: "), self.input_format
+        )
         yield self.skip_install_path
-        yield textual.containers.HorizontalGroup(textual.widgets.Label("Recorded Institution: "), self.recorded_institution)
-        yield textual.containers.HorizontalGroup(textual.widgets.Label("Output Format: "), self.output_format)
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Recorded Institution: "), self.recorded_institution
+        )
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Output Format: "), self.output_format
+        )
         yield textual.widgets.Button("Run", id="run")
 
     @textual.on(textual.widgets.Button.Pressed, "#run")
@@ -164,6 +172,7 @@ class GenerateTab(textual.widgets.Static):
             _ = input()
         self.app.refresh()
 
+
 class MergePath(textual.widgets.Static):
     def __init__(self):
         super().__init__()
@@ -172,14 +181,14 @@ class MergePath(textual.widgets.Static):
 
     def compose(self) -> textual.app.ComposeResult:
         yield textual.containers.HorizontalGroup(
-            textual.widgets.Button("-", id=f"remove_path"),
-            self.path_selector
+            textual.widgets.Button("-", id="remove_path"), self.path_selector
         )
 
     @textual.on(textual.widgets.Button.Pressed, "#remove_path")
     def remove_path(self):
         self.active = False
         self.remove()
+
 
 class MergePathsHolder(textual.widgets.Static):
     def __init__(self):
@@ -197,33 +206,38 @@ class MergePathsHolder(textual.widgets.Static):
         self.merge_paths.append(MergePath())
         self.mount(self.merge_paths[-1], before="#add_merge_path")
 
+
 class MergeTab(textual.widgets.Static):
     def __init__(self):
         super().__init__()
         self.merge_paths = MergePathsHolder()
         self.output_dir = FileInput("Output directory:", False, True)
         self.output_name = textual.widgets.Input(placeholder="Output Filename")
-        self.input_format = textual.widgets.Select([
-            ("CyTRICS", "CyTRICS"),
-            ("SPDX", "SPDX"),
-            ("CSV", "CSV")
-        ], allow_blank=False)
-        self.output_format = textual.widgets.Select([
-            ("CyTRICS", "CyTRICS"),
-            ("SPDX", "SPDX"),
-            ("CSV", "CSV")
-        ], allow_blank=False)
+        self.input_format = textual.widgets.Select(
+            [("CyTRICS", "CyTRICS"), ("SPDX", "SPDX"), ("CSV", "CSV")], allow_blank=False
+        )
+        self.output_format = textual.widgets.Select(
+            [("CyTRICS", "CyTRICS"), ("SPDX", "SPDX"), ("CSV", "CSV")], allow_blank=False
+        )
         self.config_file = FileInput("Config File", True, False)
 
     def compose(self) -> textual.app.ComposeResult:
         yield self.merge_paths
         yield self.output_dir
-        yield textual.containers.HorizontalGroup(textual.widgets.Label("Output Filename: "), self.output_name)
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Output Filename: "), self.output_name
+        )
         yield textual.widgets.Rule()
         yield textual.widgets.Label("Optional options:")
-        yield textual.containers.HorizontalGroup(textual.widgets.Label("Input Format: "), self.input_format)
-        yield textual.containers.HorizontalGroup(textual.widgets.Label("Output Format: "), self.output_format)
-        yield textual.containers.HorizontalGroup(textual.widgets.Label("Config File: "), self.config_file)
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Input Format: "), self.input_format
+        )
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Output Format: "), self.output_format
+        )
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Config File: "), self.config_file
+        )
         yield textual.widgets.Button("Run", id="run")
 
     @textual.on(textual.widgets.Button.Pressed, "#run")
@@ -283,16 +297,14 @@ class TUI(textual.app.App):
         yield textual.widgets.Tabs(Tab("Generate", id="Generate"), Tab("Merge", id="Merge"))
         yield textual.containers.ScrollableContainer(id="MainContainer")
 
-
     def on_mount(self) -> None:
         self.query_one(textual.widgets.Tabs).focus()
 
     def on_tabs_tab_activated(self, event: textual.widgets.Tabs.TabActivated) -> None:
-        TABS = (
-            ("Generate", self.generate_tab),
-            ("Merge", self.merge_tab)
+        TABS = (("Generate", self.generate_tab), ("Merge", self.merge_tab))
+        main_container = self.get_child_by_id(
+            "MainContainer", textual.containers.ScrollableContainer
         )
-        main_container = self.get_child_by_id("MainContainer", textual.containers.ScrollableContainer)
         main_container.query_children().remove()
         for name, tab in TABS:
             if event.tab.id == name:
@@ -301,12 +313,11 @@ class TUI(textual.app.App):
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""
         # pylint: disable=attribute-defined-outside-init
-        self.theme = (
-            "textual-dark" if self.theme == "textual-light" else "textual-light"
-        )
+        self.theme = "textual-dark" if self.theme == "textual-light" else "textual-light"
 
     def action_quit(self) -> None:
         self.app.exit()
+
 
 @click.command("tui")
 def tui():
