@@ -15,12 +15,12 @@ class Cli:
     A base class that implements the surfactant cli basic functionality
 
     Attributes:
-    sbom                    An internal record of sbom entries the class adds to as it finds more matches.
-    subset                  An internal record of the subset of sbom entries from the last cli find call.
-    sbom_filename:          A string value of the filename where the loaded sbom is stored.
-    subset_filename:        A string value of the filename where the current subset result from the "cli find" command is stored.
-    match_functions         A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
-    camel_case_conversions  A dictionary of string conversions from all lowercase to camelcase. Used to convert python click options to match the SBOM attribute's case
+        sbom: An internal record of sbom entries the class adds to as it finds more matches.
+        subset: An internal record of the subset of sbom entries from the last cli find call.
+        sbom_filename: A string value of the filename where the loaded sbom is stored.
+        subset_filename: A string value of the filename where the current subset result from the "cli find" command is stored.
+        match_functions: A dictionary of functions that provide matching functionality for given SBOM fields (i.e. uuid, sha256, installpath, etc)
+        camel_case_conversions: A dictionary of string conversions from all lowercase to camelcase. Used to convert python click options to match the SBOM attribute's case
 
     """
 
