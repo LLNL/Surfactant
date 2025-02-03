@@ -11,6 +11,7 @@ class Load(Cli):
     Attributes:
         input_format (str): The format for input sboms
     """
+
     def __init__(self, *args, input_format, **kwargs):
         """Executes the load class constructor
 
