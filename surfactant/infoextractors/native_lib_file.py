@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -16,16 +17,25 @@ class NativeLibDatabaseManager:
         self.native_lib_database: Optional[Dict[str, Any]] = None
 
     def load_db(self) -> None:
-        native_lib_file = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
+        native_lib_folder = ConfigManager().get_data_dir_path() / "native_lib_patterns"
+        self.native_lib_database = {} # Is a dict of dicts, each inner dict is one json file
 
-        try:
-            with open(native_lib_file, "r") as regex:
-                self.native_lib_database = json.load(regex)
-        except FileNotFoundError:
-            logger.warning(
-                "Native library pattern could not be loaded. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database."
-            )
-            self.native_lib_database = None
+        if native_lib_folder.exists():
+            # See how many .json files there are in the folder
+            for file in native_lib_folder.glob("*.json"):
+                    try:
+                        with open(file, "r") as regex:
+                            patterns = json.load(regex)
+                            self.native_lib_database.append(patterns)
+                    except FileNotFoundError:
+                        logger.warning(
+                            ""
+                        )
+        else:
+            print("No JSON files found. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database or place private JSON patterns at this location: __.")
+
+        print("printing out native_lib_database: ", self.native_lib_database)
+
 
     def get_database(self) -> Optional[Dict[str, Any]]:
         return self.native_lib_database
@@ -210,3 +220,7 @@ def init_hook(command_name: Optional[str] = None) -> None:
         logger.info("Initializing native_lib_file...")
         native_lib_manager.load_db()
         logger.info("Initializing native_lib_file complete.")
+
+        # Create native_lib_patterns folder for storing JSON DB's
+        path = ConfigManager().get_data_dir_path() / "native_lib_patterns"
+        path.mkdir(parents=True, exist_ok=True)
