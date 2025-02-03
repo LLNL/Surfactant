@@ -1,9 +1,6 @@
 import dataclasses
-import os
 import pickle
-import platform
 from dataclasses import Field
-from pathlib import Path
 
 from loguru import logger
 
@@ -35,28 +32,18 @@ class Cli:
         self.sbom_filename = "sbom_cli"
         self.subset_filename = "subset_cli"
         # Create data directory
-        self.data_dir = self._get_cli_sbom_dir()
+        self.data_dir = self.ConfigManager().get_data_dir_path()
         self.data_dir.mkdir(parents=True, exist_ok=True)
-
-    def _get_cli_sbom_dir(self) -> Path:
-        """Determines the path to the loaded serialized sbom file.
-
-        Returns:
-            Path: The directory path to where the serialized sboms are stored.
-        """
-        if platform.system() == "Windows":
-            data_dir = Path(os.getenv("APPDATA", os.path.expanduser("~\\AppData\\Roaming")))
-        else:
-            data_dir = Path(os.getenv("XDG_DATA_HOME", os.path.expanduser("~/.local/share")))
-        data_dir = data_dir / "surfactant"
-        return data_dir
 
     @staticmethod
     def serialize(sbom: SBOM) -> str:
         """Serializes a given sbom.
 
+        Args:
+            bom (SBOM): Aninstance of an SBOM to serialize
+
         Returns:
-            str: A string representation of the serialized SBOM.
+            bytes: A binary representation of the serialized SBOM.
         """
         # NOTE: python pickle cannot pickle MappingProxyType, which is inherently included in the Field type.
         # Pickling is much faster than converting to json or msgpack (see MR for timings: https://github.com/LLNL/Surfactant/pull/261
@@ -75,8 +62,11 @@ class Cli:
     def deserialize(data) -> SBOM:
         """Deserializes the given data and saves them in the SBOM class instance
 
+        Args:
+            data (bytes): The data to deserialize into an SBOM type
+
         Returns:
-            SBOM: A SBOM instance.
+            SBOM: An SBOM instance.
         """
         try:
             sbom = pickle.loads(data)

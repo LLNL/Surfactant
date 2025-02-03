@@ -8,19 +8,23 @@ class Load(Cli):
     """
     A class that implements the surfactant cli load functionality
 
+    Attributes:
+        input_format (str): The format for input sboms
     """
-
     def __init__(self, *args, input_format, **kwargs):
         """Executes the load class constructor
 
-        param: input_format   The format of the sbom being loaded
+        Args:
+            input_format (str): The format of the sbom being loaded
         """
         self.input_format = input_format
         super().__init__(*args, **kwargs)
 
     def execute(self, input_file):
         """Executes the main functionality of the load class
-        param: input_file   The sbom load into the cli
+
+        Args:
+            input_file: The sbom load into the cli
         """
         pm = get_plugin_manager()
         input_reader = find_io_plugin(pm, self.input_format, "read_sbom")
