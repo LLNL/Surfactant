@@ -5,6 +5,7 @@ from dataclasses import Field
 from loguru import logger
 
 from surfactant.sbomtypes._sbom import SBOM
+from surfactant.configmanager import ConfigManager
 
 
 class Cli:
