@@ -26,7 +26,7 @@ class NativeLibDatabaseManager:
                     try:
                         with open(file, "r") as regex:
                             patterns = json.load(regex)
-                            self.native_lib_database.append(patterns)
+                            self.native_lib_database[file.stem] = patterns
                     except FileNotFoundError:
                         logger.warning(
                             ""
@@ -34,7 +34,7 @@ class NativeLibDatabaseManager:
         else:
             print("No JSON files found. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database or place private JSON patterns at this location: __.")
 
-        print("printing out native_lib_database: ", self.native_lib_database)
+        #print(self.native_lib_database)
 
 
     def get_database(self) -> Optional[Dict[str, Any]]:
@@ -61,6 +61,10 @@ def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
     native_lib_database = native_lib_manager.get_database()
 
+    #print(native_lib_database)
+    print("this is the length")
+    print(len(native_lib_database))
+ 
     if native_lib_database is None:
         return None
 
@@ -104,17 +108,18 @@ def match_by_attribute(
     attribute: str, content: Union[str, bytes], patterns_database: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     libs: List[Dict[str, str]] = []
-    for lib_name, lib_info in patterns_database.items():
-        if attribute in lib_info:
-            for pattern in lib_info[attribute]:
-                if attribute == "filename":
-                    if pattern.lower() == content.lower():
-                        libs.append({"isLibrary": lib_name})
+    for database_name, database_info in patterns_database.items():
+        for lib_name, lib_info in database_info.items():
+            if attribute in lib_info:
+                for pattern in lib_info[attribute]:
+                    if attribute == "filename":
+                        if pattern.lower() == content.lower():
+                            libs.append({"isLibrary": lib_name})
 
-                elif attribute == "filecontent":
-                    matches = re.search(pattern.encode("utf-8"), content)
-                    if matches:
-                        libs.append({"containsLibrary": lib_name})
+                    elif attribute == "filecontent":
+                        matches = re.search(pattern.encode("utf-8"), content)
+                        if matches:
+                            libs.append({"containsLibrary": lib_name})
     return libs
 
 
