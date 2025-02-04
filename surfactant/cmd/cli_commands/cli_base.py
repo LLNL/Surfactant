@@ -4,8 +4,8 @@ from dataclasses import Field
 
 from loguru import logger
 
-from surfactant.sbomtypes._sbom import SBOM
 from surfactant.configmanager import ConfigManager
+from surfactant.sbomtypes._sbom import SBOM
 
 
 class Cli:
@@ -33,7 +33,7 @@ class Cli:
         self.sbom_filename = "sbom_cli"
         self.subset_filename = "subset_cli"
         # Create data directory
-        self.data_dir = self.ConfigManager().get_data_dir_path()
+        self.data_dir = ConfigManager().get_data_dir_path()
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
