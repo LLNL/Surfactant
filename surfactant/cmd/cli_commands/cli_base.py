@@ -1,13 +1,13 @@
 import dataclasses
+import os
 import pickle
-import platform
 from dataclasses import Field
 from pathlib import Path
 
 from loguru import logger
 
-from surfactant.sbomtypes._sbom import SBOM
 from surfactant.configmanager import ConfigManager
+from surfactant.sbomtypes._sbom import SBOM
 
 
 class Cli:
