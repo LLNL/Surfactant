@@ -41,7 +41,7 @@ class Cli:
         """Serializes a given sbom.
 
         Args:
-            bom (SBOM): Aninstance of an SBOM to serialize
+            bom (SBOM): An instance of an SBOM to serialize
 
         Returns:
             bytes: A binary representation of the serialized SBOM.
