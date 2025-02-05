@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -8,27 +9,63 @@ from loguru import logger
 
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
+from surfactant.database_manager.database_utils import (
+    calculate_hash,
+    load_hash_and_timestamp,
+    save_hash_and_timestamp,
+    download_database
+)
 from surfactant.sbomtypes import SBOM, Software
+
+
+# Global configuration
+DATABASE_URL = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
 
 
 class NativeLibDatabaseManager:
     def __init__(self) -> None:
-        self.native_lib_database: Optional[Dict[str, Any]] = None
+        self._native_lib_database: Optional[Dict[str, Any]] = None
+        self.database_version_file_path = (
+            ConfigManager().get_data_dir_path() / "native_lib_patterns" / "native_lib_patterns.toml"
+        )
+        self.pattern_key = "native_lib_patterns"
+        self.pattern_file = "native_lib_patterns.json"
+        self.source = "nativefile.emba"
+        self.new_hash: Optional[str] = None
+        self.download_timestamp: Optional[datetime] = None
+
+    @property
+    def native_lib_database(self) -> Optional[Dict[str, Any]]:
+        if self._native_lib_database is None:
+            self.load_db()
+        return self._native_lib_database
+
+    @property
+    def pattern_info(self) -> Dict[str, Any]:
+        return {
+            "pattern_key": self.pattern_key,
+            "pattern_file": self.pattern_file,
+            "source": self.source,
+            "hash_value": self.new_hash,
+            "timestamp": self.download_timestamp,
+        }
 
     def load_db(self) -> None:
-        native_lib_file = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
+        native_lib_file = (
+            ConfigManager().get_data_dir_path() / "native_lib_patterns" / self.pattern_file
+        )
 
         try:
             with open(native_lib_file, "r") as regex:
-                self.native_lib_database = json.load(regex)
+                self._native_lib_database = json.load(regex)
         except FileNotFoundError:
             logger.warning(
                 "Native library pattern could not be loaded. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database."
             )
-            self.native_lib_database = None
+            self._native_lib_database = None
 
     def get_database(self) -> Optional[Dict[str, Any]]:
-        return self.native_lib_database
+        return self.nati_native_lib_databaseve_lib_database
 
 
 native_lib_manager = NativeLibDatabaseManager()
@@ -108,21 +145,6 @@ def match_by_attribute(
     return libs
 
 
-def download_database() -> Optional[str]:
-    emba_database_url = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
-    response = requests.get(emba_database_url)
-    if response.status_code == 200:
-        logger.info("Request successful!")
-        return response.text
-
-    if response.status_code == 404:
-        logger.error("Resource not found.")
-    else:
-        logger.error("An error occurred.")
-
-    return None
-
-
 def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
     database: Dict[str, Dict[str, List[str]]] = {}
     lines = content.splitlines()
@@ -176,8 +198,17 @@ def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
-    file_content = download_database()
+    file_content = download_database(DATABASE_URL)
     if file_content is not None:
+        native_lib_manager.new_hash = calculate_hash(file_content)
+        current_data = load_hash_and_timestamp(
+            native_lib_manager.database_version_file_path,
+            native_lib_manager.pattern_key,
+            native_lib_manager.pattern_file,
+        )
+        if current_data and native_lib_manager.new_hash == current_data.get("hash"):
+            return "No update occurred. Database is up-to-date."
+
         parsed_data = parse_emba_cfg_file(file_content)
         for _, value in parsed_data.items():
             filecontent_list = value["filecontent"]
@@ -192,9 +223,14 @@ def update_db() -> str:
 
         path = ConfigManager().get_data_dir_path() / "native_lib_patterns"
         path.mkdir(parents=True, exist_ok=True)
-        native_lib_file = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
+        native_lib_file = path / native_lib_manager.pattern_file
         with open(native_lib_file, "w") as json_file:
             json.dump(parsed_data, json_file, indent=4)
+
+        native_lib_manager.download_timestamp = datetime.now(timezone.utc)
+        save_hash_and_timestamp(
+            native_lib_manager.database_version_file_path, native_lib_manager.pattern_info
+        )
         return "Update complete."
     return "No update occurred."
 
@@ -206,6 +242,16 @@ def short_name() -> Optional[str]:
 
 @surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:
+    """
+    Initialization hook to load the Nativel library database.
+
+    Args:
+        command_name (Optional[str], optional): The name of the command invoking the initialization.
+            If set to "update-db", the database will not be loaded.
+
+    Returns:
+        None
+    """
     if command_name != "update-db":
         logger.info("Initializing native_lib_file...")
         native_lib_manager.load_db()

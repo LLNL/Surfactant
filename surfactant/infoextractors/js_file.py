@@ -16,21 +16,26 @@ from surfactant.database_manager.database_utils import (
     calculate_hash,
     load_hash_and_timestamp,
     save_hash_and_timestamp,
+    download_database
 )
 from surfactant.sbomtypes import SBOM, Software
 
 
+# Global configuration
+DATABASE_URL = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
+
+
 class JSDatabaseManager:
     def __init__(self):
-        self._js_lib_database = None  # Use the private attribute
+        self._js_lib_database: Optional[Dict[str, Any]] = None  # Use the private attribute
         self.database_version_file_path = (
             ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.toml"
         )
         self.pattern_key = "js_library_patterns"
         self.pattern_file = "js_library_patterns.json"
         self.source = "jsfile.retirejs"
-        self.new_hash = None
-        self.download_timestamp = None
+        self.new_hash: Optional[str]= None
+        self.download_timestamp: Optional[datetime] = None
 
     @property
     def js_lib_database(self) -> Optional[Dict[str, Any]]:
@@ -50,7 +55,7 @@ class JSDatabaseManager:
 
     def load_db(self) -> None:
         js_lib_file = (
-            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.json"
+            ConfigManager().get_data_dir_path() / "infoextractors" / self.pattern_file
         )
 
         try:
@@ -120,21 +125,6 @@ def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dic
     return libs
 
 
-def download_database() -> Optional[str]:
-    url = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
-    response = requests.get(url)
-    if response.status_code == 200:
-        logger.info("Request successful!")
-        return response.text
-
-    if response.status_code == 404:
-        logger.error("Resource not found.")
-    else:
-        logger.error("An error occurred.")
-
-    return None
-
-
 def strip_irrelevant_data(retirejs_db: dict) -> dict:
     clean_db = {}
     reg_temp = "\u00a7\u00a7version\u00a7\u00a7"
@@ -159,7 +149,7 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
-    raw_data = download_database()
+    raw_data = download_database(DATABASE_URL)
     if raw_data is not None:
         js_db_manager.new_hash = calculate_hash(raw_data)
         current_data = load_hash_and_timestamp(
@@ -176,7 +166,7 @@ def update_db() -> str:
 
         path = ConfigManager().get_data_dir_path() / "infoextractors"
         path.mkdir(parents=True, exist_ok=True)
-        json_file_path = path / "js_library_patterns.json"
+        json_file_path = path / js_db_manager.pattern_file
         with open(json_file_path, "w") as f:
             json.dump(cleaned, f, indent=4)
 

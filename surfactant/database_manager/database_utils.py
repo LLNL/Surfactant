@@ -7,9 +7,42 @@
 #
 # SPDX-License-Identifier: MIT
 import hashlib
+from loguru import logger
+import requests
+from requests.exceptions import RequestException
 from typing import Dict, Optional
-
 import tomlkit
+
+
+def download_database(url: str) -> Optional[str]:
+    """
+    Downloads the content of a database from the given URL.
+
+    Args:
+        url (str): The URL of the database to download.
+
+    Returns:
+        Optional[str]: The content of the database as a string if the request is successful,
+                       or None if an error occurs.
+    """
+    try:
+        # Perform the HTTP GET request with a timeout
+        response = requests.get(url, timeout=10)
+
+        # Handle HTTP status codes
+        if response.status_code == 200:
+            logger.info(f"Request successful! URL: {url}")
+            return response.text
+        elif response.status_code == 404:
+            logger.error(f"Resource not found. URL: {url}")
+        else:
+            logger.warning(f"Unexpected status code {response.status_code} for URL: {url}")
+    except RequestException as e:
+        # Handle network-related errors
+        logger.error(f"An error occurred while trying to fetch the URL: {url}. Error: {e}")
+
+    # Return None in case of any failure
+    return None
 
 
 def calculate_hash(data: str) -> str:
