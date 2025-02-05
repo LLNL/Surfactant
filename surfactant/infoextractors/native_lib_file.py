@@ -11,12 +11,14 @@ import os
 import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
+from pathlib import Path
 
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.database_utils import (
+    BaseDatabaseManager,
     calculate_hash,
     download_database,
     load_hash_and_timestamp,
@@ -24,61 +26,52 @@ from surfactant.database_manager.database_utils import (
 )
 from surfactant.sbomtypes import SBOM, Software
 
+
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
 
 
-class NativeLibDatabaseManager:
-    def __init__(self) -> None:
-        self._native_lib_database: Optional[Dict[str, Any]] = None
-        self.database_version_file_path = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "native_lib_patterns"
-            / "native_lib_patterns.toml"
-        )
-        self.pattern_key = "native_lib_patterns"
-        self.pattern_file = "native_lib_patterns.json"
-        self.source = "nativefile.emba"
-        self.new_hash: Optional[str] = None
-        self.download_timestamp: Optional[datetime] = None
+class NativeLibDatabaseManager(BaseDatabaseManager):
+    """Manages the Native Library database."""
 
-    @property
-    def native_lib_database(self) -> Optional[Dict[str, Any]]:
-        if self._native_lib_database is None:
-            self.load_db()
-        return self._native_lib_database
 
-    @property
-    def pattern_info(self) -> Dict[str, Any]:
-        return {
-            "pattern_key": self.pattern_key,
-            "pattern_file": self.pattern_file,
-            "source": self.source,
-            "hash_value": self.new_hash,
-            "timestamp": self.download_timestamp,
-        }
-
-    def load_db(self) -> None:
-        native_lib_file = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "native_lib_patterns"
-            / self.pattern_file
+    def __init__(self):
+        super().__init__(
+            pattern_key="native_lib_patterns",
+            pattern_file="native_lib_patterns.json",
+            source="nativefile.emba",
         )
 
-        try:
-            with open(native_lib_file, "r") as regex:
-                self._native_lib_database = json.load(regex)
-        except FileNotFoundError:
-            logger.warning(
-                "Native library pattern could not be loaded. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database."
-            )
-            self._native_lib_database = None
 
-    def get_database(self) -> Optional[Dict[str, Any]]:
-        return self._native_lib_database
+    @property
+    def data_dir(self) -> Path:
+        """Returns the base directory for storing Native Library database files."""
+        return ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns"
 
+
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
+        """Parses raw EMBA configuration file into a structured database."""
+        database = {}
+        lines = [line.strip() for line in raw_data.splitlines() if line.strip() and not line.startswith("#")]
+
+        for line in lines:
+            fields = line.split(";")
+            if len(fields) < 4:
+                logger.warning(f"Skipping malformed line: {line}")
+                continue
+
+            lib_name = fields[0]
+            filecontent = fields[3].strip('"')
+
+            try:
+                re.compile(filecontent.encode("utf-8"))  # Validate regex
+                database.setdefault(lib_name, {"filename": [], "filecontent": []})
+                database[lib_name]["filecontent"].append(filecontent)
+            except re.error as e:
+                logger.error(f"Invalid regex in file content: {filecontent}. Error: {e}")
+
+        return database
+    
 
 native_lib_manager = NativeLibDatabaseManager()
 
@@ -255,7 +248,7 @@ def short_name() -> Optional[str]:
 @surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:
     """
-    Initialization hook to load the native library database.
+    Initialization hook to load the Nativel library database.
 
     Args:
         command_name (Optional[str], optional): The name of the command invoking the initialization.
