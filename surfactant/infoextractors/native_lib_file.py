@@ -4,19 +4,17 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
-import requests
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.database_utils import (
     calculate_hash,
+    download_database,
     load_hash_and_timestamp,
     save_hash_and_timestamp,
-    download_database
 )
 from surfactant.sbomtypes import SBOM, Software
-
 
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
@@ -26,7 +24,10 @@ class NativeLibDatabaseManager:
     def __init__(self) -> None:
         self._native_lib_database: Optional[Dict[str, Any]] = None
         self.database_version_file_path = (
-            ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns" / "native_lib_patterns.toml"
+            ConfigManager().get_data_dir_path()
+            / "infoextractors"
+            / "native_lib_patterns"
+            / "native_lib_patterns.toml"
         )
         self.pattern_key = "native_lib_patterns"
         self.pattern_file = "native_lib_patterns.json"
@@ -52,7 +53,10 @@ class NativeLibDatabaseManager:
 
     def load_db(self) -> None:
         native_lib_file = (
-            ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns" / self.pattern_file
+            ConfigManager().get_data_dir_path()
+            / "infoextractors"
+            / "native_lib_patterns"
+            / self.pattern_file
         )
 
         try:
@@ -221,7 +225,7 @@ def update_db() -> str:
                     if pattern.endswith("$"):
                         filecontent_list[i] = pattern[:-1]
 
-        path = ConfigManager().get_data_dir_path() / "infoextractors"/ "native_lib_patterns"
+        path = ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns"
         path.mkdir(parents=True, exist_ok=True)
         native_lib_file = path / native_lib_manager.pattern_file
         with open(native_lib_file, "w") as json_file:
