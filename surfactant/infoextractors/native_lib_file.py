@@ -77,7 +77,7 @@ class NativeLibDatabaseManager:
             self._native_lib_database = None
 
     def get_database(self) -> Optional[Dict[str, Any]]:
-        return self.nati_native_lib_databaseve_lib_database
+        return self._native_lib_database
 
 
 native_lib_manager = NativeLibDatabaseManager()
