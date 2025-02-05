@@ -16,25 +16,32 @@ class NativeLibDatabaseManager:
         self.native_lib_database: Optional[Dict[str, Any]] = None
 
     def load_db(self) -> None:
-        native_lib_folder = ConfigManager().get_data_dir_path() / "native_lib_patterns"
-        self.native_lib_database = {}  # Is a dict of dicts, each inner dict is one json file
+        try:
+            native_lib_folder = ConfigManager().get_data_dir_path() / "native_lib_patterns"
+            self.native_lib_database = {}  # Is a dict of dicts, each inner dict is one json file
 
-        # Check if there are files in the folder. Ignores hidden files
-        if not any(f for f in native_lib_folder.iterdir() if not f.name.startswith(".")):
+            # Check if there are files in the folder. Ignores hidden files
+            if not any(f for f in native_lib_folder.iterdir() if not f.name.startswith(".")):
+                logger.warning(
+                    "No JSON files found. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database or place private JSON DB at location: __."
+                )
+                self.native_lib_database = None
+
+            else:
+                # See how many .json files there are in the folder
+                for file in native_lib_folder.glob("*.json"):
+                    try:
+                        with open(file, "r") as regex:
+                            patterns = json.load(regex)
+                            self.native_lib_database[file.stem] = patterns
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON in file: {file}")
+        except FileNotFoundError:
             logger.warning(
-                "No JSON files found. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database or place private JSON DB at location: __."
+                "Native library patterns folder missing. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database or place private JSON DB at location: __."
             )
             self.native_lib_database = None
-
-        else:
-            # See how many .json files there are in the folder
-            for file in native_lib_folder.glob("*.json"):
-                try:
-                    with open(file, "r") as regex:
-                        patterns = json.load(regex)
-                        self.native_lib_database[file.stem] = patterns
-                except json.JSONDecodeError:
-                    logger.error(f"Failed to decode JSON in file: {file}")
+    
 
     def get_database(self) -> Optional[Dict[str, Any]]:
         return self.native_lib_database
