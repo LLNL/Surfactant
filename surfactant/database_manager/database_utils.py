@@ -41,7 +41,7 @@ def _read_toml_file(file_path: str) -> Optional[Dict[str, Any]]:
     except FileNotFoundError:
         return None
     except tomlkit.exceptions.TOMLKitError as e:
-        raise ValueError(f"Error parsing TOML file at {file_path}: {e}")
+        raise ValueError(f"Error parsing TOML file at {file_path}: {e}") from e
 
 
 def _write_toml_file(file_path: str, data: Dict[str, Any]) -> None:
