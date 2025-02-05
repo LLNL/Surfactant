@@ -18,10 +18,9 @@ from requests.exceptions import RequestException
 def download_database(url: str) -> Optional[str]:
     """
     Downloads the content of a database from the given URL.
-
+    
     Args:
         url (str): The URL of the database to download.
-
     Returns:
         Optional[str]: The content of the database as a string if the request is successful,
                        or None if an error occurs.
@@ -34,7 +33,8 @@ def download_database(url: str) -> Optional[str]:
         if response.status_code == 200:
             logger.info(f"Request successful! URL: {url}")
             return response.text
-        elif response.status_code == 404:
+
+        if response.status_code == 404:
             logger.error(f"Resource not found. URL: {url}")
         else:
             logger.warning(f"Unexpected status code {response.status_code} for URL: {url}")
