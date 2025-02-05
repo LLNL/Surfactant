@@ -29,7 +29,7 @@ class JSDatabaseManager:
     def __init__(self):
         self._js_lib_database: Optional[Dict[str, Any]] = None  # Use the private attribute
         self.database_version_file_path = (
-            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns.toml"
+            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns" / "js_library_patterns.toml"
         )
         self.pattern_key = "js_library_patterns"
         self.pattern_file = "js_library_patterns.json"
@@ -55,7 +55,7 @@ class JSDatabaseManager:
 
     def load_db(self) -> None:
         js_lib_file = (
-            ConfigManager().get_data_dir_path() / "infoextractors" / self.pattern_file
+            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns" / self.pattern_file
         )
 
         try:
@@ -164,7 +164,7 @@ def update_db() -> str:
         cleaned = strip_irrelevant_data(retirejs)
         js_db_manager.download_timestamp = datetime.now(timezone.utc)
 
-        path = ConfigManager().get_data_dir_path() / "infoextractors"
+        path = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns"
         path.mkdir(parents=True, exist_ok=True)
         json_file_path = path / js_db_manager.pattern_file
         with open(json_file_path, "w") as f:

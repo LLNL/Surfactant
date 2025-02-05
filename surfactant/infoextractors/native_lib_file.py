@@ -26,7 +26,7 @@ class NativeLibDatabaseManager:
     def __init__(self) -> None:
         self._native_lib_database: Optional[Dict[str, Any]] = None
         self.database_version_file_path = (
-            ConfigManager().get_data_dir_path() / "native_lib_patterns" / "native_lib_patterns.toml"
+            ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns" / "native_lib_patterns.toml"
         )
         self.pattern_key = "native_lib_patterns"
         self.pattern_file = "native_lib_patterns.json"
@@ -52,7 +52,7 @@ class NativeLibDatabaseManager:
 
     def load_db(self) -> None:
         native_lib_file = (
-            ConfigManager().get_data_dir_path() / "native_lib_patterns" / self.pattern_file
+            ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns" / self.pattern_file
         )
 
         try:
@@ -221,7 +221,7 @@ def update_db() -> str:
                     if pattern.endswith("$"):
                         filecontent_list[i] = pattern[:-1]
 
-        path = ConfigManager().get_data_dir_path() / "native_lib_patterns"
+        path = ConfigManager().get_data_dir_path() / "infoextractors"/ "native_lib_patterns"
         path.mkdir(parents=True, exist_ok=True)
         native_lib_file = path / native_lib_manager.pattern_file
         with open(native_lib_file, "w") as json_file:
