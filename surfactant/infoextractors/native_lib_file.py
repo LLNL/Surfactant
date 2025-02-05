@@ -221,6 +221,6 @@ def init_hook(command_name: Optional[str] = None) -> None:
         native_lib_manager.load_db()
         logger.info("Initializing native_lib_file complete.")
 
-        # Create native_lib_patterns folder for storing JSON DB's
+        # Create native_lib_patterns folder for storing JSON DBs
         path = ConfigManager().get_data_dir_path() / "native_lib_patterns"
         path.mkdir(parents=True, exist_ok=True)
