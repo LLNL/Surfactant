@@ -9,8 +9,8 @@
 import json
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -24,7 +24,6 @@ from surfactant.database_manager.database_utils import (
     save_hash_and_timestamp,
 )
 from surfactant.sbomtypes import SBOM, Software
-
 
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
@@ -40,12 +39,10 @@ class JSDatabaseManager(BaseDatabaseManager):
             source="jsfile.retirejs",
         )
 
-
     @property
     def data_dir(self) -> Path:
         """Returns the base directory for storing JavaScript library database files."""
         return ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns"
-
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw RetireJS database data into a structured format."""
@@ -60,10 +57,11 @@ class JSDatabaseManager(BaseDatabaseManager):
                 for entry in ["filename", "filecontent", "hashes"]:
                     if entry in lib_entry["extractors"]:
                         clean_db[library][entry] = [
-                            reg.replace(reg_temp, version_regex) for reg in lib_entry["extractors"][entry]
+                            reg.replace(reg_temp, version_regex)
+                            for reg in lib_entry["extractors"][entry]
                         ]
         return clean_db
-    
+
 
 js_db_manager = JSDatabaseManager()
 

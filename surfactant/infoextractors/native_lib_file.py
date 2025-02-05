@@ -10,8 +10,8 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
@@ -26,14 +26,12 @@ from surfactant.database_manager.database_utils import (
 )
 from surfactant.sbomtypes import SBOM, Software
 
-
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
 
 
 class NativeLibDatabaseManager(BaseDatabaseManager):
     """Manages the Native Library database."""
-
 
     def __init__(self):
         super().__init__(
@@ -42,17 +40,19 @@ class NativeLibDatabaseManager(BaseDatabaseManager):
             source="nativefile.emba",
         )
 
-
     @property
     def data_dir(self) -> Path:
         """Returns the base directory for storing Native Library database files."""
         return ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns"
 
-
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw EMBA configuration file into a structured database."""
         database = {}
-        lines = [line.strip() for line in raw_data.splitlines() if line.strip() and not line.startswith("#")]
+        lines = [
+            line.strip()
+            for line in raw_data.splitlines()
+            if line.strip() and not line.startswith("#")
+        ]
 
         for line in lines:
             fields = line.split(";")
@@ -71,7 +71,7 @@ class NativeLibDatabaseManager(BaseDatabaseManager):
                 logger.error(f"Invalid regex in file content: {filecontent}. Error: {e}")
 
         return database
-    
+
 
 native_lib_manager = NativeLibDatabaseManager()
 

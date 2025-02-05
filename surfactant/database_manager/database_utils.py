@@ -6,11 +6,11 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-from abc import ABC, abstractmethod
-from datetime import datetime, timezone
-from pathlib import Path
-import json
 import hashlib
+import json
+from abc import ABC, abstractmethod
+from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import requests
@@ -22,7 +22,6 @@ from requests.exceptions import RequestException
 class BaseDatabaseManager(ABC):
     """Abstract base class for managing pattern databases."""
 
-
     def __init__(self, pattern_key: str, pattern_file: str, source: str):
         self.pattern_key = pattern_key
         self.pattern_file = pattern_file
@@ -31,19 +30,16 @@ class BaseDatabaseManager(ABC):
         self.download_timestamp: Optional[datetime] = None
         self._database: Optional[Dict[str, Any]] = None
 
-
     @property
     @abstractmethod
     def data_dir(self) -> Path:
         """Returns the base directory for storing database files."""
         ...
 
-
     @property
     def database_version_file_path(self) -> Path:
         """Path to the database version file (e.g., TOML file)."""
         return self.data_dir / f"{self.pattern_key}.toml"
-
 
     @property
     def database_file_path(self) -> Path:
@@ -61,7 +57,6 @@ class BaseDatabaseManager(ABC):
             "timestamp": self.download_timestamp,
         }
 
-
     def load_db(self) -> None:
         """Loads the database from a JSON file."""
         try:
@@ -73,13 +68,11 @@ class BaseDatabaseManager(ABC):
             )
             self._database = None
 
-
     def get_database(self) -> Optional[Dict[str, Any]]:
         """Returns the loaded database."""
         if self._database is None:
             self.load_db()
         return self._database
-
 
     def save_database(self, data: Dict[str, Any]) -> None:
         """Saves the database to a JSON file."""
@@ -87,7 +80,6 @@ class BaseDatabaseManager(ABC):
         with open(self.database_file_path, "w") as db_file:
             json.dump(data, db_file, indent=4)
         logger.info(f"{self.pattern_key} database saved successfully.")
-
 
     @abstractmethod
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
@@ -98,7 +90,7 @@ class BaseDatabaseManager(ABC):
 def download_database(url: str) -> Optional[str]:
     """
     Downloads the content of a database from the given URL.
-    
+
     Args:
         url (str): The URL of the database to download.
     Returns:
