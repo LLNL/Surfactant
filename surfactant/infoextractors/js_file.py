@@ -10,12 +10,14 @@ import json
 import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from pathlib import Path
 
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.database_utils import (
+    BaseDatabaseManager,
     calculate_hash,
     download_database,
     load_hash_and_timestamp,
@@ -23,61 +25,45 @@ from surfactant.database_manager.database_utils import (
 )
 from surfactant.sbomtypes import SBOM, Software
 
+
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
 
 
-class JSDatabaseManager:
+class JSDatabaseManager(BaseDatabaseManager):
+    """Manages the JavaScript library database."""
+
     def __init__(self):
-        self._js_lib_database: Optional[Dict[str, Any]] = None  # Use the private attribute
-        self.database_version_file_path = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "js_library_patterns"
-            / "js_library_patterns.toml"
-        )
-        self.pattern_key = "js_library_patterns"
-        self.pattern_file = "js_library_patterns.json"
-        self.source = "jsfile.retirejs"
-        self.new_hash: Optional[str] = None
-        self.download_timestamp: Optional[datetime] = None
-
-    @property
-    def js_lib_database(self) -> Optional[Dict[str, Any]]:
-        if self._js_lib_database is None:
-            self.load_db()
-        return self._js_lib_database
-
-    @property
-    def pattern_info(self) -> Dict[str, Any]:
-        return {
-            "pattern_key": self.pattern_key,
-            "pattern_file": self.pattern_file,
-            "source": self.source,
-            "hash_value": self.new_hash,
-            "timestamp": self.download_timestamp,
-        }
-
-    def load_db(self) -> None:
-        js_lib_file = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "js_library_patterns"
-            / self.pattern_file
+        super().__init__(
+            pattern_key="js_library_patterns",
+            pattern_file="js_library_patterns.json",
+            source="jsfile.retirejs",
         )
 
-        try:
-            with open(js_lib_file, "r") as regex:
-                self._js_lib_database = json.load(regex)
-        except FileNotFoundError:
-            logger.warning(
-                "Javascript library pattern database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
-            )
-            self._js_lib_database = None
 
-    def get_database(self) -> Optional[Dict[str, Any]]:
-        return self._js_lib_database
+    @property
+    def data_dir(self) -> Path:
+        """Returns the base directory for storing JavaScript library database files."""
+        return ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns"
 
+
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
+        """Parses raw RetireJS database data into a structured format."""
+        retirejs_db = json.loads(raw_data)
+        clean_db = {}
+        reg_temp = "\u00a7\u00a7version\u00a7\u00a7"
+        version_regex = r"\d+(?:\.\d+)*"
+
+        for library, lib_entry in retirejs_db.items():
+            if "extractors" in lib_entry:
+                clean_db[library] = {}
+                for entry in ["filename", "filecontent", "hashes"]:
+                    if entry in lib_entry["extractors"]:
+                        clean_db[library][entry] = [
+                            reg.replace(reg_temp, version_regex) for reg in lib_entry["extractors"][entry]
+                        ]
+        return clean_db
+    
 
 js_db_manager = JSDatabaseManager()
 
