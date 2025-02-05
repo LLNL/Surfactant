@@ -1,3 +1,11 @@
+# Copyright 2025 Lawrence Livermore National Security, LLC
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: MIT
+# Copyright 2025 Lawrence Livermore National Security, LLC
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: MIT
 import json
 import os
 import re
