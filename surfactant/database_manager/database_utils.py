@@ -8,7 +8,8 @@
 # SPDX-License-Identifier: MIT
 
 import hashlib
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
+
 import tomlkit
 
 
