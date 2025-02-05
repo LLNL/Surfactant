@@ -255,7 +255,7 @@ def short_name() -> Optional[str]:
 @surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:
     """
-    Initialization hook to load the Nativel library database.
+    Initialization hook to load the native library database.
 
     Args:
         command_name (Optional[str], optional): The name of the command invoking the initialization.
