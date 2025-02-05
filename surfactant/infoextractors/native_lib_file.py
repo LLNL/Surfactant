@@ -16,16 +16,25 @@ class NativeLibDatabaseManager:
         self.native_lib_database: Optional[Dict[str, Any]] = None
 
     def load_db(self) -> None:
-        native_lib_file = ConfigManager().get_data_dir_path() / "native_lib_patterns" / "emba.json"
+        native_lib_folder = ConfigManager().get_data_dir_path() / "native_lib_patterns"
+        self.native_lib_database = {}  # Is a dict of dicts, each inner dict is one json file
 
-        try:
-            with open(native_lib_file, "r") as regex:
-                self.native_lib_database = json.load(regex)
-        except FileNotFoundError:
+        # Check if there are files in the folder. Ignores hidden files
+        if not any(f for f in native_lib_folder.iterdir() if not f.name.startswith(".")):
             logger.warning(
-                "Native library pattern could not be loaded. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database."
+                "No JSON files found. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database or place private JSON DB at location: __."
             )
             self.native_lib_database = None
+
+        else:
+            # See how many .json files there are in the folder
+            for file in native_lib_folder.glob("*.json"):
+                try:
+                    with open(file, "r") as regex:
+                        patterns = json.load(regex)
+                        self.native_lib_database[file.stem] = patterns
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to decode JSON in file: {file}")
 
     def get_database(self) -> Optional[Dict[str, Any]]:
         return self.native_lib_database
@@ -94,17 +103,18 @@ def match_by_attribute(
     attribute: str, content: Union[str, bytes], patterns_database: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     libs: List[Dict[str, str]] = []
-    for lib_name, lib_info in patterns_database.items():
-        if attribute in lib_info:
-            for pattern in lib_info[attribute]:
-                if attribute == "filename":
-                    if pattern.lower() == content.lower():
-                        libs.append({"isLibrary": lib_name})
+    for _, database_info in patterns_database.items():
+        for lib_name, lib_info in database_info.items():
+            if attribute in lib_info:
+                for pattern in lib_info[attribute]:
+                    if attribute == "filename":
+                        if pattern.lower() == content.lower():
+                            libs.append({"isLibrary": lib_name})
 
-                elif attribute == "filecontent":
-                    matches = re.search(pattern.encode("utf-8"), content)
-                    if matches:
-                        libs.append({"containsLibrary": lib_name})
+                    elif attribute == "filecontent":
+                        matches = re.search(pattern.encode("utf-8"), content)
+                        if matches:
+                            libs.append({"containsLibrary": lib_name})
     return libs
 
 
@@ -210,3 +220,7 @@ def init_hook(command_name: Optional[str] = None) -> None:
         logger.info("Initializing native_lib_file...")
         native_lib_manager.load_db()
         logger.info("Initializing native_lib_file complete.")
+
+        # Create native_lib_patterns folder for storing JSON DBs
+        path = ConfigManager().get_data_dir_path() / "native_lib_patterns"
+        path.mkdir(parents=True, exist_ok=True)
