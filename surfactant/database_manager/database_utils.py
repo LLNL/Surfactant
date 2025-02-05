@@ -34,7 +34,7 @@ class BaseDatabaseManager(ABC):
     @abstractmethod
     def data_dir(self) -> Path:
         """Returns the base directory for storing database files."""
-        ...
+        # No implementation needed for abstract methods.
 
     @property
     def database_version_file_path(self) -> Path:
@@ -84,7 +84,7 @@ class BaseDatabaseManager(ABC):
     @abstractmethod
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw database data into a structured format."""
-        ...
+        # No implementation needed for abstract methods.
 
 
 def download_database(url: str) -> Optional[str]:
