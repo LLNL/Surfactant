@@ -36,7 +36,7 @@ class BaseDatabaseManager(ABC):
     @abstractmethod
     def data_dir(self) -> Path:
         """Returns the base directory for storing database files."""
-        pass
+        ...
 
 
     @property
@@ -92,7 +92,7 @@ class BaseDatabaseManager(ABC):
     @abstractmethod
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw database data into a structured format."""
-        pass
+        ...
 
 
 def download_database(url: str) -> Optional[str]:
