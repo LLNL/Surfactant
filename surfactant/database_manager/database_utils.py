@@ -18,7 +18,7 @@ from requests.exceptions import RequestException
 def download_database(url: str) -> Optional[str]:
     """
     Downloads the content of a database from the given URL.
-    
+
     Args:
         url (str): The URL of the database to download.
     Returns:
