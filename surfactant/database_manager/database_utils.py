@@ -7,11 +7,12 @@
 #
 # SPDX-License-Identifier: MIT
 import hashlib
-from loguru import logger
-import requests
-from requests.exceptions import RequestException
 from typing import Dict, Optional
+
+import requests
 import tomlkit
+from loguru import logger
+from requests.exceptions import RequestException
 
 
 def download_database(url: str) -> Optional[str]:

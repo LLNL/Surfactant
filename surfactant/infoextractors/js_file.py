@@ -11,19 +11,17 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-import requests
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.database_utils import (
     calculate_hash,
+    download_database,
     load_hash_and_timestamp,
     save_hash_and_timestamp,
-    download_database
 )
 from surfactant.sbomtypes import SBOM, Software
-
 
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
@@ -33,12 +31,15 @@ class JSDatabaseManager:
     def __init__(self):
         self._js_lib_database: Optional[Dict[str, Any]] = None  # Use the private attribute
         self.database_version_file_path = (
-            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns" / "js_library_patterns.toml"
+            ConfigManager().get_data_dir_path()
+            / "infoextractors"
+            / "js_library_patterns"
+            / "js_library_patterns.toml"
         )
         self.pattern_key = "js_library_patterns"
         self.pattern_file = "js_library_patterns.json"
         self.source = "jsfile.retirejs"
-        self.new_hash: Optional[str]= None
+        self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[datetime] = None
 
     @property
@@ -59,7 +60,10 @@ class JSDatabaseManager:
 
     def load_db(self) -> None:
         js_lib_file = (
-            ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns" / self.pattern_file
+            ConfigManager().get_data_dir_path()
+            / "infoextractors"
+            / "js_library_patterns"
+            / self.pattern_file
         )
 
         try:
