@@ -20,22 +20,23 @@ class NativeLibDatabaseManager:
         native_lib_folder = ConfigManager().get_data_dir_path() / "native_lib_patterns"
         self.native_lib_database = {} # Is a dict of dicts, each inner dict is one json file
 
-        if native_lib_folder.exists():
+        # Check if there are files in the folder. Ignores hidden files
+        if not any(f for f in native_lib_folder.iterdir() if not f.name.startswith(".")):
+            logger.warning(
+                "No JSON files found. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database or place private JSON DB at location: __."
+                )
+            self.native_lib_database = None
+
+        else:
             # See how many .json files there are in the folder
             for file in native_lib_folder.glob("*.json"):
-                    try:
-                        with open(file, "r") as regex:
-                            patterns = json.load(regex)
-                            self.native_lib_database[file.stem] = patterns
-                    except FileNotFoundError:
-                        logger.warning(
-                            ""
-                        )
-        else:
-            print("No JSON files found. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database or place private JSON patterns at this location: __.")
-
-        #print(self.native_lib_database)
-
+                try:
+                    with open(file, "r") as regex:
+                        patterns = json.load(regex)
+                        self.native_lib_database[file.stem] = patterns
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to decode JSON in file: {file}"
+                    )
 
     def get_database(self) -> Optional[Dict[str, Any]]:
         return self.native_lib_database
@@ -60,10 +61,6 @@ def extract_file_info(
 def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
     native_lib_database = native_lib_manager.get_database()
-
-    #print(native_lib_database)
-    print("this is the length")
-    print(len(native_lib_database))
  
     if native_lib_database is None:
         return None
@@ -108,7 +105,7 @@ def match_by_attribute(
     attribute: str, content: Union[str, bytes], patterns_database: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     libs: List[Dict[str, str]] = []
-    for database_name, database_info in patterns_database.items():
+    for _, database_info in patterns_database.items():
         for lib_name, lib_info in database_info.items():
             if attribute in lib_info:
                 for pattern in lib_info[attribute]:
