@@ -1,7 +1,6 @@
 import json
 import os
 import re
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -18,13 +17,13 @@ class NativeLibDatabaseManager:
 
     def load_db(self) -> None:
         native_lib_folder = ConfigManager().get_data_dir_path() / "native_lib_patterns"
-        self.native_lib_database = {} # Is a dict of dicts, each inner dict is one json file
+        self.native_lib_database = {}  # Is a dict of dicts, each inner dict is one json file
 
         # Check if there are files in the folder. Ignores hidden files
         if not any(f for f in native_lib_folder.iterdir() if not f.name.startswith(".")):
             logger.warning(
                 "No JSON files found. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database or place private JSON DB at location: __."
-                )
+            )
             self.native_lib_database = None
 
         else:
@@ -35,8 +34,7 @@ class NativeLibDatabaseManager:
                         patterns = json.load(regex)
                         self.native_lib_database[file.stem] = patterns
                 except json.JSONDecodeError:
-                    logger.error(f"Failed to decode JSON in file: {file}"
-                    )
+                    logger.error(f"Failed to decode JSON in file: {file}")
 
     def get_database(self) -> Optional[Dict[str, Any]]:
         return self.native_lib_database
@@ -61,7 +59,7 @@ def extract_file_info(
 def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
     native_lib_database = native_lib_manager.get_database()
- 
+
     if native_lib_database is None:
         return None
 
