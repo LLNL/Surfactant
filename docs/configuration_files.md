@@ -1,7 +1,7 @@
 # Configuration Files
 
 There are several files for configuring different aspects of Surfactant functionality based on the subcommand used.
-This page currently describes sample configuration files, and the Surfactant settings configuration file. The sample configuration file is used to generate an SBOM for a particular software/firmware sample, and will be the most frequently written by users. The Surfactant settings configuration file is used to turn on and off various Surfactant features, including settings for controlling functionality in Surfactant plugins.
+This page currently describes specimen configuration files, and the Surfactant settings configuration file. The specimen configuration file is used to generate an SBOM for a particular software/firmware sample, and will be the most frequently written by users. The Surfactant settings configuration file is used to turn on and off various Surfactant features, including settings for controlling functionality in Surfactant plugins.
 
 ## Settings Configuration File
 
@@ -23,6 +23,12 @@ Getting the currently set value for the option would then be done with:
 surfactant config core.recorded_institution
 ```
 
+Another example of a setting you might want to change is `docker.enable_docker_scout`, which controls whether Docker Scout is enabled. To disable Docker Scout (which also suppresses the warning message about installing Docker Scout), set this option to `false`:
+
+```bash
+surfactant config docker.enable_docker_scout false
+```
+
 ### Manual Editing
 
 If desired, the settings config file can also be manually edited. The location of the file will depend on your platform.
@@ -37,9 +43,9 @@ The file itself is a TOML file, and for the previously mentioned example plugin 
 recorded_institution = "LLNL"
 ```
 
-## Build sample configuration file
+## Specimen Configuration File
 
-A sample configuration file contains the information about the sample to gather information from. Example JSON sample configuration files can be found in the examples folder of this repository.
+A specimen configuration file contains the information about the sample to gather information from. Example JSON specimen configuration files can be found in the examples folder of this repository.
 
 - **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file. Note that even on Windows, Unix style `/` directory separators should be used in paths.
 - **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in `extractPaths` were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various `extractPaths`.
