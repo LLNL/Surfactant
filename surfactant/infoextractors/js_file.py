@@ -41,14 +41,10 @@ class JSDatabaseManager(BaseDatabaseManager):
 
     def __init__(self):
         name = __name__
-<<<<<<< HEAD
 
         from surfactant.plugin.manager import get_plugin_manager
 
         if hasattr(get_plugin_manager().get_plugin(__name__), "short_name") :
-=======
-        if hasattr(get_plugin_manager().get_plugin(__name__), "short_name"):
->>>>>>> aab662611ddd50ede1596bfb63b712cac78dfd67
             name = get_plugin_manager().get_plugin(__name__).short_name()
 
         super().__init__(
@@ -61,7 +57,7 @@ class JSDatabaseManager(BaseDatabaseManager):
     @property
     def data_dir(self) -> Path:
         """Returns the base directory for storing JavaScript library database files."""
-        return ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns"
+        return super().data_dir / "js_library_patterns"
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw RetireJS database data into a structured format."""
@@ -175,7 +171,7 @@ def update_db() -> str:
         cleaned = strip_irrelevant_data(retirejs)
         js_db_manager.download_timestamp = datetime.now(timezone.utc)
 
-        path = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns"
+        path = js_db_manager.data_dir
         path.mkdir(parents=True, exist_ok=True)
         json_file_path = path / js_db_manager.pattern_file
         with open(json_file_path, "w") as f:
