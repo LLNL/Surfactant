@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional, Union
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.database_utils import (
     BaseDatabaseManager,
     calculate_hash,
