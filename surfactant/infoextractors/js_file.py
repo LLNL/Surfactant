@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.database_utils import (
     BaseDatabaseManager,
     calculate_hash,
@@ -25,7 +24,6 @@ from surfactant.database_manager.database_utils import (
     save_hash_and_timestamp,
 )
 from surfactant.sbomtypes import SBOM, Software
-
 
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
@@ -44,7 +42,7 @@ class JSDatabaseManager(BaseDatabaseManager):
 
         from surfactant.plugin.manager import get_plugin_manager
 
-        if hasattr(get_plugin_manager().get_plugin(__name__), "short_name") :
+        if hasattr(get_plugin_manager().get_plugin(__name__), "short_name"):
             name = get_plugin_manager().get_plugin(__name__).short_name()
 
         super().__init__(
