@@ -25,7 +25,6 @@ from surfactant.database_manager.database_utils import (
     save_hash_and_timestamp,
 )
 from surfactant.sbomtypes import SBOM, Software
-from surfactant.plugin.manager import get_plugin_manager
 
 
 # Global configuration
@@ -42,6 +41,9 @@ class JSDatabaseManager(BaseDatabaseManager):
     
     def __init__(self):
         name = __name__
+        
+        from surfactant.plugin.manager import get_plugin_manager
+
         if hasattr(get_plugin_manager().get_plugin(__name__), "short_name") :
             name = get_plugin_manager().get_plugin(__name__).short_name()
 
@@ -51,7 +53,6 @@ class JSDatabaseManager(BaseDatabaseManager):
             source="jsfile.retirejs",
             plugin_name = name,
         )
-
 
     @property
     def data_dir(self) -> Path:
