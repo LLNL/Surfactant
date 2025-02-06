@@ -25,19 +25,29 @@ from surfactant.database_manager.database_utils import (
     save_hash_and_timestamp,
 )
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.plugin.manager import get_plugin_manager
 
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
+
+
+@surfactant.plugin.hookimpl
+def short_name() -> Optional[str]:
+    return "native_lib_file"
 
 
 class NativeLibDatabaseManager(BaseDatabaseManager):
     """Manages the Native Library database."""
 
     def __init__(self):
+        name = __name__
+        if hasattr(get_plugin_manager().get_plugin(__name__), "short_name") :
+            name = get_plugin_manager().get_plugin(__name__).short_name()
         super().__init__(
             pattern_key="native_lib_patterns",
             pattern_file="native_lib_patterns.json",
             source="nativefile.emba",
+            plugin_name = name,
         )
 
     @property
@@ -238,11 +248,6 @@ def update_db() -> str:
         )
         return "Update complete."
     return "No update occurred."
-
-
-@surfactant.plugin.hookimpl
-def short_name() -> Optional[str]:
-    return "native_lib_patterns"
 
 
 @surfactant.plugin.hookimpl

@@ -22,13 +22,14 @@ from requests.exceptions import RequestException
 class BaseDatabaseManager(ABC):
     """Abstract base class for managing pattern databases."""
 
-    def __init__(self, pattern_key: str, pattern_file: str, source: str):
+    def __init__(self, pattern_key: str, pattern_file: str, source: str, plugin_name: Optional[str]):
         self.pattern_key = pattern_key
         self.pattern_file = pattern_file
         self.source = source
         self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[datetime] = None
         self._database: Optional[Dict[str, Any]] = None
+        self.plugin_name = plugin_name
 
     @property
     @abstractmethod
@@ -64,7 +65,7 @@ class BaseDatabaseManager(ABC):
                 self._database = json.load(db_file)
         except FileNotFoundError:
             logger.warning(
-                f"{self.pattern_key} database could not be loaded. Run `surfactant plugin update-db {self.pattern_key}` to fetch the database."
+                f"{self.pattern_key} database could not be loaded. Run `surfactant plugin update-db {self.plugin_name}` to fetch the database."
             )
             self._database = None
 

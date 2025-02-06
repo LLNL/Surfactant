@@ -11,7 +11,8 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
+# from pluggy import get_plugin_manager, get_plugin
+import pluggy
 from loguru import logger
 
 import surfactant.plugin
@@ -24,20 +25,33 @@ from surfactant.database_manager.database_utils import (
     save_hash_and_timestamp,
 )
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.plugin.manager import get_plugin_manager
+
 
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
 
 
+@surfactant.plugin.hookimpl
+def short_name() -> str:
+    return "js_file"
+
+
 class JSDatabaseManager(BaseDatabaseManager):
     """Manages the JavaScript library database."""
-
+    
     def __init__(self):
+        name = __name__
+        if hasattr(get_plugin_manager().get_plugin(__name__), "short_name") :
+            name = get_plugin_manager().get_plugin(__name__).short_name()
+
         super().__init__(
             pattern_key="js_library_patterns",
             pattern_file="js_library_patterns.json",
             source="jsfile.retirejs",
+            plugin_name = name,
         )
+
 
     @property
     def data_dir(self) -> Path:
@@ -169,9 +183,7 @@ def update_db() -> str:
     return "No update occurred."
 
 
-@surfactant.plugin.hookimpl
-def short_name() -> str:
-    return "js_file"
+
 
 
 @surfactant.plugin.hookimpl
