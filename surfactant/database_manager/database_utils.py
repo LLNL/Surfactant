@@ -22,7 +22,9 @@ from requests.exceptions import RequestException
 class BaseDatabaseManager(ABC):
     """Abstract base class for managing pattern databases."""
 
-    def __init__(self, pattern_key: str, pattern_file: str, source: str, plugin_name: Optional[str]):
+    def __init__(
+        self, pattern_key: str, pattern_file: str, source: str, plugin_name: Optional[str]
+    ):
         self.pattern_key = pattern_key
         self.pattern_file = pattern_file
         self.source = source
