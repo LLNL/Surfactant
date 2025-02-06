@@ -18,6 +18,8 @@ import tomlkit
 from loguru import logger
 from requests.exceptions import RequestException
 
+from surfactant.configmanager import ConfigManager
+
 
 class BaseDatabaseManager(ABC):
     """Abstract base class for managing pattern databases."""
@@ -37,7 +39,7 @@ class BaseDatabaseManager(ABC):
     @abstractmethod
     def data_dir(self) -> Path:
         """Returns the base directory for storing database files."""
-        # No implementation needed for abstract methods.
+        return ConfigManager().get_data_dir_path()
 
     @property
     def database_version_file_path(self) -> Path:

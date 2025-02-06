@@ -26,6 +26,7 @@ from surfactant.database_manager.database_utils import (
 )
 from surfactant.sbomtypes import SBOM, Software
 
+
 # Global configuration
 DATABASE_URL = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
 
@@ -40,6 +41,7 @@ class NativeLibDatabaseManager(BaseDatabaseManager):
 
     def __init__(self):
         name = __name__
+
         from surfactant.plugin.manager import get_plugin_manager
 
         if hasattr(get_plugin_manager().get_plugin(__name__), "short_name"):
