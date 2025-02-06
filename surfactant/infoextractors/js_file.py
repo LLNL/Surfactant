@@ -42,7 +42,7 @@ class JSDatabaseManager(BaseDatabaseManager):
     def __init__(self):
         name = __name__
 <<<<<<< HEAD
-        
+
         from surfactant.plugin.manager import get_plugin_manager
 
         if hasattr(get_plugin_manager().get_plugin(__name__), "short_name") :

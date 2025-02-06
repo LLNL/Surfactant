@@ -45,7 +45,7 @@ class NativeLibDatabaseManager(BaseDatabaseManager):
 
         if hasattr(get_plugin_manager().get_plugin(__name__), "short_name") :
             name = get_plugin_manager().get_plugin(__name__).short_name()
-            
+
         super().__init__(
             pattern_key="native_lib_patterns",
             pattern_file="native_lib_patterns.json",
