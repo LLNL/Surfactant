@@ -57,7 +57,7 @@ class NativeLibDatabaseManager(BaseDatabaseManager):
     @property
     def data_dir(self) -> Path:
         """Returns the base directory for storing Native Library database files."""
-        return ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns"
+        return super().data_dir / "native_lib_patterns"
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw EMBA configuration file into a structured database."""
@@ -240,7 +240,7 @@ def update_db() -> str:
                     if pattern.endswith("$"):
                         filecontent_list[i] = pattern[:-1]
 
-        path = ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns"
+        path = native_lib_manager.data_dir
         path.mkdir(parents=True, exist_ok=True)
         native_lib_file = path / native_lib_manager.pattern_file
         with open(native_lib_file, "w") as json_file:
