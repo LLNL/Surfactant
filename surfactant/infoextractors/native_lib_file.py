@@ -41,13 +41,9 @@ class NativeLibDatabaseManager(BaseDatabaseManager):
 
     def __init__(self):
         name = __name__
-<<<<<<< HEAD
         from surfactant.plugin.manager import get_plugin_manager
 
         if hasattr(get_plugin_manager().get_plugin(__name__), "short_name") :
-=======
-        if hasattr(get_plugin_manager().get_plugin(__name__), "short_name"):
->>>>>>> aab662611ddd50ede1596bfb63b712cac78dfd67
             name = get_plugin_manager().get_plugin(__name__).short_name()
             
         super().__init__(
