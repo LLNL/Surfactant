@@ -38,12 +38,7 @@ class NativeLibDatabaseManager(BaseDatabaseManager):
     """Manages the Native Library database."""
 
     def __init__(self):
-        name = __name__
-
-        from surfactant.plugin.manager import get_plugin_manager
-
-        if hasattr(get_plugin_manager().get_plugin(__name__), "short_name"):
-            name = get_plugin_manager().get_plugin(__name__).short_name()
+        name = short_name() # use 'name = __name__', if short_name is not implemented
 
         super().__init__(
             pattern_key="native_lib_patterns",
