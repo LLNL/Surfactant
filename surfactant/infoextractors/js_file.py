@@ -34,8 +34,8 @@ def short_name() -> str:
     return "js_file"
 
 
-class JSDatabaseManager(BaseDatabaseManager):
-    """Manages the JavaScript library database."""
+class RetireJSDatabaseManager(BaseDatabaseManager):
+    """Manages the retirejs library database."""
 
     def __init__(self):
         name = short_name() # use 'name = __name__', if short_name is not implemented
@@ -71,7 +71,7 @@ class JSDatabaseManager(BaseDatabaseManager):
         return clean_db
 
 
-js_db_manager = JSDatabaseManager()
+js_db_manager = RetireJSDatabaseManager()
 
 
 def supports_file(filetype) -> bool:

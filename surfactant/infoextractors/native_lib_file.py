@@ -34,8 +34,8 @@ def short_name() -> Optional[str]:
     return "native_lib_file"
 
 
-class NativeLibDatabaseManager(BaseDatabaseManager):
-    """Manages the Native Library database."""
+class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
+    """Manages the EMBA Native Library database."""
 
     def __init__(self):
         name = short_name() # use 'name = __name__', if short_name is not implemented
@@ -80,7 +80,7 @@ class NativeLibDatabaseManager(BaseDatabaseManager):
         return database
 
 
-native_lib_manager = NativeLibDatabaseManager()
+native_lib_manager = EmbaNativeLibDatabaseManager()
 
 
 def supports_file(filetype: str) -> bool:
