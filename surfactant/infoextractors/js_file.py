@@ -38,7 +38,7 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
     """Manages the retirejs library database."""
 
     def __init__(self):
-        name = short_name() # use 'name = __name__', if short_name is not implemented
+        name = short_name()  # use 'name = __name__', if short_name is not implemented
 
         super().__init__(
             pattern_key="js_library_patterns",
