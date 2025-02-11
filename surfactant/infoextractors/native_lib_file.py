@@ -41,8 +41,8 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
         name = short_name()  # use 'name = __name__', if short_name is not implemented
 
         super().__init__(
-            version_file_name = "native_lib_patterns",
-            database_key = "emba",
+            version_file_name="native_lib_patterns",
+            database_key="emba",
             database_file="native_lib_patterns_emba.json",
             source=DATABASE_URL,
             plugin_name=name,

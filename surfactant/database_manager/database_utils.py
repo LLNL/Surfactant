@@ -9,7 +9,6 @@
 import hashlib
 import json
 from abc import ABC, abstractmethod
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -25,7 +24,12 @@ class BaseDatabaseManager(ABC):
     """Abstract base class for managing pattern databases."""
 
     def __init__(
-        self, version_file_name: str, database_key: str, database_file: str, source: str, plugin_name: Optional[str]
+        self,
+        version_file_name: str,
+        database_key: str,
+        database_file: str,
+        source: str,
+        plugin_name: Optional[str],
     ):
         self.version_file_name = version_file_name
         self.database_key = database_key
@@ -56,7 +60,7 @@ class BaseDatabaseManager(ABC):
     def pattern_info(self) -> Dict[str, Any]:
         """Returns metadata about the database patterns."""
         return {
-            "database_key" : self.database_key,
+            "database_key": self.database_key,
             "database_file": self.database_file,
             "source": self.source,
             "hash_value": self.new_hash,
