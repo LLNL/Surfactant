@@ -20,18 +20,21 @@ from requests.exceptions import RequestException
 
 from surfactant.configmanager import ConfigManager
 
+from dataclasses import dataclass
+
+@dataclass
+class DatabaseConfig:
+    version_file_name: str
+    database_key: str
+    database_file: str
+    source: str
+    plugin_name: Optional[str]
 
 class BaseDatabaseManager(ABC):
     """Abstract base class for managing pattern databases."""
 
-    def __init__(
-        self, version_file_name: str, database_key: str, database_file: str, source: str, plugin_name: Optional[str]
-    ):
-        self.version_file_name = version_file_name
-        self.database_key = database_key
-        self.database_file = database_file
-        self.source = source
-        self.plugin_name = plugin_name
+    def __init__(self, config: DatabaseConfig):
+        self.config = config
         self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[str] = None
         self._database: Optional[Dict[str, Any]] = None
@@ -45,20 +48,20 @@ class BaseDatabaseManager(ABC):
     @property
     def database_version_file_path(self) -> Path:
         """Path to the database version file (e.g., TOML file)."""
-        return self.data_dir / f"{self.version_file_name}.toml"
+        return self.data_dir / f"{self.config.version_file_name}.toml"
 
     @property
     def database_file_path(self) -> Path:
         """Path to the JSON database file."""
-        return self.data_dir / self.database_file
+        return self.data_dir / self.config.database_file
 
     @property
     def pattern_info(self) -> Dict[str, Any]:
         """Returns metadata about the database patterns."""
         return {
-            "database_key" : self.database_key,
-            "database_file": self.database_file,
-            "source": self.source,
+            "database_key" : self.config.database_key,
+            "database_file": self.config.database_file,
+            "source": self.config.source,
             "hash_value": self.new_hash,
             "timestamp": self.download_timestamp,
         }
@@ -85,7 +88,7 @@ class BaseDatabaseManager(ABC):
         self.data_dir.mkdir(parents=True, exist_ok=True)
         with open(self.database_file_path, "w") as db_file:
             json.dump(data, db_file, indent=4)
-        logger.info(f"{self.database_key} database saved successfully.")
+        logger.info(f"{self.config.database_key} database saved successfully.")
 
     @abstractmethod
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:

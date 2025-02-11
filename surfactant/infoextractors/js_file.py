@@ -18,6 +18,7 @@ from loguru import logger
 import surfactant.plugin
 from surfactant.database_manager.database_utils import (
     BaseDatabaseManager,
+    DatabaseConfig,
     calculate_hash,
     download_database,
     load_hash_and_timestamp,
@@ -40,13 +41,15 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
     def __init__(self):
         name = short_name()  # use 'name = __name__', if short_name is not implemented
 
-        super().__init__(
+        config = DatabaseConfig(
             version_file_name = "js_library_patterns",
             database_key = "retirejs",
             database_file="js_library_patterns_retirejs.json",
             source=DATABASE_URL,
             plugin_name=name,
         )
+
+        super().__init__(config)
 
     @property
     def data_dir(self) -> Path:
@@ -155,8 +158,8 @@ def update_db() -> str:
         js_db_manager.new_hash = calculate_hash(raw_data)
         current_data = load_hash_and_timestamp(
             js_db_manager.database_version_file_path,
-            js_db_manager.database_key,
-            js_db_manager.database_file,
+            js_db_manager.config.database_key,
+            js_db_manager.config.database_file,
         )
         if current_data and js_db_manager.new_hash == current_data.get("hash"):
             return "No update occurred. Database is up-to-date."
@@ -167,7 +170,7 @@ def update_db() -> str:
 
         path = js_db_manager.data_dir
         path.mkdir(parents=True, exist_ok=True)
-        json_file_path = path / js_db_manager.database_file
+        json_file_path = path / js_db_manager.config.database_file
         with open(json_file_path, "w") as f:
             json.dump(cleaned, f, indent=4)
 
