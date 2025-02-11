@@ -39,7 +39,7 @@ def get_software_entry(
     root_path=None,
     install_path=None,
     user_institution_name="",
-    include_all_files=False,
+    omit_unrecognized_types=False,
 ) -> Tuple[Software, List[Software]]:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path is not None and install_path is not None:
@@ -62,7 +62,7 @@ def get_software_entry(
         filetype=filetype,
         context=context,
         children=sw_children,
-        include_all_files=include_all_files,
+        omit_unrecognized_types=omit_unrecognized_types,
     )
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
@@ -246,11 +246,11 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
     help="List supported input formats",
 )
 @click.option(
-    "--include_all_files",
+    "--omit_unrecognized_types",
     is_flag=True,
-    default=get_default_from_config("include_all_files", fallback=False),
+    default=get_default_from_config("omit_unrecognized_types", fallback=False),
     required=False,
-    help="Include all files in the SBOM, not just those recognized by Surfactant",
+    help="Omit files with unrecognized types from the generated SBOM.",
 )
 # Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
 # pylint: disable-next=too-many-positional-arguments
@@ -264,7 +264,7 @@ def sbom(
     recorded_institution: str,
     output_format: str,
     input_format: str,
-    include_all_files: bool,
+    omit_unrecognized_types: bool,
 ):
     """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
 
@@ -465,10 +465,11 @@ def sbom(
                                 entry.excludeFileExts = []
                             if (
                                 ftype := pm.hook.identify_file_type(filepath=filepath)
-                                or include_all_files
-                                or entry.includeAllFiles
-                                or os.path.splitext(filepath)[1].lower()
-                                in [ext.lower() for ext in entry.includeFileExts]
+                                or (not (omit_unrecognized_types or entry.omitUnrecognizedTypes))
+                                or (
+                                    os.path.splitext(filepath)[1].lower()
+                                    in [ext.lower() for ext in entry.includeFileExts]
+                                )
                             ) and os.path.splitext(filepath)[1].lower() not in [
                                 ext.lower() for ext in entry.excludeFileExts
                             ]:
@@ -483,8 +484,8 @@ def sbom(
                                         container_uuid=parent_uuid,
                                         install_path=install_prefix,
                                         user_institution_name=recorded_institution,
-                                        include_all_files=include_all_files
-                                        or entry.includeAllFiles,
+                                        omit_unrecognized_types=omit_unrecognized_types
+                                        or entry.omitUnrecognizedTypes,
                                     )
                                 except Exception as e:
                                     raise RuntimeError(f"Unable to process: {filepath}") from e

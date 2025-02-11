@@ -11,7 +11,7 @@ See the [this page](configuration_files.md#settings-configuration-file) for deta
 - recorded_institution
     - Name of user's institution.
 - include_all_files
-    - Include all files in the SBOM, not just those with file types recognized by Surfactant; default is false.
+    - Include all files in the SBOM (default). Set to `false` to only include files with types recognized by Surfactant; default is `true`.
 
 ## docker
 

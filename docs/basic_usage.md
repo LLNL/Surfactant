@@ -23,7 +23,7 @@ $  surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
 **--output_format**: (optional) changes the output format for the SBOM (given as full module name of a surfactant plugin implementing the `write_sbom` hook)\
 **--input_format**: (optional) specifies the format of the input SBOM if one is being used (default: cytrics) (given as full module name of a surfactant plugin implementing the `read_sbom` hook)\
 **--help**: (optional) show the help message and exit\
-**--include_all_files**: (optional) include all files in the SBOM, rather than just those recognized by Surfactant
+**--omit_unrecognized_types**: (optional) Omit files with unrecognized types from the generated SBOM
 
 
 
