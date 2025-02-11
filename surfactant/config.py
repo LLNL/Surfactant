@@ -11,6 +11,6 @@ class ContextEntry:
     extractPaths: List[str]
     archive: Optional[str] = None
     installPrefix: Optional[str] = None
-    includeAllFiles: Optional[bool] = None
+    omitUnrecognizedTypes: Optional[bool] = None
     includeFileExts: Optional[List[str]] = None
     excludeFileExts: Optional[List[str]] = None

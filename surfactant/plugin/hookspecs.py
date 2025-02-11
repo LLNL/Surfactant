@@ -37,7 +37,7 @@ def extract_file_info(
     filetype: str,
     context: "Queue[ContextEntry]",
     children: List[Software],
-    include_all_files: bool,
+    omit_unrecognized_types: bool,
 ) -> object:
     """Extracts information from the given file to add to the given software entry. Return an
     object to be included as part of the metadata field, and potentially used as part of
@@ -51,7 +51,7 @@ def extract_file_info(
         filetype (str): File type information based on magic bytes.
         context (Queue[ContextEntry]): Modifiable queue of entries from input config file. Existing plugins should still work without adding this parameter.
         children (List[Software]): List of additional software entries to include in the SBOM. Plugins can add additional entries, though if the plugin extracts files to a temporary directory, the context argument should be used to have Surfactant process the files instead.
-        include_all_files (bool): If all files should be included in the SBOM, rather than only those with types that are recognized by Surfactant. When a plugin is adding additional context entries to the queue, it should typically default to propagating this value to the new context entries that it creates.
+        omit_unrecognized_types (bool): Whether files with types that are not recognized by Surfactant should be left out of the SBOM. When a plugin is adding additional context entries to the queue, it should typically default to propagating this value to the new context entries that it creates.
 
     Returns:
         object: An object to be added to the metadata field for the software entry. May be `None` to add no metadata.
