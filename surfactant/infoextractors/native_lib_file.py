@@ -41,9 +41,10 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
         name = short_name()  # use 'name = __name__', if short_name is not implemented
 
         super().__init__(
-            pattern_key="native_lib_patterns",
-            pattern_file="native_lib_patterns.json",
-            source="nativefile.emba",
+            version_file_name = "native_lib_patterns",
+            database_key = "emba",
+            database_file="native_lib_patterns_emba.json",
+            source=DATABASE_URL,
             plugin_name=name,
         )
 
@@ -215,8 +216,8 @@ def update_db() -> str:
         native_lib_manager.new_hash = calculate_hash(file_content)
         current_data = load_hash_and_timestamp(
             native_lib_manager.database_version_file_path,
-            native_lib_manager.pattern_key,
-            native_lib_manager.pattern_file,
+            native_lib_manager.database_key,
+            native_lib_manager.database_file,
         )
         if current_data and native_lib_manager.new_hash == current_data.get("hash"):
             return "No update occurred. Database is up-to-date."
@@ -235,11 +236,11 @@ def update_db() -> str:
 
         path = native_lib_manager.data_dir
         path.mkdir(parents=True, exist_ok=True)
-        native_lib_file = path / native_lib_manager.pattern_file
+        native_lib_file = path / native_lib_manager.database_file
         with open(native_lib_file, "w") as json_file:
             json.dump(parsed_data, json_file, indent=4)
 
-        native_lib_manager.download_timestamp = datetime.now(timezone.utc)
+        native_lib_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
         save_hash_and_timestamp(
             native_lib_manager.database_version_file_path, native_lib_manager.pattern_info
         )

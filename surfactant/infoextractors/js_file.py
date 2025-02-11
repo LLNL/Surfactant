@@ -41,9 +41,10 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
         name = short_name()  # use 'name = __name__', if short_name is not implemented
 
         super().__init__(
-            pattern_key="js_library_patterns",
-            pattern_file="js_library_patterns.json",
-            source="jsfile.retirejs",
+            version_file_name = "js_library_patterns",
+            database_key = "retirejs",
+            database_file="js_library_patterns_retirejs.json",
+            source=DATABASE_URL,
             plugin_name=name,
         )
 
@@ -154,19 +155,19 @@ def update_db() -> str:
         js_db_manager.new_hash = calculate_hash(raw_data)
         current_data = load_hash_and_timestamp(
             js_db_manager.database_version_file_path,
-            js_db_manager.pattern_key,
-            js_db_manager.pattern_file,
+            js_db_manager.database_key,
+            js_db_manager.database_file,
         )
         if current_data and js_db_manager.new_hash == current_data.get("hash"):
             return "No update occurred. Database is up-to-date."
 
         retirejs = json.loads(raw_data)
         cleaned = strip_irrelevant_data(retirejs)
-        js_db_manager.download_timestamp = datetime.now(timezone.utc)
+        js_db_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
 
         path = js_db_manager.data_dir
         path.mkdir(parents=True, exist_ok=True)
-        json_file_path = path / js_db_manager.pattern_file
+        json_file_path = path / js_db_manager.database_file
         with open(json_file_path, "w") as f:
             json.dump(cleaned, f, indent=4)
 

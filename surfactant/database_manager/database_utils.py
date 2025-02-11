@@ -25,38 +25,39 @@ class BaseDatabaseManager(ABC):
     """Abstract base class for managing pattern databases."""
 
     def __init__(
-        self, pattern_key: str, pattern_file: str, source: str, plugin_name: Optional[str]
+        self, version_file_name: str, database_key: str, database_file: str, source: str, plugin_name: Optional[str]
     ):
-        self.pattern_key = pattern_key
-        self.pattern_file = pattern_file
+        self.version_file_name = version_file_name
+        self.database_key = database_key
+        self.database_file = database_file
         self.source = source
-        self.new_hash: Optional[str] = None
-        self.download_timestamp: Optional[datetime] = None
-        self._database: Optional[Dict[str, Any]] = None
         self.plugin_name = plugin_name
+        self.new_hash: Optional[str] = None
+        self.download_timestamp: Optional[str] = None
+        self._database: Optional[Dict[str, Any]] = None
 
     @property
     @abstractmethod
     def data_dir(self) -> Path:
-        """Returns the base directory for storing database files."""
+        """Returns the base directory for storing database (.json) and version tracking (TOML) files."""
         return ConfigManager().get_data_dir_path()
 
     @property
     def database_version_file_path(self) -> Path:
         """Path to the database version file (e.g., TOML file)."""
-        return self.data_dir / f"{self.pattern_key}.toml"
+        return self.data_dir / f"{self.version_file_name}.toml"
 
     @property
     def database_file_path(self) -> Path:
         """Path to the JSON database file."""
-        return self.data_dir / self.pattern_file
+        return self.data_dir / self.database_file
 
     @property
     def pattern_info(self) -> Dict[str, Any]:
         """Returns metadata about the database patterns."""
         return {
-            "pattern_key": self.pattern_key,
-            "pattern_file": self.pattern_file,
+            "database_key" : self.database_key,
+            "database_file": self.database_file,
             "source": self.source,
             "hash_value": self.new_hash,
             "timestamp": self.download_timestamp,
@@ -69,7 +70,7 @@ class BaseDatabaseManager(ABC):
                 self._database = json.load(db_file)
         except FileNotFoundError:
             logger.warning(
-                f"{self.pattern_key} database could not be loaded. Run `surfactant plugin update-db {self.plugin_name}` to fetch the database."
+                f"{self.database_key} database could not be loaded. Run `surfactant plugin update-db {self.plugin_name}` to fetch the database."
             )
             self._database = None
 
@@ -84,7 +85,7 @@ class BaseDatabaseManager(ABC):
         self.data_dir.mkdir(parents=True, exist_ok=True)
         with open(self.database_file_path, "w") as db_file:
             json.dump(data, db_file, indent=4)
-        logger.info(f"{self.pattern_key} database saved successfully.")
+        logger.info(f"{self.database_key} database saved successfully.")
 
     @abstractmethod
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
@@ -168,53 +169,53 @@ def _write_toml_file(file_path: str, data: Dict[str, Any]) -> None:
 
 
 def load_hash_and_timestamp(
-    hash_file_path: str, pattern_key: str, pattern_file: str
+    version_file_path: str, database_key: str, database_file: str
 ) -> Optional[Dict[str, str]]:
     """
-    Load the hash and timestamp for a specific pattern from the specified TOML file.
+    Load the hash and timestamp for a specific database from the specified TOML file.
 
     Args:
-        hash_file_path (str): The path to the TOML file.
-        pattern_key (str): The key identifying the pattern group.
-        pattern_file (str): The key identifying the specific pattern file.
+        version_file_path (str): The path to the TOML file that tracks database versions.
+        database_key (str): The key identifying the database.
+        database_file (str): The key identifying the specific database.
 
     Returns:
         Optional[Dict[str, str]]: The hash and timestamp data, or None if not found.
     """
-    hash_data = _read_toml_file(hash_file_path)
+    hash_data = _read_toml_file(version_file_path)
     if hash_data is None:
         return None
 
     # Access the specific structure using the provided keys
-    return hash_data.get(pattern_key, {}).get(pattern_file)
+    return hash_data.get(database_key, {}).get(database_file)
 
 
-def save_hash_and_timestamp(hash_file_path: str, pattern_info: Dict[str, str]) -> None:
+def save_hash_and_timestamp(version_file_path: str, pattern_info: Dict[str, str]) -> None:
     """
     Save the hash and timestamp for a specific pattern to the specified TOML file.
 
     Args:
         hash_file_path (str): The path to the TOML file.
         pattern_info (Dict[str, str]): A dictionary containing the following keys:
-            - "pattern_key": The key identifying the pattern group.
-            - "pattern_file": The key identifying the specific pattern file.
+            - "database_key": The key identifying the database.
+            - "database_file": The key identifying the file path of specific database.
             - "source": The source of the pattern.
             - "hash_value": The hash value of the pattern.
-            - "timestamp": The timestamp of the pattern.
+            - "timestamp": The timestamp of when the database was downloaded.
 
     Raises:
         ValueError: If required keys are missing from `pattern_info`.
     """
-    required_keys = {"pattern_key", "pattern_file", "source", "hash_value", "timestamp"}
+    required_keys = {"database_key", "database_file", "source", "hash_value", "timestamp"}
     if not required_keys.issubset(pattern_info):
         raise ValueError(f"pattern_info must contain the keys: {required_keys}")
 
-    hash_data = _read_toml_file(hash_file_path) or {}
+    hash_data = _read_toml_file(version_file_path) or {}
 
     # Define the new data structure
     new_data = {
-        pattern_info["pattern_key"]: {
-            pattern_info["pattern_file"]: {
+        pattern_info["database_key"]: {
+            pattern_info["database_file"]: {
                 "source": pattern_info["source"],
                 "hash": pattern_info["hash_value"],
                 "timestamp": pattern_info["timestamp"],
@@ -223,10 +224,10 @@ def save_hash_and_timestamp(hash_file_path: str, pattern_info: Dict[str, str]) -
     }
 
     # Update the existing data with the new data
-    if pattern_info["pattern_key"] in hash_data:
-        hash_data[pattern_info["pattern_key"]].update(new_data[pattern_info["pattern_key"]])
+    if pattern_info["database_key"] in hash_data:
+        hash_data[pattern_info["database_key"]].update(new_data[pattern_info["database_key"]])
     else:
         hash_data.update(new_data)
 
     # Write the updated data back to the TOML file
-    _write_toml_file(hash_file_path, hash_data)
+    _write_toml_file(version_file_path, hash_data)
