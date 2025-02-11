@@ -466,6 +466,7 @@ def sbom(
                             if (
                                 ftype := pm.hook.identify_file_type(filepath=filepath)
                                 or include_all_files
+                                or entry.includeAllFiles
                                 or os.path.splitext(filepath)[1].lower()
                                 in [ext.lower() for ext in entry.includeFileExts]
                             ) and os.path.splitext(filepath)[1].lower() not in [

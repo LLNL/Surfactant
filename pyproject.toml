@@ -54,7 +54,7 @@ dependencies = [
     "loguru==0.7.*",
     "flask==3.*",
     "tomlkit==0.13.*",
-    "textual==0.88.*",
+    "textual==1.*",
     "requests>=2.32.3",
 ]
 dynamic = ["version"]
