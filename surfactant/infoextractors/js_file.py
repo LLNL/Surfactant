@@ -153,32 +153,49 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
+    # Step 1: Download the raw database data
     raw_data = download_database(DATABASE_URL)
-    if raw_data is not None:
-        js_db_manager.new_hash = calculate_hash(raw_data)
-        current_data = load_hash_and_timestamp(
-            js_db_manager.database_version_file_path,
-            js_db_manager.config.database_key,
-            js_db_manager.config.database_file,
-        )
-        if current_data and js_db_manager.new_hash == current_data.get("hash"):
-            return "No update occurred. Database is up-to-date."
+    if not raw_data:
+        return "No update occurred. Failed to download database."
 
+    # Step 2: Calculate the hash of the downloaded data
+    new_hash = calculate_hash(raw_data)
+
+    # Step 3: Load the current database metadata (hash and timestamp)
+    current_data = load_hash_and_timestamp(
+        js_db_manager.database_version_file_path,
+        js_db_manager.config.database_key,
+        js_db_manager.config.database_file,
+    )
+
+    # Step 4: Check if the database is already up-to-date
+    if current_data and new_hash == current_data.get("hash"):
+        return "No update occurred. Database is up-to-date."
+
+    # Step 5: Parse and clean the raw data
+    try:
         retirejs = json.loads(raw_data)
-        cleaned = strip_irrelevant_data(retirejs)
-        js_db_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse downloaded database JSON: {e}")
+        return "No update occurred. Invalid database format."
 
-        path = js_db_manager.data_dir
-        path.mkdir(parents=True, exist_ok=True)
-        json_file_path = path / js_db_manager.config.database_file
-        with open(json_file_path, "w") as f:
-            json.dump(cleaned, f, indent=4)
+    cleaned_data = strip_irrelevant_data(retirejs)
 
-        save_hash_and_timestamp(
-            js_db_manager.database_version_file_path, js_db_manager.pattern_info
-        )
-        return "Update complete."
-    return "No update occurred."
+    # Step 6: Save the cleaned database to disk
+    path = js_db_manager.data_dir
+    path.mkdir(parents=True, exist_ok=True)
+    json_file_path = path / js_db_manager.config.database_file
+    with open(json_file_path, "w") as f:
+        json.dump(cleaned_data, f, indent=4)
+
+    # Step 7: Update the hash and timestamp metadata
+    js_db_manager.new_hash = new_hash
+    js_db_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
+    save_hash_and_timestamp(
+        js_db_manager.database_version_file_path, js_db_manager.pattern_info
+    )
+
+    return "Update complete."
 
 
 @surfactant.plugin.hookimpl

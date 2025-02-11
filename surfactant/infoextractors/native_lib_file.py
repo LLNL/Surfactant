@@ -214,41 +214,59 @@ def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
+    # Step 1: Download the raw database content
     file_content = download_database(DATABASE_URL)
-    if file_content is not None:
-        native_lib_manager.new_hash = calculate_hash(file_content)
-        current_data = load_hash_and_timestamp(
-            native_lib_manager.database_version_file_path,
-            native_lib_manager.config.database_key,
-            native_lib_manager.config.database_file,
-        )
-        if current_data and native_lib_manager.new_hash == current_data.get("hash"):
-            return "No update occurred. Database is up-to-date."
+    if not file_content:
+        return "No update occurred. Failed to download database."
 
+    # Step 2: Calculate the hash of the downloaded content
+    new_hash = calculate_hash(file_content)
+
+    # Step 3: Load the current database metadata (hash and timestamp)
+    current_data = load_hash_and_timestamp(
+        native_lib_manager.database_version_file_path,
+        native_lib_manager.config.database_key,
+        native_lib_manager.config.database_file,
+    )
+
+    # Step 4: Check if the database is already up-to-date
+    if current_data and new_hash == current_data.get("hash"):
+        return "No update occurred. Database is up-to-date."
+
+    # Step 5: Parse the raw database content
+    try:
         parsed_data = parse_emba_cfg_file(file_content)
-        for _, value in parsed_data.items():
-            filecontent_list = value["filecontent"]
+    except Exception as e:
+        logger.error(f"Failed to parse database content: {e}")
+        return "No update occurred. Failed to parse database."
 
-            for i, pattern in enumerate(filecontent_list):
-                if pattern.startswith("^"):
-                    filecontent_list[i] = pattern[1:]
+    # Step 6: Clean the parsed data
+    for _, value in parsed_data.items():
+        filecontent_list = value["filecontent"]
 
-                if not pattern.endswith("\\$"):
-                    if pattern.endswith("$"):
-                        filecontent_list[i] = pattern[:-1]
+        for i, pattern in enumerate(filecontent_list):
+            if pattern.startswith("^"):
+                filecontent_list[i] = pattern[1:]
 
-        path = native_lib_manager.data_dir
-        path.mkdir(parents=True, exist_ok=True)
-        native_lib_file = path / native_lib_manager.config.database_file
-        with open(native_lib_file, "w") as json_file:
-            json.dump(parsed_data, json_file, indent=4)
+            if not pattern.endswith("\\$"):
+                if pattern.endswith("$"):
+                    filecontent_list[i] = pattern[:-1]
 
-        native_lib_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
-        save_hash_and_timestamp(
-            native_lib_manager.database_version_file_path, native_lib_manager.pattern_info
-        )
-        return "Update complete."
-    return "No update occurred."
+    # Step 7: Save the cleaned database to disk
+    path = native_lib_manager.data_dir
+    path.mkdir(parents=True, exist_ok=True)
+    native_lib_file = path / native_lib_manager.config.database_file
+    with open(native_lib_file, "w") as json_file:
+        json.dump(parsed_data, json_file, indent=4)
+
+    # Step 8: Update the hash and timestamp metadata
+    native_lib_manager.new_hash = new_hash
+    native_lib_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
+    save_hash_and_timestamp(
+        native_lib_manager.database_version_file_path, native_lib_manager.pattern_info
+    )
+
+    return "Update complete."
 
 
 @surfactant.plugin.hookimpl
