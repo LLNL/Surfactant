@@ -1,6 +1,7 @@
-import toml
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+import toml
 from loguru import logger
 
 
@@ -53,7 +54,9 @@ class TOMLManager:
             return False
 
     @staticmethod
-    def update_toml(file_path: Path, top_level_key: str, sub_key: str, updates: Dict[str, Any]) -> bool:
+    def update_toml(
+        file_path: Path, top_level_key: str, sub_key: str, updates: Dict[str, Any]
+    ) -> bool:
         """
         Updates a TOML file with new data, merging it with existing contents.
 
