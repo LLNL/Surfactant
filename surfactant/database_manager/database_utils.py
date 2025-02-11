@@ -73,7 +73,7 @@ class BaseDatabaseManager(ABC):
                 self._database = json.load(db_file)
         except FileNotFoundError:
             logger.warning(
-                f"{self.config.database_key} database could not be loaded. Run `surfactant plugin update-db {self.plugin_name}` to fetch the database."
+                f"{self.config.database_key} database could not be loaded. Run `surfactant plugin update-db {self.config.plugin_name}` to fetch the database."
             )
             self._database = None
 
