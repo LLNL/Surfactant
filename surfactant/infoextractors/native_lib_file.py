@@ -234,11 +234,7 @@ def update_db() -> str:
         return "No update occurred. Database is up-to-date."
 
     # Step 5: Parse the raw database content
-    try:
-        parsed_data = parse_emba_cfg_file(file_content)
-    except Exception as e:
-        logger.error(f"Failed to parse database content: {e}")
-        return "No update occurred. Failed to parse database."
+    parsed_data = parse_emba_cfg_file(file_content)
 
     # Step 6: Clean the parsed data
     for _, value in parsed_data.items():
