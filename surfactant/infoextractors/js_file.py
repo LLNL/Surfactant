@@ -42,8 +42,8 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
         name = short_name()  # use 'name = __name__', if short_name is not implemented
 
         config = DatabaseConfig(
-            version_file_name = "js_library_patterns",
-            database_key = "retirejs",
+            version_file_name="js_library_patterns",
+            database_key="retirejs",
             database_file="js_library_patterns_retirejs.json",
             source=DATABASE_URL,
             plugin_name=name,

@@ -9,6 +9,7 @@
 import hashlib
 import json
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -19,7 +20,6 @@ from requests.exceptions import RequestException
 
 from surfactant.configmanager import ConfigManager
 
-from dataclasses import dataclass
 
 @dataclass
 class DatabaseConfig:
@@ -28,6 +28,7 @@ class DatabaseConfig:
     database_file: str
     source: str
     plugin_name: Optional[str]
+
 
 class BaseDatabaseManager(ABC):
     """Abstract base class for managing pattern databases."""
@@ -58,7 +59,7 @@ class BaseDatabaseManager(ABC):
     def pattern_info(self) -> Dict[str, Any]:
         """Returns metadata about the database patterns."""
         return {
-            "database_key" : self.config.database_key,
+            "database_key": self.config.database_key,
             "database_file": self.config.database_file,
             "source": self.config.source,
             "hash_value": self.new_hash,
