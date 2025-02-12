@@ -191,7 +191,7 @@ def update_db() -> str:
     # Step 7: Update the hash and timestamp metadata
     js_db_manager.new_hash = new_hash
     js_db_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
-    save_hash_and_timestamp(js_db_manager.database_version_file_path, js_db_manager.pattern_info)
+    save_hash_and_timestamp(js_db_manager.database_version_file_path, js_db_manager.database_info)
 
     return "Update complete."
 

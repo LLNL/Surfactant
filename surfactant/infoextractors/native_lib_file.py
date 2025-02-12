@@ -259,7 +259,7 @@ def update_db() -> str:
     native_lib_manager.new_hash = new_hash
     native_lib_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
     save_hash_and_timestamp(
-        native_lib_manager.database_version_file_path, native_lib_manager.pattern_info
+        native_lib_manager.database_version_file_path, native_lib_manager.database_info
     )
 
     return "Update complete."

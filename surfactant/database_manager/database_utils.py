@@ -31,7 +31,7 @@ class DatabaseConfig:
 
 
 class BaseDatabaseManager(ABC):
-    """Abstract base class for managing pattern databases."""
+    """Abstract base class for managing databases."""
 
     def __init__(self, config: DatabaseConfig):
         self.config = config
@@ -56,7 +56,7 @@ class BaseDatabaseManager(ABC):
         return self.data_dir / self.config.database_file
 
     @property
-    def pattern_info(self) -> Dict[str, Any]:
+    def database_info(self) -> Dict[str, Any]:
         """Returns metadata about the database patterns."""
         return {
             "database_key": self.config.database_key,
@@ -193,13 +193,13 @@ def load_hash_and_timestamp(
     return hash_data.get(database_key, {}).get(database_file)
 
 
-def save_hash_and_timestamp(version_file_path: str, pattern_info: Dict[str, str]) -> None:
+def save_hash_and_timestamp(version_file_path: str, database_info: Dict[str, str]) -> None:
     """
-    Save the hash and timestamp for a specific pattern to the specified TOML file.
+    Save the hash and timestamp for a specific database to the specified TOML file.
 
     Args:
         hash_file_path (str): The path to the TOML file.
-        pattern_info (Dict[str, str]): A dictionary containing the following keys:
+        database_info (Dict[str, str]): A dictionary containing the following keys:
             - "database_key": The key identifying the database.
             - "database_file": The key identifying the file path of specific database.
             - "source": The source of the pattern.
@@ -207,28 +207,28 @@ def save_hash_and_timestamp(version_file_path: str, pattern_info: Dict[str, str]
             - "timestamp": The timestamp of when the database was downloaded.
 
     Raises:
-        ValueError: If required keys are missing from `pattern_info`.
+        ValueError: If required keys are missing from `database_info`.
     """
     required_keys = {"database_key", "database_file", "source", "hash_value", "timestamp"}
-    if not required_keys.issubset(pattern_info):
-        raise ValueError(f"pattern_info must contain the keys: {required_keys}")
+    if not required_keys.issubset(database_info):
+        raise ValueError(f"database_info must contain the keys: {required_keys}")
 
     hash_data = _read_toml_file(version_file_path) or {}
 
     # Define the new data structure
     new_data = {
-        pattern_info["database_key"]: {
-            pattern_info["database_file"]: {
-                "source": pattern_info["source"],
-                "hash": pattern_info["hash_value"],
-                "timestamp": pattern_info["timestamp"],
+        database_info["database_key"]: {
+            database_info["database_file"]: {
+                "source": database_info["source"],
+                "hash": database_info["hash_value"],
+                "timestamp": database_info["timestamp"],
             }
         }
     }
 
     # Update the existing data with the new data
-    if pattern_info["database_key"] in hash_data:
-        hash_data[pattern_info["database_key"]].update(new_data[pattern_info["database_key"]])
+    if database_info["database_key"] in hash_data:
+        hash_data[database_info["database_key"]].update(new_data[database_info["database_key"]])
     else:
         hash_data.update(new_data)
 
