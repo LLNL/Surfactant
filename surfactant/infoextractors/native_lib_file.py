@@ -226,7 +226,6 @@ def update_db() -> str:
     current_data = load_db_version_metadata(
         native_lib_manager.database_version_file_path,
         native_lib_manager.config.database_key,
-        native_lib_manager.config.database_file,
     )
 
     # Step 4: Check if the database is already up-to-date

@@ -165,7 +165,6 @@ def update_db() -> str:
     current_data = load_db_version_metadata(
         js_db_manager.database_version_file_path,
         js_db_manager.config.database_key,
-        js_db_manager.config.database_file,
     )
 
     # Step 4: Check if the database is already up-to-date

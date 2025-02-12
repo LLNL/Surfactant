@@ -172,39 +172,54 @@ def _write_toml_file(file_path: str, data: Dict[str, Any]) -> None:
 
 
 def load_db_version_metadata(
-    version_file_path: str, database_key: str, database_file: str
+    version_file_path: str, database_key: str
 ) -> Optional[Dict[str, str]]:
     """
-    Load source, hash and timestamp for a specific database from the specified TOML file.
+    Load the database version metadata for a specific database from the specified TOML file.
 
     Args:
         version_file_path (str): The path to the TOML file that tracks database versions.
         database_key (str): The key identifying the database.
-        database_file (str): The key identifying the specific database.
 
     Returns:
-        Optional[Dict[str, str]]: The source, hash and timestamp data, or None if not found.
+        Dict[str, Any]: A dictionary where each top-level key (e.g., "retirejs") maps to its metadata 
+        or None if not found.
+            Example structure:
+            {
+                "retirejs": {
+                    "file": "js_library_patterns_retirejs.json",
+                    "source": "https://example.com/source.json",
+                    "hash": "abc123...",
+                    "timestamp": "2025-02-10T19:18:34.784116Z"
+                },
+                "abc": {
+                    "file": "some_other_library_patterns_abc.json",
+                    "source": "https://example.com/other_source.json",
+                    "hash": "def456...",
+                    "timestamp": "2025-02-10T20:00:00.000000Z"
+                }
+            }
     """
     db_metadata = _read_toml_file(version_file_path)
     if db_metadata is None:
         return None
 
     # Access the specific structure using the provided keys
-    return db_metadata.get(database_key, {}).get(database_file)
+    return db_metadata.get(database_key, {})
 
 
 def save_db_version_metadata(version_file_path: str, database_info: Dict[str, str]) -> None:
     """
-    Save the source, hash and timestamp for a specific database to the specified TOML file.
+    Save the metadata (source, hash, timestamp, and file) for a specific database to the specified TOML file.
 
     Args:
         version_file_path (str): The path to the TOML file.
         database_info (Dict[str, str]): A dictionary containing the following keys:
-            - "database_key": The key identifying the database.
-            - "database_file": The key identifying the file path of specific database.
-            - "source": The source of the pattern.
-            - "hash_value": The hash value of the pattern.
-            - "timestamp": The timestamp of when the database was downloaded.
+            - "database_key": The key identifying the database (e.g., "retirejs").
+            - "database_file": The file name of the database (e.g., "js_library_patterns_retirejs.json").
+            - "source": The source URL of the database.
+            - "hash_value": The hash value of the database file.
+            - "timestamp": The timestamp when the database was downloaded.
 
     Raises:
         ValueError: If required keys are missing from `database_info`.
@@ -213,24 +228,21 @@ def save_db_version_metadata(version_file_path: str, database_info: Dict[str, st
     if not required_keys.issubset(database_info):
         raise ValueError(f"database_info must contain the keys: {required_keys}")
 
+    # Read the existing TOML file
     db_metadata = _read_toml_file(version_file_path) or {}
 
     # Define the new data structure
     new_data = {
         database_info["database_key"]: {
-            database_info["database_file"]: {
+                "file": database_info["database_file"],
                 "source": database_info["source"],
                 "hash": database_info["hash_value"],
                 "timestamp": database_info["timestamp"],
-            }
         }
     }
 
     # Update the existing data with the new data
-    if database_info["database_key"] in db_metadata:
-        db_metadata[database_info["database_key"]].update(new_data[database_info["database_key"]])
-    else:
-        db_metadata.update(new_data)
+    db_metadata.update(new_data)
 
     # Write the updated data back to the TOML file
     _write_toml_file(version_file_path, db_metadata)
