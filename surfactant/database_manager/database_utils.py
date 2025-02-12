@@ -213,7 +213,7 @@ def save_db_version_metadata(version_file_path: str, database_info: Dict[str, st
     if not required_keys.issubset(database_info):
         raise ValueError(f"database_info must contain the keys: {required_keys}")
 
-    hash_data = _read_toml_file(version_file_path) or {}
+    db_metadata = _read_toml_file(version_file_path) or {}
 
     # Define the new data structure
     new_data = {
@@ -227,10 +227,10 @@ def save_db_version_metadata(version_file_path: str, database_info: Dict[str, st
     }
 
     # Update the existing data with the new data
-    if database_info["database_key"] in hash_data:
-        hash_data[database_info["database_key"]].update(new_data[database_info["database_key"]])
+    if database_info["database_key"] in db_metadata:
+        db_metadata[database_info["database_key"]].update(new_data[database_info["database_key"]])
     else:
-        hash_data.update(new_data)
+        db_metadata.update(new_data)
 
     # Write the updated data back to the TOML file
-    _write_toml_file(version_file_path, hash_data)
+    _write_toml_file(version_file_path, db_metadata)
