@@ -21,8 +21,8 @@ from surfactant.database_manager.database_utils import (
     DatabaseConfig,
     calculate_hash,
     download_database,
-    load_hash_and_timestamp,
-    save_hash_and_timestamp,
+    load_db_version_metadata,
+    save_db_version_metadata,
 )
 from surfactant.sbomtypes import SBOM, Software
 
@@ -161,8 +161,8 @@ def update_db() -> str:
     # Step 2: Calculate the hash of the downloaded data
     new_hash = calculate_hash(raw_data)
 
-    # Step 3: Load the current database metadata (hash and timestamp)
-    current_data = load_hash_and_timestamp(
+    # Step 3: Load the current database metadata (source, hash and timestamp)
+    current_data = load_db_version_metadata(
         js_db_manager.database_version_file_path,
         js_db_manager.config.database_key,
         js_db_manager.config.database_file,
@@ -191,7 +191,7 @@ def update_db() -> str:
     # Step 7: Update the hash and timestamp metadata
     js_db_manager.new_hash = new_hash
     js_db_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
-    save_hash_and_timestamp(js_db_manager.database_version_file_path, js_db_manager.database_info)
+    save_db_version_metadata(js_db_manager.database_version_file_path, js_db_manager.database_info)
 
     return "Update complete."
 

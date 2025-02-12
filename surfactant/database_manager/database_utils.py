@@ -171,11 +171,11 @@ def _write_toml_file(file_path: str, data: Dict[str, Any]) -> None:
         tomlkit.dump(data, f)
 
 
-def load_hash_and_timestamp(
+def load_db_version_metadata(
     version_file_path: str, database_key: str, database_file: str
 ) -> Optional[Dict[str, str]]:
     """
-    Load the hash and timestamp for a specific database from the specified TOML file.
+    Load source, hash and timestamp for a specific database from the specified TOML file.
 
     Args:
         version_file_path (str): The path to the TOML file that tracks database versions.
@@ -183,22 +183,22 @@ def load_hash_and_timestamp(
         database_file (str): The key identifying the specific database.
 
     Returns:
-        Optional[Dict[str, str]]: The hash and timestamp data, or None if not found.
+        Optional[Dict[str, str]]: The source, hash and timestamp data, or None if not found.
     """
-    hash_data = _read_toml_file(version_file_path)
-    if hash_data is None:
+    db_metadata = _read_toml_file(version_file_path)
+    if db_metadata is None:
         return None
 
     # Access the specific structure using the provided keys
-    return hash_data.get(database_key, {}).get(database_file)
+    return db_metadata.get(database_key, {}).get(database_file)
 
 
-def save_hash_and_timestamp(version_file_path: str, database_info: Dict[str, str]) -> None:
+def save_db_version_metadata(version_file_path: str, database_info: Dict[str, str]) -> None:
     """
-    Save the hash and timestamp for a specific database to the specified TOML file.
+    Save the source, hash and timestamp for a specific database to the specified TOML file.
 
     Args:
-        hash_file_path (str): The path to the TOML file.
+        version_file_path (str): The path to the TOML file.
         database_info (Dict[str, str]): A dictionary containing the following keys:
             - "database_key": The key identifying the database.
             - "database_file": The key identifying the file path of specific database.
