@@ -171,9 +171,7 @@ def _write_toml_file(file_path: str, data: Dict[str, Any]) -> None:
         tomlkit.dump(data, f)
 
 
-def load_db_version_metadata(
-    version_file_path: str, database_key: str
-) -> Optional[Dict[str, str]]:
+def load_db_version_metadata(version_file_path: str, database_key: str) -> Optional[Dict[str, str]]:
     """
     Load the database version metadata for a specific database from the specified TOML file.
 
@@ -182,7 +180,7 @@ def load_db_version_metadata(
         database_key (str): The key identifying the database.
 
     Returns:
-        Dict[str, Any]: A dictionary where each top-level key (e.g., "retirejs") maps to its metadata 
+        Dict[str, Any]: A dictionary where each top-level key (e.g., "retirejs") maps to its metadata
         or None if not found.
             Example structure:
             {
@@ -234,10 +232,10 @@ def save_db_version_metadata(version_file_path: str, database_info: Dict[str, st
     # Define the new data structure
     new_data = {
         database_info["database_key"]: {
-                "file": database_info["database_file"],
-                "source": database_info["source"],
-                "hash": database_info["hash_value"],
-                "timestamp": database_info["timestamp"],
+            "file": database_info["database_file"],
+            "source": database_info["source"],
+            "hash": database_info["hash_value"],
+            "timestamp": database_info["timestamp"],
         }
     }
 
