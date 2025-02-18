@@ -23,11 +23,21 @@ from surfactant.configmanager import ConfigManager
 
 @dataclass
 class DatabaseConfig:
+    """
+    Represents the configuration for a database used by a plugin.
+
+    Attributes:
+        version_file_name (str): Path to the database version file without a file extension.
+        database_key (str): The key identifying the database (e.g., "retirejs").
+        database_file (str): The file name of the database (e.g., "js_library_patterns_retirejs.json").
+        source (str): The source URL of the database, or "file" if it's a local file.
+        plugin_name (Optional[str]): The canonical name or short name of the plugin handling the database.
+    """
     version_file_name: str
     database_key: str
     database_file: str
     source: str
-    plugin_name: Optional[str]
+    plugin_name: Optional[str] = None
 
 
 class BaseDatabaseManager(ABC):
