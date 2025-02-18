@@ -12,6 +12,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
 import requests
 import tomlkit
@@ -39,6 +40,28 @@ class DatabaseConfig:
     database_file: str
     source: str
     plugin_name: Optional[str] = None
+
+    
+    def __post_init__(self):
+        # Validate that source is either a URL or "file"
+        if self.source != "file":
+            parsed_url = urlparse(self.source)
+
+            # Check that the scheme is valid (http or https)
+            if parsed_url.scheme not in {"http", "https"}:
+                raise ValueError(f"Invalid URL scheme: {parsed_url.scheme}. Expected 'http' or 'https'.")
+
+            # Check that netloc is present
+            if not parsed_url.netloc:
+                raise ValueError(f"Invalid URL for source: {self.source}")
+
+        # Ensure version_file_name does not contain a file extension
+        if "." in self.version_file_name:
+            raise ValueError(f"version_file_name '{self.version_file_name}' should not include a file extension.")
+
+        # Ensure database_file ends with .json
+        if not self.database_file.endswith(".json"):
+            raise ValueError(f"database_file '{self.database_file}' must end with '.json'.")
 
 
 class BaseDatabaseManager(ABC):
