@@ -33,6 +33,7 @@ class DatabaseConfig:
         source (str): The source URL of the database, or "file" if it's a local file.
         plugin_name (Optional[str]): The canonical name or short name of the plugin handling the database.
     """
+
     version_file_name: str
     database_key: str
     database_file: str
