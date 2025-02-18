@@ -98,6 +98,15 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         )
         spdx_doc.relationships = spdx_doc.relationships + [spdx_rel]
 
+    # No packages, don't make any assertions about what the SPDX Document describes
+    if not spdx_doc.relationships:
+        spdx_rel = Relationship(
+            spdx_element_id=spdx_doc.creation_info.spdx_id,
+            relationship_type=RelationshipType.DESCRIBES,
+            related_spdx_element_id=SpdxNoAssertion(),
+        )
+        spdx_doc.relationships = spdx_doc.relationships + [spdx_rel]
+
     # Convert relationships into SPDX Relationships
     for rel in sbom.relationships:
         if (rel.xUUID in uuid_to_spdxid) and (rel.yUUID in uuid_to_spdxid):
@@ -129,8 +138,6 @@ def write_sbom(sbom: SBOM, outfile) -> None:
                         comment=rel_comment,
                     )
                     spdx_doc.relationships = spdx_doc.relationships + [spdx_rel]
-
-    print(spdx_doc.relationships)
 
     # Add package verification codes
     for pkg in spdx_doc.packages:
