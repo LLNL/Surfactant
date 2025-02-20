@@ -1,0 +1,25 @@
+Button {
+   background: midnightblue;
+   border: hidden;
+   padding: 0;
+}
+
+SelectFileButtons {
+   layout: horizontal;
+}
+
+Input {
+    border: hidden;
+    padding: 0;
+    height: 1;
+}
+
+Checkbox {
+    border: hidden;
+    padding: 0;
+}
+
+Select {
+    border: hidden;
+    padding: 0;
+}
