@@ -1,10 +1,10 @@
-import pytest
 import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from surfactant.sbomtypes import SBOM, Software
+import pytest
 from surfactantplugin_angrimportfinder import angrimport_finder
+
+from surfactant.sbomtypes import SBOM, Software
 
 
 @pytest.fixture
@@ -42,7 +42,9 @@ def mock_pe_file(tmp_path):
 
 
 @patch("angr.Project")
-def test_angrimport_finder_elf(mock_angr_project, mock_sbom, mock_software, mock_elf_file, tmp_path):
+def test_angrimport_finder_elf(
+    mock_angr_project, mock_sbom, mock_software, mock_elf_file, tmp_path
+):
     """Test the angrimport_finder function with an ELF file."""
     # Mock the angr project and its symbols
     mock_angr_project.return_value.loader.main_object.symbols = [
@@ -107,7 +109,9 @@ def test_angrimport_finder_non_executable(mock_sbom, mock_software, tmp_path):
 
 
 @patch("angr.Project")
-def test_angrimport_finder_duplicate_file(mock_angr_project, mock_sbom, mock_software, mock_elf_file, tmp_path):
+def test_angrimport_finder_duplicate_file(
+    mock_angr_project, mock_sbom, mock_software, mock_elf_file, tmp_path
+):
     """Test the angrimport_finder function with a duplicate file."""
     # Create an existing JSON file for the same hash
     existing_data = {
