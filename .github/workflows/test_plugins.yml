@@ -1,0 +1,95 @@
+name: Python Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.8", "3.10", "3.13"]
+
+    steps:
+    # Step 1: Check out the repository
+    - uses: actions/checkout@v4
+
+    # Step 2: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    # Step 3: Test plugins
+    - name: Test Plugins
+      run: |
+        # Define the plugins directory and ignored directories
+        PLUGINS_DIR="Surfactant/plugins"
+        # IGNORED_DIRS=("example_plugin_to_ignore" "another_plugin_to_ignore")
+        IGNORED_DIRS=("")
+
+        # Iterate through each subdirectory in the plugins folder
+        for PLUGIN_DIR in "$PLUGINS_DIR"/*; do
+          # Skip if it's not a directory
+          [ -d "$PLUGIN_DIR" ] || continue
+
+          # Get the plugin name
+          PLUGIN_NAME=$(basename "$PLUGIN_DIR")
+
+          # Skip ignored directories
+          if [[ " ${IGNORED_DIRS[@]} " =~ " ${PLUGIN_NAME} " ]]; then
+            echo "Skipping ignored plugin: $PLUGIN_NAME"
+            continue
+          fi
+
+          echo "Testing plugin: $PLUGIN_NAME"
+
+          # Create a fresh virtual environment
+          python -m venv venv
+          source venv/bin/activate
+
+          # Install Surfactant and the plugin
+          pip install --upgrade pip
+          pip install -e ./Surfactant
+          pip install -e "$PLUGIN_DIR"
+
+          # Check if tests exist in the plugin folder
+          if [ -d "$PLUGIN_DIR/tests" ]; then
+            echo "Tests found for $PLUGIN_NAME. Running pytest."
+
+            # Run pytest in the plugin's folder
+            pytest "$PLUGIN_DIR/tests"
+
+            # Deactivate the virtual environment
+            deactivate
+          else
+            echo "No tests found for $PLUGIN_NAME. Running basic functionality check."
+
+            # Run the plugin on test files (adjust the command as needed)
+            if [ -d "$PLUGIN_DIR/test_files" ]; then
+              for TEST_FILE in "$PLUGIN_DIR/test_files"/*; do
+                echo "Running $PLUGIN_NAME on $TEST_FILE"
+                # Replace `plugin-command` with the actual command to invoke the plugin
+                plugin-command "$TEST_FILE"
+              done
+            else
+              echo "No test files found for $PLUGIN_NAME. Skipping functionality check."
+            fi
+
+            # Deactivate the virtual environment
+            deactivate
+          fi
+        done
+
+    # Step 4: Validate SBOM (optional)
+    - name: Validate SBOM
+      run: |
+        # Placeholder for SBOM validation logic
+        echo "SBOM validation step (to be implemented)"
