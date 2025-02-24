@@ -201,6 +201,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 if cm == 8:
                     if (cmf * 256 + flg) % 31 == 0:
                         return "ZLIB"
+            
+            # Check for compressed TAR files
+            if magic_bytes[:3] == b"BZh":
+                return "TAR BZIP2"
+            if magic_bytes[:6] == b"\xfd\x37\x7a\x58\x5a\x00":
+                return "TAR XZ"
             return None
     except FileNotFoundError:
         return None
