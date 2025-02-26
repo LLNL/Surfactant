@@ -464,7 +464,7 @@ def sbom(
                             if not entry.excludeFileExts:
                                 entry.excludeFileExts = []
                             if (
-                                ftype := pm.hook.identify_file_type(filepath=filepath)
+                                (ftype := pm.hook.identify_file_type(filepath=filepath))
                                 or (not (omit_unrecognized_types or entry.omitUnrecognizedTypes))
                                 or (
                                     os.path.splitext(filepath)[1].lower()
