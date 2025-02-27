@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional, Union
 from loguru import logger
 
 import surfactant.plugin
-from . import file_decompression
 from surfactant.database_manager.database_utils import (
     BaseDatabaseManager,
     DatabaseConfig,
@@ -88,43 +87,29 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
 native_lib_manager = EmbaNativeLibDatabaseManager()
 
 
-def supports_file(filetype: str) -> bool:
-    print("filetype: ", filetype)
-    
-    return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
-
-# def check_if_compressed(filename):
-#     compressed_formats = [".zip", ".tar", ".tar.gz", ".tar.bz2", ".tar.xz"]
-
-#     # Check if the file has a compressed extension
-#     return any(filename.endswith(ext) for ext in check_if_compressed)
+def supports_file(filetype: str, filename: str) -> bool:
+    result = filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
+    print("result should be true or false: ", result)
+    return result
 
 
 @surfactant.plugin.hookimpl
 def extract_file_info(
     sbom: SBOM, software: Software, filename: str, filetype: str
 ) -> Optional[Dict[str, Any]]:
-    if not supports_file(filetype):
-        #print("supports file")
-        print("not supported")
-        if filename.endswith(".tar") or filename.endswith(".tar.gz"):
-            compressed_filetypes = file_decompression.check_compression_type(filename)
-            print("compressed file: ", compressed_filetypes)
-            # return None
-            return extract_native_lib_info(compressed_filetypes)
+
+    if not supports_file(filetype, filename):
         return None
-    print("is supported: ", filename)
     return extract_native_lib_info(filename)
 
 
 def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
-    print("next")
     native_lib_info: Dict[str, Any] = {"nativeLibraries": []}
     native_lib_database = native_lib_manager.get_database()
 
     if native_lib_database is None:
         return None
-    
+
     found_libraries: set = set()
     library_names: List[str] = []
     contains_library_names: List[str] = []
@@ -139,19 +124,6 @@ def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
                 found_libraries.add(library_name)
 
     try:
-        print("filename: ", filename)
-        if os.path.isdir(filename):
-            print("is a dir")
-            for root, dirs, files in os.walk(filename):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    print(f"Processing file in directory: {file_path}")
-                    # Recursively call this function for each file
-                    file_info = extract_native_lib_info(file_path)
-                    # if file_info:
-                    #     native_lib_info["nativeLibraries"].extend(file_info.get("nativeLibraries", []))
-            return native_lib_info  # Return after processing the directory
-        
         with open(filename, "rb") as native_file:
             filecontent = native_file.read()
         filecontent_list = match_by_attribute("filecontent", filecontent, native_lib_database)
@@ -164,8 +136,6 @@ def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
 
     except FileNotFoundError:
         logger.warning(f"File not found: {filename}")
-    except Exception as e:
-        logger.error(f"Error processing file {filename}: {e}")
 
     if library_names:
         native_lib_info["nativeLibraries"].append({"isLibrary": library_names})
