@@ -69,7 +69,6 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         cytrics_reader,
         native_lib_file,
         cyclonedx_reader,
-
     )
     for plugin in internal_plugins:
         pm.register(plugin)
