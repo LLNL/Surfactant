@@ -5,6 +5,7 @@
 
 import os
 from typing import Optional
+import pathlib
 
 import click
 import textual.app
@@ -35,14 +36,13 @@ class SelectFileButtons(textual.widgets.Static):
 class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTree.FileSelected]]):
     """Pop-up to select a file"""
 
-    def __init__(self, allow_file_selection: bool, allow_folder_selection: bool, start_path: str):
+    def __init__(self, allow_folder_selection: bool, start_path: str):
         super().__init__()
-        self.allow_file_selection = allow_file_selection
         self.allow_folder_selection = allow_folder_selection
         self.dir_selected = start_path
 
     def compose(self) -> textual.app.ComposeResult:
-        yield textual.widgets.DirectoryTree(os.path.dirname(self.dir_selected), id="file_dir")
+        yield textual.widgets.DirectoryTree(self.dir_selected, id="file_dir")
         yield SelectFileButtons(self.allow_folder_selection)
 
     @textual.on(textual.widgets.Button.Pressed, "#up_dir")
@@ -63,8 +63,7 @@ class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTr
     def on_directory_tree_file_selected(
         self, path: textual.widgets.DirectoryTree.FileSelected
     ) -> None:
-        if self.allow_file_selection:
-            self.dismiss(path.path.as_posix())
+        self.dismiss(path.path.as_posix())
 
     def on_key(self, event: textual.events.Key):
         if event.key == "escape":
@@ -72,10 +71,10 @@ class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTr
 
 
 class FileInput(textual.widgets.Static):
-    def __init__(self, label: str, allow_file_selection: bool, allow_folder_selection: bool):
+    def __init__(self, label: str, allow_folder_selection: bool, file_input: Optional[textual.widgets.Input]):
         super().__init__()
         self.label = label
-        self.allow_file_selection = allow_file_selection
+        self.file_input = file_input
         self.allow_folder_selection = allow_folder_selection
         self.input_path = ""
 
@@ -86,24 +85,31 @@ class FileInput(textual.widgets.Static):
             yield textual.widgets.Label(f"{self.label} {self.input_path}")
 
     def on_click(self):
-        def set_path(path: Optional[textual.widgets.DirectoryTree.FileSelected]):
+        def set_path(path: Optional[pathlib.Path]):
             if path:
-                self.input_path = path
-                self.query_one(textual.widgets.Label).update(f"{self.label} {path}")
+                if self.file_input:
+                    # Set the directory and the file separately
+                    self.input_path = os.path.dirname(path)
+                    self.file_input.value = os.path.basename(path)
+                else:
+                    # Just set the path
+                    self.input_path = path
+                self.query_one(textual.widgets.Label).update(f"{self.label} {self.input_path}")
 
         base_dir = "./" if len(self.input_path) == 0 else self.input_path
         self.app.push_screen(
-            SelectFile(self.allow_file_selection, self.allow_folder_selection, base_dir), set_path
+            SelectFile(self.allow_folder_selection, base_dir), set_path
         )
 
 
+# pylint: disable-next=too-many-instance-attributes
 class GenerateTab(textual.widgets.Static):
     def __init__(self):
         super().__init__()
-        self.file_input = FileInput("Input file:", True, True)
-        self.output_dir = FileInput("Output directory:", False, True)
+        self.file_input = FileInput("Input file:", True, None)
         self.output_name = textual.widgets.Input(placeholder="Output Filename")
-        self.input_sbom = FileInput("Input SBOM:", True, False)
+        self.output_dir = FileInput("Output directory:", True, self.output_name)
+        self.input_sbom = FileInput("Input SBOM:", False, None)
         self.skip_gather = textual.widgets.Checkbox("Skip Gather")
         self.skip_relationships = textual.widgets.Checkbox("Skip Relationships")
         self.input_format = textual.widgets.Select([("CyTRICS", "CyTRICS")], allow_blank=False)
@@ -167,6 +173,7 @@ class GenerateTab(textual.widgets.Static):
             args.append(self.input_format.value)
             args.append("--output_format")
             args.append(self.output_format.value)
+            # pylint: disable-next=no-value-for-parameter
             surfactant.cmd.generate.sbom(args, standalone_mode=False)
             print("Press enter to continue")
             _ = input()
@@ -176,7 +183,7 @@ class GenerateTab(textual.widgets.Static):
 class MergePath(textual.widgets.Static):
     def __init__(self):
         super().__init__()
-        self.path_selector = FileInput("Input file:", True, False)
+        self.path_selector = FileInput("Input file:", False, None)
         self.active = True
 
     def compose(self) -> textual.app.ComposeResult:
@@ -211,15 +218,15 @@ class MergeTab(textual.widgets.Static):
     def __init__(self):
         super().__init__()
         self.merge_paths = MergePathsHolder()
-        self.output_dir = FileInput("Output directory:", False, True)
         self.output_name = textual.widgets.Input(placeholder="Output Filename")
+        self.output_dir = FileInput("Output directory:", True, self.output_name)
         self.input_format = textual.widgets.Select(
             [("CyTRICS", "CyTRICS"), ("SPDX", "SPDX"), ("CSV", "CSV")], allow_blank=False
         )
         self.output_format = textual.widgets.Select(
             [("CyTRICS", "CyTRICS"), ("SPDX", "SPDX"), ("CSV", "CSV")], allow_blank=False
         )
-        self.config_file = FileInput("Config File", True, False)
+        self.config_file = FileInput("Config File:", False, None)
 
     def compose(self) -> textual.app.ComposeResult:
         yield self.merge_paths
@@ -235,9 +242,7 @@ class MergeTab(textual.widgets.Static):
         yield textual.containers.HorizontalGroup(
             textual.widgets.Label("Output Format: "), self.output_format
         )
-        yield textual.containers.HorizontalGroup(
-            textual.widgets.Label("Config File: "), self.config_file
-        )
+        yield self.config_file
         yield textual.widgets.Button("Run", id="run")
 
     @textual.on(textual.widgets.Button.Pressed, "#run")
@@ -269,12 +274,14 @@ class MergeTab(textual.widgets.Static):
             if len(config) > 0:
                 args.append("--config_file")
                 args.append(config)
+            # pylint: disable-next=no-value-for-parameter
             surfactant.cmd.merge.merge_command(args, standalone_mode=False)
             print("Press enter to continue")
             _ = input()
         self.app.refresh()
 
 
+# TODO: Rewrite to use ContentSwitcher?
 class TUI(textual.app.App):
     """An app for running Surfactant commands"""
 
@@ -312,7 +319,7 @@ class TUI(textual.app.App):
 
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""
-        # pylint: disable=attribute-defined-outside-init
+        # pylint: disable-next=attribute-defined-outside-init
         self.theme = "textual-dark" if self.theme == "textual-light" else "textual-light"
 
     def action_quit(self) -> None:

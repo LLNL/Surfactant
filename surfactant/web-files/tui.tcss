@@ -1,4 +1,4 @@
-Button {
+TUI Button {
    background: midnightblue;
    border: hidden;
    padding: 0;
@@ -22,4 +22,50 @@ Checkbox {
 Select {
     border: hidden;
     padding: 0;
+}
+
+YesNoScreen {
+   layout: grid;
+   grid-size: 2 2;
+   align: center bottom;
+}
+
+YesNoScreen Button {
+   width: 1fr;
+}
+
+Button {
+   background: midnightblue;
+}
+
+YesNoScreen > Label {
+   margin: 1;
+   text-align: center;
+   column-span: 2;
+   width: 1fr;
+}
+
+Config #config_entries {
+   width: 100%;
+}
+
+ArchiveEntry {
+   layout: horizontal;
+}
+
+InstallPrefix {
+   layout: horizontal;
+   content-align: center middle;
+}
+
+SelectFileButtons {
+   layout: horizontal;
+}
+
+ExtractPathSelector {
+   layout: horizontal;
+}
+
+ConfigEntry {
+   border: solid white;
 }
