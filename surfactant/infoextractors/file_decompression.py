@@ -35,9 +35,9 @@ def is_compressed(filename):
         '.tar.bz2': 'tar.bz2',
         '.tar.xz': 'tar.xz',
     }
-    for ext, format in compression_formats.items():
+    for ext, fmt in compression_formats.items():
         if filename.endswith(ext):
-            return format
+            return fmt
     return None
 
 @surfactant.plugin.hookimpl
@@ -64,6 +64,7 @@ def extract_file_info(
     # Add new ContextEntry to queue
     context.put(new_entry)
     logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
+    return None
     
 def check_compression_type(filename: str, compression_format: str) -> str:
     temp_folder = None
@@ -91,8 +92,8 @@ def create_temp_dir():
 
 def decompress_zip_file(filename):
     temp_folder = create_temp_dir()
-    with zipfile.ZipFile(filename, 'r') as zip:
-        zip.extractall(path=temp_folder)
+    with zipfile.ZipFile(filename, 'r') as f:
+        f.extractall(path=temp_folder)
     return temp_folder
     
 def decompress_tar_file(filename, compression_type):
