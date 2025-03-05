@@ -27,8 +27,8 @@ from surfactant.database_manager.database_utils import (
 from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
-DATABASE_URL = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
-
+DATABASE_URL_EMBA = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
+NATIVE_DB_DIR = "native_library" # The directory name to store the database toml file and database json files for this module
 
 @surfactant.plugin.hookimpl
 def short_name() -> Optional[str]:
@@ -39,22 +39,18 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
     """Manages the EMBA Native Library database."""
 
     def __init__(self):
-        name = short_name()  # use 'name = __name__', if short_name is not implemented
+        name = short_name()  # Set to '__name__' (without quotation marks), if short_name is not implemented
 
         config = DatabaseConfig(
-            version_file_name="native_lib_patterns",
-            database_key="emba",
-            database_file="native_lib_patterns_emba.json",
-            source=DATABASE_URL,
+            database_dir=NATIVE_DB_DIR, # The directory name to store the database toml file and database json files for this module.
+            database_key="emba",        # The key for this classes database in the version_info toml file.
+            database_file="native_lib_patterns_emba.json",  # The json file name for the database.
+            source=DATABASE_URL_EMBA,   # The source of the database (put "file" or the source url)
             plugin_name=name,
         )
 
         super().__init__(config)
 
-    @property
-    def data_dir(self) -> Path:
-        """Returns the base directory for storing Native Library database files."""
-        return super().data_dir / "native_lib_patterns"
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw EMBA configuration file into a structured database."""
@@ -215,7 +211,7 @@ def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
 @surfactant.plugin.hookimpl
 def update_db() -> str:
     # Step 1: Download the raw database content
-    file_content = download_database(DATABASE_URL)
+    file_content = download_database(DATABASE_URL_EMBA)
     if not file_content:
         return "No update occurred. Failed to download database."
 
@@ -248,9 +244,7 @@ def update_db() -> str:
                     filecontent_list[i] = pattern[:-1]
 
     # Step 7: Save the cleaned database to disk
-    path = native_lib_manager.data_dir
-    path.mkdir(parents=True, exist_ok=True)
-    native_lib_file = path / native_lib_manager.config.database_file
+    native_lib_file = native_lib_manager.database_file_path
     with open(native_lib_file, "w") as json_file:
         json.dump(parsed_data, json_file, indent=4)
 

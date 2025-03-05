@@ -28,14 +28,14 @@ class DatabaseConfig:
     Represents the configuration for a database used by a plugin.
 
     Attributes:
-        version_file_name (str): Path to the database version file without a file extension.
+        database_dir (str): The database directory name for the class of databases (e.g., "js_library", "native_library").
         database_key (str): The key identifying the database (e.g., "retirejs").
         database_file (str): The file name of the database (e.g., "js_library_patterns_retirejs.json").
         source (str): The source URL of the database, or "file" if it's a local file.
         plugin_name (Optional[str]): The canonical name or short name of the plugin handling the database.
     """
 
-    version_file_name: str
+    database_dir: str
     database_key: str
     database_file: str
     source: str
@@ -56,12 +56,6 @@ class DatabaseConfig:
             if not parsed_url.netloc:
                 raise ValueError(f"Invalid URL for source: {self.source}")
 
-        # Ensure version_file_name does not contain a file extension
-        if "." in self.version_file_name:
-            raise ValueError(
-                f"version_file_name '{self.version_file_name}' should not include a file extension."
-            )
-
         # Ensure database_file ends with .json
         if not self.database_file.endswith(".json"):
             raise ValueError(f"database_file '{self.database_file}' must end with '.json'.")
@@ -76,21 +70,24 @@ class BaseDatabaseManager(ABC):
         self.download_timestamp: Optional[str] = None
         self._database: Optional[Dict[str, Any]] = None
 
+        # Ensure the parent directory exists
+        path = self.database_version_file_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+
     @property
-    @abstractmethod
     def data_dir(self) -> Path:
         """Returns the base directory for storing database (.json) and version tracking (TOML) files."""
-        return ConfigManager().get_data_dir_path()
+        return ConfigManager().get_data_dir_path() / f"databases"
 
     @property
     def database_version_file_path(self) -> Path:
         """Path to the database version file (e.g., TOML file)."""
-        return self.data_dir / f"{self.config.version_file_name}.toml"
+        return self.data_dir / f"{self.config.database_dir}" / f"version_info.toml"
 
     @property
     def database_file_path(self) -> Path:
         """Path to the JSON database file."""
-        return self.data_dir / self.config.database_file
+        return self.data_dir / f"{self.config.database_dir}" / f"{self.config.database_file}"
 
     @property
     def database_info(self) -> Dict[str, Any]:
@@ -188,6 +185,10 @@ def _read_toml_file(file_path: str) -> Optional[Dict[str, Any]]:
         Optional[Dict[str, Any]]: The parsed TOML data, or None if the file does not exist.
     """
     try:
+        # path = Path(file_path)
+
+        # Ensure the parent directory exists
+        # path.parent.mkdir(parents=True, exist_ok=True)
         with open(file_path, "r") as f:
             return tomlkit.load(f)
     except FileNotFoundError:
@@ -204,6 +205,10 @@ def _write_toml_file(file_path: str, data: Dict[str, Any]) -> None:
         file_path (str): The path to the TOML file.
         data (Dict[str, Any]): The data to write to the file.
     """
+    # path = Path(file_path)
+
+    # Ensure the parent directory exists
+    # path.parent.mkdir(parents=True, exist_ok=True)
     with open(file_path, "w") as f:
         tomlkit.dump(data, f)
 
@@ -243,12 +248,12 @@ def load_db_version_metadata(version_file_path: str, database_key: str) -> Optio
     return db_metadata.get(database_key, {})
 
 
-def save_db_version_metadata(version_file_path: str, database_info: Dict[str, str]) -> None:
+def save_db_version_metadata(version_info: str, database_info: Dict[str, str]) -> None:
     """
     Save the metadata (source, hash, timestamp, and file) for a specific database to the specified TOML file.
 
     Args:
-        version_file_path (str): The path to the TOML file.
+        version_info (str): The path to the TOML file.
         database_info (Dict[str, str]): A dictionary containing the following keys:
             - "database_key": The key identifying the database (e.g., "retirejs").
             - "database_file": The file name of the database (e.g., "js_library_patterns_retirejs.json").
@@ -264,7 +269,7 @@ def save_db_version_metadata(version_file_path: str, database_info: Dict[str, st
         raise ValueError(f"database_info must contain the keys: {required_keys}")
 
     # Read the existing TOML file
-    db_metadata = _read_toml_file(version_file_path) or {}
+    db_metadata = _read_toml_file(version_info) or {}
 
     # Define the new data structure
     new_data = {
@@ -280,4 +285,4 @@ def save_db_version_metadata(version_file_path: str, database_info: Dict[str, st
     db_metadata.update(new_data)
 
     # Write the updated data back to the TOML file
-    _write_toml_file(version_file_path, db_metadata)
+    _write_toml_file(version_info, db_metadata)

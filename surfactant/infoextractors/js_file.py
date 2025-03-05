@@ -27,8 +27,8 @@ from surfactant.database_manager.database_utils import (
 from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
-DATABASE_URL = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
-
+DATABASE_URL_RETIRE_JS = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
+JS_DB_DIR = "js_library" # The directory name to store the database toml file and database json files for this module
 
 @surfactant.plugin.hookimpl
 def short_name() -> str:
@@ -39,22 +39,18 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
     """Manages the retirejs library database."""
 
     def __init__(self):
-        name = short_name()  # use 'name = __name__', if short_name is not implemented
+        name = short_name()  # Set to '__name__' (without quotation marks), if short_name is not implemented
 
         config = DatabaseConfig(
-            version_file_name="js_library_patterns",
-            database_key="retirejs",
-            database_file="js_library_patterns_retirejs.json",
-            source=DATABASE_URL,
+            database_dir=JS_DB_DIR,         # The directory name to store the database toml file and database json files for this module.
+            database_key="retirejs",        # The key for this classes database in the version_info toml file.
+            database_file="js_library_patterns_retirejs.json",  # The json file name for the database.
+            source=DATABASE_URL_RETIRE_JS,  # The source of the database (put "file" or the source url)
             plugin_name=name,
         )
 
         super().__init__(config)
 
-    @property
-    def data_dir(self) -> Path:
-        """Returns the base directory for storing JavaScript library database files."""
-        return super().data_dir / "js_library_patterns"
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw RetireJS database data into a structured format."""
@@ -154,7 +150,7 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 @surfactant.plugin.hookimpl
 def update_db() -> str:
     # Step 1: Download the raw database data
-    raw_data = download_database(DATABASE_URL)
+    raw_data = download_database(DATABASE_URL_RETIRE_JS)
     if not raw_data:
         return "No update occurred. Failed to download database."
 
@@ -183,7 +179,7 @@ def update_db() -> str:
     # Step 6: Save the cleaned database to disk
     path = js_db_manager.data_dir
     path.mkdir(parents=True, exist_ok=True)
-    json_file_path = path / js_db_manager.config.database_file
+    json_file_path = js_db_manager.database_file_path
     with open(json_file_path, "w") as f:
         json.dump(cleaned_data, f, indent=4)
 
