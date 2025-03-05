@@ -9,7 +9,6 @@
 import json
 import re
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # from pluggy import get_plugin_manager, get_plugin
@@ -28,7 +27,8 @@ from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
 DATABASE_URL_RETIRE_JS = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
-JS_DB_DIR = "js_library" # The directory name to store the database toml file and database json files for this module
+JS_DB_DIR = "js_library"  # The directory name to store the database toml file and database json files for this module
+
 
 @surfactant.plugin.hookimpl
 def short_name() -> str:
@@ -39,18 +39,19 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
     """Manages the retirejs library database."""
 
     def __init__(self):
-        name = short_name()  # Set to '__name__' (without quotation marks), if short_name is not implemented
+        name = (
+            short_name()
+        )  # Set to '__name__' (without quotation marks), if short_name is not implemented
 
         config = DatabaseConfig(
-            database_dir=JS_DB_DIR,         # The directory name to store the database toml file and database json files for this module.
-            database_key="retirejs",        # The key for this classes database in the version_info toml file.
+            database_dir=JS_DB_DIR,  # The directory name to store the database toml file and database json files for this module.
+            database_key="retirejs",  # The key for this classes database in the version_info toml file.
             database_file="js_library_patterns_retirejs.json",  # The json file name for the database.
             source=DATABASE_URL_RETIRE_JS,  # The source of the database (put "file" or the source url)
             plugin_name=name,
         )
 
         super().__init__(config)
-
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw RetireJS database data into a structured format."""

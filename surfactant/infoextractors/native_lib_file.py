@@ -10,7 +10,6 @@ import json
 import os
 import re
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
@@ -28,7 +27,8 @@ from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
 DATABASE_URL_EMBA = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
-NATIVE_DB_DIR = "native_library" # The directory name to store the database toml file and database json files for this module
+NATIVE_DB_DIR = "native_library"  # The directory name to store the database toml file and database json files for this module
+
 
 @surfactant.plugin.hookimpl
 def short_name() -> Optional[str]:
@@ -39,18 +39,19 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
     """Manages the EMBA Native Library database."""
 
     def __init__(self):
-        name = short_name()  # Set to '__name__' (without quotation marks), if short_name is not implemented
+        name = (
+            short_name()
+        )  # Set to '__name__' (without quotation marks), if short_name is not implemented
 
         config = DatabaseConfig(
-            database_dir=NATIVE_DB_DIR, # The directory name to store the database toml file and database json files for this module.
-            database_key="emba",        # The key for this classes database in the version_info toml file.
+            database_dir=NATIVE_DB_DIR,  # The directory name to store the database toml file and database json files for this module.
+            database_key="emba",  # The key for this classes database in the version_info toml file.
             database_file="native_lib_patterns_emba.json",  # The json file name for the database.
-            source=DATABASE_URL_EMBA,   # The source of the database (put "file" or the source url)
+            source=DATABASE_URL_EMBA,  # The source of the database (put "file" or the source url)
             plugin_name=name,
         )
 
         super().__init__(config)
-
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw EMBA configuration file into a structured database."""

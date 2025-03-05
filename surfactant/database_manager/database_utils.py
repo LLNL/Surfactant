@@ -77,12 +77,12 @@ class BaseDatabaseManager(ABC):
     @property
     def data_dir(self) -> Path:
         """Returns the base directory for storing database (.json) and version tracking (TOML) files."""
-        return ConfigManager().get_data_dir_path() / f"databases"
+        return ConfigManager().get_data_dir_path() / "databases"
 
     @property
     def database_version_file_path(self) -> Path:
         """Path to the database version file (e.g., TOML file)."""
-        return self.data_dir / f"{self.config.database_dir}" / f"version_info.toml"
+        return self.data_dir / f"{self.config.database_dir}" / "version_info.toml"
 
     @property
     def database_file_path(self) -> Path:
