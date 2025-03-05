@@ -83,6 +83,7 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
 
 native_lib_manager = EmbaNativeLibDatabaseManager()
 
+
 def supports_file(filetype: str) -> bool:
     return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
 
@@ -91,7 +92,6 @@ def supports_file(filetype: str) -> bool:
 def extract_file_info(
     sbom: SBOM, software: Software, filename: str, filetype: str
 ) -> Optional[Dict[str, Any]]:
-
     if not supports_file(filetype):
         return None
     return extract_native_lib_info(filename)

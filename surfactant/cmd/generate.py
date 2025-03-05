@@ -40,7 +40,7 @@ def get_software_entry(
     install_path=None,
     user_institution_name="",
     omit_unrecognized_types=False,
-    skip_extraction=False
+    skip_extraction=False,
 ) -> Tuple[Software, List[Software]]:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path is not None and install_path is not None:
@@ -56,15 +56,19 @@ def get_software_entry(
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
-    extracted_info_results: List[object] = pluginmanager.hook.extract_file_info(
-        sbom=parent_sbom,
-        software=sw_entry,
-        filename=filepath,
-        filetype=filetype,
-        context=context,
-        children=sw_children,
-        omit_unrecognized_types=omit_unrecognized_types,
-    ) if not skip_extraction else []
+    extracted_info_results: List[object] = (
+        pluginmanager.hook.extract_file_info(
+            sbom=parent_sbom,
+            software=sw_entry,
+            filename=filepath,
+            filetype=filetype,
+            context=context,
+            children=sw_children,
+            omit_unrecognized_types=omit_unrecognized_types,
+        )
+        if not skip_extraction
+        else []
+    )
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
         # None as details doesn't add any useful info...
@@ -312,7 +316,7 @@ def sbom(
                     new_sbom,
                     entry.archive,
                     user_institution_name=recorded_institution,
-                    skip_extraction=entry.skipProcessingArchive
+                    skip_extraction=entry.skipProcessingArchive,
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
                 if (

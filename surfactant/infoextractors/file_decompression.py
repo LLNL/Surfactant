@@ -6,78 +6,67 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import json
+import atexit
 import os
-import re
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+import shutil
+import tarfile
+import tempfile
+import zipfile
 from queue import Queue
-from tempfile import TemporaryDirectory
+from typing import Any, Dict, Optional
 
 from loguru import logger
 
-import tarfile
-import zipfile
-import tempfile
-import shutil
-
 import surfactant.plugin
-from surfactant.sbomtypes import SBOM, Software
 from surfactant import ContextEntry
+from surfactant.sbomtypes import SBOM, Software
 
-def is_compressed(filename):
-    # Map file extensions to their compression formats
-    compression_formats = {
-        '.zip': 'zip',
-        '.tar': 'tar',
-        '.tar.gz': 'tar.gz',
-        '.tar.bz2': 'tar.bz2',
-        '.tar.xz': 'tar.xz',
-    }
-    for ext, fmt in compression_formats.items():
-        if filename.endswith(ext):
-            return fmt
+# Global list to track temp dirs
+GLOBAL_TEMP_DIRS_LIST = []
+
+
+def supports_file(filetype: str) -> str:
+    if filetype in ("TAR", "GZIP", "ZIP", "TAR BZIP2", "TAR XZ"):
+        return filetype
     return None
+
 
 @surfactant.plugin.hookimpl
 def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str, context: Queue[ContextEntry]
+    sbom: SBOM, software: Software, filename: str, filetype: str, context: "Queue[ContextEntry]"
 ) -> Optional[Dict[str, Any]]:
-
     # Check if the file is compressed and get its format
-    compression_format = is_compressed(filename)
+    compression_format = supports_file(filetype)
     if not compression_format:
         return None
-    
+
     # Decompress the file based on its format
     temp_folder = check_compression_type(filename, compression_format)
 
     # Add a new ContextEntry for the temp dir
     new_entry = ContextEntry(
-        archive = filename,
-        installPrefix = "",
-        extractPaths=[temp_folder],
-        skipProcessingArchive=True
+        archive=filename, installPrefix="", extractPaths=[temp_folder], skipProcessingArchive=True
     )
 
     # Add new ContextEntry to queue
     context.put(new_entry)
     logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
+
     return None
-    
+
+
 def check_compression_type(filename: str, compression_format: str) -> str:
     temp_folder = None
 
-    if compression_format == 'zip':
+    if compression_format == "ZIP":
         temp_folder = decompress_zip_file(filename)
-    elif compression_format == 'tar':
+    elif compression_format == "TAR":
         temp_folder = extract_tar_file(filename)
-    elif compression_format in {'tar.gz', 'tar.bz2', 'tar.xz'}:
+    elif compression_format in {"GZIP", "TAR BZIP2", "TAR XZ"}:
         tar_modes = {
-            'tar.gz': 'r:gz',
-            'tar.bz2': 'r:bz2',
-            'tar.xz': 'r:xz',
+            "GZIP": "r:gz",
+            "TAR BZIP2": "r:bz2",
+            "TAR XZ": "r:xz",
         }
         temp_folder = decompress_tar_file(filename, tar_modes[compression_format])
     else:
@@ -85,17 +74,23 @@ def check_compression_type(filename: str, compression_format: str) -> str:
 
     return temp_folder
 
+
 def create_temp_dir():
     # Create a temporary directory
-    temp_dir = tempfile.mkdtemp(prefix='surfactant-temp')
+    temp_dir = tempfile.mkdtemp(prefix="surfactant-temp")
+
+    # Add to global list of temp dirs to facilitate easier clean up at the end
+    GLOBAL_TEMP_DIRS_LIST.append(temp_dir)
     return temp_dir
+
 
 def decompress_zip_file(filename):
     temp_folder = create_temp_dir()
-    with zipfile.ZipFile(filename, 'r') as f:
+    with zipfile.ZipFile(filename, "r") as f:
         f.extractall(path=temp_folder)
     return temp_folder
-    
+
+
 def decompress_tar_file(filename, compression_type):
     temp_folder = create_temp_dir()
     with tarfile.open(filename, compression_type) as tar:
@@ -103,15 +98,26 @@ def decompress_tar_file(filename, compression_type):
         logger.info("Finished TAR file decompression")
     return temp_folder
 
+
 def extract_tar_file(filename):
     temp_dir = create_temp_dir()
     try:
-        with tarfile.open(filename, 'r') as tar:
-            tar.extractall(path=temp_dir)     
+        with tarfile.open(filename, "r") as tar:
+            tar.extractall(path=temp_dir)
     except FileNotFoundError:
-        print(f"File not found: {filename}")
+        logger.error(f"File not found: {filename}")
     except tarfile.TarError as e:
-        print(f"Error extracting tar file: {e}")
+        logger.error(f"Error extracting tar file: {e}")
 
     return temp_dir
 
+
+def delete_temp_dirs():
+    for temp_dir in GLOBAL_TEMP_DIRS_LIST:
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+            logger.info(f"Cleaned up temporary directory: {temp_dir}")
+
+
+# Register exit handler
+atexit.register(delete_temp_dirs)
