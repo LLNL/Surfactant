@@ -44,10 +44,10 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
         )  # Set to '__name__' (without quotation marks), if short_name is not implemented
 
         config = DatabaseConfig(
-            database_dir=JS_DB_DIR,             # The directory name to store the database toml file and database json files for this module.
-            database_key="retirejs",            # The key for this classes database in the version_info toml file.
-            database_file="retirejs_db.json",   # The json file name for the database.
-            source=DATABASE_URL_RETIRE_JS,      # The source of the database (put "file" or the source url)
+            database_dir=JS_DB_DIR,  # The directory name to store the database toml file and database json files for this module.
+            database_key="retirejs",  # The key for this classes database in the version_info toml file.
+            database_file="retirejs_db.json",  # The json file name for the database.
+            source=DATABASE_URL_RETIRE_JS,  # The source of the database (put "file" or the source url)
             plugin_name=name,
         )
 

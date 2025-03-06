@@ -44,15 +44,14 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
         )  # Set to '__name__' (without quotation marks), if short_name is not implemented
 
         config = DatabaseConfig(
-            database_dir=NATIVE_DB_DIR,     # The directory name to store the database toml file and database json files for this module.
-            database_key="emba",            # The key for this classes database in the version_info toml file.
-            database_file="emba_db.json",   # The json file name for the database.
-            source=DATABASE_URL_EMBA,       # The source of the database (put "file" or the source url)
+            database_dir=NATIVE_DB_DIR,  # The directory name to store the database toml file and database json files for this module.
+            database_key="emba",  # The key for this classes database in the version_info toml file.
+            database_file="emba_db.json",  # The json file name for the database.
+            source=DATABASE_URL_EMBA,  # The source of the database (put "file" or the source url)
             plugin_name=name,
         )
 
         super().__init__(config)
-
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw EMBA configuration file into a structured database."""
