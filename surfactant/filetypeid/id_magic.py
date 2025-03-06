@@ -105,6 +105,11 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 if is_docker_archive(filepath):
                     return "DOCKER_GZIP"
                 return "GZIP"
+            # Check for compressed TAR files (tar.bz2, tar.xz)
+            if magic_bytes[:3] == b"BZh":
+                return "BZIP2"
+            if magic_bytes[:6] == b"\xfd\x37\x7a\x58\x5a\x00":
+                return "XZ"
             if magic_bytes[257:265] == b"ustar\x0000" or magic_bytes[257:265] == b"ustar  \x00":
                 if is_docker_archive(filepath):
                     return "DOCKER_TAR"
@@ -202,11 +207,6 @@ def identify_file_type(filepath: str) -> Optional[str]:
                     if (cmf * 256 + flg) % 31 == 0:
                         return "ZLIB"
 
-            # Check for compressed TAR files
-            if magic_bytes[:3] == b"BZh":
-                return "TAR BZIP2"
-            if magic_bytes[:6] == b"\xfd\x37\x7a\x58\x5a\x00":
-                return "TAR XZ"
             return None
     except FileNotFoundError:
         return None

@@ -26,7 +26,7 @@ GLOBAL_TEMP_DIRS_LIST = []
 
 
 def supports_file(filetype: str) -> str:
-    if filetype in ("TAR", "GZIP", "ZIP", "TAR BZIP2", "TAR XZ"):
+    if filetype in ("TAR", "GZIP", "ZIP", "BZIP2", "XZ"):
         return filetype
     return None
 
@@ -62,11 +62,11 @@ def check_compression_type(filename: str, compression_format: str) -> str:
         temp_folder = decompress_zip_file(filename)
     elif compression_format == "TAR":
         temp_folder = extract_tar_file(filename)
-    elif compression_format in {"GZIP", "TAR BZIP2", "TAR XZ"}:
+    elif compression_format in {"GZIP", "BZIP2", "XZ"}:
         tar_modes = {
             "GZIP": "r:gz",
-            "TAR BZIP2": "r:bz2",
-            "TAR XZ": "r:xz",
+            "BZIP2": "r:bz2",
+            "XZ": "r:xz",
         }
         temp_folder = decompress_tar_file(filename, tar_modes[compression_format])
     else:
