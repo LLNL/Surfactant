@@ -14,3 +14,4 @@ class ContextEntry:
     omitUnrecognizedTypes: Optional[bool] = None
     includeFileExts: Optional[List[str]] = None
     excludeFileExts: Optional[List[str]] = None
+    skipProcessingArchive: Optional[bool] = False
