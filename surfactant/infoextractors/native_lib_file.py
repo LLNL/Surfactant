@@ -27,7 +27,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
 DATABASE_URL_EMBA = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
-NATIVE_DB_DIR = "native_library"  # The directory name to store the database toml file and database json files for this module
+NATIVE_DB_DIR = "native_library_patterns"  # The directory name to store the database toml file and database json files for this module
 
 
 @surfactant.plugin.hookimpl
@@ -44,14 +44,15 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
         )  # Set to '__name__' (without quotation marks), if short_name is not implemented
 
         config = DatabaseConfig(
-            database_dir=NATIVE_DB_DIR,  # The directory name to store the database toml file and database json files for this module.
-            database_key="emba",  # The key for this classes database in the version_info toml file.
-            database_file="native_lib_patterns_emba.json",  # The json file name for the database.
-            source=DATABASE_URL_EMBA,  # The source of the database (put "file" or the source url)
+            database_dir=NATIVE_DB_DIR,     # The directory name to store the database toml file and database json files for this module.
+            database_key="emba",            # The key for this classes database in the version_info toml file.
+            database_file="emba_db.json",   # The json file name for the database.
+            source=DATABASE_URL_EMBA,       # The source of the database (put "file" or the source url)
             plugin_name=name,
         )
 
         super().__init__(config)
+
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw EMBA configuration file into a structured database."""
@@ -245,6 +246,8 @@ def update_db() -> str:
                     filecontent_list[i] = pattern[:-1]
 
     # Step 7: Save the cleaned database to disk
+    path = native_lib_manager.data_dir
+    path.mkdir(parents=True, exist_ok=True)
     native_lib_file = native_lib_manager.database_file_path
     with open(native_lib_file, "w") as json_file:
         json.dump(parsed_data, json_file, indent=4)
