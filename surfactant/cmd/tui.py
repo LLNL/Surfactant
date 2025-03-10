@@ -16,9 +16,31 @@ import textual.screen
 import textual.types
 import textual.widgets
 import textual.widgets.button
+import json
 
 import surfactant.cmd.generate
 import surfactant.cmd.merge
+
+
+class YesNoScreen(textual.screen.Screen[bool]):
+    """Screen that presents a yes/no question"""
+
+    def __init__(self, question: str) -> None:
+        self.question = question
+        super().__init__()
+
+    def compose(self) -> textual.app.ComposeResult:
+        yield textual.widgets.Label(self.question)
+        yield textual.widgets.Button("Yes", id="yes", variant="success")
+        yield textual.widgets.Button("No", id="no")
+
+    @textual.on(textual.widgets.Button.Pressed, "#yes")
+    def handle_yes(self) -> None:
+        self.dismiss(True)
+
+    @textual.on(textual.widgets.Button.Pressed, "#no")
+    def handle_no(self) -> None:
+        self.dismiss(False)
 
 
 class SelectFileButtons(textual.widgets.Static):
@@ -80,7 +102,7 @@ class FileInput(textual.widgets.Static):
 
     def compose(self) -> textual.app.ComposeResult:
         if len(self.input_path) == 0:
-            yield textual.widgets.Label(f"{self.label} [Click to set]")
+            yield textual.widgets.Label(f"{self.label} \\[Click to set]")
         else:
             yield textual.widgets.Label(f"{self.label} {self.input_path}")
 
@@ -96,7 +118,9 @@ class FileInput(textual.widgets.Static):
                     self.input_path = path
                 self.query_one(textual.widgets.Label).update(f"{self.label} {self.input_path}")
 
-        base_dir = "./" if len(self.input_path) == 0 else self.input_path
+        base_dir = "./"
+        if os.path.isfile(self.input_path):
+            base_dir = os.path.dirname(self.input_path)
         self.app.push_screen(
             SelectFile(self.allow_folder_selection, base_dir), set_path
         )
@@ -180,10 +204,10 @@ class GenerateTab(textual.widgets.Static):
         self.app.refresh()
 
 
-class MergePath(textual.widgets.Static):
-    def __init__(self):
+class InputPath(textual.widgets.Static):
+    def __init__(self, desc="Input file:"):
         super().__init__()
-        self.path_selector = FileInput("Input file:", False, None)
+        self.path_selector = FileInput(desc, False, None)
         self.active = True
 
     def compose(self) -> textual.app.ComposeResult:
@@ -197,27 +221,32 @@ class MergePath(textual.widgets.Static):
         self.remove()
 
 
-class MergePathsHolder(textual.widgets.Static):
-    def __init__(self):
+class InputPathsHolder(textual.widgets.Static):
+    def __init__(self, prompt="Input file:"):
         super().__init__()
-        self.merge_paths = []
+        self.input_paths: list[InputPath] = []
+        self.prompt = prompt
 
     def compose(self) -> textual.app.ComposeResult:
-        yield textual.widgets.Button("+", id="add_merge_path")
-        for m_path in self.merge_paths:
+        yield textual.widgets.Button("+", id="add_input_path")
+        for m_path in self.input_paths:
             if m_path.active:
                 yield m_path
 
-    @textual.on(textual.widgets.Button.Pressed, "#add_merge_path")
-    def add_merge_path(self):
-        self.merge_paths.append(MergePath())
-        self.mount(self.merge_paths[-1], before="#add_merge_path")
+    @textual.on(textual.widgets.Button.Pressed, "#add_input_path")
+    def add_input_path(self):
+        self.input_paths.append(InputPath(self.prompt))
+        self.mount(self.input_paths[-1], before="#add_input_path")
+
+    def add_path(self, path: str):
+        self.input_paths.append(InputPath(self.prompt))
+        self.input_paths[-1].path_selector.input_path = path
 
 
 class MergeTab(textual.widgets.Static):
     def __init__(self):
         super().__init__()
-        self.merge_paths = MergePathsHolder()
+        self.merge_paths = InputPathsHolder()
         self.output_name = textual.widgets.Input(placeholder="Output Filename")
         self.output_dir = FileInput("Output directory:", True, self.output_name)
         self.input_format = textual.widgets.Select(
@@ -281,6 +310,123 @@ class MergeTab(textual.widgets.Static):
         self.app.refresh()
 
 
+class ConfigEntry(textual.widgets.Static):
+    def __init__(self, header_num):
+        super().__init__()
+        self.active = True
+        self.border_title = str(header_num)
+        self.archive = FileInput("Archive:", False, None)
+        self.install_prefix = textual.widgets.Input(placeholder="Install Prefix")
+        self.extract_paths = InputPathsHolder("[Click to set extract path]")
+
+    def compose(self) -> textual.app.ComposeResult:
+        yield textual.widgets.Button("Delete this entry", id="delete_entry")
+        yield self.archive
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Install Prefix: "),
+            self.install_prefix
+        )
+        yield textual.widgets.Label("Extract Paths:")
+        yield self.extract_paths
+
+    @textual.on(textual.widgets.Button.Pressed, "#delete_entry")
+    def delete_entry(self):
+        def delete_self(do_it: Optional[bool]):
+            if do_it:
+                self.remove()
+                self.active = False
+
+        self.app.push_screen(
+            YesNoScreen("Are you sure you want to delete this entry?"), delete_self
+        )
+
+
+class ConfigTab(textual.widgets.Static):
+    def __init__(self):
+        super().__init__()
+        self.config_name = textual.widgets.Input(placeholder="Config filename")
+        self.config_input = FileInput("Config directory:", False, self.config_name)
+        self.config_entries: list[ConfigEntry] = []
+        self.config_number = 1
+
+    def compose(self) -> textual.app.ComposeResult:
+        yield self.config_input
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Config filename: "), self.config_name
+        )
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Button("Save", id="save"),
+            textual.widgets.Label("   "),
+            textual.widgets.Button("Load", id="load")
+        )
+        yield textual.widgets.Rule()
+        for entry in self.config_entries:
+            yield entry
+        yield textual.widgets.Button("+", id="add_config_entry")
+
+    @textual.on(textual.widgets.Button.Pressed, "#add_config_entry")
+    def add_config_entry(self):
+        self.config_entries.append(ConfigEntry(self.config_number))
+        self.mount(self.config_entries[-1], before="#add_config_entry")
+        self.config_number += 1
+
+    @textual.on(textual.widgets.Button.Pressed, "#save")
+    def save(self):
+        to_save = []
+        for entry in self.config_entries:
+            to_save.append({})
+            write_to = to_save[-1]
+            archive = entry.archive.input_path
+            if len(archive) > 0:
+                write_to["archive"] = archive
+            install_prefix = entry.install_prefix.value
+            if len(install_prefix) > 0:
+                write_to["install_prefix"] = install_prefix
+            write_to["extractPaths"] = []
+            for path in entry.extract_paths.input_paths:
+                if path.active:
+                    write_to["extractPaths"].append(path.path_selector.input_path)
+        file_to_save = self.config_input.input_path + '/' + self.config_name.value
+        try:
+            with open(file_to_save, "w") as f:
+                f.write(json.dumps(to_save, indent=2))
+        except IsADirectoryError:
+            self.app.notify(f"Could not write to {file_to_save}")
+            return
+        self.app.notify(f"Wrote config to {file_to_save}")
+
+    @textual.on(textual.widgets.Button.Pressed, "#load")
+    def load(self):
+        file_to_load = self.config_input.input_path + '/' + self.config_name.value
+        try:
+            with open(file_to_load, "r") as config_file:
+                js = json.load(config_file)
+        except (FileNotFoundError, IsADirectoryError):
+            self.app.notify(f"Could not find file {file_to_load}")
+            return
+        except json.JSONDecodeError:
+            self.app.notify(f"Error when parsing JSON in {file_to_load}")
+            return
+        # Delete all other entries
+        for ce in self.config_entries:
+            ce.remove()
+        self.config_entries = []
+        self.config_number = 1
+        for entry in js:
+            self.config_entries.append(ConfigEntry(self.config_number))
+            self.config_number += 1
+            cur_entry = self.config_entries[-1]
+            if "archive" in entry:
+                cur_entry.archive.input_path = entry["archive"]
+            if "extractPaths" in entry:
+                for ep in entry["extractPaths"]:
+                    cur_entry.extract_paths.add_path(ep)
+            if "installPrefix" in entry:
+                cur_entry.install_prefix.value = entry["installPrefix"]
+        for entry in self.config_entries:
+            self.mount(entry, before="#add_config_entry")
+
+
 # TODO: Rewrite to use ContentSwitcher?
 class TUI(textual.app.App):
     """An app for running Surfactant commands"""
@@ -296,19 +442,20 @@ class TUI(textual.app.App):
         super().__init__()
         self.generate_tab = GenerateTab()
         self.merge_tab = MergeTab()
+        self.config_tab = ConfigTab()
 
     def compose(self) -> textual.app.ComposeResult:
         yield textual.widgets.Header()
         yield textual.widgets.Footer()
         Tab = textual.widgets.Tab
-        yield textual.widgets.Tabs(Tab("Generate", id="Generate"), Tab("Merge", id="Merge"))
+        yield textual.widgets.Tabs(Tab("Generate", id="Generate"), Tab("Merge", id="Merge"), Tab("Config", id="Config"))
         yield textual.containers.ScrollableContainer(id="MainContainer")
 
     def on_mount(self) -> None:
         self.query_one(textual.widgets.Tabs).focus()
 
     def on_tabs_tab_activated(self, event: textual.widgets.Tabs.TabActivated) -> None:
-        TABS = (("Generate", self.generate_tab), ("Merge", self.merge_tab))
+        TABS = (("Generate", self.generate_tab), ("Merge", self.merge_tab), ("Config", self.config_tab))
         main_container = self.get_child_by_id(
             "MainContainer", textual.containers.ScrollableContainer
         )
