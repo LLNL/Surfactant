@@ -15,72 +15,73 @@ from typing import Any, Dict, List, Optional, Union
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.database_utils import (
+    BaseDatabaseManager,
+    DatabaseConfig,
     calculate_hash,
     download_database,
-    load_hash_and_timestamp,
-    save_hash_and_timestamp,
+    load_db_version_metadata,
+    save_db_version_metadata,
 )
 from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
-DATABASE_URL = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
+DATABASE_URL_EMBA = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
+NATIVE_DB_DIR = "native_library_patterns"  # The directory name to store the database toml file and database json files for this module
 
 
-class NativeLibDatabaseManager:
-    def __init__(self) -> None:
-        self._native_lib_database: Optional[Dict[str, Any]] = None
-        self.database_version_file_path = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "native_lib_patterns"
-            / "native_lib_patterns.toml"
-        )
-        self.pattern_key = "native_lib_patterns"
-        self.pattern_file = "native_lib_patterns.json"
-        self.source = "nativefile.emba"
-        self.new_hash: Optional[str] = None
-        self.download_timestamp: Optional[datetime] = None
+@surfactant.plugin.hookimpl
+def short_name() -> Optional[str]:
+    return "native_lib_file"
 
-    @property
-    def native_lib_database(self) -> Optional[Dict[str, Any]]:
-        if self._native_lib_database is None:
-            self.load_db()
-        return self._native_lib_database
 
-    @property
-    def pattern_info(self) -> Dict[str, Any]:
-        return {
-            "pattern_key": self.pattern_key,
-            "pattern_file": self.pattern_file,
-            "source": self.source,
-            "hash_value": self.new_hash,
-            "timestamp": self.download_timestamp,
-        }
+class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
+    """Manages the EMBA Native Library database."""
 
-    def load_db(self) -> None:
-        native_lib_file = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "native_lib_patterns"
-            / self.pattern_file
+    def __init__(self):
+        name = (
+            short_name()
+        )  # Set to '__name__' (without quotation marks), if short_name is not implemented
+
+        config = DatabaseConfig(
+            database_dir=NATIVE_DB_DIR,  # The directory name to store the database toml file and database json files for this module.
+            database_key="emba",  # The key for this classes database in the version_info toml file.
+            database_file="emba_db.json",  # The json file name for the database.
+            source=DATABASE_URL_EMBA,  # The source of the database (put "file" or the source url)
+            plugin_name=name,
         )
 
-        try:
-            with open(native_lib_file, "r") as regex:
-                self._native_lib_database = json.load(regex)
-        except FileNotFoundError:
-            logger.warning(
-                "Native library pattern could not be loaded. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database."
-            )
-            self._native_lib_database = None
+        super().__init__(config)
 
-    def get_database(self) -> Optional[Dict[str, Any]]:
-        return self._native_lib_database
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
+        """Parses raw EMBA configuration file into a structured database."""
+        database = {}
+        lines = [
+            line.strip()
+            for line in raw_data.splitlines()
+            if line.strip() and not line.startswith("#")
+        ]
+
+        for line in lines:
+            fields = line.split(";")
+            if len(fields) < 4:
+                logger.warning(f"Skipping malformed line: {line}")
+                continue
+
+            lib_name = fields[0]
+            filecontent = fields[3].strip('"')
+
+            try:
+                re.compile(filecontent.encode("utf-8"))  # Validate regex
+                database.setdefault(lib_name, {"filename": [], "filecontent": []})
+                database[lib_name]["filecontent"].append(filecontent)
+            except re.error as e:
+                logger.error(f"Invalid regex in file content: {filecontent}. Error: {e}")
+
+        return database
 
 
-native_lib_manager = NativeLibDatabaseManager()
+native_lib_manager = EmbaNativeLibDatabaseManager()
 
 
 def supports_file(filetype: str) -> bool:
@@ -210,46 +211,54 @@ def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
-    file_content = download_database(DATABASE_URL)
-    if file_content is not None:
-        native_lib_manager.new_hash = calculate_hash(file_content)
-        current_data = load_hash_and_timestamp(
-            native_lib_manager.database_version_file_path,
-            native_lib_manager.pattern_key,
-            native_lib_manager.pattern_file,
-        )
-        if current_data and native_lib_manager.new_hash == current_data.get("hash"):
-            return "No update occurred. Database is up-to-date."
+    # Step 1: Download the raw database content
+    file_content = download_database(DATABASE_URL_EMBA)
+    if not file_content:
+        return "No update occurred. Failed to download database."
 
-        parsed_data = parse_emba_cfg_file(file_content)
-        for _, value in parsed_data.items():
-            filecontent_list = value["filecontent"]
+    # Step 2: Calculate the hash of the downloaded content
+    new_hash = calculate_hash(file_content)
 
-            for i, pattern in enumerate(filecontent_list):
-                if pattern.startswith("^"):
-                    filecontent_list[i] = pattern[1:]
+    # Step 3: Load the current database metadata (source, hash and timestamp)
+    current_data = load_db_version_metadata(
+        native_lib_manager.database_version_file_path,
+        native_lib_manager.config.database_key,
+    )
 
-                if not pattern.endswith("\\$"):
-                    if pattern.endswith("$"):
-                        filecontent_list[i] = pattern[:-1]
+    # Step 4: Check if the database is already up-to-date
+    if current_data and new_hash == current_data.get("hash"):
+        return "No update occurred. Database is up-to-date."
 
-        path = ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns"
-        path.mkdir(parents=True, exist_ok=True)
-        native_lib_file = path / native_lib_manager.pattern_file
-        with open(native_lib_file, "w") as json_file:
-            json.dump(parsed_data, json_file, indent=4)
+    # Step 5: Parse the raw database content
+    parsed_data = parse_emba_cfg_file(file_content)
 
-        native_lib_manager.download_timestamp = datetime.now(timezone.utc)
-        save_hash_and_timestamp(
-            native_lib_manager.database_version_file_path, native_lib_manager.pattern_info
-        )
-        return "Update complete."
-    return "No update occurred."
+    # Step 6: Clean the parsed data
+    for _, value in parsed_data.items():
+        filecontent_list = value["filecontent"]
 
+        for i, pattern in enumerate(filecontent_list):
+            if pattern.startswith("^"):
+                filecontent_list[i] = pattern[1:]
 
-@surfactant.plugin.hookimpl
-def short_name() -> Optional[str]:
-    return "native_lib_patterns"
+            if not pattern.endswith("\\$"):
+                if pattern.endswith("$"):
+                    filecontent_list[i] = pattern[:-1]
+
+    # Step 7: Save the cleaned database to disk
+    path = native_lib_manager.data_dir
+    path.mkdir(parents=True, exist_ok=True)
+    native_lib_file = native_lib_manager.database_file_path
+    with open(native_lib_file, "w") as json_file:
+        json.dump(parsed_data, json_file, indent=4)
+
+    # Step 8: Update the hash and timestamp metadata
+    native_lib_manager.new_hash = new_hash
+    native_lib_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
+    save_db_version_metadata(
+        native_lib_manager.database_version_file_path, native_lib_manager.database_info
+    )
+
+    return "Update complete."
 
 
 @surfactant.plugin.hookimpl

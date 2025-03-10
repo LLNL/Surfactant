@@ -11,75 +11,68 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+# from pluggy import get_plugin_manager, get_plugin
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.database_utils import (
+    BaseDatabaseManager,
+    DatabaseConfig,
     calculate_hash,
     download_database,
-    load_hash_and_timestamp,
-    save_hash_and_timestamp,
+    load_db_version_metadata,
+    save_db_version_metadata,
 )
 from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
-DATABASE_URL = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
+DATABASE_URL_RETIRE_JS = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
+JS_DB_DIR = "js_library_patterns"  # The directory name to store the database toml file and database json files for this module
 
 
-class JSDatabaseManager:
+@surfactant.plugin.hookimpl
+def short_name() -> str:
+    return "js_file"
+
+
+class RetireJSDatabaseManager(BaseDatabaseManager):
+    """Manages the retirejs library database."""
+
     def __init__(self):
-        self._js_lib_database: Optional[Dict[str, Any]] = None  # Use the private attribute
-        self.database_version_file_path = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "js_library_patterns"
-            / "js_library_patterns.toml"
-        )
-        self.pattern_key = "js_library_patterns"
-        self.pattern_file = "js_library_patterns.json"
-        self.source = "jsfile.retirejs"
-        self.new_hash: Optional[str] = None
-        self.download_timestamp: Optional[datetime] = None
+        name = (
+            short_name()
+        )  # Set to '__name__' (without quotation marks), if short_name is not implemented
 
-    @property
-    def js_lib_database(self) -> Optional[Dict[str, Any]]:
-        if self._js_lib_database is None:
-            self.load_db()
-        return self._js_lib_database
-
-    @property
-    def pattern_info(self) -> Dict[str, Any]:
-        return {
-            "pattern_key": self.pattern_key,
-            "pattern_file": self.pattern_file,
-            "source": self.source,
-            "hash_value": self.new_hash,
-            "timestamp": self.download_timestamp,
-        }
-
-    def load_db(self) -> None:
-        js_lib_file = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "js_library_patterns"
-            / self.pattern_file
+        config = DatabaseConfig(
+            database_dir=JS_DB_DIR,  # The directory name to store the database toml file and database json files for this module.
+            database_key="retirejs",  # The key for this classes database in the version_info toml file.
+            database_file="retirejs_db.json",  # The json file name for the database.
+            source=DATABASE_URL_RETIRE_JS,  # The source of the database (put "file" or the source url)
+            plugin_name=name,
         )
 
-        try:
-            with open(js_lib_file, "r") as regex:
-                self._js_lib_database = json.load(regex)
-        except FileNotFoundError:
-            logger.warning(
-                "Javascript library pattern database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
-            )
-            self._js_lib_database = None
+        super().__init__(config)
 
-    def get_database(self) -> Optional[Dict[str, Any]]:
-        return self._js_lib_database
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
+        """Parses raw RetireJS database data into a structured format."""
+        retirejs_db = json.loads(raw_data)
+        clean_db = {}
+        reg_temp = "\u00a7\u00a7version\u00a7\u00a7"
+        version_regex = r"\d+(?:\.\d+)*"
+
+        for library, lib_entry in retirejs_db.items():
+            if "extractors" in lib_entry:
+                clean_db[library] = {}
+                for entry in ["filename", "filecontent", "hashes"]:
+                    if entry in lib_entry["extractors"]:
+                        clean_db[library][entry] = [
+                            reg.replace(reg_temp, version_regex)
+                            for reg in lib_entry["extractors"][entry]
+                        ]
+        return clean_db
 
 
-js_db_manager = JSDatabaseManager()
+js_db_manager = RetireJSDatabaseManager()
 
 
 def supports_file(filetype) -> bool:
@@ -157,37 +150,46 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
-    raw_data = download_database(DATABASE_URL)
-    if raw_data is not None:
-        js_db_manager.new_hash = calculate_hash(raw_data)
-        current_data = load_hash_and_timestamp(
-            js_db_manager.database_version_file_path,
-            js_db_manager.pattern_key,
-            js_db_manager.pattern_file,
-        )
-        if current_data and js_db_manager.new_hash == current_data.get("hash"):
-            return "No update occurred. Database is up-to-date."
+    # Step 1: Download the raw database data
+    raw_data = download_database(DATABASE_URL_RETIRE_JS)
+    if not raw_data:
+        return "No update occurred. Failed to download database."
 
+    # Step 2: Calculate the hash of the downloaded data
+    new_hash = calculate_hash(raw_data)
+
+    # Step 3: Load the current database metadata (source, hash and timestamp)
+    current_data = load_db_version_metadata(
+        js_db_manager.database_version_file_path,
+        js_db_manager.config.database_key,
+    )
+
+    # Step 4: Check if the database is already up-to-date
+    if current_data and new_hash == current_data.get("hash"):
+        return "No update occurred. Database is up-to-date."
+
+    # Step 5: Parse and clean the raw data
+    try:
         retirejs = json.loads(raw_data)
-        cleaned = strip_irrelevant_data(retirejs)
-        js_db_manager.download_timestamp = datetime.now(timezone.utc)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse downloaded database JSON: {e}")
+        return "No update occurred. Invalid database format."
 
-        path = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns"
-        path.mkdir(parents=True, exist_ok=True)
-        json_file_path = path / js_db_manager.pattern_file
-        with open(json_file_path, "w") as f:
-            json.dump(cleaned, f, indent=4)
+    cleaned_data = strip_irrelevant_data(retirejs)
 
-        save_hash_and_timestamp(
-            js_db_manager.database_version_file_path, js_db_manager.pattern_info
-        )
-        return "Update complete."
-    return "No update occurred."
+    # Step 6: Save the cleaned database to disk
+    path = js_db_manager.data_dir
+    path.mkdir(parents=True, exist_ok=True)
+    json_file_path = js_db_manager.database_file_path
+    with open(json_file_path, "w") as f:
+        json.dump(cleaned_data, f, indent=4)
 
+    # Step 7: Update the hash and timestamp metadata
+    js_db_manager.new_hash = new_hash
+    js_db_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
+    save_db_version_metadata(js_db_manager.database_version_file_path, js_db_manager.database_info)
 
-@surfactant.plugin.hookimpl
-def short_name() -> str:
-    return "js_file"
+    return "Update complete."
 
 
 @surfactant.plugin.hookimpl
