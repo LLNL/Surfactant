@@ -98,6 +98,26 @@ pip install -e ".[test,dev]"
 pip install -e plugins/fuzzyhashes
 ```
 
+## Quick Start: Generating an SBOM
+
+Surfactant supports several subcommands that can be shown using `surfactant --help`. The main one for creating an SBOM is the `generate` subcommand, which takes the following arguments:
+
+```bash
+surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
+```
+
+The two required arguments are a specimen configuration, and the output SBOM file name. For a simple case of generating an SBOM for a single directory or file, it is enough to just use the path to the directory or file for the specimen configuration. For example, the following command will generate an SBOM file called `output.json` with software entries for all files found in the folder `mysoftware`:
+
+```bash
+surfactant generate /usr/local/mysoftware output.json
+```
+
+In the generated SBOM, there will be software entries for each file. The install paths captured will say where individual files are located within `/usr/local/mysoftware` -- if instead a relative path had been given such as `surfactant generate local/mysoftware output.json`, all of the install paths for files would appear to be under the relative path `local/mysoftware` instead of an absolute path.
+
+For more control over the options used to create software entries and relationships, or for capturing information from multiple directories, see the following section on how to write a [Surfactant specimen config file](#build-configuration-file-for-sample). This configuration file is a JSON file can then be given to Surfactant for the `SPECIMEN_CONFIG` argument.
+
+NOTE: When using a Surfactant speciment configuration file, it is recommended that it end in a `.json` file extension; otherwise, you'll have to use a special prefix for the `SPECIMEN_CONFIG` argument to tell Surfactant that it should interpret the given file that doesn't end in `.json` as a specimen configuration file rather than to generate an SBOM that only contains details on that one file.
+
 ## Settings
 
 Surfactant settings can be changed using the `surfactant config` subcommand, or by hand editing the settings configuration file (this is not the same as the JSON file used to configure settings for a particular sample that is described later). The [settings documentation page](https://surfactant.readthedocs.io/en/latest/settings.html) has a list of available options that are built-into Surfactant.
@@ -151,9 +171,9 @@ A configuration file for a sample contains the information about the sample to g
 - **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file. Note that even on Windows, Unix style `/` directory separators should be used in paths.
 - **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in `extractPaths` were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various `extractPaths`.
 - **installPrefix**: (optional) where the files in `extractPaths` would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc. Note that even on Windows, Unix style `/` directory separators should be used in the path. If not given then the `extractPaths` will be used as the install paths.
-- **includeAllFiles**: (optional) If present and set to true, include all files in the SBOM, rather than only those recognized by Surfactant.
+- **omitUnrecognizedTypes**: (optional) Omit files with unrecognized types from the generated SBOM.
 - **includeFileExts**: (optional) A list of file extensions to include, even if not recognized by Surfactant.
-- **excludeFileExts**: (optional) A list of file extensions to exclude, even if recognized by Surfactant. Note that if both `includeAllFiles` and `excludeFileExts` are set, the specified extensions in `excludeFileExts` will still be excluded.
+- **excludeFileExts**: (optional) A list of file extensions to exclude, even if recognized by Surfactant. Note that if both `omitUnrecognizedTypes` and `includeFileExts` are set, the specified extensions in `includeFileExts` will still be included.
 
 #### Create config command
 
@@ -377,10 +397,10 @@ NOTE: These examples have been simplified to show differences in output based on
 ### Run surfactant
 
 ```bash
-$  surfactant generate [OPTIONS] CONFIG_FILE SBOM_OUTFILE [INPUT_SBOM]
+$  surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
 ```
 
-**CONFIG_FILE**: (required) the config file created earlier that contains the information on the sample\
+**SPECIMEN_CONFIG**: (required) the config file created earlier that contains the information on specimens to include in an SBOM, or the path to a specific file/directory to generate an SBOM for with some implied default configuration options\
 **SBOM OUTPUT**: (required) the desired name of the output file\
 **INPUT_SBOM**: (optional) a base sbom, should be used with care as relationships could be messed up when files are installed on different systems\
 **--skip_gather**: (optional) skips the gathering of information on files and adding software entires\

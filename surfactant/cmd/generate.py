@@ -2,7 +2,6 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import json
 import os
 import pathlib
 import queue
@@ -13,6 +12,7 @@ import click
 from loguru import logger
 
 from surfactant import ContextEntry
+from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
 from surfactant.configmanager import ConfigManager
 from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
@@ -39,7 +39,7 @@ def get_software_entry(
     root_path=None,
     install_path=None,
     user_institution_name="",
-    include_all_files=False,
+    omit_unrecognized_types=False,
 ) -> Tuple[Software, List[Software]]:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path is not None and install_path is not None:
@@ -62,7 +62,7 @@ def get_software_entry(
         filetype=filetype,
         context=context,
         children=sw_children,
-        include_all_files=include_all_files,
+        omit_unrecognized_types=omit_unrecognized_types,
     )
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
@@ -108,17 +108,6 @@ def get_software_entry(
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
     return (sw_entry, sw_children)
-
-
-def validate_config(config):
-    for line in config:
-        extract_path = line["extractPaths"]
-        for pth in extract_path:
-            extract_path_convert = pathlib.Path(pth)
-            if not extract_path_convert.exists():
-                logger.error("invalid path: " + str(pth))
-                return False
-    return True
 
 
 def print_output_formats(ctx, _, value):
@@ -194,9 +183,9 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 
 @click.command("generate")
 @click.argument(
-    "config_file",
-    envvar="CONFIG_FILE",
-    type=click.Path(exists=True),
+    "specimen_config",
+    envvar="SPECIMEN_CONFIG",
+    type=SpecimenConfigParamType(),
     required=True,
 )
 @click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
@@ -257,16 +246,16 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
     help="List supported input formats",
 )
 @click.option(
-    "--include_all_files",
+    "--omit_unrecognized_types",
     is_flag=True,
-    default=get_default_from_config("include_all_files", fallback=False),
+    default=get_default_from_config("omit_unrecognized_types", fallback=False),
     required=False,
-    help="Include all files in the SBOM, not just those recognized by Surfactant",
+    help="Omit files with unrecognized types from the generated SBOM.",
 )
 # Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
 # pylint: disable-next=too-many-positional-arguments
 def sbom(
-    config_file: str,
+    specimen_config: list,
     sbom_outfile: click.File,
     input_sbom: click.File,
     skip_gather: bool,
@@ -275,7 +264,7 @@ def sbom(
     recorded_institution: str,
     output_format: str,
     input_format: str,
-    include_all_files: bool,
+    omit_unrecognized_types: bool,
 ):
     """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
 
@@ -289,26 +278,9 @@ def sbom(
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
 
-    if pathlib.Path(config_file).is_file():
-        with click.open_file(config_file) as f:
-            try:
-                config = json.load(f)
-            except json.decoder.JSONDecodeError as err:
-                logger.exception(f"Invalid JSON in given config file ({config_file})")
-                raise SystemExit(f"Invalid JSON in given config file ({config_file})") from err
-            # TODO: what if it isn't a JSON config file, but a single file to generate an SBOM for? perhaps file == "archive"?
-    else:
-        # Emulate a configuration file with the path
-        config = []
-        config.append({"extractPaths": [config_file], "installPrefix": config_file})
-
-    # quit if invalid path found
-    if not validate_config(config):
-        return
-
     context: queue.Queue[ContextEntry] = queue.Queue()
 
-    for cfg_entry in config:
+    for cfg_entry in specimen_config:
         context.put(ContextEntry(**cfg_entry))
 
     # define the new_sbom variable type
@@ -492,10 +464,12 @@ def sbom(
                             if not entry.excludeFileExts:
                                 entry.excludeFileExts = []
                             if (
-                                ftype := pm.hook.identify_file_type(filepath=filepath)
-                                or include_all_files
-                                or os.path.splitext(filepath)[1].lower()
-                                in [ext.lower() for ext in entry.includeFileExts]
+                                (ftype := pm.hook.identify_file_type(filepath=filepath))
+                                or (not (omit_unrecognized_types or entry.omitUnrecognizedTypes))
+                                or (
+                                    os.path.splitext(filepath)[1].lower()
+                                    in [ext.lower() for ext in entry.includeFileExts]
+                                )
                             ) and os.path.splitext(filepath)[1].lower() not in [
                                 ext.lower() for ext in entry.excludeFileExts
                             ]:
@@ -510,8 +484,8 @@ def sbom(
                                         container_uuid=parent_uuid,
                                         install_path=install_prefix,
                                         user_institution_name=recorded_institution,
-                                        include_all_files=include_all_files
-                                        or entry.includeAllFiles,
+                                        omit_unrecognized_types=omit_unrecognized_types
+                                        or entry.omitUnrecognizedTypes,
                                     )
                                 except Exception as e:
                                     raise RuntimeError(f"Unable to process: {filepath}") from e
