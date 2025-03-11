@@ -92,6 +92,23 @@ def set_blocked_plugins(pm: pluggy.PluginManager) -> None:
         pm.set_blocked(plugin_name)
 
 
+def is_plugin_blocked(pm: pluggy.PluginManager, plugin_name: str) -> bool:
+    """
+    Check if a plugin is blocked in the plugin manager.
+
+    Args:
+        pm (pluggy.PluginManager): The plugin manager instance.
+        plugin_name (str): The name of the plugin to check.
+
+    Returns:
+        bool: True if the plugin is blocked, False otherwise.
+    """
+    if pm.is_blocked(plugin_name):
+        logger.warning(f"The plugin '{plugin_name}' is blocked.")
+        return True
+    return False
+
+
 def get_plugin_manager() -> pluggy.PluginManager:
     pm = pluggy.PluginManager("surfactant")
     pm.add_hookspecs(hookspecs)
