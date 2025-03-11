@@ -12,12 +12,9 @@ from loguru import logger
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
-# Configure loguru to show logs at DEBUG level or higher
-import sys
-logger.remove()  # Remove the default logger configuration
-logger.add(sys.stdout, level="DEBUG")  # Add a new logger that outputs to console
+from surfactant.plugin.manager import get_plugin_manager, is_plugin_blocked  # Import the helper function
 
-print("GRYPE:", __name__)
+
 def check_if_grype_installed() -> bool:
     try:
         result = subprocess.run(["grype", "--help"], capture_output=True, check=False).returncode
@@ -30,8 +27,9 @@ def check_if_grype_installed() -> bool:
         logger.error("Grype is not installed. Please install it to use this plugin.")
         return False
 
-
-disable_plugin = not check_if_grype_installed()
+# Initialize the plugin manager
+plugin_manager = get_plugin_manager()
+disable_plugin = not check_if_grype_installed() or is_plugin_blocked(plugin_manager, __name__)
 
 
 def run_grype(filename: str) -> object:
