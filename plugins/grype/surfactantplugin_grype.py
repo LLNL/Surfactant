@@ -16,22 +16,29 @@ from surfactant.sbomtypes import SBOM, Software
 def check_if_grype_installed() -> bool:
     try:
         result = subprocess.run(["grype", "--help"], capture_output=True, check=False).returncode
+        if result == 0:
+            logger.info("Grype is installed and ready to use.")
+        else:
+            logger.warning("Grype is not installed or not functioning correctly.")
+        return result == 0
     except FileNotFoundError:
-        result = 1
-    if result != 0:
-        logger.warning("Install grype for the grype plugin to run")
-    return result == 0
+        logger.error("Grype is not installed. Please install it to use this plugin.")
+        return False
 
 
 disable_plugin = not check_if_grype_installed()
 
 
 def run_grype(filename: str) -> object:
+    logger.debug(f"Starting grype scan for file: {filename}")
     result = subprocess.run(["grype", filename], capture_output=True, check=False)
     if result.returncode != 0:
-        logger.warning(f"Running grype on {filename} failed")
+        logger.warning(f"Running grype on {filename} failed with return code {result.returncode}")
+        logger.debug(f"Grype stderr: {result.stderr.decode().strip()}")
         return None
+    logger.debug(f"Grype scan completed successfully for file: {filename}")
     output = result.stdout.decode()
+    logger.debug(f"Grype raw output: {output[:200]}...")  # Log the first 200 characters of the output
     to_ret = []
     # skip the header on the first line
     for line in output.split("\n")[1:]:
@@ -66,27 +73,45 @@ def run_grype(filename: str) -> object:
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str, children: list
-) -> Optional[List[Software]]:
-    if disable_plugin or filetype not in ("DOCKER_TAR", "DOCKER_GZIP"):
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str, children: list) -> Optional[List[Software]]:
+    logger.info(f"Extracting file info for {filename} of type {filetype}")
+    
+    if disable_plugin:
+        logger.warning("Grype plugin is disabled. Skipping file analysis.")
         return None
-    if filetype == "DOCKER_GZIP":
-        with open(filename, "rb") as gzip_in:
-            gzip_data = gzip_in.read()
-        with tempfile.NamedTemporaryFile() as gzip_out:
-            gzip_out.write(gzip.decompress(gzip_data))
-            return run_grype(gzip_out.name)
-    return run_grype(filename)
+    
+    if filetype not in ("DOCKER_TAR", "DOCKER_GZIP"):
+        logger.debug(f"File type {filetype} is not supported by the grype plugin.")
+        return None
+
+    try:
+        if filetype == "DOCKER_GZIP":
+            logger.debug(f"Decompressing gzip file: {filename}")
+            with open(filename, "rb") as gzip_in:
+                gzip_data = gzip_in.read()
+            with tempfile.NamedTemporaryFile() as gzip_out:
+                gzip_out.write(gzip.decompress(gzip_data))
+                logger.debug(f"Decompressed file written to temporary file: {gzip_out.name}")
+                return run_grype(gzip_out.name)
+        
+        # For DOCKER_TAR or other supported types
+        return run_grype(filename)
+    
+    except Exception as e:
+        logger.error(f"Error while processing file {filename}: {e}")
+        return None
 
 
 @surfactant.plugin.hookimpl
 def update_db():
+    logger.info("Starting grype database update...")
     # Example update logic
     try:
         subprocess.check_call(["grype", "db", "update"])
+        logger.info("Grype database updated successfully.")
         return "Database updated successfully."
     except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to update Grype database: {e}")
         return f"Failed to update database: {e}"
 
 
