@@ -3,9 +3,10 @@
 #
 # SPDX-License-Identifier: MIT
 
+import json
 import os
-from typing import Optional
 import pathlib
+from typing import Optional
 
 import click
 import textual.app
@@ -16,7 +17,6 @@ import textual.screen
 import textual.types
 import textual.widgets
 import textual.widgets.button
-import json
 
 import surfactant.cmd.generate
 import surfactant.cmd.merge
@@ -93,7 +93,9 @@ class SelectFile(textual.screen.ModalScreen[Optional[textual.widgets.DirectoryTr
 
 
 class FileInput(textual.widgets.Static):
-    def __init__(self, label: str, allow_folder_selection: bool, file_input: Optional[textual.widgets.Input]):
+    def __init__(
+        self, label: str, allow_folder_selection: bool, file_input: Optional[textual.widgets.Input]
+    ):
         super().__init__()
         self.label = label
         self.file_input = file_input
@@ -121,9 +123,7 @@ class FileInput(textual.widgets.Static):
         base_dir = "./"
         if os.path.isfile(self.input_path):
             base_dir = os.path.dirname(self.input_path)
-        self.app.push_screen(
-            SelectFile(self.allow_folder_selection, base_dir), set_path
-        )
+        self.app.push_screen(SelectFile(self.allow_folder_selection, base_dir), set_path)
 
 
 # pylint: disable-next=too-many-instance-attributes
@@ -323,8 +323,7 @@ class ConfigEntry(textual.widgets.Static):
         yield textual.widgets.Button("Delete this entry", id="delete_entry")
         yield self.archive
         yield textual.containers.HorizontalGroup(
-            textual.widgets.Label("Install Prefix: "),
-            self.install_prefix
+            textual.widgets.Label("Install Prefix: "), self.install_prefix
         )
         yield textual.widgets.Label("Extract Paths:")
         yield self.extract_paths
@@ -357,7 +356,7 @@ class ConfigTab(textual.widgets.Static):
         yield textual.containers.HorizontalGroup(
             textual.widgets.Button("Save", id="save"),
             textual.widgets.Label("   "),
-            textual.widgets.Button("Load", id="load")
+            textual.widgets.Button("Load", id="load"),
         )
         yield textual.widgets.Rule()
         for entry in self.config_entries:
@@ -386,7 +385,7 @@ class ConfigTab(textual.widgets.Static):
             for path in entry.extract_paths.input_paths:
                 if path.active:
                     write_to["extractPaths"].append(path.path_selector.input_path)
-        file_to_save = self.config_input.input_path + '/' + self.config_name.value
+        file_to_save = self.config_input.input_path + "/" + self.config_name.value
         try:
             with open(file_to_save, "w") as f:
                 f.write(json.dumps(to_save, indent=2))
@@ -397,7 +396,7 @@ class ConfigTab(textual.widgets.Static):
 
     @textual.on(textual.widgets.Button.Pressed, "#load")
     def load(self):
-        file_to_load = self.config_input.input_path + '/' + self.config_name.value
+        file_to_load = self.config_input.input_path + "/" + self.config_name.value
         try:
             with open(file_to_load, "r") as config_file:
                 js = json.load(config_file)
@@ -448,14 +447,20 @@ class TUI(textual.app.App):
         yield textual.widgets.Header()
         yield textual.widgets.Footer()
         Tab = textual.widgets.Tab
-        yield textual.widgets.Tabs(Tab("Generate", id="Generate"), Tab("Merge", id="Merge"), Tab("Config", id="Config"))
+        yield textual.widgets.Tabs(
+            Tab("Generate", id="Generate"), Tab("Merge", id="Merge"), Tab("Config", id="Config")
+        )
         yield textual.containers.ScrollableContainer(id="MainContainer")
 
     def on_mount(self) -> None:
         self.query_one(textual.widgets.Tabs).focus()
 
     def on_tabs_tab_activated(self, event: textual.widgets.Tabs.TabActivated) -> None:
-        TABS = (("Generate", self.generate_tab), ("Merge", self.merge_tab), ("Config", self.config_tab))
+        TABS = (
+            ("Generate", self.generate_tab),
+            ("Merge", self.merge_tab),
+            ("Config", self.config_tab),
+        )
         main_container = self.get_child_by_id(
             "MainContainer", textual.containers.ScrollableContainer
         )
