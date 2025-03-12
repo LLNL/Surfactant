@@ -1,8 +1,8 @@
-import subprocess
-import pytest
-import os
 import json
+import subprocess
 import time
+
+import pytest
 
 
 def run_command(command):
@@ -22,22 +22,24 @@ def setup_environment():
 
     # Step 2: Install Grype
     print("Installing Grype...")
-    run_command("curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin")
+    run_command(
+        "curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin"
+    )
 
     # Verify Grype installation
     output = run_command("grype --version")
     print(f"Grype installed successfully: {output}")
 
     # Install the Grype plugin in editable mode
-    print(f"Installing the Grype plugin in editable mode ...")
-    output = run_command(f"pip install -e .")
+    print("Installing the Grype plugin in editable mode ...")
+    output = run_command("pip install -e .")
     print(f"Install output: {output}")
 
     # Ensure that the Grype plugin is enabled (neccessary if running pytest multiple times)
     run_command("surfactant plugin enable surfactantplugin_grype")
 
     # Verify the Grype plugin installation
-    output = run_command(f"surfactant plugin list | grep '> name:' | grep 'surfactantplugin_grype'")
+    output = run_command("surfactant plugin list | grep '> name:' | grep 'surfactantplugin_grype'")
     print(f"Filtered plugin output: {output}")
     assert "surfactantplugin_grype" in output, "Grype plugin not found in Surfactant plugins"
 
@@ -68,12 +70,7 @@ def create_config_and_tarball(tmp_path):
     run_command(f"sudo docker rm {container_id}")
 
     # Step 5: Create the configuration file
-    config_data = [
-        {
-            "extractPaths": [str(tarball_file)],
-            "installPrefix": "/usr/"
-        }
-    ]
+    config_data = [{"extractPaths": [str(tarball_file)], "installPrefix": "/usr/"}]
     config_file = tmp_path / "config_dockertball.json"
     with open(config_file, "w") as f:
         json.dump(config_data, f, indent=4)
@@ -95,7 +92,7 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     run_command("surfactant plugin enable surfactantplugin_grype")
 
     # Verify the Grype plugin is enabled
-    output = run_command(f"surfactant plugin list | grep '> name:' | grep 'surfactantplugin_grype'")
+    output = run_command("surfactant plugin list | grep '> name:' | grep 'surfactantplugin_grype'")
     assert "surfactantplugin_grype" in output, "Grype plugin not found in Surfactant plugins"
 
     # Run the Surfactant generate command (with Grype enabled)
@@ -120,14 +117,16 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     print("ENABLED")
     print(json.dumps(sbom_enabled, indent=4))
     print(any("grype_output" in entry for entry in sbom_enabled["software"][0]["metadata"]))
-    assert any("grype_output" in entry for entry in sbom_enabled["software"][0]["metadata"]), \
+    assert any("grype_output" in entry for entry in sbom_enabled["software"][0]["metadata"]), (
         "Grype output should be present when the plugin is enabled"
-    
+    )
 
     # Assert that the Grype output is empty (in this specific test case)
-    assert all(entry.get("grype_output") == [] for entry in sbom_enabled["software"][0]["metadata"] if "grype_output" in entry), \
-        "Grype output should be empty for a minimal tarball with no vulnerabilities"
-
+    assert all(
+        entry.get("grype_output") == []
+        for entry in sbom_enabled["software"][0]["metadata"]
+        if "grype_output" in entry
+    ), "Grype output should be empty for a minimal tarball with no vulnerabilities"
 
     # **********************
     # **** Disabled Test ***
@@ -135,10 +134,12 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
 
     # Disable the Grype plugin
     run_command("surfactant plugin disable surfactantplugin_grype")
-    
+
     # Run the command to check for disabled plugins
-    output = run_command("surfactant plugin list | grep -A 5 'DISABLED PLUGINS' | grep 'surfactantplugin_grype'")
-    
+    output = run_command(
+        "surfactant plugin list | grep -A 5 'DISABLED PLUGINS' | grep 'surfactantplugin_grype'"
+    )
+
     # Assert that the plugin is found in the disabled plugins section
     assert "surfactantplugin_grype" in output, "Grype plugin is not disabled in Surfactant plugins"
 
@@ -159,17 +160,18 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     # Assert that the Grype output is not present
     print("DISABLED")
     print(json.dumps(sbom_disabled, indent=4))
-    assert not any("grype_output" in entry for entry in sbom_disabled["software"][0]["metadata"]), \
+    assert not any("grype_output" in entry for entry in sbom_disabled["software"][0]["metadata"]), (
         "Grype output should not be present when the plugin is disabled"
-
+    )
 
     # ************************
     # *** Test consistency ***
     # ************************
 
     # Compare the two SBOMs for consistency (except for Grype output)
-    assert sbom_disabled["software"][0]["fileName"] == sbom_enabled["software"][0]["fileName"], \
+    assert sbom_disabled["software"][0]["fileName"] == sbom_enabled["software"][0]["fileName"], (
         "File names should match between disabled and enabled cases"
-    assert sbom_disabled["software"][0]["sha256"] == sbom_enabled["software"][0]["sha256"], \
+    )
+    assert sbom_disabled["software"][0]["sha256"] == sbom_enabled["software"][0]["sha256"], (
         "SHA256 hashes should match between disabled and enabled cases"
-
+    )

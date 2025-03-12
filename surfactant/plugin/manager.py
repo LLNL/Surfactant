@@ -104,7 +104,9 @@ def is_plugin_blocked(pm: pluggy.PluginManager, plugin_name: str) -> bool:
         bool: True if the plugin is blocked, False otherwise.
     """
     if pm.is_blocked(plugin_name):
-        logger.warning(f"The plugin '{plugin_name}' is blocked. To unblock run, 'surfactant plugin enable {plugin_name}'")
+        logger.warning(
+            f"The plugin '{plugin_name}' is blocked. To unblock run, 'surfactant plugin enable {plugin_name}'"
+        )
         return True
     return False
 

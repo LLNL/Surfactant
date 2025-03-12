@@ -4,18 +4,21 @@
 # SPDX-License-Identifier: MIT
 import gzip
 import subprocess
+
+# Configure loguru to show logs at DEBUG level or higher
+import sys
 import tempfile
 from typing import List, Optional
 
 from loguru import logger
 
 import surfactant.plugin
+from surfactant.plugin.manager import (  # Import the helper function
+    get_plugin_manager,
+    is_plugin_blocked,
+)
 from surfactant.sbomtypes import SBOM, Software
 
-from surfactant.plugin.manager import get_plugin_manager, is_plugin_blocked  # Import the helper function
-
-# Configure loguru to show logs at DEBUG level or higher
-import sys
 logger.remove()  # Remove the default logger configuration
 logger.add(sys.stdout, level="DEBUG")  # Add a new logger that outputs to console
 
@@ -32,6 +35,7 @@ def check_if_grype_installed() -> bool:
         logger.error("Grype is not installed. Please install it to use this plugin.")
         return False
 
+
 # Initialize the plugin manager
 plugin_manager = get_plugin_manager()
 disable_plugin = not check_if_grype_installed() or is_plugin_blocked(plugin_manager, __name__)
@@ -46,7 +50,9 @@ def run_grype(filename: str) -> object:
         return None
     logger.debug(f"Grype scan completed successfully for file: {filename}")
     output = result.stdout.decode()
-    logger.debug(f"Grype raw output: {output[:200]}...")  # Log the first 200 characters of the output
+    logger.debug(
+        f"Grype raw output: {output[:200]}..."
+    )  # Log the first 200 characters of the output
     to_ret = []
     # skip the header on the first line
     for line in output.split("\n")[1:]:
@@ -81,13 +87,15 @@ def run_grype(filename: str) -> object:
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str, children: list) -> Optional[List[Software]]:
+def extract_file_info(
+    sbom: SBOM, software: Software, filename: str, filetype: str, children: list
+) -> Optional[List[Software]]:
     logger.info(f"Extracting file info for {filename} of type {filetype}")
-    
+
     if disable_plugin:
         logger.warning("Grype plugin is disabled. Skipping file analysis.")
         return None
-    
+
     if filetype not in ("DOCKER_TAR", "DOCKER_GZIP"):
         logger.debug(f"File type {filetype} is not supported by the grype plugin.")
         return None
@@ -101,10 +109,10 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
                 gzip_out.write(gzip.decompress(gzip_data))
                 logger.debug(f"Decompressed file written to temporary file: {gzip_out.name}")
                 return run_grype(gzip_out.name)
-        
+
         # For DOCKER_TAR or other supported types
         return run_grype(filename)
-    
+
     except Exception as e:
         logger.error(f"Error while processing file {filename}: {e}")
         return None
