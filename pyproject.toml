@@ -87,7 +87,7 @@ include = ["surfactant", "surfactant.*"]
 version_file = "surfactant/_version.py"
 
 [tool.pytest.ini_options]
-addopts = ["--import-mode=importlib"]
+addopts = ["--import-mode=importlib", "--ignore=plugins"]
 pythonpath = "."
 
 [tool.ruff]
