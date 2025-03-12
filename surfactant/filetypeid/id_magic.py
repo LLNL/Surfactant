@@ -197,6 +197,10 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 int.from_bytes(magic_bytes[0:4], byteorder="big", signed=False) & 0xFF0F80FF
             ) == 0xF00D0000:
                 return "OMF_LIB"
+            # U-Boot/uImage
+            # https://github.com/u-boot/u-boot/blob/master/include/image.h#L313
+            if magic_bytes[:4] == b"\x27\x05\x19\x56":
+                return "UIMAGE"
             # zlib:
             # https://www.rfc-editor.org/rfc/rfc1950
             if len(magic_bytes) >= 2:
