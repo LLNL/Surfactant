@@ -15,7 +15,6 @@ import surfactant.plugin
 from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
 
-
 ### ===============================
 ### Utility Predicates
 ### ===============================
