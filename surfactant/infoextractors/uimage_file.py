@@ -8,6 +8,7 @@
 # https://github.com/u-boot/u-boot/blob/master/boot/image.c
 
 import struct
+from typing import List, Tuple
 
 from loguru import logger
 
@@ -222,10 +223,19 @@ def supports_file(filetype) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(
+    sbom: SBOM,
+    software: Software,
+    filename: str,
+    filetype: str,
+    software_field_hints: List[Tuple[str, object, int]],
+) -> object:
     if not supports_file(filetype):
         return None
     try:
-        return {"uimage_header": _parse_uimage_header(filename)}
+        uimage_header = _parse_uimage_header(filename)
+        if "name" in uimage_header:
+            software_field_hints.append(("name", uimage_header["name"], 40))
+        return {"uimage_header": uimage_header}
     except ValueError as e:
         return None
