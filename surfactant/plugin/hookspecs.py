@@ -29,6 +29,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
 
 
 @hookspec
+# pylint: disable-next=too-many-positional-arguments
 def extract_file_info(
     sbom: SBOM,
     software: Software,
@@ -36,7 +37,8 @@ def extract_file_info(
     filetype: str,
     context: "Queue[ContextEntry]",
     children: List[Software],
-) -> Optional[list]:
+    omit_unrecognized_types: bool,
+) -> object:
     """Extracts information from the given file to add to the given software entry. Return an
     object to be included as part of the metadata field, and potentially used as part of
     selecting default values for other Software entry fields. Returning `None` will not add
@@ -49,6 +51,7 @@ def extract_file_info(
         filetype (str): File type information based on magic bytes.
         context (Queue[ContextEntry]): Modifiable queue of entries from input config file. Existing plugins should still work without adding this parameter.
         children (List[Software]): List of additional software entries to include in the SBOM. Plugins can add additional entries, though if the plugin extracts files to a temporary directory, the context argument should be used to have Surfactant process the files instead.
+        omit_unrecognized_types (bool): Whether files with types that are not recognized by Surfactant should be left out of the SBOM. When a plugin is adding additional context entries to the queue, it should typically default to propagating this value to the new context entries that it creates.
 
     Returns:
         object: An object to be added to the metadata field for the software entry. May be `None` to add no metadata.
@@ -89,6 +92,7 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
 
 @hookspec
+# type: ignore[empty-body]
 def read_sbom(infile) -> SBOM:
     """Reads the contents of the input SBOM from the given input SBOM file.
 
@@ -105,4 +109,29 @@ def short_name() -> Optional[str]:
 
     Returns:
         Optional[str]: The name to register the hook with.
+    """
+
+
+@hookspec
+def update_db() -> Optional[str]:
+    """Updates the database for the plugin.
+
+    This hook should be implemented by plugins that require a database update.
+    The implementation should perform the necessary update operations.
+
+    Returns:
+        Optional[str]: A message indicating the result of the update operation, or None if no update was needed.
+    """
+
+
+@hookspec
+def init_hook(command_name: Optional[str] = None) -> None:
+    """Initialization hook for plugins.
+
+    This hook is called to perform any necessary initialization for the plugin,
+    such as loading databases or setting up resources.
+
+    Args:
+        command_name (Optional[str]): The name of the command invoking the initialization,
+                                      which can be used to conditionally initialize based on the context.
     """

@@ -36,6 +36,8 @@ For ease of use, we recommend using [pipx](https://github.com/pypa/pipx) since i
 pipx install surfactant
 ```
 
+> Note: Mach-O file support requires installing Surfactant with the `macho` optional dependencies (e.g. `pipx install surfactant[macho]`).
+
 2. Install plugins using `pipx inject surfactant`. As an example, this is how the fuzzy hashing plugin could be installed from a git repository (PyPI package names, local source directories, or wheel files can also be used).
 
 ```bash
@@ -47,8 +49,8 @@ If for some reason manually managing virtual environments is desired, the follow
 1. Create a virtual environment with python >= 3.8 and activate it [Optional, but highly recommended over a global install]
 
 ```bash
-python -m venv cytrics_venv
-source cytrics_venv/bin/activate
+python -m venv venv
+source venv/bin/activate
 ```
 
 2. Install Surfactant with `pip install`
@@ -68,8 +70,8 @@ pip install git+https://github.com/LLNL/Surfactant#subdirectory=plugins/fuzzyhas
 1. Create a virtual environment with python >= 3.8 [Optional, but recommended]
 
 ```bash
-python -m venv cytrics_venv
-source cytrics_venv/bin/activate
+python -m venv venv
+source venv/bin/activate
 ```
 
 2. Clone sbom-surfactant
@@ -96,9 +98,29 @@ pip install -e ".[test,dev]"
 pip install -e plugins/fuzzyhashes
 ```
 
+## Quick Start: Generating an SBOM
+
+Surfactant supports several subcommands that can be shown using `surfactant --help`. The main one for creating an SBOM is the `generate` subcommand, which takes the following arguments:
+
+```bash
+surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
+```
+
+The two required arguments are a specimen configuration, and the output SBOM file name. For a simple case of generating an SBOM for a single directory or file, it is enough to just use the path to the directory or file for the specimen configuration. For example, the following command will generate an SBOM file called `output.json` with software entries for all files found in the folder `mysoftware`:
+
+```bash
+surfactant generate /usr/local/mysoftware output.json
+```
+
+In the generated SBOM, there will be software entries for each file. The install paths captured will say where individual files are located within `/usr/local/mysoftware` -- if instead a relative path had been given such as `surfactant generate local/mysoftware output.json`, all of the install paths for files would appear to be under the relative path `local/mysoftware` instead of an absolute path.
+
+For more control over the options used to create software entries and relationships, or for capturing information from multiple directories, see the following section on how to write a [Surfactant specimen config file](#build-configuration-file-for-sample). This configuration file is a JSON file can then be given to Surfactant for the `SPECIMEN_CONFIG` argument.
+
+NOTE: When using a Surfactant speciment configuration file, it is recommended that it end in a `.json` file extension; otherwise, you'll have to use a special prefix for the `SPECIMEN_CONFIG` argument to tell Surfactant that it should interpret the given file that doesn't end in `.json` as a specimen configuration file rather than to generate an SBOM that only contains details on that one file.
+
 ## Settings
 
-Surfactant settings can be changed using the `surfactant config` subcommand, or by hand editing the settings configuration file (this is not the same as the JSON file used to configure settings for a particular sample that is described later).
+Surfactant settings can be changed using the `surfactant config` subcommand, or by hand editing the settings configuration file (this is not the same as the JSON file used to configure settings for a particular sample that is described later). The [settings documentation page](https://surfactant.readthedocs.io/en/latest/settings.html) has a list of available options that are built-into Surfactant.
 
 ### Command Line
 
@@ -114,6 +136,12 @@ Getting the currently set value for the option would then be done with:
 
 ```bash
 surfactant config core.recorded_institution
+```
+
+Another example of a setting you might want to change is `docker.enable_docker_scout`, which controls whether Docker Scout is enabled. To disable Docker Scout (which also suppresses the warning message about installing Docker Scout), set this option to `false`:
+
+```bash
+surfactant config docker.enable_docker_scout false
 ```
 
 ### Manual Editing
@@ -140,9 +168,12 @@ In order to test out surfactant, you will need a sample file/folder. If you don'
 
 A configuration file for a sample contains the information about the sample to gather information from. Example JSON sample configuration files can be found in the examples folder of this repository.
 
-**extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file (Note that even on Windows, Unix style `/` directory separators should be used in paths)\
-**archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in **extractPaths** were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various **extractPaths**\
-**installPrefix**: (optional) where the files in **extractPaths** would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc (Note that even on Windows, Unix style `/` directory separators should be used in the path). If not given then the **extractPaths** will be used as the install paths
+- **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file. Note that even on Windows, Unix style `/` directory separators should be used in paths.
+- **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in `extractPaths` were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various `extractPaths`.
+- **installPrefix**: (optional) where the files in `extractPaths` would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc. Note that even on Windows, Unix style `/` directory separators should be used in the path. If not given then the `extractPaths` will be used as the install paths.
+- **omitUnrecognizedTypes**: (optional) Omit files with unrecognized types from the generated SBOM.
+- **includeFileExts**: (optional) A list of file extensions to include, even if not recognized by Surfactant.
+- **excludeFileExts**: (optional) A list of file extensions to exclude, even if recognized by Surfactant. Note that if both `omitUnrecognizedTypes` and `includeFileExts` are set, the specified extensions in `includeFileExts` will still be included.
 
 #### Create config command
 
@@ -160,7 +191,7 @@ $  surfactant create-config [INPUT_PATH] --output new_output.json --install-pref
 
 #### Example configuration file
 
-Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
+Let's say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
 
 ##### Example 1: Simple Configuration File
 
@@ -366,10 +397,10 @@ NOTE: These examples have been simplified to show differences in output based on
 ### Run surfactant
 
 ```bash
-$  surfactant generate [OPTIONS] CONFIG_FILE SBOM_OUTFILE [INPUT_SBOM]
+$  surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
 ```
 
-**CONFIG_FILE**: (required) the config file created earlier that contains the information on the sample\
+**SPECIMEN_CONFIG**: (required) the config file created earlier that contains the information on specimens to include in an SBOM, or the path to a specific file/directory to generate an SBOM for with some implied default configuration options\
 **SBOM OUTPUT**: (required) the desired name of the output file\
 **INPUT_SBOM**: (optional) a base sbom, should be used with care as relationships could be messed up when files are installed on different systems\
 **--skip_gather**: (optional) skips the gathering of information on files and adding software entires\
@@ -410,8 +441,7 @@ Details on the merge command can be found in the docs page [here](./docs/basic_u
 
 ## Plugins
 
-Surfactant supports using plugins to add additional features. For users, installing and enabling a plugin usually just involves
-doing a `pipx inject surfactant` when using pipx or `pip install` of the plugin if manually managing virtual environments.
+Surfactant supports using plugins to add additional features. Users can install plugins with `surfactant plugin install` and disable or enable them with `surfactant plugin disable` and `surfactant plugin enable` respectively. `surfactant plugin install` detects the active virtual environment and runs the appropriate command i.e. `pipx` or `pip`. Alternatively, users can manually manage their environments with `pipx inject surfactant` when using pipx or `pip install`.
 
 Detailed information on configuration options for the plugin system and how to develop new plugins can be found [here](./docs/plugins.md).
 

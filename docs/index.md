@@ -28,8 +28,11 @@ Some links to pages that may be useful are:
    basic_usage
    configuration_files
    plugins
+   settings
    contribution_guide
    changelog
+   internals_overview.md
+   api_reference
 ```
 
 ## Support

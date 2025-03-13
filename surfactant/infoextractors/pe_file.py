@@ -10,7 +10,7 @@
 
 import pathlib
 import re
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import defusedxml.ElementTree
 import dnfile
@@ -35,11 +35,15 @@ def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: s
 # Values for CPU types that can appear in a PE file
 pe_machine_types = {
     0x0: "UNKNOWN",
+    0x184: "ALPHA",  # Alpha_AXP
+    0x284: "ALPHA64",  # Also AXP64
     0x1D3: "AM33",
-    0x8664: "AMD",
+    0x8664: "AMD64",
     0x1C0: "ARM",
     0xAA64: "ARM64",
     0x1C4: "ARMNT",
+    0xC0EE: "CEE",
+    0xCEF: "CEF",
     0xEBC: "EBC",
     0x14C: "I386",
     0x200: "IA64",
@@ -51,12 +55,21 @@ pe_machine_types = {
     0x466: "MIPSFPU16",
     0x1F0: "POWERPC",
     0x1F1: "POWERPCFP",
+    0x160: "R3000",  # Big-Endian
+    0x162: "R3000",  # Little-Endian
     0x166: "R4000",
+    0x168: "R10000",
     0x5032: "RISCV32",
     0x5064: "RISCV64",
     0x5128: "RISCV128",
     0x1A2: "SH3",
     0x1A3: "SH3DSP",
+    0x1A4: "SH3E",
+    0x1A6: "SH4",
+    0x1A8: "SH5",
+    0x1C2: "THUMB",
+    0x520: "TRICORE",
+    0x169: "WCEMIPSV2",
 }
 
 # https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#windows-subsystem
@@ -76,11 +89,11 @@ pe_subsystem_types = {
     13: "EFI_ROM",
     14: "XBOX",
     16: "WINDOWS_BOOT_APPLICATION",
+    17: "XBOX_CODE_CATALOG",
 }
 
 
-def extract_pe_info(filename):
-    dnfile.fast_load = False
+def extract_pe_info(filename: str) -> object:
     try:
         pe = dnfile.dnPE(filename, fast_load=False)
     except (OSError, dnfile.PEFormatError):
@@ -169,7 +182,7 @@ def extract_pe_info(filename):
                     assembly_refs.append(get_assemblyref_info(ar_info))
                 file_details["dotnetAssemblyRef"] = assembly_refs
             if implmap_info := getattr(dnet_mdtables, "ImplMap", None):
-                imp_modules = []
+                imp_modules: List[Dict[str, Any]] = []
                 for im_info in implmap_info:
                     insert_implmap_info(im_info, imp_modules)
                 file_details["dotnetImplMap"] = imp_modules
@@ -190,7 +203,7 @@ def extract_pe_info(filename):
     return file_details
 
 
-def add_core_assembly_info(asm_dict, asm_info):
+def add_core_assembly_info(asm_dict: Dict[str, Any], asm_info):
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
     # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
     asm_dict["Name"] = asm_info.Name.value if asm_info.Name.value else asm_info.raw_data.hex()
@@ -202,10 +215,11 @@ def add_core_assembly_info(asm_dict, asm_info):
     )
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
     # HeapItemBinary value is the bytes following the compressed int (indicating the length)
-    asm_dict["PublicKey"] = (
-        # raw_data attribute of PublicKey includes leading byte with length of data, value attr removes it
-        asm_info.PublicKey.value.hex()
-    )
+    if asm_info.PublicKey is not None:
+        asm_dict["PublicKey"] = (
+            # raw_data attribute of PublicKey includes leading byte with length of data, value attr removes it
+            asm_info.PublicKey.value.hex()
+        )
 
 
 def add_assembly_flags_info(asm_dict, asm_info):
@@ -232,7 +246,7 @@ def add_assembly_flags_info(asm_dict, asm_info):
         }
 
 
-def get_assembly_info(asm_info):
+def get_assembly_info(asm_info) -> Dict[str, Any]:
     asm: Dict[str, Any] = {}
     add_core_assembly_info(asm, asm_info)
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/fcccdaf/src/dnfile/enums.py#L851-L863
@@ -242,7 +256,7 @@ def get_assembly_info(asm_info):
     return asm
 
 
-def get_assemblyref_info(asmref_info):
+def get_assemblyref_info(asmref_info) -> Dict[str, Any]:
     asmref: Dict[str, Any] = {}
     add_core_assembly_info(asmref, asmref_info)
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
@@ -253,7 +267,7 @@ def get_assemblyref_info(asmref_info):
     return asmref
 
 
-def insert_implmap_info(im_info, imp_modules):
+def insert_implmap_info(im_info, imp_modules: List[Dict[str, Any]]):
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
     # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
     dllName = (
@@ -283,7 +297,7 @@ def get_xmlns_and_tag(uri):
 
 # check for manifest file on Windows (note: could also be a resource contained within an exe/dll)
 # return any info that could be useful for establishing "Uses" relationships later
-def get_windows_manifest_info(filename):
+def get_windows_manifest_info(filename: str) -> Optional[Dict[str, Any]]:
     binary_filepath = pathlib.Path(filename)
     manifest_filepath = binary_filepath.with_suffix(binary_filepath.suffix + ".manifest")
     if manifest_filepath.exists():
@@ -427,7 +441,7 @@ def get_assemblyBinding_info(ab_et, config_filepath=""):
 
 # DLL redirection summary: redirection file with name_of_exe.local (contents are ignored) makes a check for mydll.dll happen in the application directory first,
 # regardless of what the full path specified for LoadLibrary or LoadLibraryEx is (if no dll found in local directory, uses the typical search order)
-def check_windows_dll_redirection_local(filename):
+def check_windows_dll_redirection_local(filename: str):
     binary_filepath = pathlib.Path(filename)
     config_filepath = binary_filepath.with_suffix(binary_filepath.suffix + ".local")
     return config_filepath.exists()
@@ -436,7 +450,7 @@ def check_windows_dll_redirection_local(filename):
 # check for an application configuration file and return (potentially) useful information
 # https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies#application-configuration-file
 # https://learn.microsoft.com/en-us/windows/win32/sbscs/application-configuration-files
-def get_windows_application_config_info(filename):
+def get_windows_application_config_info(filename: str):
     binary_filepath = pathlib.Path(filename)
     config_filepath = binary_filepath.with_suffix(binary_filepath.suffix + ".config")
     if config_filepath.exists():

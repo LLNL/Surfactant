@@ -10,10 +10,10 @@ In order to test out surfactant, you will need a sample file/folder. If you don'
 ## Running Surfactant
 
 ```bash
-$  surfactant generate [OPTIONS] CONFIG_FILE SBOM_OUTFILE [INPUT_SBOM]
+$  surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
 ```
 
-**CONFIG_FILE**: (required) the config file created earlier that contains the information on the sample\
+**SPECIMEN_CONFIG**: (required) the config file created earlier that contains the information on specimens to include in an SBOM, or the path to a specific file/directory to generate an SBOM for with some implied default configuration options\
 **SBOM OUTPUT**: (required) the desired name of the output file\
 **INPUT_SBOM**: (optional) a base sbom, should be used with care as relationships could be messed up when files are installed on different systems\
 **--skip_gather**: (optional) skips the gathering of information on files and adding software entires\
@@ -22,7 +22,9 @@ $  surfactant generate [OPTIONS] CONFIG_FILE SBOM_OUTFILE [INPUT_SBOM]
 **--recorded_institution**: (optional) the name of the institution collecting the SBOM data (default: LLNL)\
 **--output_format**: (optional) changes the output format for the SBOM (given as full module name of a surfactant plugin implementing the `write_sbom` hook)\
 **--input_format**: (optional) specifies the format of the input SBOM if one is being used (default: cytrics) (given as full module name of a surfactant plugin implementing the `read_sbom` hook)\
-**--help**: (optional) show the help message and exit
+**--help**: (optional) show the help message and exit\
+**--omit_unrecognized_types**: (optional) Omit files with unrecognized types from the generated SBOM
+
 
 
 ## Merging SBOMs

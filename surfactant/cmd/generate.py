@@ -2,27 +2,30 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import json
 import os
 import pathlib
 import queue
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
 
 from surfactant import ContextEntry
+from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
 from surfactant.configmanager import ConfigManager
 from surfactant.fileinfo import sha256sum
-from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
+from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 
 
 # Converts from a true path to an install path
 def real_path_to_install_path(root_path: str, install_path: str, filepath: str) -> str:
-    return re.sub("^" + root_path + "/", install_path, filepath)
+    # appending a "/" to root_path can cause problems if it is "" or already ends with "/"
+    if root_path != "" and not root_path.endswith("/"):
+        return re.sub("^" + root_path + "/", install_path, filepath)
+    return re.sub("^" + root_path, install_path, filepath)
 
 
 def get_software_entry(
@@ -30,33 +33,56 @@ def get_software_entry(
     pluginmanager,
     parent_sbom: SBOM,
     filepath,
+    *,  # arguments past this point are keyword-only
     filetype=None,
     container_uuid=None,
     root_path=None,
     install_path=None,
     user_institution_name="",
+    omit_unrecognized_types=False,
+    skip_extraction=False,
 ) -> Tuple[Software, List[Software]]:
     sw_entry = Software.create_software_from_file(filepath)
-    if root_path and install_path:
+    if root_path is not None and install_path is not None:
         sw_entry.installPath = [real_path_to_install_path(root_path, install_path, filepath)]
-    if root_path and container_uuid:
-        sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
+    if root_path is not None and container_uuid is not None:
+        # make sure there is a "/" separating container uuid and the filepath
+        if root_path != "" and not root_path.endswith("/"):
+            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
+        else:
+            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + "/", filepath)]
     sw_entry.recordedInstitution = user_institution_name
-    sw_children = []
+    sw_children: List[Software] = []
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
-    extracted_info_results = pluginmanager.hook.extract_file_info(
-        sbom=parent_sbom,
-        software=sw_entry,
-        filename=filepath,
-        filetype=filetype,
-        context=context,
-        children=sw_children,
+    extracted_info_results: List[object] = (
+        pluginmanager.hook.extract_file_info(
+            sbom=parent_sbom,
+            software=sw_entry,
+            filename=filepath,
+            filetype=filetype,
+            context=context,
+            children=sw_children,
+            omit_unrecognized_types=omit_unrecognized_types,
+        )
+        if not skip_extraction
+        else []
     )
     # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
     for file_details in extracted_info_results:
+        # None as details doesn't add any useful info...
+        if file_details is None:
+            continue
+
+        # ensure metadata exists for the software entry
+        if sw_entry.metadata is None:
+            sw_entry.metadata = []
         sw_entry.metadata.append(file_details)
+
+        # before checking for keys, make sure the file details object is a dictionary
+        if not isinstance(file_details, Dict):
+            continue
 
         # common case is Windows PE file has these details under FileInfo, otherwise fallback default value is fine
         if "FileInfo" in file_details:
@@ -80,21 +106,13 @@ def get_software_entry(
             if "revision_number" in file_details["ole"]:
                 sw_entry.version = file_details["ole"]["revision_number"]
             if "author" in file_details["ole"]:
+                # ensure the vendor list has been created
+                if sw_entry.vendor is None:
+                    sw_entry.vendor = []
                 sw_entry.vendor.append(file_details["ole"]["author"])
             if "comments" in file_details["ole"]:
                 sw_entry.comments = file_details["ole"]["comments"]
     return (sw_entry, sw_children)
-
-
-def validate_config(config):
-    for line in config:
-        extract_path = line["extractPaths"]
-        for pth in extract_path:
-            extract_path_convert = pathlib.Path(pth)
-            if not extract_path_convert.exists():
-                logger.error("invalid path: " + str(pth))
-                return False
-    return True
 
 
 def print_output_formats(ctx, _, value):
@@ -123,26 +141,35 @@ def print_input_formats(ctx, _, value):
     ctx.exit()
 
 
-def warn_if_hash_collision(soft1: Optional[Software], soft2: Optional[Software]):
-    if not soft1 or not soft2:
-        return
-    # A hash collision occurs if one or more but less than all hashes match or
-    # any hash matches but the filesize is different
-    collision = False
-    if soft1.sha256 == soft2.sha256 or soft1.sha1 == soft2.sha1 or soft1.md5 == soft2.md5:
-        # Hashes can be None; make sure they aren't before checking for inequality
-        if soft1.sha256 and soft2.sha256 and soft1.sha256 != soft2.sha256:
-            collision = True
-        elif soft1.sha1 and soft2.sha1 and soft1.sha1 != soft2.sha1:
-            collision = True
-        elif soft1.md5 and soft2.md5 and soft1.md5 != soft2.md5:
-            collision = True
-        elif soft1.size != soft2.size:
-            collision = True
-    if collision:
-        logger.warning(
-            f"Hash collision between {soft1.name} and {soft2.name}; unexpected results may occur"
-        )
+def determine_install_prefix(
+    entry: Optional[ContextEntry] = None,
+    extract_path: Optional[Union[str, pathlib.Path]] = None,
+    skip_extract_path: bool = False,
+) -> Optional[str]:
+    """Determine the install prefix based on what is provided in the context entry, and the extract path for the file.
+
+    Args:
+        entry (Optional[ContextEntry]): The context entry to check for an install prefix.
+        extract_path (Optional[str|pathlib.Path]): The extract path for the file to use as a potential fallback.
+        skip_extract_path (bool): Whether the extract_path should be skipped if the entry does not specify an installPrefix.
+
+    Returns:
+            Optional[str]: The install prefix to use, or 'NoneType' if an install path shouldn't be listed.
+    """
+    install_prefix = None
+    if entry and (entry.installPrefix or entry.installPrefix == ""):
+        install_prefix = entry.installPrefix
+    elif not skip_extract_path and extract_path is not None:
+        # pathlib doesn't include the trailing slash
+        epath = pathlib.Path(extract_path)
+        if epath.is_file():
+            install_prefix = epath.parent.as_posix() if len(epath.parts) > 1 else ""
+        else:
+            install_prefix = epath.as_posix()
+        # add a trailing slash after last directory name
+        if install_prefix != "" and not install_prefix.endswith("/"):
+            install_prefix += "/"
+    return install_prefix
 
 
 def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
@@ -161,9 +188,9 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 
 @click.command("generate")
 @click.argument(
-    "config_file",
-    envvar="CONFIG_FILE",
-    type=click.Path(exists=True),
+    "specimen_config",
+    envvar="SPECIMEN_CONFIG",
+    type=SpecimenConfigParamType(),
     required=True,
 )
 @click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
@@ -223,16 +250,26 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
     is_eager=True,
     help="List supported input formats",
 )
+@click.option(
+    "--omit_unrecognized_types",
+    is_flag=True,
+    default=get_default_from_config("omit_unrecognized_types", fallback=False),
+    required=False,
+    help="Omit files with unrecognized types from the generated SBOM.",
+)
+# Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
+# pylint: disable-next=too-many-positional-arguments
 def sbom(
-    config_file,
-    sbom_outfile,
-    input_sbom,
-    skip_gather,
-    skip_relationships,
-    skip_install_path,
-    recorded_institution,
-    output_format,
-    input_format,
+    specimen_config: list,
+    sbom_outfile: click.File,
+    input_sbom: click.File,
+    skip_gather: bool,
+    skip_relationships: bool,
+    skip_install_path: bool,
+    recorded_institution: str,
+    output_format: str,
+    input_format: str,
+    omit_unrecognized_types: bool,
 ):
     """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
 
@@ -240,33 +277,19 @@ def sbom(
     """
 
     pm = get_plugin_manager()
+    call_init_hooks(
+        pm, hook_filter=["identify_file_type", "extract_file_info"], command_name="generate"
+    )
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
 
-    if pathlib.Path(config_file).is_file():
-        with click.open_file(config_file) as f:
-            try:
-                config = json.load(f)
-            except json.decoder.JSONDecodeError as err:
-                logger.exception(f"Invalid JSON in given config file ({config_file})")
-                raise SystemExit(f"Invalid JSON in given config file ({config_file})") from err
-            # TODO: what if it isn't a JSON config file, but a single file to generate an SBOM for? perhaps file == "archive"?
-    else:
-        # Emulate a configuration file with the path
-        config = []
-        config.append({})
-        config[0]["extractPaths"] = [config_file]
-        config[0]["installPrefix"] = config_file
+    context: queue.Queue[ContextEntry] = queue.Queue()
 
-    # quit if invalid path found
-    if not validate_config(config):
-        return
+    for cfg_entry in specimen_config:
+        context.put(ContextEntry(**cfg_entry))
 
-    context = queue.Queue()
-
-    for entry in config:
-        context.put(ContextEntry(**entry))
-
+    # define the new_sbom variable type
+    new_sbom: SBOM
     if not input_sbom:
         new_sbom = SBOM()
     else:
@@ -293,9 +316,17 @@ def sbom(
                     new_sbom,
                     entry.archive,
                     user_institution_name=recorded_institution,
+                    skip_extraction=entry.skipProcessingArchive,
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
-                warn_if_hash_collision(archive_entry, parent_entry)
+                if (
+                    archive_entry
+                    and parent_entry
+                    and Software.check_for_hash_collision(archive_entry, parent_entry)
+                ):
+                    logger.warning(
+                        f"Hash collision between {archive_entry.name} and {parent_entry.name}; unexpected results may occur"
+                    )
                 if archive_entry:
                     parent_entry = archive_entry
                 else:
@@ -321,11 +352,43 @@ def sbom(
                     )
                     entry.installPrefix = entry.installPrefix.replace("\\", "\\\\")
 
-            for epath in entry.extractPaths:
-                # extractPath should not end with "/" (Windows-style backslash paths shouldn't be used at all)
-                if epath.endswith("/"):
-                    epath = epath[:-1]
-                logger.trace("Extracted Path: " + str(epath))
+            for epath_str in entry.extractPaths:
+                # convert to pathlib.Path, ensures trailing "/" won't be present and some more consistent path formatting
+                epath = pathlib.Path(epath_str)
+                install_prefix = determine_install_prefix(
+                    entry, epath, skip_extract_path=skip_install_path
+                )
+                logger.trace("Extracted Path: " + epath.as_posix())
+
+                # variable used to track software entries to add to the SBOM
+                entries: List[Software]
+
+                # handle individual file case, since os.walk doesn't
+                if epath.is_file():
+                    entries = []
+                    filepath = epath.as_posix()
+                    # breakpoint()
+                    try:
+                        sw_parent, sw_children = get_software_entry(
+                            context,
+                            pm,
+                            new_sbom,
+                            filepath,
+                            filetype=pm.hook.identify_file_type(filepath=filepath),
+                            root_path=epath.parent.as_posix() if len(epath.parts) > 1 else "",
+                            container_uuid=parent_uuid,
+                            install_path=install_prefix,
+                            user_institution_name=recorded_institution,
+                        )
+                    except Exception as e:
+                        raise RuntimeError(f"Unable to process: {filepath}") from e
+                    entries.append(sw_parent)
+                    entries.extend(sw_children if sw_children else [])
+                    new_sbom.add_software_entries(entries, parent_entry=parent_entry)
+                    # epath was a file, no need to walk the directory tree
+                    continue
+
+                # epath is a directory, walk it
                 for cdir, dirs, files in os.walk(epath):
                     logger.info("Processing " + str(cdir))
 
@@ -333,26 +396,30 @@ def sbom(
                         for dir_ in dirs:
                             full_path = os.path.join(cdir, dir_)
                             if os.path.islink(full_path):
-                                dest = resolve_link(full_path, cdir, epath, entry.installPrefix)
+                                dest = resolve_link(
+                                    full_path, cdir, epath.as_posix(), entry.installPrefix
+                                )
                                 if dest is not None:
                                     install_source = real_path_to_install_path(
-                                        epath, entry.installPrefix, full_path
+                                        epath.as_posix(), entry.installPrefix, full_path
                                     )
                                     install_dest = real_path_to_install_path(
-                                        epath, entry.installPrefix, dest
+                                        epath.as_posix(), entry.installPrefix, dest
                                     )
                                     dir_symlinks.append((install_source, install_dest))
 
-                    entries: List[Software] = []
-                    for f in files:
+                    entries = []
+                    for file in files:
                         # os.path.join will insert an OS specific separator between cdir and f
                         # need to make sure that separator is a / and not a \ on windows
-                        filepath = pathlib.Path(cdir, f).as_posix()
+                        filepath = pathlib.Path(cdir, file).as_posix()
                         # TODO: add CI tests for generating SBOMs in scenarios with symlinks... (and just generally more CI tests overall...)
                         # Record symlink details but don't run info extractors on them
                         if os.path.islink(filepath):
                             # NOTE: resolve_link function could print warning if symlink goes outside of extract path dir
-                            true_filepath = resolve_link(filepath, cdir, epath, entry.installPrefix)
+                            true_filepath = resolve_link(
+                                filepath, cdir, epath.as_posix(), entry.installPrefix
+                            )
                             # Dead/infinite links will error so skip them
                             if true_filepath is None:
                                 continue
@@ -376,10 +443,10 @@ def sbom(
                             # Record symlink install path if an install prefix is given
                             if entry.installPrefix:
                                 install_filepath = real_path_to_install_path(
-                                    epath, entry.installPrefix, filepath
+                                    epath.as_posix(), entry.installPrefix, filepath
                                 )
                                 install_dest = real_path_to_install_path(
-                                    epath, entry.installPrefix, true_filepath
+                                    epath.as_posix(), entry.installPrefix, true_filepath
                                 )
                                 # A dead link shows as a file so need to test if it's a
                                 # file or a directory once rebased
@@ -397,71 +464,52 @@ def sbom(
                             # unpacking/installation?
                             continue
 
-                        if entry.installPrefix or entry.installPrefix == "":
-                            install_path = entry.installPrefix
-                        elif not skip_install_path:
-                            # epath is guaranteed to not have an ending slash due to formatting above
-                            install_path = epath + "/"
-                        else:
-                            install_path = None
-
-                        if ftype := pm.hook.identify_file_type(filepath=filepath):
-                            try:
-                                sw_parent, sw_children = get_software_entry(
-                                    context,
-                                    pm,
-                                    new_sbom,
-                                    filepath,
-                                    filetype=ftype,
-                                    root_path=epath,
-                                    container_uuid=parent_uuid,
-                                    install_path=install_path,
-                                    user_institution_name=recorded_institution,
+                        if os.path.isfile(filepath):
+                            if not entry.includeFileExts:
+                                entry.includeFileExts = []
+                            if not entry.excludeFileExts:
+                                entry.excludeFileExts = []
+                            if (
+                                (ftype := pm.hook.identify_file_type(filepath=filepath))
+                                or (not (omit_unrecognized_types or entry.omitUnrecognizedTypes))
+                                or (
+                                    os.path.splitext(filepath)[1].lower()
+                                    in [ext.lower() for ext in entry.includeFileExts]
                                 )
-                            except Exception as e:
-                                raise RuntimeError(f"Unable to process: {filepath}") from e
-
-                            entries.append(sw_parent)
-                            for sw in sw_children:
-                                entries.append(sw)
-
-                    if entries:
-                        # if a software entry already exists with a matching file hash, augment the info in the existing entry
-                        for e in entries:
-                            existing_sw = new_sbom.find_software(e.sha256)
-                            warn_if_hash_collision(existing_sw, e)
-                            if not existing_sw:
-                                new_sbom.add_software(e)
-                                # if the config file specified a parent/container for the file, add the new entry as a "Contains" relationship
-                                if parent_entry:
-                                    parent_uuid = parent_entry.UUID
-                                    child_uuid = e.UUID
-                                    new_sbom.create_relationship(
-                                        parent_uuid, child_uuid, "Contains"
+                            ) and os.path.splitext(filepath)[1].lower() not in [
+                                ext.lower() for ext in entry.excludeFileExts
+                            ]:
+                                try:
+                                    sw_parent, sw_children = get_software_entry(
+                                        context,
+                                        pm,
+                                        new_sbom,
+                                        filepath,
+                                        filetype=ftype,
+                                        root_path=epath.as_posix(),
+                                        container_uuid=parent_uuid,
+                                        install_path=install_prefix,
+                                        user_institution_name=recorded_institution,
+                                        omit_unrecognized_types=omit_unrecognized_types
+                                        or entry.omitUnrecognizedTypes,
                                     )
-                            else:
-                                existing_uuid, entry_uuid = existing_sw.merge(e)
-                                # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs)
-                                for rel in new_sbom.relationships:
-                                    if rel.xUUID == entry_uuid:
-                                        rel.xUUID = existing_uuid
-                                    if rel.yUUID == entry_uuid:
-                                        rel.yUUID = existing_uuid
-                                # add a new contains relationship if the duplicate file is from a different container/archive than previous times seeing the file
-                                if parent_entry:
-                                    parent_uuid = parent_entry.UUID
-                                    child_uuid = existing_uuid
-                                    # avoid duplicate entries
-                                    if not new_sbom.find_relationship(
-                                        parent_uuid, child_uuid, "Contains"
-                                    ):
-                                        new_sbom.create_relationship(
-                                            parent_uuid, child_uuid, "Contains"
-                                        )
-                                # TODO a pass later on to check for and remove duplicate relationships should be added just in case
+                                except Exception as e:
+                                    raise RuntimeError(f"Unable to process: {filepath}") from e
+
+                                entries.append(sw_parent)
+                                entries.extend(sw_children if sw_children else [])
+                    new_sbom.add_software_entries(entries, parent_entry=parent_entry)
 
         # Add symlinks to install paths and file names
         for software in new_sbom.software:
+            # ensure fileName, installPath, and metadata lists for the software entry have been created
+            # for a user supplied input SBOM, there are no guarantees
+            if software.fileName is None:
+                software.fileName = []
+            if software.installPath is None:
+                software.installPath = []
+            if software.metadata is None:
+                software.metadata = []
             if software.sha256 in filename_symlinks:
                 filename_symlinks_added = []
                 for filename in filename_symlinks[software.sha256]:
@@ -485,6 +533,8 @@ def sbom(
         for software in new_sbom.software:
             # NOTE: this probably doesn't actually add any containerPath symlinks
             for paths in (software.containerPath, software.installPath):
+                if paths is None:
+                    continue
                 paths_to_add = []
                 for path in paths:
                     for link_source, link_dest in dir_symlinks:
@@ -495,10 +545,14 @@ def sbom(
                             paths_to_add.append(path.replace(link_dest, link_source, 1))
                 if paths_to_add:
                     found_md_installpathsymlinks = False
-                    for md in software.metadata:
-                        if "installPathSymlinks" in md:
-                            found_md_installpathsymlinks = True
-                            md["installPathSymlinks"] += paths_to_add
+                    # make sure software.metadata list has been initialized
+                    if software.metadata is None:
+                        software.metadata = []
+                    if isinstance(software.metadata, Iterable):
+                        for md in software.metadata:
+                            if isinstance(md, Dict) and "installPathSymlinks" in md:
+                                found_md_installpathsymlinks = True
+                                md["installPathSymlinks"] += paths_to_add
                     if not found_md_installpathsymlinks:
                         software.metadata.append({"installPathSymlinks": paths_to_add})
                     paths += paths_to_add
@@ -516,7 +570,7 @@ def sbom(
 
 
 def resolve_link(
-    path: str, cur_dir: str, extract_dir: str, install_prefix: str = None
+    path: str, cur_dir: str, extract_dir: str, install_prefix: Optional[str] = None
 ) -> Union[str, None]:
     assert cur_dir.startswith(extract_dir)
     # Links seen before

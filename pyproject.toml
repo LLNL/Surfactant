@@ -40,24 +40,27 @@ classifiers = [
 ]
 dependencies = [
     "dataclasses_json==0.6.*",
-    "pyelftools==0.31.*",
+    "pyelftools==0.32.*",
     # This isn't semver so fix it to a specific release
-    "pefile==2023.2.7",
+    "pefile==2024.8.26",
     "dnfile==0.15.*",
     "olefile==0.47.*",
     "defusedxml==0.7.*",
     "spdx-tools==0.8.*",
-    "cyclonedx-python-lib==7.6.0",
+    "cyclonedx-python-lib==9.1.0",
     "pluggy==1.*",
     "click==8.*",
     "javatools>=1.6,==1.*",
     "loguru==0.7.*",
     "flask==3.*",
     "tomlkit==0.13.*",
+    "textual==2.*",
+    "requests>=2.32.3",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
+macho = ["lief==0.16.4"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]
@@ -72,6 +75,11 @@ Documentation = "https://surfactant.readthedocs.io/en/latest/"
 "Issue Tracker" = "https://github.com/LLNL/Surfactant/issues"
 "Source Code" = "https://github.com/LLNL/Surfactant"
 
+[dependency-groups]
+test = ["pytest"]
+dev = ["build", "pre-commit"]
+docs = ["sphinx", "myst-parser"]
+
 [tool.setuptools.packages.find]
 include = ["surfactant", "surfactant.*"]
 
@@ -79,7 +87,7 @@ include = ["surfactant", "surfactant.*"]
 version_file = "surfactant/_version.py"
 
 [tool.pytest.ini_options]
-addopts = ["--import-mode=importlib"]
+addopts = ["--import-mode=importlib", "--ignore=plugins"]
 pythonpath = "."
 
 [tool.ruff]

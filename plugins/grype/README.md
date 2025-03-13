@@ -1,4 +1,4 @@
-# Syft Plugin for SBOM Surfactant
+# Grype Plugin for SBOM Surfactant
 
 A plugin for Surfactant that uses [grype](https://github.com/anchore/grype)
 

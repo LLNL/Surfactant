@@ -2,7 +2,7 @@ import os
 import platform
 from pathlib import Path
 from threading import Lock
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import tomlkit
 
@@ -19,7 +19,8 @@ class ConfigManager:
         config_file_path (Path): The path to the configuration file.
     """
 
-    _instances = {}
+    _initialized: bool = False
+    _instances: Dict[str, "ConfigManager"] = {}
     _lock = Lock()
 
     def __new__(
@@ -70,11 +71,11 @@ class ConfigManager:
             config_dir = Path(self.config_dir)
         else:
             if platform.system() == "Windows":
-                config_dir = Path(os.getenv("APPDATA", os.path.expanduser("~\\AppData\\Roaming")))
+                config_dir = Path(os.getenv("APPDATA", str(Path("~\\AppData\\Roaming"))))
             else:
-                config_dir = Path(os.getenv("XDG_CONFIG_HOME", os.path.expanduser("~/.config")))
-            config_dir = config_dir / self.app_name
-        return config_dir / "config.toml"
+                config_dir = Path(os.getenv("XDG_CONFIG_HOME", str(Path("~/.config"))))
+            config_dir = config_dir / self.app_name / "config.toml"
+        return config_dir.expanduser()
 
     def _load_config(self) -> None:
         """Loads the configuration from the configuration file."""
@@ -140,3 +141,16 @@ class ConfigManager:
         with cls._lock:
             if app_name in cls._instances:
                 del cls._instances[app_name]
+
+    def get_data_dir_path(self) -> Path:
+        """Determines the path to the data directory, for storing things such as databases.
+
+        Returns:
+            Path: The path to the data directory.
+        """
+        if platform.system() == "Windows":
+            data_dir = Path(os.getenv("LOCALAPPDATA", str(Path("~\\AppData\\Local"))))
+        else:
+            data_dir = Path(os.getenv("XDG_DATA_HOME", str(Path("~/.local/share"))))
+        data_dir = data_dir / self.app_name
+        return data_dir.expanduser()

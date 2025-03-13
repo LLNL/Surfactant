@@ -165,22 +165,22 @@ def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
         if isinstance(sw.installPath, Iterable):
             for ipath in sw.installPath:
                 origin = pathlib.PurePosixPath(ipath).parent.as_posix()
-                pathlist.append(replace_dst(path, "ORIGIN", origin))
+                pathlist.append(pathlib.PurePosixPath(replace_dst(path, "ORIGIN", origin)))
 
     # LIB: expands to `lib` or `lib64` depending on arch (x86-64 to lib64, x86-32 to lib)
     if (path.find("$LIB") != -1) or (path.find("${LIB}") != -1):
         if not pathlist:
             # nothing in the original pathlist, use the original path passed in
-            pathlist.append(replace_dst(path, "LIB", "lib"))
-            pathlist.append(replace_dst(path, "LIB", "lib64"))
+            pathlist.append(pathlib.PurePosixPath(replace_dst(path, "LIB", "lib")))
+            pathlist.append(pathlib.PurePosixPath(replace_dst(path, "LIB", "lib64")))
         else:
             # perform substitutions with every current entry in pathlist
             pathlist = [
                 newp
                 for p in pathlist
                 for newp in (
-                    replace_dst(p, "LIB", "lib"),
-                    replace_dst(p, "LIB", "lib64"),
+                    pathlib.PurePosixPath(replace_dst(p, "LIB", "lib")),
+                    pathlib.PurePosixPath(replace_dst(p, "LIB", "lib64")),
                 )
             ]
 
@@ -194,5 +194,5 @@ def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
         return []
 
     # normalize paths after expanding tokens to avoid portions of the path involving  ../, ./, and // occurrences
-    pathlist = [posix_normpath(p) for p in pathlist]
+    pathlist = [posix_normpath(p.as_posix()) for p in pathlist]
     return pathlist

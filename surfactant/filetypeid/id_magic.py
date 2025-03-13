@@ -105,6 +105,11 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 if is_docker_archive(filepath):
                     return "DOCKER_GZIP"
                 return "GZIP"
+            # Check for compressed TAR files (tar.bz2, tar.xz)
+            if magic_bytes[:3] == b"BZh":
+                return "BZIP2"
+            if magic_bytes[:6] == b"\xfd\x37\x7a\x58\x5a\x00":
+                return "XZ"
             if magic_bytes[257:265] == b"ustar\x0000" or magic_bytes[257:265] == b"ustar  \x00":
                 if is_docker_archive(filepath):
                     return "DOCKER_TAR"
@@ -192,6 +197,16 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 int.from_bytes(magic_bytes[0:4], byteorder="big", signed=False) & 0xFF0F80FF
             ) == 0xF00D0000:
                 return "OMF_LIB"
+            # zlib:
+            # https://www.rfc-editor.org/rfc/rfc1950
+            if len(magic_bytes) >= 2:
+                cmf = magic_bytes[0]
+                flg = magic_bytes[1]
+                cm = cmf & 0x0F
+                if cm == 8:
+                    if (cmf * 256 + flg) % 31 == 0:
+                        return "ZLIB"
+
             return None
     except FileNotFoundError:
         return None
