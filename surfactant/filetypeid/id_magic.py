@@ -22,27 +22,30 @@ class ExeType(Enum):
 
 
 def is_docker_archive(filepath: str) -> bool:
-    # pylint: disable=too-many-return-statements
-    with tarfile.open(filepath) as tar:
-        try:
-            manifest_info = tar.getmember("manifest.json")
-            if not manifest_info.isfile():
-                return False
-            with tar.extractfile(manifest_info) as manifest_file:
-                manifest = json.load(manifest_file)
-                # There's one entry in the list for each image
-                if not isinstance(manifest, list):
+    try:
+        # pylint: disable=too-many-return-statements
+        with tarfile.open(filepath) as tar:
+            try:
+                manifest_info = tar.getmember("manifest.json")
+                if not manifest_info.isfile():
                     return False
-                for data in manifest:
-                    # Just check if this data member exists
-                    _ = tar.getmember(data["Config"])
-                    # Now check that each of the layers exist
-                    for layer in data["Layers"]:
-                        _ = tar.getmember(layer)
-                # Everything seems to exist and be in order; this is most likely a Docker archive
-                return True
-        except KeyError:
-            return False
+                with tar.extractfile(manifest_info) as manifest_file:
+                    manifest = json.load(manifest_file)
+                    # There's one entry in the list for each image
+                    if not isinstance(manifest, list):
+                        return False
+                    for data in manifest:
+                        # Just check if this data member exists
+                        _ = tar.getmember(data["Config"])
+                        # Now check that each of the layers exist
+                        for layer in data["Layers"]:
+                            _ = tar.getmember(layer)
+                    # Everything seems to exist and be in order; this is most likely a Docker archive
+                    return True
+            except KeyError:
+                return False
+    except tarfile.ReadError:
+        return False
 
 
 @surfactant.plugin.hookimpl(tryfirst=True)
@@ -96,12 +99,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
             if magic_bytes[:4] == b"ISc(":
                 return "ISCAB"
             # For gzipped data, also filter by extension to avoid huge number of entries with limited info
-            if magic_bytes[:2] == b"\x1f\x8b" and "".join(
-                pathlib.Path(filepath).suffixes
-            ).lower() in [
-                ".tar.gz",
-                ".cab.gz",
-            ]:
+            if magic_bytes[:2] == b"\x1f\x8b":
                 if is_docker_archive(filepath):
                     return "DOCKER_GZIP"
                 return "GZIP"
