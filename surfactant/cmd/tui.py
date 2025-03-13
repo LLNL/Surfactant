@@ -359,8 +359,7 @@ class ConfigTab(textual.widgets.Static):
             textual.widgets.Button("Load", id="load"),
         )
         yield textual.widgets.Rule()
-        for entry in self.config_entries:
-            yield entry
+        yield from self.config_entries
         yield textual.widgets.Button("+", id="add_config_entry")
 
     @textual.on(textual.widgets.Button.Pressed, "#add_config_entry")
