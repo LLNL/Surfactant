@@ -8,6 +8,27 @@ from typing import List, Optional
 
 @dataclass
 class ContextEntry:
+    """
+    Represents an entry in the processing queue for directories/files.
+
+    Attributes:
+        extractPaths (List[str]): The absolute or relative paths to the files or folders to gather information on.
+            Note that Unix style '/' directory separators should be used in paths, even on Windows.
+        archive (Optional[str]): The full path, including file name, of the archive file that the files or folders
+            in `extractPaths` were extracted from. Used to collect metadata about the overall sample and establish
+            "Contains" relationships.
+        installPrefix (Optional[str]): The path where the files in `extractPaths` would be if installed
+            correctly on an actual system. If not provided, `extractPaths` will be used as the install prefixes.
+        omitUnrecognizedTypes (Optional[bool]): If True, files with unrecognized types will be omitted from the generated SBOM.
+        includeFileExts (Optional[List[str]]): A list of file extensions to include, even if not recognized by Surfactant.
+            `omitUnrecognizedTypes` must be set to True for this to take effect.
+        excludeFileExts (Optional[List[str]]): A list of file extensions to exclude, even if recognized by Surfactant.
+            If both `omitUnrecognizedTypes` and `includeFileExts` are set, the specified extensions in `includeFileExts`
+            will still be included.
+        skipProcessingArchive (Optional[bool]): If True, skip processing the given archive file with info extractors.
+            Software entry for the archive file will only contain basic information such as hashes. Default is False.
+    """
+
     extractPaths: List[str]
     archive: Optional[str] = None
     installPrefix: Optional[str] = None
