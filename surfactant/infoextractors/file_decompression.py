@@ -7,7 +7,11 @@
 #
 # SPDX-License-Identifier: MIT
 import atexit
+import bz2
+import gzip
+import lzma
 import os
+import pathlib
 import shutil
 import tarfile
 import tempfile
@@ -57,18 +61,30 @@ def extract_file_info(
 
 def check_compression_type(filename: str, compression_format: str) -> str:
     temp_folder = None
-
     if compression_format == "ZIP":
         temp_folder = decompress_zip_file(filename)
     elif compression_format == "TAR":
         temp_folder = extract_tar_file(filename)
     elif compression_format in {"GZIP", "BZIP2", "XZ"}:
-        tar_modes = {
-            "GZIP": "r:gz",
-            "BZIP2": "r:bz2",
-            "XZ": "r:xz",
-        }
-        temp_folder = decompress_tar_file(filename, tar_modes[compression_format])
+        try:
+            tar_modes = {
+                "GZIP": "r:gz",
+                "BZIP2": "r:bz2",
+                "XZ": "r:xz",
+            }
+            temp_folder = decompress_tar_file(filename, tar_modes[compression_format])
+        except tarfile.ReadError as e:
+            # Check if we expected it to be readable as a compressed tar file
+            if (
+                ".tar" in pathlib.Path(filename).suffixes
+                or ".tgz" in pathlib.Path(filename).suffixes
+            ):
+                logger.error(f"Error decompressing tar file {filename}: {e}")
+                logger.info(
+                    f"Attempting to decompress {filename} using the appropriate library as a single file"
+                )
+            # Since it doesn't seem to be a compressed tar file, try just decompressing the file
+            temp_folder = decompress_file(filename, compression_format)
     else:
         raise ValueError(f"Unsupported compression format: {compression_format}")
 
@@ -88,6 +104,32 @@ def decompress_zip_file(filename):
     temp_folder = create_temp_dir()
     with zipfile.ZipFile(filename, "r") as f:
         f.extractall(path=temp_folder)
+    return temp_folder
+
+
+def decompress_file(filename, compression_type):
+    temp_folder = create_temp_dir()
+    output_filename = pathlib.Path(filename).name
+    if compression_type == "GZIP" and filename.endswith(".gz"):
+        output_filename = pathlib.Path(filename).stem
+    elif compression_type == "BZIP2" and filename.endswith(".bz2"):
+        output_filename = pathlib.Path(filename).stem
+    elif compression_type == "XZ" and filename.endswith(".xz"):
+        output_filename = pathlib.Path(filename).stem
+
+    if compression_type == "GZIP":
+        with gzip.open(filename, "rb") as f_in:
+            with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+    elif compression_type == "BZIP2":
+        with bz2.open(filename, "rb") as f_in:
+            with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+    elif compression_type == "XZ":
+        with lzma.open(filename, "rb") as f_in:
+            with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+
     return temp_folder
 
 
