@@ -53,6 +53,7 @@ def get_software_entry(
             sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + "/", filepath)]
     sw_entry.recordedInstitution = user_institution_name
     sw_children: List[Software] = []
+    sw_field_hints: List[Tuple[str, Any, int]] = []
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
@@ -64,12 +65,13 @@ def get_software_entry(
             filetype=filetype,
             context=context,
             children=sw_children,
+            software_field_hints=sw_field_hints,
             omit_unrecognized_types=omit_unrecognized_types,
         )
         if not skip_extraction
         else []
     )
-    # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
+    # add metadata extracted from the file
     for file_details in extracted_info_results:
         # None as details doesn't add any useful info...
         if file_details is None:
@@ -80,38 +82,36 @@ def get_software_entry(
             sw_entry.metadata = []
         sw_entry.metadata.append(file_details)
 
-        # before checking for keys, make sure the file details object is a dictionary
-        if not isinstance(file_details, Dict):
-            continue
+    # set SBOM fields based on sw_field_hints
+    field_confidence: Dict[str, Tuple[Any, int]] = {}
+    for field, value, confidence in sw_field_hints:
+        # special case since vendor can list multiple values
+        if field == "vendor":
+            if field not in field_confidence:
+                field_confidence[field] = ([], 0)
+            field_confidence[field][0].append(value)
+        # otherwise, find the value for each field with the highest confidence
+        elif field not in field_confidence or confidence > field_confidence[field][1]:
+            field_confidence[field] = (value, confidence)
 
-        # common case is Windows PE file has these details under FileInfo, otherwise fallback default value is fine
-        if "FileInfo" in file_details:
-            fi = file_details["FileInfo"]
-            if "ProductName" in fi:
-                sw_entry.name = fi["ProductName"]
-            if "FileVersion" in fi:
-                sw_entry.version = fi["FileVersion"]
-            if "CompanyName" in fi:
-                sw_entry.vendor = [fi["CompanyName"]]
-            if "FileDescription" in fi:
-                sw_entry.description = fi["FileDescription"]
-            if "Comments" in fi:
-                sw_entry.comments = fi["Comments"]
-
-        # less common: OLE file metadata that might be relevant
-        if filetype == "OLE":
-            logger.trace("-----------OLE--------------")
-            if "subject" in file_details["ole"]:
-                sw_entry.name = file_details["ole"]["subject"]
-            if "revision_number" in file_details["ole"]:
-                sw_entry.version = file_details["ole"]["revision_number"]
-            if "author" in file_details["ole"]:
-                # ensure the vendor list has been created
-                if sw_entry.vendor is None:
-                    sw_entry.vendor = []
-                sw_entry.vendor.append(file_details["ole"]["author"])
-            if "comments" in file_details["ole"]:
-                sw_entry.comments = file_details["ole"]["comments"]
+    # set any fields that haven't been set yet (user/previously set fields take precedence)
+    for field, (value, _) in field_confidence.items():
+        if field == "name" and not sw_entry.name:
+            sw_entry.name = value
+        elif field == "version" and not sw_entry.version:
+            sw_entry.version = value
+        elif field == "vendor":
+            # make sure the vendor field is initialized
+            if sw_entry.vendor is None:
+                sw_entry.vendor = []
+            # add any new vendors detected to the list
+            for vendor in value:
+                if vendor not in sw_entry.vendor:
+                    sw_entry.vendor.append(value)
+        elif field == "description" and not sw_entry.description:
+            sw_entry.description = value
+        elif field == "comments" and not sw_entry.comments:
+            sw_entry.comments = value
     return (sw_entry, sw_children)
 
 
