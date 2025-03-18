@@ -113,9 +113,19 @@ def extract_file_info(
         # For DOCKER_TAR or other supported types
         return run_grype(filename)
 
+    except FileNotFoundError:
+        logger.error(f"File not found: {filename}")
+    except PermissionError:
+        logger.error(f"Permission denied when accessing file: {filename}")
+    except gzip.BadGzipFile:
+        logger.error(f"Invalid gzip file: {filename}")
+    except OSError as e:
+        logger.error(f"OS error while processing file {filename}: {e}")
     except Exception as e:
-        logger.error(f"Error while processing file {filename}: {e}")
-        return None
+        # Fallback for unexpected errors
+        logger.error(f"Unexpected error while processing file {filename}: {e}")
+
+    return None
 
 
 @surfactant.plugin.hookimpl
