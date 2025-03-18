@@ -103,7 +103,7 @@ def test_debug_create_config_and_tarball(config_and_tarball_fixture):
     # pytest test_grype.py -k test_debug_create_config_and_tarball -v
     # Call the fixture and unpack its return values
     config_file, tarball_file = config_and_tarball_fixture
-    
+
     # Log the outputs for debugging
     logging.info("Config file path: '%s'", config_file)
     logging.info("Tarball file path: '%s'", tarball_file)
