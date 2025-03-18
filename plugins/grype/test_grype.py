@@ -14,9 +14,7 @@ GRYPE_OUTPUT_KEY = "grype_output"
 
 def run_command(command: str) -> str:
     """Run a shell command and return its output."""
-    result = subprocess.run(
-        command, shell=True, capture_output=True, text=True, check=True
-    )
+    result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
     return result.stdout.strip()
 
 
@@ -38,7 +36,10 @@ def setup_environment():
 
 
 def check_command_availability(command):
-    if subprocess.run(f"which {command}", shell=True, capture_output=True, check=True).returncode != 0:
+    if (
+        subprocess.run(f"which {command}", shell=True, capture_output=True, check=True).returncode
+        != 0
+    ):
         pytest.skip(f"{command} is not available in the test environment.")
 
 
