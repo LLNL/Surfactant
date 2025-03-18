@@ -6,6 +6,10 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+# Globals
+PLUGIN_NAME = "surfactantplugin_grype"
+DOCKER_IMAGE = "hello-world"
+GRYPE_OUTPUT_KEY = "grype_output"
 
 def run_command(command):
     result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
@@ -30,7 +34,7 @@ def setup_environment():
     output = run_command("pip install -e .")
     logging.info(f"Install output: {output}")
 
-    enable_plugin("surfactantplugin_grype")
+    enable_plugin(PLUGIN_NAME)
 
 
 def check_command_availability(command):
@@ -72,17 +76,17 @@ def create_config_and_tarball(tmp_path):
     The tarball contains the 'hello-world' Docker container filesystem.
     """
     # Pull the 'hello-world' Docker image
-    logging.info("Pulling the 'hello-world' Docker image...")
-    run_command("sudo docker pull hello-world")
+    logging.info(f"Pulling the '{DOCKER_IMAGE}' Docker image...")
+    run_command(f"sudo docker pull {DOCKER_IMAGE}")
 
     # Export the container's filesystem to a tarball
     tarball_file = tmp_path / "myimage_latest.tar.gz"
     logging.info(f"Exporting the container filesystem to {tarball_file}...")
-    run_command(f"sudo docker save hello-world:latest | gzip > {tarball_file}")
+    run_command(f"sudo docker save {DOCKER_IMAGE}:latest | gzip > {tarball_file}")
 
     # Remove the container to clean up
     logging.info("Removing the container...")
-    run_command("sudo docker rmi hello-world:latest")
+    run_command(f"sudo docker rmi {DOCKER_IMAGE}:latest")
 
     # Create the configuration file
     config_data = [{"extractPaths": [str(tarball_file)], "installPrefix": "/usr/"}]
@@ -118,7 +122,7 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     # **********************
 
     # Enable and verify the Grype plugin is enabled
-    enable_plugin("surfactantplugin_grype")
+    enable_plugin(PLUGIN_NAME)
 
     # Run the Surfactant generate command (with Grype enabled)
     output_enabled_sbom = tmp_path / "docker_tball_grype-enabled_sbom.json"
@@ -140,15 +144,15 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     # Assert that the Grype output is present
     logging.info("ENABLED")
     logging.info(json.dumps(sbom_enabled, indent=4))
-    assert any("grype_output" in entry for entry in sbom_enabled["software"][0]["metadata"]), (
+    assert any(GRYPE_OUTPUT_KEY in entry for entry in sbom_enabled["software"][0]["metadata"]), (
         "Grype output should be present when the plugin is enabled"
     )
 
     # Assert that the Grype output is empty (in this specific test case)
     assert all(
-        entry.get("grype_output") == []
+        entry.get(GRYPE_OUTPUT_KEY) == []
         for entry in sbom_enabled["software"][0]["metadata"]
-        if "grype_output" in entry
+        if GRYPE_OUTPUT_KEY in entry
     ), "Grype output should be empty for a minimal tarball with no vulnerabilities"
 
     # **********************
@@ -156,7 +160,7 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     # **********************
 
     # Disable the Grype plugin and verify the plugin is disabled
-    disable_plugin("surfactantplugin_grype")
+    disable_plugin(PLUGIN_NAME)
 
     # Run the Surfactant generate command (with Grype disabled)
     output_disabled_sbom = tmp_path / "docker_tball_grype-disabled_sbom.json"
@@ -174,7 +178,7 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     # Assert that the Grype output is not present
     logging.info("DISABLED")
     logging.info(json.dumps(sbom_disabled, indent=4))
-    assert not any("grype_output" in entry for entry in sbom_disabled["software"][0]["metadata"]), (
+    assert not any(GRYPE_OUTPUT_KEY in entry for entry in sbom_disabled["software"][0]["metadata"]), (
         "Grype output should not be present when the plugin is disabled"
     )
 
