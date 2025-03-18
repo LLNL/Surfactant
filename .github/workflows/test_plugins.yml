@@ -9,7 +9,6 @@ on:
 
 jobs:
   build:
-    permissions: read-all
     name: ${{ matrix.os }} Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -17,6 +16,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.13"]
+    permissions: read-all
 
     steps:
     # Step 1: Check out the repository
