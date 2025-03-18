@@ -17,7 +17,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.13"]
     permissions:
-      read-all: true
+      contents: read
 
     steps:
       # Step 1: Check out the repository
