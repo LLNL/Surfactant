@@ -46,13 +46,13 @@ jobs:
           PLUGINS_DIR="plugins"
           IGNORED_DIRS=("") # Add any ignored plugin directories here
 
-          # Iterate through each subdirectory in the plugins folder
-          for PLUGIN_DIR in "$PLUGINS_DIR"/*; do
+          # Iterate through each entry in the plugins folder
+          for PLUGIN_ENTRY in "$PLUGINS_DIR"/*; do
             # Skip if it's not a directory
-            [ -d "$PLUGIN_DIR" ] || continue
+            [ -d "$PLUGIN_ENTRY" ] || continue
 
             # Get the plugin name
-            PLUGIN_NAME=$(basename "$PLUGIN_DIR")
+            PLUGIN_NAME=$(basename "$PLUGIN_ENTRY")
             echo "Processing plugin: $PLUGIN_NAME"
 
             # Skip ignored directories
@@ -61,47 +61,38 @@ jobs:
               continue
             fi
 
-            echo "Testing plugin: $PLUGIN_NAME"
+            # Check if the plugin has a `setup.py` or `pyproject.toml` to identify it as a Python plugin
+            if [ -f "$PLUGIN_ENTRY/setup.py" ] || [ -f "$PLUGIN_ENTRY/pyproject.toml" ]; then
+              echo "$PLUGIN_NAME is a valid Python plugin."
 
-            # Create a fresh virtual environment
-            echo "Creating virtual environment for $PLUGIN_NAME..."
-            python -m venv venv
-            source venv/bin/activate
+              # Check if the plugin has a `tests/` directory
+              if [ -d "$PLUGIN_ENTRY/tests" ]; then
+                echo "Tests found for $PLUGIN_NAME. Setting up virtual environment."
 
-            # Install Surfactant and the plugin
-            echo "Installing Surfactant and $PLUGIN_NAME..."
-            python -m pip install --upgrade pip
-            python -m pip install -e .[test]
-            surfactant version
-            python -m pip install -e "$PLUGIN_DIR"
+                # Create a fresh virtual environment
+                echo "Creating virtual environment for $PLUGIN_NAME..."
+                python -m venv venv
+                source venv/bin/activate
 
-            # Check if tests exist in the plugin folder
-            if [ -d "$PLUGIN_DIR/tests" ]; then
-              echo "Tests found for $PLUGIN_NAME. Running pytest."
+                # Install Surfactant and the plugin
+                echo "Installing Surfactant and $PLUGIN_NAME..."
+                python -m pip install --upgrade pip
+                python -m pip install -e .[test]
+                surfactant version
+                python -m pip install -e "$PLUGIN_ENTRY"
 
-              # Run pytest in the plugin's folder with verbose output
-              pytest -vv --log-cli-level=INFO "$PLUGIN_DIR/tests"
+                echo "Running pytest for $PLUGIN_NAME."
 
+                # Run pytest in the plugin's folder with verbose output
+                pytest -vv --log-cli-level=INFO "$PLUGIN_ENTRY/tests"
 
-              # Deactivate the virtual environment
-              echo "Deactivating virtual environment for $PLUGIN_NAME..."
-              deactivate
-            else
-              echo "No tests found for $PLUGIN_NAME. Running basic functionality check."
-
-              # Run the plugin on test files (adjust the command as needed)
-              if [ -d "$PLUGIN_DIR/test_files" ]; then
-                for TEST_FILE in "$PLUGIN_DIR/test_files"/*; do
-                  echo "Running $PLUGIN_NAME on $TEST_FILE"
-                  # Replace `plugin-command` with the actual command to invoke the plugin
-                  plugin-command "$TEST_FILE"
-                done
+                # Deactivate the virtual environment
+                echo "Deactivating virtual environment for $PLUGIN_NAME..."
+                deactivate
               else
-                echo "No test files found for $PLUGIN_NAME. Skipping functionality check."
+                echo "No tests found for $PLUGIN_NAME. Skipping virtual environment setup."
               fi
-
-              # Deactivate the virtual environment
-              echo "Deactivating virtual environment for $PLUGIN_NAME..."
-              deactivate
+            else
+              echo "$PLUGIN_NAME is not a valid Python plugin. Skipping."
             fi
           done
