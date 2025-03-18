@@ -98,11 +98,11 @@ def create_config_and_tarball(tmp_path):
     return str(config_file), str(tarball_file)
 
 
-def test_debug_create_config_and_tarball(create_config_and_tarball):
+def test_debug_create_config_and_tarball(config_and_tarball_fixture):
     # pytest test_grype.py -k test_debug_create_config_and_tarball -v
     # Call the fixture and unpack its return values
-    config_file, tarball_file = create_config_and_tarball
-
+    config_file, tarball_file = config_and_tarball_fixture
+    
     # Log the outputs for debugging
     logging.info("Config file path: '%s'", config_file)
     logging.info("Tarball file path: '%s'", tarball_file)
@@ -112,10 +112,11 @@ def test_debug_create_config_and_tarball(create_config_and_tarball):
     assert tarball_file is not None, "Tarball file was not created"
 
 
-def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_path):
+def test_surfactant_generate(setup_env_fixture, config_and_tarball_fixture, tmp_path):
     """Test the Surfactant generate command with the Grype plugin."""
     # Get the configuration file and tarball file from the fixture
-    config_file, tarball_file = create_config_and_tarball
+
+    config_file, tarball_file = config_and_tarball_fixture
 
     # **********************
     # **** Enabled Test ***
