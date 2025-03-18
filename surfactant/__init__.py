@@ -2,7 +2,7 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-from .config import ContextEntry
+from .context import ContextEntry
 
 try:
     from ._version import __version__, __version_tuple__

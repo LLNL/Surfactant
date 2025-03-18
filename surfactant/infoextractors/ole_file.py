@@ -2,7 +2,7 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 import olefile
 
@@ -15,10 +15,26 @@ def supports_file(filetype) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(
+    sbom: SBOM,
+    software: Software,
+    filename: str,
+    filetype: str,
+    software_field_hints: List[Tuple[str, object, int]],
+) -> object:
     if not supports_file(filetype):
         return None
-    return extract_ole_info(filename)
+    ole_info = extract_ole_info(filename)
+    if ole_info and "ole" in ole_info:
+        if "subject" in ole_info["ole"]:
+            software_field_hints.append(("name", ole_info["ole"]["subject"], 80))
+        if "revision_number" in ole_info["ole"]:
+            software_field_hints.append(("version", ole_info["ole"]["revision_number"], 80))
+        if "author" in ole_info["ole"]:
+            software_field_hints.append(("vendor", ole_info["ole"]["author"], 80))
+        if "comments" in ole_info["ole"]:
+            software_field_hints.append(("comments", ole_info["ole"]["comments"], 80))
+    return ole_info
 
 
 def extract_ole_info(filename: str) -> object:

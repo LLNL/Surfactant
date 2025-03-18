@@ -22,27 +22,30 @@ class ExeType(Enum):
 
 
 def is_docker_archive(filepath: str) -> bool:
-    # pylint: disable=too-many-return-statements
-    with tarfile.open(filepath) as tar:
-        try:
-            manifest_info = tar.getmember("manifest.json")
-            if not manifest_info.isfile():
-                return False
-            with tar.extractfile(manifest_info) as manifest_file:
-                manifest = json.load(manifest_file)
-                # There's one entry in the list for each image
-                if not isinstance(manifest, list):
+    try:
+        # pylint: disable=too-many-return-statements
+        with tarfile.open(filepath) as tar:
+            try:
+                manifest_info = tar.getmember("manifest.json")
+                if not manifest_info.isfile():
                     return False
-                for data in manifest:
-                    # Just check if this data member exists
-                    _ = tar.getmember(data["Config"])
-                    # Now check that each of the layers exist
-                    for layer in data["Layers"]:
-                        _ = tar.getmember(layer)
-                # Everything seems to exist and be in order; this is most likely a Docker archive
-                return True
-        except KeyError:
-            return False
+                with tar.extractfile(manifest_info) as manifest_file:
+                    manifest = json.load(manifest_file)
+                    # There's one entry in the list for each image
+                    if not isinstance(manifest, list):
+                        return False
+                    for data in manifest:
+                        # Just check if this data member exists
+                        _ = tar.getmember(data["Config"])
+                        # Now check that each of the layers exist
+                        for layer in data["Layers"]:
+                            _ = tar.getmember(layer)
+                    # Everything seems to exist and be in order; this is most likely a Docker archive
+                    return True
+            except KeyError:
+                return False
+    except tarfile.ReadError:
+        return False
 
 
 @surfactant.plugin.hookimpl(tryfirst=True)
@@ -96,15 +99,15 @@ def identify_file_type(filepath: str) -> Optional[str]:
             if magic_bytes[:4] == b"ISc(":
                 return "ISCAB"
             # For gzipped data, also filter by extension to avoid huge number of entries with limited info
-            if magic_bytes[:2] == b"\x1f\x8b" and "".join(
-                pathlib.Path(filepath).suffixes
-            ).lower() in [
-                ".tar.gz",
-                ".cab.gz",
-            ]:
+            if magic_bytes[:2] == b"\x1f\x8b":
                 if is_docker_archive(filepath):
                     return "DOCKER_GZIP"
                 return "GZIP"
+            # Check for compressed TAR files (tar.bz2, tar.xz)
+            if magic_bytes[:3] == b"BZh":
+                return "BZIP2"
+            if magic_bytes[:6] == b"\xfd\x37\x7a\x58\x5a\x00":
+                return "XZ"
             if magic_bytes[257:265] == b"ustar\x0000" or magic_bytes[257:265] == b"ustar  \x00":
                 if is_docker_archive(filepath):
                     return "DOCKER_TAR"
@@ -192,6 +195,10 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 int.from_bytes(magic_bytes[0:4], byteorder="big", signed=False) & 0xFF0F80FF
             ) == 0xF00D0000:
                 return "OMF_LIB"
+            # U-Boot/uImage
+            # https://github.com/u-boot/u-boot/blob/master/include/image.h#L313
+            if magic_bytes[:4] == b"\x27\x05\x19\x56":
+                return "UIMAGE"
             # zlib:
             # https://www.rfc-editor.org/rfc/rfc1950
             if len(magic_bytes) >= 2:
@@ -201,6 +208,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 if cm == 8:
                     if (cmf * 256 + flg) % 31 == 0:
                         return "ZLIB"
+
             return None
     except FileNotFoundError:
         return None

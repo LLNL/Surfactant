@@ -10,7 +10,7 @@
 
 import pathlib
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import defusedxml.ElementTree
 import dnfile
@@ -25,10 +25,30 @@ def supports_file(filetype) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(
+    sbom: SBOM,
+    software: Software,
+    filename: str,
+    filetype: str,
+    software_field_hints: List[Tuple[str, object, int]],
+) -> object:
     if not supports_file(filetype):
         return None
-    return extract_pe_info(filename)
+    pe_info = extract_pe_info(filename)
+    if pe_info:
+        if "FileInfo" in pe_info:
+            fi = pe_info["FileInfo"]
+            if "ProductName" in fi:
+                software_field_hints.append(("name", fi["ProductName"], 80))
+            if "FileVersion" in fi:
+                software_field_hints.append(("version", fi["FileVersion"], 80))
+            if "CompanyName" in fi:
+                software_field_hints.append(("vendor", fi["CompanyName"], 80))
+            if "FileDescription" in fi:
+                software_field_hints.append(("description", fi["FileDescription"], 80))
+            if "Comments" in fi:
+                software_field_hints.append(("comments", fi["Comments"], 80))
+    return pe_info
 
 
 # https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#machine-types

@@ -6,6 +6,8 @@ on:
     tags:
       - v*
 
+permissions: read-all
+
 jobs:
   build-wheel:
     runs-on: ubuntu-latest
