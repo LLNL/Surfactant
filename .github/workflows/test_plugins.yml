@@ -79,7 +79,8 @@ jobs:
               echo "Tests found for $PLUGIN_NAME. Running pytest."
 
               # Run pytest in the plugin's folder with verbose output
-              pytest -v "$PLUGIN_DIR/tests"
+              pytest -vv --log-cli-level=INFO "$PLUGIN_DIR/tests"
+              
 
               # Deactivate the virtual environment
               echo "Deactivating virtual environment for $PLUGIN_NAME..."
