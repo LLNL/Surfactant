@@ -121,9 +121,6 @@ def extract_file_info(
         logger.error(f"Invalid gzip file: {filename}")
     except OSError as e:
         logger.error(f"OS error while processing file {filename}: {e}")
-    except Exception as e:
-        # Fallback for unexpected errors
-        logger.error(f"Unexpected error while processing file {filename}: {e}")
 
     return None
 
