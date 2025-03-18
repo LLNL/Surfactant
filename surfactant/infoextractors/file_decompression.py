@@ -35,9 +35,15 @@ def supports_file(filetype: str) -> str:
     return None
 
 
+# pylint: disable=too-many-positional-arguments
 @surfactant.plugin.hookimpl
 def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str, context: "Queue[ContextEntry]"
+    sbom: SBOM,
+    software: Software,
+    filename: str,
+    filetype: str,
+    context_queue: "Queue[ContextEntry]",
+    current_context: Optional[ContextEntry],
 ) -> Optional[Dict[str, Any]]:
     # Check if the file is compressed and get its format
     compression_format = supports_file(filetype)
@@ -52,8 +58,8 @@ def extract_file_info(
         archive=filename, installPrefix="", extractPaths=[temp_folder], skipProcessingArchive=True
     )
 
-    # Add new ContextEntry to queue
-    context.put(new_entry)
+    # Add new ContextEntry object to queue
+    context_queue.put(new_entry)
     logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
 
     return None
