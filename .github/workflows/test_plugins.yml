@@ -88,9 +88,3 @@ jobs:
             deactivate
           fi
         done
-
-    # Step 4: Validate SBOM (optional)
-    - name: Validate SBOM
-      run: |
-        # Placeholder for SBOM validation logic
-        echo "SBOM validation step (to be implemented)"
