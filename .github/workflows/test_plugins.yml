@@ -71,7 +71,7 @@ jobs:
             # Install Surfactant and the plugin
             echo "Installing Surfactant and $PLUGIN_NAME..."
             pip install --upgrade pip
-            pip install -e ./Surfactant
+            pip install -e .[test]
             pip install -e "$PLUGIN_DIR"
 
             # Check if tests exist in the plugin folder
