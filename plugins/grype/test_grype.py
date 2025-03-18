@@ -1,12 +1,15 @@
-import subprocess
-import pytest
 import json
+import subprocess
+
+import pytest
 
 
 def run_command(command):
     result = subprocess.run(command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"Command failed: {command}\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}")
+        raise RuntimeError(
+            f"Command failed: {command}\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+        )
     return result.stdout.strip()
 
 
@@ -15,7 +18,7 @@ def setup_environment():
     """Fixture to install Grype and the Grype plugin."""
     check_command_availability("surfactant")
     check_command_availability("docker")
-    
+
     # Verify and install required tools
     install_grype()
 
@@ -39,7 +42,9 @@ def install_grype():
         print(f"Grype is already installed: {output}")
     except RuntimeError:
         print("Installing Grype...")
-        run_command("curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin")
+        run_command(
+            "curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin"
+        )
         print("Grype installed successfully.")
 
 
@@ -51,7 +56,9 @@ def enable_plugin(plugin_name):
 
 def disable_plugin(plugin_name):
     run_command(f"surfactant plugin disable {plugin_name}")
-    output = run_command(f"surfactant plugin list | grep -A 5 'DISABLED PLUGINS' | grep '{plugin_name}'")
+    output = run_command(
+        f"surfactant plugin list | grep -A 5 'DISABLED PLUGINS' | grep '{plugin_name}'"
+    )
     assert plugin_name in output, f"{plugin_name} not found in disabled plugins"
 
 
@@ -69,19 +76,13 @@ def create_config_and_tarball(tmp_path):
     tarball_file = tmp_path / "myimage_latest.tar.gz"
     print(f"Exporting the container filesystem to {tarball_file}...")
     run_command(f"sudo docker save hello-world:latest | gzip > {tarball_file}")
-        
 
     # Remove the container to clean up
     print("Removing the container...")
-    run_command(f"sudo docker rmi hello-world:latest")
+    run_command("sudo docker rmi hello-world:latest")
 
     # Create the configuration file
-    config_data = [
-        {
-            "extractPaths": [str(tarball_file)],
-            "installPrefix": "/usr/"
-        }
-    ]
+    config_data = [{"extractPaths": [str(tarball_file)], "installPrefix": "/usr/"}]
     config_file = tmp_path / "config_dockertball.json"
     with open(config_file, "w") as f:
         json.dump(config_data, f, indent=4)
@@ -136,9 +137,10 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     # Assert that the Grype output is present
     print("ENABLED")
     print(json.dumps(sbom_enabled, indent=4))
-    assert any("grype_output" in entry for entry in sbom_enabled["software"][0]["metadata"]), \
+    assert any("grype_output" in entry for entry in sbom_enabled["software"][0]["metadata"]), (
         "Grype output should be present when the plugin is enabled"
-    
+    )
+
     # Assert that the Grype output is empty (in this specific test case)
     assert all(
         entry.get("grype_output") == []
