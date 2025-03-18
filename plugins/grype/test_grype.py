@@ -11,6 +11,7 @@ PLUGIN_NAME = "surfactantplugin_grype"
 DOCKER_IMAGE = "hello-world"
 GRYPE_OUTPUT_KEY = "grype_output"
 
+
 def run_command(command):
     result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
     if result.returncode != 0:
@@ -178,9 +179,9 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     # Assert that the Grype output is not present
     logging.info("DISABLED")
     logging.info(json.dumps(sbom_disabled, indent=4))
-    assert not any(GRYPE_OUTPUT_KEY in entry for entry in sbom_disabled["software"][0]["metadata"]), (
-        "Grype output should not be present when the plugin is disabled"
-    )
+    assert not any(
+        GRYPE_OUTPUT_KEY in entry for entry in sbom_disabled["software"][0]["metadata"]
+    ), "Grype output should not be present when the plugin is disabled"
 
     # ************************
     # *** Test consistency ***
