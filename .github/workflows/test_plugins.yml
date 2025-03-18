@@ -43,7 +43,7 @@ jobs:
           echo "Starting plugin tests..."
 
           # Define the plugins directory and ignored directories
-          PLUGINS_DIR="Surfactant/plugins"
+          PLUGINS_DIR="plugins"
           IGNORED_DIRS=("") # Add any ignored plugin directories here
 
           # Iterate through each subdirectory in the plugins folder
