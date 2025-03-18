@@ -80,7 +80,7 @@ jobs:
 
               # Run pytest in the plugin's folder with verbose output
               pytest -vv --log-cli-level=INFO "$PLUGIN_DIR/tests"
-              
+
 
               # Deactivate the virtual environment
               echo "Deactivating virtual environment for $PLUGIN_NAME..."
