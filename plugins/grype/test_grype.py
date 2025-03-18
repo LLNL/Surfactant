@@ -1,8 +1,8 @@
 import json
+import logging
 import subprocess
 
 import pytest
-import logging
 
 logging.basicConfig(level=logging.INFO)
 
