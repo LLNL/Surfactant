@@ -12,12 +12,11 @@ DOCKER_IMAGE = "hello-world"
 GRYPE_OUTPUT_KEY = "grype_output"
 
 
-def run_command(command):
-    result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"Command failed: {command}\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
-        )
+def run_command(command: str) -> str:
+    """Run a shell command and return its output."""
+    result = subprocess.run(
+        command, shell=True, capture_output=True, text=True, check=True
+    )
     return result.stdout.strip()
 
 
@@ -39,16 +38,16 @@ def setup_environment():
 
 
 def check_command_availability(command):
-    if subprocess.run(f"which {command}", shell=True, capture_output=True).returncode != 0:
+    if subprocess.run(f"which {command}", shell=True, capture_output=True, check=True).returncode != 0:
         pytest.skip(f"{command} is not available in the test environment.")
 
 
-def install_grype():
+def install_grype() -> None:
     """Install Grype if not already installed."""
     try:
         output = run_command("grype --version")
         logging.info("Grype is already installed: '%s'", output)
-    except RuntimeError:
+    except subprocess.CalledProcessError:
         logging.info("Installing Grype...")
         run_command(
             "curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin"
@@ -92,7 +91,7 @@ def create_config_and_tarball(tmp_path):
     # Create the configuration file
     config_data = [{"extractPaths": [str(tarball_file)], "installPrefix": "/usr/"}]
     config_file = tmp_path / "config_dockertball.json"
-    with open(config_file, "w") as f:
+    with open(config_file, "w", encoding="utf-8") as f:
         json.dump(config_data, f, indent=4)
     logging.info("Configuration file created: '%s'", config_file)
 
@@ -128,7 +127,7 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     # Run the Surfactant generate command (with Grype enabled)
     output_enabled_sbom = tmp_path / "docker_tball_grype-enabled_sbom.json"
     logging.info(config_file)
-    with open(config_file, "r") as f:
+    with open(config_file, "r", encoding="utf-8") as f:
         config_out = json.load(f)
     logging.info(json.dumps(config_out, indent=4))
     command = f"surfactant generate {config_file} {output_enabled_sbom}"
@@ -139,7 +138,7 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     assert output_enabled_sbom.exists(), f"SBOM file not created: {output_enabled_sbom}"
 
     # Read and parse the SBOM
-    with open(output_enabled_sbom, "r") as f:
+    with open(output_enabled_sbom, "r", encoding="utf-8") as f:
         sbom_enabled = json.load(f)
 
     # Assert that the Grype output is present
@@ -173,7 +172,7 @@ def test_surfactant_generate(setup_environment, create_config_and_tarball, tmp_p
     assert output_disabled_sbom.exists(), f"SBOM file not created: {output_disabled_sbom}"
 
     # Read and parse the SBOM
-    with open(output_disabled_sbom, "r") as f:
+    with open(output_disabled_sbom, "r", encoding="utf-8") as f:
         sbom_disabled = json.load(f)
 
     # Assert that the Grype output is not present
