@@ -26,14 +26,7 @@ def setup_environment_fixture():
 
     # Verify and install required tools
     install_grype()
-
-    # # Install the Grype plugin in editable mode
-    logging.info("Installing the Grype plugin in editable mode ...")
-    output = run_command("pip install -e .")
-    logging.info("Install output: '%s'", output)
-
-    enable_plugin(PLUGIN_NAME)
-
+    
 
 def check_command_availability(command):
     if (
