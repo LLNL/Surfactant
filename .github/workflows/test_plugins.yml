@@ -90,7 +90,7 @@ jobs:
                 echo "Deactivating virtual environment for $PLUGIN_NAME..."
                 deactivate
               else
-                echo "No tests found for $PLUGIN_NAME. Skipping virtual environment setup."
+                echo "No tests found for $PLUGIN_NAME."
               fi
             else
               echo "$PLUGIN_NAME is not a valid Python plugin. Skipping."
