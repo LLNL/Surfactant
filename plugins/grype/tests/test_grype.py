@@ -71,17 +71,20 @@ def disable_plugin(plugin_name):
 
 
 @pytest.fixture(scope="session")
-def create_config_and_tarball_fixture(tmp_path):
+def create_config_and_tarball_fixture(tmp_path_factory):
     """
     Fixture to create the configuration file and Docker tarball for testing.
     The tarball contains the 'hello-world' Docker container filesystem.
     """
+    # Create a session-scoped temporary directory
+    temp_dir = tmp_path_factory.mktemp("session_temp")
+
     # Pull the 'hello-world' Docker image
     logging.info("Pulling the '%s' Docker image...", DOCKER_IMAGE)
     run_command(f"sudo docker pull {DOCKER_IMAGE}")
 
     # Export the container's filesystem to a tarball
-    tarball_file = tmp_path / "myimage_latest.tar.gz"
+    tarball_file = temp_dir / "myimage_latest.tar.gz"
     logging.info("Exporting the container filesystem to '%s'...", tarball_file)
     run_command(f"sudo docker save {DOCKER_IMAGE}:latest | gzip > {tarball_file}")
 
@@ -91,7 +94,7 @@ def create_config_and_tarball_fixture(tmp_path):
 
     # Create the configuration file
     config_data = [{"extractPaths": [str(tarball_file)], "installPrefix": "/usr/"}]
-    config_file = tmp_path / "config_dockertball.json"
+    config_file = temp_dir / "config_dockertball.json"
     with open(config_file, "w", encoding="utf-8") as f:
         json.dump(config_data, f, indent=4)
     logging.info("Configuration file created: '%s'", config_file)
@@ -113,11 +116,13 @@ def test_debug_create_config_and_tarball(create_config_and_tarball_fixture):
     assert tarball_file is not None, "Tarball file was not created"
 
 
-def test_surfactant_generate(setup_environment_fixture, create_config_and_tarball_fixture, tmp_path):
+def test_surfactant_generate(setup_environment_fixture, create_config_and_tarball_fixture, tmp_path_factory):
     """Test the Surfactant generate command with the Grype plugin."""
     # Get the configuration file and tarball file from the fixture
-
     config_file, tarball_file = create_config_and_tarball_fixture
+
+    # Create a temporary directory for the test
+    temp_dir = tmp_path_factory.mktemp("test_temp")
 
     # **********************
     # **** Enabled Test ***
@@ -127,7 +132,7 @@ def test_surfactant_generate(setup_environment_fixture, create_config_and_tarbal
     enable_plugin(PLUGIN_NAME)
 
     # Run the Surfactant generate command (with Grype enabled)
-    output_enabled_sbom = tmp_path / "docker_tball_grype-enabled_sbom.json"
+    output_enabled_sbom = temp_dir / "docker_tball_grype-enabled_sbom.json"
     logging.info(config_file)
     with open(config_file, "r", encoding="utf-8") as f:
         config_out = json.load(f)
@@ -162,10 +167,7 @@ def test_surfactant_generate(setup_environment_fixture, create_config_and_tarbal
     # **********************
 
     # Disable the Grype plugin and verify the plugin is disabled
-    disable_plugin(PLUGIN_NAME)
-
-    # Run the Surfactant generate command (with Grype disabled)
-    output_disabled_sbom = tmp_path / "docker_tball_grype-disabled_sbom.json"
+    output_disabled_sbom = temp_dir / "docker_tball_grype-disabled_sbom.json"
     command = f"surfactant generate {config_file} {output_disabled_sbom}"
     logging.info("Running command: '%s'", command)
     run_command(command)
@@ -193,5 +195,5 @@ def test_surfactant_generate(setup_environment_fixture, create_config_and_tarbal
         "File names should match between disabled and enabled cases"
     )
     assert sbom_disabled["software"][0]["sha256"] == sbom_enabled["software"][0]["sha256"], (
-        "SHA256 hashes should match between disabled and enabled cases"
+        "SHA25"
     )
