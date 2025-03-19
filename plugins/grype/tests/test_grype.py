@@ -70,7 +70,7 @@ def disable_plugin(plugin_name):
     assert plugin_name in output, f"{plugin_name} not found in disabled plugins"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", name="config_and_tarball_fixture")
 def create_config_and_tarball_fixture(tmp_path_factory):
     """
     Fixture to create the configuration file and Docker tarball for testing.
@@ -116,7 +116,7 @@ def test_debug_create_config_and_tarball(config_and_tarball_fixture):
     assert tarball_file is not None, "Tarball file was not created"
 
 
-@pytest.mark.usefixtures("setup_environment_fixture", "create_config_and_tarball_fixture")
+@pytest.mark.usefixtures("setup_environment_fixture", "config_and_tarball_fixture")
 def test_surfactant_generate(config_and_tarball_fixture, tmp_path_factory):
     """Test the Surfactant generate command with the Grype plugin."""
     # Unpack the fixture values
