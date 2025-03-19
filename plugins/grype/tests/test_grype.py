@@ -28,11 +28,11 @@ def setup_environment_fixture():
     install_grype()
 
     # # Install the Grype plugin in editable mode
-    # logging.info("Installing the Grype plugin in editable mode ...")
-    # output = run_command("pip install -e .")
-    # logging.info("Install output: '%s'", output)
+    logging.info("Installing the Grype plugin in editable mode ...")
+    output = run_command("pip install -e .")
+    logging.info("Install output: '%s'", output)
 
-    # enable_plugin(PLUGIN_NAME)
+    enable_plugin(PLUGIN_NAME)
 
 
 def check_command_availability(command):
@@ -166,6 +166,9 @@ def test_surfactant_generate(config_and_tarball_fixture, tmp_path_factory):
     # **********************
     # **** Disabled Test ***
     # **********************
+    
+    # Disbale and verify the Grype plugin is disabled
+    disable_plugin(PLUGIN_NAME)
 
     # Disable the Grype plugin and verify the plugin is disabled
     output_disabled_sbom = temp_dir / "docker_tball_grype-disabled_sbom.json"
