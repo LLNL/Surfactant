@@ -51,9 +51,12 @@ def extract_file_info(
         software (Software): The software entry the gathered information will be added to.
         filename (str): The full path to the file to extract information from.
         filetype (str): File type information based on magic bytes.
-        context_queue (Queue[ContextEntry]): Modifiable queue of entries from input config file. Existing plugins should
-            still work without adding this parameter.
-        current_context (Optional[ContextEntry]): A single ContextEntry object in the context queue.
+        context_queue (Queue[ContextEntry]): Modifiable queue of entries typically initialized from the input specimen
+            config file. Plugins can add new entries to the queue to make Surfactant process additional files/folders.
+            Existing plugins should still work without adding this parameter.
+        current_context (Optional[ContextEntry]): The ContextEntry object from the queue whose files are currently being
+            processed (modifying it is considered undefined behavior and should be avoided). Most plugins do not need to
+            use this parameter.
         children (List[Software]): List of additional software entries to include in the SBOM. Plugins can add
             additional entries, though if the plugin extracts files to a temporary directory, the context argument
             should be used to have Surfactant process the files instead.
