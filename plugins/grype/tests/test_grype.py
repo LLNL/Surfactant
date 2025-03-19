@@ -102,10 +102,10 @@ def create_config_and_tarball_fixture(tmp_path_factory):
     return str(config_file), str(tarball_file)
 
 
-def test_debug_create_config_and_tarball(create_config_and_tarball_fixture):
+def test_debug_create_config_and_tarball(config_and_tarball_fixture):
     # pytest test_grype.py -k test_debug_create_config_and_tarball -v
     # Call the fixture and unpack its return values
-    config_file, tarball_file = create_config_and_tarball_fixture
+    config_file, tarball_file = config_and_tarball_fixture
 
     # Log the outputs for debugging
     logging.info("Config file path: '%s'", config_file)
@@ -117,10 +117,10 @@ def test_debug_create_config_and_tarball(create_config_and_tarball_fixture):
 
 
 @pytest.mark.usefixtures("setup_environment_fixture", "create_config_and_tarball_fixture")
-def test_surfactant_generate(create_config_and_tarball_fixture, tmp_path_factory):
+def test_surfactant_generate(config_and_tarball_fixture, tmp_path_factory):
     """Test the Surfactant generate command with the Grype plugin."""
     # Unpack the fixture values
-    config_file, tarball_file = create_config_and_tarball_fixture
+    config_file, tarball_file = config_and_tarball_fixture
 
     # Create a temporary directory for the test
     temp_dir = tmp_path_factory.mktemp("test_temp")
