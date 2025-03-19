@@ -28,8 +28,11 @@ def plugin_list_cmd():
     current_blocked_plugins = config_manager.get(section, section_key, [])
 
     print("\nDISABLED PLUGINS")
-    for disabled_plugin in current_blocked_plugins:
-        print(f"\tname: {disabled_plugin}")
+    if not current_blocked_plugins:
+        print("\tThere are no disabled plugins.")
+    else:
+        for disabled_plugin in current_blocked_plugins:
+            print(f"\tname: {disabled_plugin}")
 
 
 @click.command(name="enable")
