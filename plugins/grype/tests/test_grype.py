@@ -194,6 +194,4 @@ def test_surfactant_generate(tmp_path_factory):
     assert sbom_disabled["software"][0]["fileName"] == sbom_enabled["software"][0]["fileName"], (
         "File names should match between disabled and enabled cases"
     )
-    assert sbom_disabled["software"][0]["sha256"] == sbom_enabled["software"][0]["sha256"], (
-        "SHA25"
-    )
+    assert sbom_disabled["software"][0]["sha256"] == sbom_enabled["software"][0]["sha256"], "SHA25"
