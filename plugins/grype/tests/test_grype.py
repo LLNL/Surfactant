@@ -115,11 +115,11 @@ def test_debug_create_config_and_tarball(create_config_and_tarball_fixture):
     assert config_file is not None, "Config file was not created"
     assert tarball_file is not None, "Tarball file was not created"
 
-
-def test_surfactant_generate(setup_environment_fixture, create_config_and_tarball_fixture, tmp_path_factory):
+@pytest.mark.usefixtures("setup_environment_fixture", "create_config_and_tarball_fixture")
+def test_surfactant_generate(tmp_path_factory):
     """Test the Surfactant generate command with the Grype plugin."""
     # Get the configuration file and tarball file from the fixture
-    config_file, tarball_file = create_config_and_tarball_fixture
+    config_file, tarball_file = create_config_and_tarball_fixture(tmp_path_factory)
 
     # Create a temporary directory for the test
     temp_dir = tmp_path_factory.mktemp("test_temp")
