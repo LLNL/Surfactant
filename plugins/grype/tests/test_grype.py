@@ -26,7 +26,7 @@ def setup_environment_fixture():
 
     # Verify and install required tools
     install_grype()
-    
+
 
 def check_command_availability(command):
     if (
@@ -160,7 +160,7 @@ def test_surfactant_generate(config_and_tarball_fixture, tmp_path_factory):
     # **** Disabled Test ***
     # **********************
     
-    # Disbale and verify the Grype plugin is disabled
+    # Disable and verify the Grype plugin is disabled
     disable_plugin(PLUGIN_NAME)
 
     # Disable the Grype plugin and verify the plugin is disabled
