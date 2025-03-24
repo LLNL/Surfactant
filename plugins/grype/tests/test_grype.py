@@ -36,7 +36,7 @@ def check_dependency_availability():
         import docker
     except ImportError:
         pytest.skip("Docker SDK for Python is not installed.")
-    
+
     try:
         import surfactant
     except ImportError:
