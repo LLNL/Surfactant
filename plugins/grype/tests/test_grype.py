@@ -50,30 +50,32 @@ def install_grype() -> None:
     try:
         # Try to use an existing Grype installation
         output = subprocess.run(
-            ["grype", "--version"], 
-            capture_output=True, 
-            text=True, 
-            check=True
+            ["grype", "--version"], capture_output=True, text=True, check=True
         ).stdout.strip()
         logging.info("Grype is already installed: '%s'", output)
     except (subprocess.CalledProcessError, FileNotFoundError):
         logging.info("Installing Grype...")
         # Use the official installer script but with subprocess list syntax instead of shell=True
-        subprocess.run([
-            "curl", "-sSfL", 
-            "https://raw.githubusercontent.com/anchore/grype/main/install.sh",
-            "-o", "grype-installer.sh"
-        ], check=True)
-        
+        subprocess.run(
+            [
+                "curl",
+                "-sSfL",
+                "https://raw.githubusercontent.com/anchore/grype/main/install.sh",
+                "-o",
+                "grype-installer.sh",
+            ],
+            check=True,
+        )
+
         # Make the installer executable
         os.chmod("grype-installer.sh", 0o755)
-        
+
         # Run the installer
         subprocess.run(["./grype-installer.sh", "-b", "/usr/local/bin"], check=True)
-        
+
         # Clean up
         os.remove("grype-installer.sh")
-        
+
         logging.info("Grype installed successfully.")
 
 
