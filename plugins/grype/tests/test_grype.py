@@ -4,6 +4,12 @@ import subprocess
 
 import pytest
 
+import gzip
+import shutil
+import os
+
+
+
 logging.basicConfig(level=logging.INFO)
 
 # Globals
@@ -78,8 +84,24 @@ def create_config_and_tarball_fixture(tmp_path_factory):
 
     # Export the container's filesystem to a tarball
     tarball_file = temp_dir / "myimage_latest.tar.gz"
-    logging.info("Exporting the container filesystem to '%s'...", tarball_file)
-    run_command(f"sudo docker save {DOCKER_IMAGE}:latest | gzip > {tarball_file}")
+    
+    # Save the Docker image to a temporary tar file
+    temp_tar_file = temp_dir / "myimage_latest.tar"
+    logging.info("Saving the Docker image to a temporary tar file '%s'...", temp_tar_file)
+    run_command(f"sudo docker save {DOCKER_IMAGE}:latest -o {temp_tar_file}")
+
+    # Compress the docker image and save to file
+    with open(temp_tar_file, 'rb') as f_in:
+        logging.info("Compressing Docker image tar file with gzip...")
+        with gzip.open(tarball_file, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+    # Remove the temporary tar file
+    try:
+        os.remove(temp_tar_file)
+        logging.info("Temporary tar file removed")
+    except OSError as e:
+        logging.warning(f"Failed to remove temporary tar file: {e}")
 
     # Remove the container to clean up
     logging.info("Removing the container...")
