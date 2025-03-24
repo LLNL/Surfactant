@@ -86,6 +86,7 @@ def create_config_and_tarball_fixture(tmp_path_factory):
     logging.info(f"Successfully pulled Docker image: {DOCKER_IMAGE}:latest")
 
     # Save Docker image to tar file
+    temp_tar_file = temp_dir / "myimage_latest.tar"
     logging.info(f"Saving Docker image to file: {temp_tar_file}")
     with open(temp_tar_file, "wb") as f:
         bytes_written = 0
@@ -96,13 +97,8 @@ def create_config_and_tarball_fixture(tmp_path_factory):
         f"Successfully saved Docker image to file: {temp_tar_file} ({bytes_written} bytes)"
     )
 
-    # Save the Docker image to a temporary tar file
-    temp_tar_file = temp_dir / "myimage_latest.tar"
-    logging.info("Saving the Docker image to a temporary tar file '%s'...", temp_tar_file)
-    run_command(f"sudo docker save {DOCKER_IMAGE}:latest -o {temp_tar_file}")
-
     # Change ownership of the file to the current user
-    run_command(f"sudo chmod 644 {temp_tar_file}")
+    os.chmod(temp_tar_file, 0o644)
 
     # Export the container's filesystem to a tarball
     tarball_file = temp_dir / "myimage_latest.tar.gz"
