@@ -5,7 +5,7 @@ import logging
 import os
 import shutil
 import subprocess
-
+import sys
 import docker
 import pytest
 
@@ -105,9 +105,6 @@ def disable_plugin(plugin_name):
 
 def run_surfactant_generate(config_file, output_sbom_path):
     """Run surfactant generate using Python subprocess in a platform-independent way."""
-    import sys
-    import subprocess
-    
     # Use the Python executable from the current environment
     python_exe = sys.executable
     
