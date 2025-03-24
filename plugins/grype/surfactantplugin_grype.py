@@ -78,13 +78,11 @@ def run_grype(filename: str) -> object:
 def extract_file_info(
     sbom: SBOM, software: Software, filename: str, filetype: str, children: list
 ) -> Optional[List[Software]]:
-    logger.debug(f"Extracting file info for {filename} of type {filetype}")
 
     if disable_plugin:
         return None
 
     if filetype not in ("DOCKER_TAR", "DOCKER_GZIP"):
-        logger.debug(f"File type {filetype} is not supported by the grype plugin.")
         return None
 
     try:
