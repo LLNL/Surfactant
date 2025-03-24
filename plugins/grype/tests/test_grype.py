@@ -87,7 +87,7 @@ def create_config_and_tarball_fixture(tmp_path_factory):
 
     # Save Docker image to tar file
     temp_tar_file = temp_dir / "myimage_latest.tar"
-    logging.info("Saving Docker image to file: '%'s", temp_tar_file)
+    logging.info("Saving Docker image to file: '%s'", temp_tar_file)
     with open(temp_tar_file, "wb") as f:
         bytes_written = 0
         for chunk in docker_client.images.get(f"{DOCKER_IMAGE}:latest").save(named=True):
