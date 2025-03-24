@@ -90,6 +90,9 @@ def create_config_and_tarball_fixture(tmp_path_factory):
     logging.info("Saving the Docker image to a temporary tar file '%s'...", temp_tar_file)
     run_command(f"sudo docker save {DOCKER_IMAGE}:latest -o {temp_tar_file}")
 
+    # Change ownership of the file to the current user
+    run_command(f"sudo chmod 644 {temp_tar_file}")
+
     # Compress the docker image and save to file
     with open(temp_tar_file, 'rb') as f_in:
         logging.info("Compressing Docker image tar file with gzip...")
