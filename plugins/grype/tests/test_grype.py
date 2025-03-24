@@ -81,20 +81,20 @@ def create_config_and_tarball_fixture(tmp_path_factory):
     docker_client = docker.from_env()
 
     # Pull Docker image
-    logging.info(f"Pulling Docker image: {DOCKER_IMAGE}:latest")
+    logging.info("Pulling Docker image: '%s':latest", DOCKER_IMAGE)
     docker_client.images.pull(DOCKER_IMAGE, tag="latest")
-    logging.info(f"Successfully pulled Docker image: {DOCKER_IMAGE}:latest")
+    logging.info("Successfully pulled Docker image: '%s':latest", DOCKER_IMAGE)
 
     # Save Docker image to tar file
     temp_tar_file = temp_dir / "myimage_latest.tar"
-    logging.info(f"Saving Docker image to file: {temp_tar_file}")
+    logging.info("Saving Docker image to file: '%'s", temp_tar_file)
     with open(temp_tar_file, "wb") as f:
         bytes_written = 0
         for chunk in docker_client.images.get(f"{DOCKER_IMAGE}:latest").save(named=True):
             f.write(chunk)
             bytes_written += len(chunk)
     logging.info(
-        f"Successfully saved Docker image to file: {temp_tar_file} ({bytes_written} bytes)"
+        "Successfully saved Docker image to file: '%s' ('%s' bytes)", temp_tar_file, bytes_written
     )
 
     # Change ownership of the file to the current user
@@ -114,12 +114,12 @@ def create_config_and_tarball_fixture(tmp_path_factory):
         os.remove(temp_tar_file)
         logging.info("Temporary tar file removed")
     except OSError as e:
-        logging.warning(f"Failed to remove temporary tar file: {e}")
+        logging.warning("Failed to remove temporary tar file: '%s'", e)
 
     # Remove Docker image
-    logging.info(f"Removing Docker image: {DOCKER_IMAGE}:latest")
+    logging.info("Removing Docker image: '%s':latest", DOCKER_IMAGE)
     docker_client.images.remove(f"{DOCKER_IMAGE}:latest")
-    logging.info(f"Successfully removed Docker image: {DOCKER_IMAGE}:latest")
+    logging.info(f"Successfully removed Docker image: '%s':latest", DOCKER_IMAGE)
 
     # Create the configuration file
     config_data = [{"extractPaths": [str(tarball_file)], "installPrefix": "/usr/"}]
