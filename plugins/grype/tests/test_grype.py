@@ -10,6 +10,8 @@ import pytest
 import importlib.util
 
 from surfactant.configmanager import ConfigManager
+from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
+from surfactant.cmd.generate import sbom as generate_sbom
 
 logging.basicConfig(level=logging.INFO)
 
@@ -99,6 +101,31 @@ def disable_plugin(plugin_name):
     assert plugin_name in disabled_plugins, f"{plugin_name} not found in disabled plugins"
 
     logging.info("Plugin '%s' is now disabled", plugin_name)
+
+
+def run_surfactant_generate(config_file, output_sbom_file):
+    """Run surfactant generate using direct API calls instead of subprocess."""
+    # Parse the specimen config file
+    config_param_type = SpecimenConfigParamType()
+    specimen_config = config_param_type.convert(config_file, None, None)
+    
+    # Open the output file for the SBOM
+    with open(output_sbom_file, 'w', encoding='utf-8') as sbom_outfile:
+        # Call the generate function directly with parameters matching CLI defaults
+        generate_sbom(
+            specimen_config=specimen_config,
+            sbom_outfile=sbom_outfile,
+            input_sbom=None,  # No input SBOM
+            skip_gather=False,
+            skip_relationships=False,
+            skip_install_path=False,
+            recorded_institution="",
+            output_format="surfactant.output.cytrics_writer",
+            input_format="surfactant.input_readers.cytrics_reader",
+            omit_unrecognized_types=False
+        )
+    
+    logging.info("Successfully generated SBOM: '%s'", output_sbom_file)
 
 
 @pytest.fixture(scope="session", name="config_and_tarball_fixture")
@@ -201,9 +228,8 @@ def test_surfactant_generate(config_and_tarball_fixture, tmp_path_factory):
     with open(config_file, "r", encoding="utf-8") as f:
         config_out = json.load(f)
     logging.info(json.dumps(config_out, indent=4))
-    command = f"surfactant generate {config_file} {output_enabled_sbom}"
-    logging.info("Running command: '%s'", command)
-    run_command(command)
+    logging.info("Running surfactant generate via API for: '%s'", output_enabled_sbom)
+    run_surfactant_generate(config_file, output_enabled_sbom)
 
     # Verify the SBOM file is created
     assert output_enabled_sbom.exists(), f"SBOM file not created: {output_enabled_sbom}"
@@ -235,9 +261,8 @@ def test_surfactant_generate(config_and_tarball_fixture, tmp_path_factory):
 
     # Disable the Grype plugin and verify the plugin is disabled
     output_disabled_sbom = temp_dir / "docker_tball_grype-disabled_sbom.json"
-    command = f"surfactant generate {config_file} {output_disabled_sbom}"
-    logging.info("Running command: '%s'", command)
-    run_command(command)
+    logging.info("Running surfactant generate via API for: '%s'", output_disabled_sbom)
+    run_surfactant_generate(config_file, output_disabled_sbom)
 
     # Verify the SBOM file is created
     assert output_disabled_sbom.exists(), f"SBOM file not created: {output_disabled_sbom}"
