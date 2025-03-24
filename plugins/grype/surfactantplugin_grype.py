@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: MIT
 import gzip
 import subprocess
-
 import tempfile
 from typing import List, Optional
 
