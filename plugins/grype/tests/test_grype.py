@@ -1,14 +1,11 @@
+import gzip
 import json
 import logging
+import os
+import shutil
 import subprocess
 
 import pytest
-
-import gzip
-import shutil
-import os
-
-
 
 logging.basicConfig(level=logging.INFO)
 
@@ -84,7 +81,7 @@ def create_config_and_tarball_fixture(tmp_path_factory):
 
     # Export the container's filesystem to a tarball
     tarball_file = temp_dir / "myimage_latest.tar.gz"
-    
+
     # Save the Docker image to a temporary tar file
     temp_tar_file = temp_dir / "myimage_latest.tar"
     logging.info("Saving the Docker image to a temporary tar file '%s'...", temp_tar_file)
@@ -94,9 +91,9 @@ def create_config_and_tarball_fixture(tmp_path_factory):
     run_command(f"sudo chmod 644 {temp_tar_file}")
 
     # Compress the docker image and save to file
-    with open(temp_tar_file, 'rb') as f_in:
+    with open(temp_tar_file, "rb") as f_in:
         logging.info("Compressing Docker image tar file with gzip...")
-        with gzip.open(tarball_file, 'wb') as f_out:
+        with gzip.open(tarball_file, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
 
     # Remove the temporary tar file
