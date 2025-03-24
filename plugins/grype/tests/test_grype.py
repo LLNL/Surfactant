@@ -9,9 +9,9 @@ import subprocess
 import docker
 import pytest
 
-from surfactant.configmanager import ConfigManager
-from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
 from surfactant.cmd.generate import sbom as generate_sbom
+from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
+from surfactant.configmanager import ConfigManager
 
 logging.basicConfig(level=logging.INFO)
 
@@ -108,9 +108,9 @@ def run_surfactant_generate(config_file, output_sbom_file):
     # Parse the specimen config file
     config_param_type = SpecimenConfigParamType()
     specimen_config = config_param_type.convert(config_file, None, None)
-    
+
     # Open the output file for the SBOM
-    with open(output_sbom_file, 'w', encoding='utf-8') as sbom_outfile:
+    with open(output_sbom_file, "w", encoding="utf-8") as sbom_outfile:
         # Call the generate function directly with parameters matching CLI defaults
         generate_sbom(
             specimen_config=specimen_config,
@@ -122,9 +122,9 @@ def run_surfactant_generate(config_file, output_sbom_file):
             recorded_institution="",
             output_format="surfactant.output.cytrics_writer",
             input_format="surfactant.input_readers.cytrics_reader",
-            omit_unrecognized_types=False
+            omit_unrecognized_types=False,
         )
-    
+
     logging.info("Successfully generated SBOM: '%s'", output_sbom_file)
 
 
