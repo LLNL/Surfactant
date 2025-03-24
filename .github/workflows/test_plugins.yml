@@ -1,0 +1,92 @@
+name: Python Test Plugins
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.13"]
+    permissions:
+      contents: read
+
+    steps:
+      # Step 1: Check out the repository
+      - uses: actions/checkout@v4
+
+      # Step 2: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Step 3: Test Plugins
+      - name: Test Plugins
+        env:
+          PYTHONUNBUFFERED: 1  # Ensure immediate output from Python scripts
+        run: |
+          echo "Starting plugin tests..."
+
+          # Define the plugins directory and ignored directories
+          PLUGINS_DIR="plugins"
+          IGNORED_DIRS=("") # Add any ignored plugin directories here
+
+          # Iterate through each entry in the plugins folder
+          for PLUGIN_ENTRY in "$PLUGINS_DIR"/*; do
+            # Skip if it's not a directory
+            [ -d "$PLUGIN_ENTRY" ] || continue
+
+            # Get the plugin name
+            PLUGIN_NAME=$(basename "$PLUGIN_ENTRY")
+            echo "Processing plugin: $PLUGIN_NAME"
+
+            # Skip ignored directories
+            if [[ " ${IGNORED_DIRS[@]} " =~ " ${PLUGIN_NAME} " ]]; then
+              echo "Skipping ignored plugin: $PLUGIN_NAME"
+              continue
+            fi
+
+            # Check if the plugin has a `setup.py` or `pyproject.toml` to identify it as a Python plugin
+            if [ -f "$PLUGIN_ENTRY/setup.py" ] || [ -f "$PLUGIN_ENTRY/pyproject.toml" ]; then
+              echo "$PLUGIN_NAME is a valid Python plugin."
+
+              # Check if the plugin has a `tests/` directory
+              if [ -d "$PLUGIN_ENTRY/tests" ]; then
+                echo "Tests found for $PLUGIN_NAME. Setting up virtual environment."
+
+                # Create a fresh virtual environment
+                echo "Creating virtual environment for $PLUGIN_NAME..."
+                python -m venv venv
+                source venv/bin/activate
+
+                # Install Surfactant and the plugin
+                echo "Installing Surfactant and $PLUGIN_NAME..."
+                python -m pip install --upgrade pip
+                python -m pip install -e .[test]
+                surfactant version
+                python -m pip install -e "$PLUGIN_ENTRY"[test]
+
+                echo "Running pytest for $PLUGIN_NAME."
+
+                # Run pytest in the plugin's folder with verbose output
+                pytest -vv --log-cli-level=INFO "$PLUGIN_ENTRY/tests"
+
+                # Deactivate the virtual environment
+                echo "Deactivating virtual environment for $PLUGIN_NAME..."
+                deactivate
+              else
+                echo "No tests found for $PLUGIN_NAME."
+              fi
+            else
+              echo "$PLUGIN_NAME is not a valid Python plugin. Skipping."
+            fi
+          done
