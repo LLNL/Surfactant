@@ -103,29 +103,29 @@ def disable_plugin(plugin_name):
     logging.info("Plugin '%s' is now disabled", plugin_name)
 
 
-def run_surfactant_generate(config_file, output_sbom_file):
-    """Run surfactant generate using direct API calls instead of subprocess."""
-    # Parse the specimen config file
-    config_param_type = SpecimenConfigParamType()
-    specimen_config = config_param_type.convert(config_file, None, None)
+def run_surfactant_generate(config_file, output_sbom_path):
+    """Run surfactant generate using Python subprocess in a platform-independent way."""
+    import sys
+    import subprocess
     
-    # Open the output file for the SBOM
-    with open(output_sbom_file, 'w', encoding='utf-8') as sbom_outfile:
-        # Call the generate function directly with parameters matching CLI defaults
-        generate_sbom(
-            specimen_config=specimen_config,
-            sbom_outfile=sbom_outfile,
-            input_sbom=None,  # No input SBOM
-            skip_gather=False,
-            skip_relationships=False,
-            skip_install_path=False,
-            recorded_institution="",
-            output_format="surfactant.output.cytrics_writer",
-            input_format="surfactant.input_readers.cytrics_reader",
-            omit_unrecognized_types=False
-        )
+    # Use the Python executable from the current environment
+    python_exe = sys.executable
     
-    logging.info("Successfully generated SBOM: '%s'", output_sbom_file)
+    # Build the command using list form to avoid shell injection issues
+    cmd = [
+        python_exe, 
+        "-m", "surfactant", 
+        "generate", 
+        config_file, 
+        str(output_sbom_path)
+    ]
+    
+    # Run the command
+    logging.info("Running command: %s", " ".join(cmd))
+    result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    
+    logging.info("Successfully generated SBOM: '%s'", output_sbom_path)
+    return result.stdout
 
 
 @pytest.fixture(scope="session", name="config_and_tarball_fixture")
