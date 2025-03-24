@@ -78,7 +78,7 @@ def run_grype(filename: str) -> object:
 def extract_file_info(
     sbom: SBOM, software: Software, filename: str, filetype: str, children: list
 ) -> Optional[List[Software]]:
-    logger.info(f"Extracting file info for {filename} of type {filetype}")
+    logger.debug(f"Extracting file info for {filename} of type {filetype}")
 
     if disable_plugin:
         return None
