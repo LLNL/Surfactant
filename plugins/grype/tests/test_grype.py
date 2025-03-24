@@ -159,7 +159,7 @@ def test_surfactant_generate(config_and_tarball_fixture, tmp_path_factory):
     # **********************
     # **** Disabled Test ***
     # **********************
-    
+
     # Disable and verify the Grype plugin is disabled
     disable_plugin(PLUGIN_NAME)
 
