@@ -7,6 +7,7 @@ import subprocess
 
 import docker
 import pytest
+import importlib.util
 
 from surfactant.configmanager import ConfigManager
 from surfactant.plugin.manager import get_plugin_manager, find_plugin_by_name
@@ -35,14 +36,12 @@ def setup_environment_fixture():
 
 
 def check_dependency_availability():
-    try:
-        import docker
-    except ImportError:
+    # Check for Docker SDK
+    if importlib.util.find_spec("docker") is None:
         pytest.skip("Docker SDK for Python is not installed.")
-
-    try:
-        import surfactant
-    except ImportError:
+    
+    # Check for Surfactant
+    if importlib.util.find_spec("surfactant") is None:
         pytest.skip("Surfactant is not installed.")
 
 
