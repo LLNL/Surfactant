@@ -78,7 +78,6 @@ def run_grype(filename: str) -> object:
 def extract_file_info(
     sbom: SBOM, software: Software, filename: str, filetype: str, children: list
 ) -> Optional[List[Software]]:
-
     if disable_plugin:
         return None
 
