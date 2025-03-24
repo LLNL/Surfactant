@@ -9,7 +9,6 @@ import docker
 import pytest
 
 from surfactant.configmanager import ConfigManager
-from surfactant.plugin.manager import get_plugin_manager, find_plugin_by_name
 
 logging.basicConfig(level=logging.INFO)
 
@@ -63,21 +62,21 @@ def enable_plugin(plugin_name):
     """Enable a plugin using the Surfactant API directly."""
     # Get config manager
     config_manager = ConfigManager()
-    
+
     # Retrieve the current list of disabled plugins
     section = "core"
     section_key = "disable_plugins"
     disabled_plugins = config_manager.get(section, section_key, [])
-    
+
     # If the plugin is in the disabled list, remove it
     if plugin_name in disabled_plugins:
         disabled_plugins.remove(plugin_name)
         config_manager.set(section, section_key, disabled_plugins)
-    
+
     # Verify the plugin is now enabled (not in the disabled list)
     disabled_plugins = config_manager.get(section, section_key, [])
     assert plugin_name not in disabled_plugins, f"{plugin_name} still found in disabled plugins"
-    
+
     logging.info("Plugin '%s' is now enabled", plugin_name)
 
 
@@ -85,21 +84,21 @@ def disable_plugin(plugin_name):
     """Disable a plugin using the Surfactant API directly."""
     # Get config manager
     config_manager = ConfigManager()
-    
+
     # Retrieve the current list of disabled plugins
     section = "core"
     section_key = "disable_plugins"
     disabled_plugins = config_manager.get(section, section_key, [])
-    
+
     # If the plugin is not in the disabled list, add it
     if plugin_name not in disabled_plugins:
         disabled_plugins.append(plugin_name)
         config_manager.set(section, section_key, disabled_plugins)
-    
+
     # Verify the plugin is now disabled (in the disabled list)
     disabled_plugins = config_manager.get(section, section_key, [])
     assert plugin_name in disabled_plugins, f"{plugin_name} not found in disabled plugins"
-    
+
     logging.info("Plugin '%s' is now disabled", plugin_name)
 
 
