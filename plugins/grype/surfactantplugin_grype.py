@@ -11,10 +11,6 @@ from typing import List, Optional
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.plugin.manager import (  # Import the helper function
-    get_plugin_manager,
-    is_plugin_blocked,
-)
 from surfactant.sbomtypes import SBOM, Software
 
 
