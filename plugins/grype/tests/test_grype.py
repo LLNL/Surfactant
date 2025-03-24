@@ -9,8 +9,6 @@ import subprocess
 import docker
 import pytest
 
-from surfactant.cmd.generate import sbom as generate_sbom
-from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
 from surfactant.configmanager import ConfigManager
 
 logging.basicConfig(level=logging.INFO)
@@ -105,25 +103,19 @@ def disable_plugin(plugin_name):
 
 def run_surfactant_generate(config_file, output_sbom_path):
     """Run surfactant generate using Python subprocess in a platform-independent way."""
-    import sys
     import subprocess
-    
+    import sys
+
     # Use the Python executable from the current environment
     python_exe = sys.executable
-    
+
     # Build the command using list form to avoid shell injection issues
-    cmd = [
-        python_exe, 
-        "-m", "surfactant", 
-        "generate", 
-        config_file, 
-        str(output_sbom_path)
-    ]
-    
+    cmd = [python_exe, "-m", "surfactant", "generate", config_file, str(output_sbom_path)]
+
     # Run the command
     logging.info("Running command: %s", " ".join(cmd))
     result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-    
+
     logging.info("Successfully generated SBOM: '%s'", output_sbom_path)
     return result.stdout
 
