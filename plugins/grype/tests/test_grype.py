@@ -25,19 +25,22 @@ def run_command(command: str) -> str:
 @pytest.fixture(scope="session")
 def setup_environment_fixture():
     """Fixture to install Grype dependency."""
-    check_command_availability("surfactant")
-    check_command_availability("docker")
+    check_dependency_availability()
 
     # Verify and install required tools
     install_grype()
 
 
-def check_command_availability(command):
-    if (
-        subprocess.run(f"which {command}", shell=True, capture_output=True, check=True).returncode
-        != 0
-    ):
-        pytest.skip(f"{command} is not available in the test environment.")
+def check_dependency_availability():
+    try:
+        import docker
+    except ImportError:
+        pytest.skip("Docker SDK for Python is not installed.")
+    
+    try:
+        import surfactant
+    except ImportError:
+        pytest.skip("Surfactant is not installed.")
 
 
 def install_grype() -> None:
