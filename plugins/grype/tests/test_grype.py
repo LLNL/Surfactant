@@ -4,8 +4,9 @@ import logging
 import os
 import shutil
 import subprocess
-
 import pytest
+import docker
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -75,12 +76,23 @@ def create_config_and_tarball_fixture(tmp_path_factory):
     # Create a session-scoped temporary directory
     temp_dir = tmp_path_factory.mktemp("session_temp")
 
-    # Pull the 'hello-world' Docker image
-    logging.info("Pulling the '%s' Docker image...", DOCKER_IMAGE)
-    run_command(f"sudo docker pull {DOCKER_IMAGE}")
+    # Initialize Docker client
+    logging.info("Initializing Docker client...")
+    docker_client = docker.from_env()
 
-    # Export the container's filesystem to a tarball
-    tarball_file = temp_dir / "myimage_latest.tar.gz"
+    # Pull Docker image
+    logging.info(f"Pulling Docker image: {DOCKER_IMAGE}:latest")
+    docker_client.images.pull(DOCKER_IMAGE, tag="latest")
+    logging.info(f"Successfully pulled Docker image: {DOCKER_IMAGE}:latest")
+
+    # Save Docker image to tar file
+    logging.info(f"Saving Docker image to file: {temp_tar_file}")
+    with open(temp_tar_file, "wb") as f:
+        bytes_written = 0
+        for chunk in docker_client.images.get(f"{DOCKER_IMAGE}:latest").save(named=True):
+            f.write(chunk)
+            bytes_written += len(chunk)
+    logging.info(f"Successfully saved Docker image to file: {temp_tar_file} ({bytes_written} bytes)")
 
     # Save the Docker image to a temporary tar file
     temp_tar_file = temp_dir / "myimage_latest.tar"
@@ -89,6 +101,9 @@ def create_config_and_tarball_fixture(tmp_path_factory):
 
     # Change ownership of the file to the current user
     run_command(f"sudo chmod 644 {temp_tar_file}")
+
+    # Export the container's filesystem to a tarball
+    tarball_file = temp_dir / "myimage_latest.tar.gz"
 
     # Compress the docker image and save to file
     with open(temp_tar_file, "rb") as f_in:
@@ -103,9 +118,10 @@ def create_config_and_tarball_fixture(tmp_path_factory):
     except OSError as e:
         logging.warning(f"Failed to remove temporary tar file: {e}")
 
-    # Remove the container to clean up
-    logging.info("Removing the container...")
-    run_command(f"sudo docker rmi {DOCKER_IMAGE}:latest")
+    # Remove Docker image
+    logging.info(f"Removing Docker image: {DOCKER_IMAGE}:latest")
+    docker_client.images.remove(f"{DOCKER_IMAGE}:latest")
+    logging.info(f"Successfully removed Docker image: {DOCKER_IMAGE}:latest")
 
     # Create the configuration file
     config_data = [{"extractPaths": [str(tarball_file)], "installPrefix": "/usr/"}]
