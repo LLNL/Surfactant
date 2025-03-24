@@ -119,7 +119,7 @@ def create_config_and_tarball_fixture(tmp_path_factory):
     # Remove Docker image
     logging.info("Removing Docker image: '%s':latest", DOCKER_IMAGE)
     docker_client.images.remove(f"{DOCKER_IMAGE}:latest")
-    logging.info(f"Successfully removed Docker image: '%s':latest", DOCKER_IMAGE)
+    logging.info("Successfully removed Docker image: '%s':latest", DOCKER_IMAGE)
 
     # Create the configuration file
     config_data = [{"extractPaths": [str(tarball_file)], "installPrefix": "/usr/"}]
