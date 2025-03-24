@@ -9,9 +9,9 @@ import subprocess
 import docker
 import pytest
 
-from surfactant.configmanager import ConfigManager
-from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
 from surfactant.cmd.generate import sbom as generate_sbom
+from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
+from surfactant.configmanager import ConfigManager
 
 logging.basicConfig(level=logging.INFO)
 
