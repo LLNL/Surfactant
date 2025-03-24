@@ -5,8 +5,6 @@
 import gzip
 import subprocess
 
-# Configure loguru to show logs at DEBUG level or higher
-import sys
 import tempfile
 from typing import List, Optional
 
@@ -18,9 +16,6 @@ from surfactant.plugin.manager import (  # Import the helper function
     is_plugin_blocked,
 )
 from surfactant.sbomtypes import SBOM, Software
-
-logger.remove()  # Remove the default logger configuration
-logger.add(sys.stdout, level="DEBUG")  # Add a new logger that outputs to console
 
 
 def check_if_grype_installed() -> bool:
@@ -36,9 +31,7 @@ def check_if_grype_installed() -> bool:
         return False
 
 
-# Initialize the plugin manager
-plugin_manager = get_plugin_manager()
-disable_plugin = not check_if_grype_installed() or is_plugin_blocked(plugin_manager, __name__)
+disable_plugin = not check_if_grype_installed()
 
 
 def run_grype(filename: str) -> object:
@@ -93,7 +86,6 @@ def extract_file_info(
     logger.info(f"Extracting file info for {filename} of type {filetype}")
 
     if disable_plugin:
-        logger.warning("Grype plugin is disabled. Skipping file analysis.")
         return None
 
     if filetype not in ("DOCKER_TAR", "DOCKER_GZIP"):
