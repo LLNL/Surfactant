@@ -29,7 +29,8 @@ def real_path_to_install_path(root_path: str, install_path: str, filepath: str) 
 
 
 def get_software_entry(
-    context,
+    context_queue,
+    current_context,
     pluginmanager,
     parent_sbom: SBOM,
     filepath,
@@ -63,7 +64,8 @@ def get_software_entry(
             software=sw_entry,
             filename=filepath,
             filetype=filetype,
-            context=context,
+            context_queue=context_queue,
+            current_context=current_context,
             children=sw_children,
             software_field_hints=sw_field_hints,
             omit_unrecognized_types=omit_unrecognized_types,
@@ -283,10 +285,10 @@ def sbom(
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
 
-    context: queue.Queue[ContextEntry] = queue.Queue()
+    context_queue: queue.Queue[ContextEntry] = queue.Queue()
 
     for cfg_entry in specimen_config:
-        context.put(ContextEntry(**cfg_entry))
+        context_queue.put(ContextEntry(**cfg_entry))
 
     # define the new_sbom variable type
     new_sbom: SBOM
@@ -303,15 +305,16 @@ def sbom(
         file_symlinks: Dict[str, List[str]] = {}
         # List of filename symlinks; keys are SHA256 hashes, values are file names
         filename_symlinks: Dict[str, List[str]] = {}
-        while not context.empty():
-            entry: ContextEntry = context.get()
+        while not context_queue.empty():
+            entry: ContextEntry = context_queue.get()
             if entry.archive:
                 logger.info("Processing parent container " + str(entry.archive))
                 # TODO: if the parent archive has an info extractor that does unpacking interally, should the children be added to the SBOM?
                 # current thoughts are (Syft) doesn't provide hash information for a proper SBOM software entry, so exclude these
                 # extractor plugins meant to unpack files could be okay when used on an "archive", but then extractPaths should be empty
                 parent_entry, _ = get_software_entry(
-                    context,
+                    context_queue,
+                    entry,
                     pm,
                     new_sbom,
                     entry.archive,
@@ -370,7 +373,8 @@ def sbom(
                     # breakpoint()
                     try:
                         sw_parent, sw_children = get_software_entry(
-                            context,
+                            context_queue,
+                            entry,
                             pm,
                             new_sbom,
                             filepath,
@@ -481,7 +485,8 @@ def sbom(
                             ]:
                                 try:
                                     sw_parent, sw_children = get_software_entry(
-                                        context,
+                                        context_queue,
+                                        entry,
                                         pm,
                                         new_sbom,
                                         filepath,
