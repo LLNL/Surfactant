@@ -73,13 +73,7 @@ jobs:
                 python -m pip install --upgrade pip
                 python -m pip install -e .[test]
                 surfactant version
-                python -m pip install -e "$PLUGIN_ENTRY"
-
-                # If plugin has test requirements file, install those dependencies
-                if [ -f "$PLUGIN_ENTRY/requirements-test.txt" ]; then
-                    echo "Installing test dependencies for $PLUGIN_NAME..."
-                    python -m pip install -r "$PLUGIN_ENTRY/requirements-test.txt"
-                fi
+                python -m pip install -e "$PLUGIN_ENTRY"[test]
 
                 echo "Running pytest for $PLUGIN_NAME."
 
