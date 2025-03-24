@@ -4,9 +4,9 @@ import logging
 import os
 import shutil
 import subprocess
-import pytest
-import docker
 
+import docker
+import pytest
 
 logging.basicConfig(level=logging.INFO)
 
@@ -92,7 +92,9 @@ def create_config_and_tarball_fixture(tmp_path_factory):
         for chunk in docker_client.images.get(f"{DOCKER_IMAGE}:latest").save(named=True):
             f.write(chunk)
             bytes_written += len(chunk)
-    logging.info(f"Successfully saved Docker image to file: {temp_tar_file} ({bytes_written} bytes)")
+    logging.info(
+        f"Successfully saved Docker image to file: {temp_tar_file} ({bytes_written} bytes)"
+    )
 
     # Save the Docker image to a temporary tar file
     temp_tar_file = temp_dir / "myimage_latest.tar"
