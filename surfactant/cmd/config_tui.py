@@ -255,7 +255,7 @@ class ConfigTUI(textual.app.App):
         ("q", "quit", "Quit"),
     ]
     TITLE = "Surfactant Config TUI"
-    CSS_PATH = "../web-files/config_tui.tcss"
+    CSS_PATH = "../ui-resources/config_tui.tcss"
 
     def __init__(self, config_path: str):
         super().__init__()
