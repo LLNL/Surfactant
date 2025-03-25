@@ -434,7 +434,7 @@ class TUI(textual.app.App):
         ("q", "quit", "Quit"),
     ]
     TITLE = "Surfactant TUI"
-    CSS_PATH = "../web-files/tui.tcss"
+    CSS_PATH = "../ui-resources/tui.tcss"
 
     def __init__(self):
         super().__init__()

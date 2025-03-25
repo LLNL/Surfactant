@@ -108,7 +108,7 @@ def merge():
 
 @site.route("/")
 def index():
-    return flask.send_file(os.path.join(os.path.dirname(__file__), "../web-files/ui.html"))
+    return flask.send_file(os.path.join(os.path.dirname(__file__), "../ui-resources/ui.html"))
 
 
 @click.command("ui")
