@@ -111,7 +111,7 @@ class FileInput(textual.widgets.Static):
     def on_click(self):
         def set_path(path: Optional[pathlib.Path]):
             if path:
-                if self.file_input:
+                if self.file_input and not os.path.isdir(path):
                     # Set the directory and the file separately
                     self.input_path = os.path.dirname(path)
                     self.file_input.value = os.path.basename(path)
