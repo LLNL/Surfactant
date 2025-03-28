@@ -6,7 +6,6 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import json
 import os
 import re
 from typing import Any, Dict, List, Optional, Union
@@ -14,9 +13,7 @@ from typing import Any, Dict, List, Optional, Union
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.database_manager.database_utils import (
-    BaseDatabaseManager, DatabaseConfig
-)
+from surfactant.database_manager.database_utils import BaseDatabaseManager, DatabaseConfig
 from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration

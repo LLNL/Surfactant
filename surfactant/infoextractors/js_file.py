@@ -14,9 +14,7 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.database_manager.database_utils import (
-    BaseDatabaseManager,DatabaseConfig
-)
+from surfactant.database_manager.database_utils import BaseDatabaseManager, DatabaseConfig
 from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
@@ -163,6 +161,7 @@ def init_hook(command_name: Optional[str] = None):
         logger.info("Initializing js_file...")
         js_db_manager.load_db()
         logger.info("Initializing js_file complete.")
+
 
 @surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:

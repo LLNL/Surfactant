@@ -10,6 +10,7 @@ import hashlib
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
@@ -18,7 +19,6 @@ import requests
 import tomlkit
 from loguru import logger
 from requests.exceptions import RequestException
-from datetime import datetime, timezone
 
 from surfactant.configmanager import ConfigManager
 
@@ -100,7 +100,7 @@ class BaseDatabaseManager(ABC):
             "hash_value": self.new_hash,
             "timestamp": self.download_timestamp,
         }
-    
+
     def initialize_database(self, command_name: Optional[str] = None) -> None:
         """
         Initialization hook to load the JavaScript library database.
@@ -145,7 +145,7 @@ class BaseDatabaseManager(ABC):
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw database data into a structured format."""
         # No implementation needed for abstract methods.
-    
+
     def download_and_update_database(self) -> str:
         raw_data = download_database(self.config.source)
         if not raw_data:
@@ -153,8 +153,7 @@ class BaseDatabaseManager(ABC):
 
         new_hash = calculate_hash(raw_data)
         current_data = load_db_version_metadata(
-            self.database_version_file_path,
-            self.config.database_key
+            self.database_version_file_path, self.config.database_key
         )
 
         if current_data and new_hash == current_data.get("hash"):
@@ -167,9 +166,7 @@ class BaseDatabaseManager(ABC):
         self.save_database(parsed_data)
         self.new_hash = new_hash
         self.download_timestamp = datetime.now(timezone.utc).isoformat()
-        save_db_version_metadata(
-            self.database_version_file_path, self.database_info
-        )
+        save_db_version_metadata(self.database_version_file_path, self.database_info)
         return "Update complete."
 
 
