@@ -8,7 +8,6 @@
 # SPDX-License-Identifier: MIT
 import json
 import re
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 # from pluggy import get_plugin_manager, get_plugin
@@ -16,12 +15,7 @@ from loguru import logger
 
 import surfactant.plugin
 from surfactant.database_manager.database_utils import (
-    BaseDatabaseManager,
-    DatabaseConfig,
-    calculate_hash,
-    download_database,
-    load_db_version_metadata,
-    save_db_version_metadata,
+    BaseDatabaseManager,DatabaseConfig
 )
 from surfactant.sbomtypes import SBOM, Software
 
@@ -150,46 +144,7 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
-    # Step 1: Download the raw database data
-    raw_data = download_database(DATABASE_URL_RETIRE_JS)
-    if not raw_data:
-        return "No update occurred. Failed to download database."
-
-    # Step 2: Calculate the hash of the downloaded data
-    new_hash = calculate_hash(raw_data)
-
-    # Step 3: Load the current database metadata (source, hash and timestamp)
-    current_data = load_db_version_metadata(
-        js_db_manager.database_version_file_path,
-        js_db_manager.config.database_key,
-    )
-
-    # Step 4: Check if the database is already up-to-date
-    if current_data and new_hash == current_data.get("hash"):
-        return "No update occurred. Database is up-to-date."
-
-    # Step 5: Parse and clean the raw data
-    try:
-        retirejs = json.loads(raw_data)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse downloaded database JSON: {e}")
-        return "No update occurred. Invalid database format."
-
-    cleaned_data = strip_irrelevant_data(retirejs)
-
-    # Step 6: Save the cleaned database to disk
-    path = js_db_manager.data_dir
-    path.mkdir(parents=True, exist_ok=True)
-    json_file_path = js_db_manager.database_file_path
-    with open(json_file_path, "w") as f:
-        json.dump(cleaned_data, f, indent=4)
-
-    # Step 7: Update the hash and timestamp metadata
-    js_db_manager.new_hash = new_hash
-    js_db_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
-    save_db_version_metadata(js_db_manager.database_version_file_path, js_db_manager.database_info)
-
-    return "Update complete."
+    return js_db_manager.download_and_update_database()
 
 
 @surfactant.plugin.hookimpl
@@ -208,3 +163,7 @@ def init_hook(command_name: Optional[str] = None):
         logger.info("Initializing js_file...")
         js_db_manager.load_db()
         logger.info("Initializing js_file complete.")
+
+@surfactant.plugin.hookimpl
+def init_hook(command_name: Optional[str] = None) -> None:
+    js_db_manager.initialize_database(command_name)

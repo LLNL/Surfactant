@@ -18,6 +18,7 @@ import requests
 import tomlkit
 from loguru import logger
 from requests.exceptions import RequestException
+from datetime import datetime, timezone
 
 from surfactant.configmanager import ConfigManager
 
@@ -99,6 +100,22 @@ class BaseDatabaseManager(ABC):
             "hash_value": self.new_hash,
             "timestamp": self.download_timestamp,
         }
+    
+    def initialize_database(self, command_name: Optional[str] = None) -> None:
+        """
+        Initialization hook to load the JavaScript library database.
+
+        Args:
+            command_name (Optional[str], optional): The name of the command invoking the initialization.
+                If set to "update-db", the database will not be loaded.
+
+        Returns:
+            None
+        """
+        if command_name != "update-db":
+            logger.info(f"Initializing {self.config.plugin_name}...")
+            self.load_db()
+            logger.info(f"Initializing {self.config.plugin_name} complete.")
 
     def load_db(self) -> None:
         """Loads the database from a JSON file."""
@@ -128,6 +145,32 @@ class BaseDatabaseManager(ABC):
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw database data into a structured format."""
         # No implementation needed for abstract methods.
+    
+    def download_and_update_database(self) -> str:
+        raw_data = download_database(self.config.source)
+        if not raw_data:
+            return "No update occurred. Failed to download database."
+
+        new_hash = calculate_hash(raw_data)
+        current_data = load_db_version_metadata(
+            self.database_version_file_path,
+            self.config.database_key
+        )
+
+        if current_data and new_hash == current_data.get("hash"):
+            return "No update occurred. Database is up-to-date."
+
+        parsed_data = self.parse_raw_data(raw_data)
+        if parsed_data is None:
+            return "No update occurred. Failed to parse raw data."
+
+        self.save_database(parsed_data)
+        self.new_hash = new_hash
+        self.download_timestamp = datetime.now(timezone.utc).isoformat()
+        save_db_version_metadata(
+            self.database_version_file_path, self.database_info
+        )
+        return "Update complete."
 
 
 def download_database(url: str) -> Optional[str]:
