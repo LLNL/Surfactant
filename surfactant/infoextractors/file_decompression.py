@@ -46,8 +46,22 @@ def extract_file_info(
     current_context: Optional[ContextEntry],
 ) -> Optional[Dict[str, Any]]:
     # Check if the file is compressed and get its format
+
     compression_format = supports_file(filetype)
     if not compression_format:
+        return None
+
+    # If archive key exists, but has empty list of extractPaths, add an entry to the queue for the archive
+    if current_context.archive and current_context.extractPaths == []:
+        temp_folder_archive = check_compression_type(current_context.archive, compression_format)
+        archive_entry = ContextEntry(
+            archive=current_context.archive,
+            installPrefix=current_context.installPrefix,  # inherit install prefix from current context
+            extractPaths=[temp_folder_archive],
+            skipProcessingArchive=True,
+        )
+        context_queue.put(archive_entry)
+        logger.info(f"New ContextEntry added for archive: {current_context.archive}")
         return None
 
     # Decompress the file based on its format
