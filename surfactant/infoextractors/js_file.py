@@ -148,22 +148,5 @@ def update_db() -> str:
 
 
 @surfactant.plugin.hookimpl
-def init_hook(command_name: Optional[str] = None):
-    """
-    Initialization hook to load the JavaScript library database.
-
-    Args:
-        command_name (Optional[str], optional): The name of the command invoking the initialization.
-            If set to "update-db", the database will not be loaded.
-
-    Returns:
-        None
-    """
-    if command_name != "update-db":  # Do not load the database if only updating the database.
-        logger.info("Initializing js_file...")
-        js_db_manager.load_db()
-        logger.info("Initializing js_file complete.")
-
-@surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:
     js_db_manager.initialize_database(command_name)
