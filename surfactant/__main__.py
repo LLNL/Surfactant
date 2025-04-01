@@ -32,6 +32,7 @@ from surfactant.cmd.plugin import (
     plugin_update_db_cmd,
 )
 from surfactant.cmd.stat import stat
+from surfactant.cmd.tui import tui
 from surfactant.cmd.ui import ui
 
 
@@ -83,6 +84,7 @@ main.add_command(create_config)
 main.add_command(ui)
 main.add_command(plugin)
 main.add_command(config_tui)
+main.add_command(tui)
 
 # CLI Subcommands
 cli.add_command(handle_cli_find)
