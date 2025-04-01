@@ -14,9 +14,7 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.database_manager.database_utils import (
-    BaseDatabaseManager,DatabaseConfig
-)
+from surfactant.database_manager.database_utils import BaseDatabaseManager, DatabaseConfig
 from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
