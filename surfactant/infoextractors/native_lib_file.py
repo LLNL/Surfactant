@@ -2,15 +2,11 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-# Copyright 2025 Lawrence Livermore National Security, LLC
-# See the top-level LICENSE file for details.
-#
-# SPDX-License-Identifier: MIT
 import json
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Set
 
 from loguru import logger
 
@@ -24,6 +20,7 @@ from surfactant.database_manager.database_utils import (
     save_db_version_metadata,
 )
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.utils.ahocorasick import AhoCorasick, build_regex_prefix_matcher
 
 # Global configuration
 DATABASE_URL_EMBA = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
@@ -52,6 +49,8 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
         )
 
         super().__init__(config)
+        self.ac_filename = None
+        self.ac_filecontent = None
 
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
         """Parses raw EMBA configuration file into a structured database."""
@@ -79,6 +78,33 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
                 logger.error(f"Invalid regex in file content: {filecontent}. Error: {e}")
 
         return database
+
+    def load_db(self) -> Optional[Dict[str, Any]]:
+        """Load the database and build the Aho-Corasick automaton for pattern matching."""
+        db = super().load_db()
+        if db:
+            # Build the Aho-Corasick automaton for filename patterns
+            filename_patterns = {}
+            filecontent_patterns = {}
+            
+            for lib_name, lib_data in db.items():
+                if 'filename' in lib_data:
+                    for pattern in lib_data['filename']:
+                        pattern_id = (lib_name, 'filename', pattern)
+                        filename_patterns[pattern_id] = pattern
+                
+                if 'filecontent' in lib_data:
+                    for pattern in lib_data['filecontent']:
+                        pattern_id = (lib_name, 'filecontent', pattern)
+                        filecontent_patterns[pattern_id] = pattern.encode('utf-8').decode('unicode_escape')
+            
+            if filename_patterns:
+                self.ac_filename = build_regex_prefix_matcher(filename_patterns)
+            
+            if filecontent_patterns:
+                self.ac_filecontent = build_regex_prefix_matcher(filecontent_patterns, is_bytes=True)
+            
+        return db
 
 
 native_lib_manager = EmbaNativeLibDatabaseManager()
@@ -144,17 +170,74 @@ def match_by_attribute(
     attribute: str, content: Union[str, bytes], patterns_database: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     libs: List[Dict[str, str]] = []
-    for lib_name, lib_info in patterns_database.items():
-        if attribute in lib_info:
-            for pattern in lib_info[attribute]:
-                if attribute == "filename":
-                    if pattern.lower() == content.lower():
-                        libs.append({"isLibrary": lib_name})
+    
+    # Get the appropriate automaton
+    if attribute == 'filename':
+        ac = native_lib_manager.ac_filename
+    elif attribute == 'filecontent':
+        ac = native_lib_manager.ac_filecontent
+    else:
+        return libs
+    
+    # If no automaton available, fall back to old method
+    if not ac:
+        for lib_name, lib_info in patterns_database.items():
+            if attribute in lib_info:
+                for pattern in lib_info[attribute]:
+                    if attribute == "filename":
+                        if pattern.lower() == content.lower():
+                            libs.append({"isLibrary": lib_name})
 
-                elif attribute == "filecontent":
-                    matches = re.search(pattern.encode("utf-8"), content)
-                    if matches:
-                        libs.append({"containsLibrary": lib_name})
+                    elif attribute == "filecontent":
+                        matches = re.search(pattern.encode("utf-8"), content)
+                        if matches:
+                            libs.append({"containsLibrary": lib_name})
+        return libs
+    
+    # Use Aho-Corasick for prefix matching
+    matched_libraries: Set[str] = set()
+    
+    # For filename we can just do direct string matching
+    if attribute == "filename":
+        if isinstance(content, str):
+            potential_matches = ac.search(content)
+            for pattern_id, positions in potential_matches.items():
+                lib_name, attr, pattern = pattern_id
+                if attr == attribute and pattern.lower() == content.lower() and lib_name not in matched_libraries:
+                    libs.append({"isLibrary": lib_name})
+                    matched_libraries.add(lib_name)
+    
+    # For file content, we need to search in binary data
+    elif attribute == "filecontent":
+        if isinstance(content, bytes):
+            # Window size for context around matches
+            window_size = 4096  # Adjustable based on expected pattern size
+            content_length = len(content)
+            
+            potential_matches = ac.search(content)
+            
+            for pattern_id, positions in potential_matches.items():
+                lib_name, attr, pattern = pattern_id
+                if attr == attribute and lib_name not in matched_libraries:
+                    try:
+                        encoded_pattern = pattern.encode("utf-8")
+                        
+                        # Check each position where the prefix was found
+                        for pos in positions:
+                            # Calculate start and end for a slice of content around the match position
+                            slice_start = max(0, pos - 50)  # Allow some context before match
+                            slice_end = min(content_length, pos + window_size)
+                            content_slice = content[slice_start:slice_end]
+                            
+                            # Search only in the slice
+                            matches = re.search(encoded_pattern, content_slice)
+                            if matches:
+                                libs.append({"containsLibrary": lib_name})
+                                matched_libraries.add(lib_name)
+                                break  # Found one match for this library, no need to check more positions
+                    except re.error as e:
+                        logger.error(f"Error with regex pattern {pattern}: {e}")
+    
     return libs
 
 
