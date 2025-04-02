@@ -318,6 +318,7 @@ def sbom(
                     pm,
                     new_sbom,
                     entry.archive,
+                    filetype=pm.hook.identify_file_type(filepath=entry.archive),
                     user_institution_name=recorded_institution,
                     skip_extraction=entry.skipProcessingArchive,
                 )
