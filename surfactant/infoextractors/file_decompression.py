@@ -51,30 +51,35 @@ def extract_file_info(
     if not compression_format:
         return None
 
-    # If archive key exists, but has empty list of extractPaths, add an entry to the queue for the archive
-    if current_context.archive and current_context.extractPaths == []:
-        temp_folder_archive = check_compression_type(current_context.archive, compression_format)
-        archive_entry = ContextEntry(
-            archive=current_context.archive,
-            installPrefix=current_context.installPrefix,  # inherit install prefix from current context
-            extractPaths=[temp_folder_archive],
-            skipProcessingArchive=True,
-        )
-        context_queue.put(archive_entry)
-        logger.info(f"New ContextEntry added for archive: {current_context.archive}")
-        return None
+    install_prefix = ""
+    extract_paths = []
 
-    # Decompress the file based on its format
-    temp_folder = check_compression_type(filename, compression_format)
+    # Check that archive key exists and filename is same as archive file
+    if current_context.archive and current_context.archive == filename:
+        # If archive has empty list of extractPaths, an entry to the queue will be added
+        if current_context.extractPaths == []:
+            temp_folder = check_compression_type(current_context.archive, compression_format)
+            install_prefix = current_context.installPrefix
+            extract_paths = [temp_folder]
+            logger.info(f"New ContextEntry added for archive: {current_context.archive}")
+        # Assume archive is already extracted if the extractPaths is not empty
+        else:
+            logger.info(
+                f"Already extracted, skipping extraction for archive: {current_context.archive}"
+            )
+            return None
+    # Assume there is a compressed file in the extractPaths
+    elif current_context.installPrefix == "/":
+        # Decompress the file based on its format
+        temp_folder = check_compression_type(filename, compression_format)
+        extract_paths = [temp_folder]
+        logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
 
-    # Add a new ContextEntry for the temp dir
+    # Create a new context entry and add it to the queue
     new_entry = ContextEntry(
-        archive=filename, installPrefix="", extractPaths=[temp_folder], skipProcessingArchive=True
+        archive=filename, installPrefix="", extractPaths=extract_paths, skipProcessingArchive=True
     )
-
-    # Add new ContextEntry object to queue
     context_queue.put(new_entry)
-    logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
 
     return None
 
