@@ -56,30 +56,28 @@ def extract_file_info(
 
     # Check that archive key exists and filename is same as archive file
     if current_context.archive and current_context.archive == filename:
-        # If archive has empty list of extractPaths, an entry to the queue will be added
-        if current_context.extractPaths == []:
-            temp_folder = check_compression_type(current_context.archive, compression_format)
-            install_prefix = current_context.installPrefix
-            extract_paths = [temp_folder]
-            logger.info(f"New ContextEntry added for archive: {current_context.archive}")
-        # Assume archive is already extracted if the extractPaths is not empty
-        else:
+        if current_context.extractPaths is not None and current_context.extractPaths != []:
             logger.info(
                 f"Already extracted, skipping extraction for archive: {current_context.archive}"
             )
             return None
-    # Assume there is a compressed file in the extractPaths
-    elif current_context.installPrefix == "/":
-        # Decompress the file based on its format
-        temp_folder = check_compression_type(filename, compression_format)
-        extract_paths = [temp_folder]
-        logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
+
+        # Inherit the context entry install prefix for the extracted files
+        install_prefix = current_context.installPrefix
+
+    # Decompress the file based on its format
+    temp_folder = check_compression_type(filename, compression_format)
+    extract_paths = [temp_folder]
 
     # Create a new context entry and add it to the queue
     new_entry = ContextEntry(
-        archive=filename, installPrefix="", extractPaths=extract_paths, skipProcessingArchive=True
+        archive=filename,
+        installPrefix=install_prefix,
+        extractPaths=extract_paths,
+        skipProcessingArchive=True,
     )
     context_queue.put(new_entry)
+    logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
 
     return None
 
