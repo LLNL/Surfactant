@@ -46,19 +46,36 @@ def extract_file_info(
     current_context: Optional[ContextEntry],
 ) -> Optional[Dict[str, Any]]:
     # Check if the file is compressed and get its format
+
     compression_format = supports_file(filetype)
     if not compression_format:
         return None
 
+    install_prefix = ""
+    extract_paths = []
+
+    # Check that archive key exists and filename is same as archive file
+    if current_context.archive and current_context.archive == filename:
+        if current_context.extractPaths is not None and current_context.extractPaths != []:
+            logger.info(
+                f"Already extracted, skipping extraction for archive: {current_context.archive}"
+            )
+            return None
+
+        # Inherit the context entry install prefix for the extracted files
+        install_prefix = current_context.installPrefix
+
     # Decompress the file based on its format
     temp_folder = check_compression_type(filename, compression_format)
+    extract_paths = [temp_folder]
 
-    # Add a new ContextEntry for the temp dir
+    # Create a new context entry and add it to the queue
     new_entry = ContextEntry(
-        archive=filename, installPrefix="", extractPaths=[temp_folder], skipProcessingArchive=True
+        archive=filename,
+        installPrefix=install_prefix,
+        extractPaths=extract_paths,
+        skipProcessingArchive=True,
     )
-
-    # Add new ContextEntry object to queue
     context_queue.put(new_entry)
     logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
 
