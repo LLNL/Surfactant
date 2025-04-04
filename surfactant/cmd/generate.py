@@ -285,10 +285,10 @@ def sbom(
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
 
-    context_queue: queue.Queue[ContextEntry] = queue.Queue()
+    contextQ: queue.Queue[ContextEntry] = queue.Queue()
 
     for cfg_entry in specimen_config:
-        context_queue.put(ContextEntry(**cfg_entry))
+        contextQ.put(ContextEntry(**cfg_entry))
 
     # define the new_sbom variable type
     new_sbom: SBOM
@@ -305,19 +305,20 @@ def sbom(
         file_symlinks: Dict[str, List[str]] = {}
         # List of filename symlinks; keys are SHA256 hashes, values are file names
         filename_symlinks: Dict[str, List[str]] = {}
-        while not context_queue.empty():
-            entry: ContextEntry = context_queue.get()
+        while not contextQ.empty():
+            entry: ContextEntry = contextQ.get()
             if entry.archive:
                 logger.info("Processing parent container " + str(entry.archive))
                 # TODO: if the parent archive has an info extractor that does unpacking interally, should the children be added to the SBOM?
                 # current thoughts are (Syft) doesn't provide hash information for a proper SBOM software entry, so exclude these
                 # extractor plugins meant to unpack files could be okay when used on an "archive", but then extractPaths should be empty
                 parent_entry, _ = get_software_entry(
-                    context_queue,
+                    contextQ,
                     entry,
                     pm,
                     new_sbom,
                     entry.archive,
+                    filetype=pm.hook.identify_file_type(filepath=entry.archive),
                     user_institution_name=recorded_institution,
                     skip_extraction=entry.skipProcessingArchive,
                 )
@@ -373,7 +374,7 @@ def sbom(
                     # breakpoint()
                     try:
                         sw_parent, sw_children = get_software_entry(
-                            context_queue,
+                            contextQ,
                             entry,
                             pm,
                             new_sbom,
@@ -485,7 +486,7 @@ def sbom(
                             ]:
                                 try:
                                     sw_parent, sw_children = get_software_entry(
-                                        context_queue,
+                                        contextQ,
                                         entry,
                                         pm,
                                         new_sbom,
