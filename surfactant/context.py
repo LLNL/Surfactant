@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 
+# pylint: disable-next=too-many-instance-attributes
 @dataclass
 class ContextEntry:
     """
