@@ -42,16 +42,24 @@ def get_software_entry(
     user_institution_name="",
     omit_unrecognized_types=False,
     skip_extraction=False,
+    container_prefix=None
 ) -> Tuple[Software, List[Software]]:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path is not None and install_path is not None:
         sw_entry.installPath = [real_path_to_install_path(root_path, install_path, filepath)]
     if root_path is not None and container_uuid is not None:
+        # Setup the container prefix as needed
+        prefix = container_prefix if container_prefix is not None else ''
+        if prefix != "":
+            prefix = "/" + prefix
+            # Remove slash at the end since it results in incorrect paths
+            if prefix.endswith("/"):
+                prefix = prefix[:-1]
         # make sure there is a "/" separating container uuid and the filepath
         if root_path != "" and not root_path.endswith("/"):
-            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
+            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + prefix, filepath)]
         else:
-            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + "/", filepath)]
+            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + prefix + "/", filepath)]
     sw_entry.recordedInstitution = user_institution_name
     sw_children: List[Software] = []
     sw_field_hints: List[Tuple[str, Any, int]] = []
@@ -321,6 +329,7 @@ def sbom(
                     filetype=pm.hook.identify_file_type(filepath=entry.archive),
                     user_institution_name=recorded_institution,
                     skip_extraction=entry.skipProcessingArchive,
+                    container_prefix=entry.containerPrefix
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
                 if (
@@ -384,6 +393,7 @@ def sbom(
                             container_uuid=parent_uuid,
                             install_path=install_prefix,
                             user_institution_name=recorded_institution,
+                            container_prefix=entry.containerPrefix,
                         )
                     except Exception as e:
                         raise RuntimeError(f"Unable to process: {filepath}") from e
@@ -498,6 +508,7 @@ def sbom(
                                         user_institution_name=recorded_institution,
                                         omit_unrecognized_types=omit_unrecognized_types
                                         or entry.omitUnrecognizedTypes,
+                                        container_prefix=entry.containerPrefix,
                                     )
                                 except Exception as e:
                                     raise RuntimeError(f"Unable to process: {filepath}") from e
