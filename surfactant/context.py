@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 
-# pylint: disable-next=too-many-instance-attributes
 @dataclass
+# pylint: disable-next=too-many-instance-attributes
 class ContextEntry:
     """
     Represents an entry in the processing queue for directories/files.
