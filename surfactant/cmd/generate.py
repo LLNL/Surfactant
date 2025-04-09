@@ -50,7 +50,9 @@ def get_software_entry(
     if root_path is not None and container_uuid is not None:
         # make sure there is a "/" separating container uuid and the filepath
         if root_path != "" and not root_path.endswith("/"):
-            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + container_prefix, filepath)]
+            sw_entry.containerPath = [
+                re.sub("^" + root_path, container_uuid + container_prefix, filepath)
+            ]
         else:
             sw_entry.containerPath = [
                 re.sub("^" + root_path, container_uuid + container_prefix + "/", filepath)
@@ -361,7 +363,9 @@ def sbom(
                     entry.installPrefix = entry.installPrefix.replace("\\", "\\\\")
 
             # Clean up the container prefix if needed
-            entry.containerPrefix = entry.containerPrefix.strip("/") if entry.containerPrefix is not None else ""
+            entry.containerPrefix = (
+                entry.containerPrefix.strip("/") if entry.containerPrefix is not None else ""
+            )
             if entry.containerPrefix != "":
                 entry.containerPrefix = "/" + entry.containerPrefix
 
