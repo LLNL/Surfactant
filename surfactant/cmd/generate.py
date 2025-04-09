@@ -42,6 +42,7 @@ def get_software_entry(
     user_institution_name="",
     omit_unrecognized_types=False,
     skip_extraction=False,
+    container_prefix=None,
 ) -> Tuple[Software, List[Software]]:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path is not None and install_path is not None:
@@ -49,9 +50,13 @@ def get_software_entry(
     if root_path is not None and container_uuid is not None:
         # make sure there is a "/" separating container uuid and the filepath
         if root_path != "" and not root_path.endswith("/"):
-            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
+            sw_entry.containerPath = [
+                re.sub("^" + root_path, container_uuid + container_prefix, filepath)
+            ]
         else:
-            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + "/", filepath)]
+            sw_entry.containerPath = [
+                re.sub("^" + root_path, container_uuid + container_prefix + "/", filepath)
+            ]
     sw_entry.recordedInstitution = user_institution_name
     sw_children: List[Software] = []
     sw_field_hints: List[Tuple[str, Any, int]] = []
@@ -321,6 +326,7 @@ def sbom(
                     filetype=pm.hook.identify_file_type(filepath=entry.archive),
                     user_institution_name=recorded_institution,
                     skip_extraction=entry.skipProcessingArchive,
+                    container_prefix=entry.containerPrefix,
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
                 if (
@@ -356,6 +362,13 @@ def sbom(
                     )
                     entry.installPrefix = entry.installPrefix.replace("\\", "\\\\")
 
+            # Clean up the container prefix if needed
+            entry.containerPrefix = (
+                entry.containerPrefix.strip("/") if entry.containerPrefix is not None else ""
+            )
+            if entry.containerPrefix != "":
+                entry.containerPrefix = "/" + entry.containerPrefix
+
             for epath_str in entry.extractPaths:
                 # convert to pathlib.Path, ensures trailing "/" won't be present and some more consistent path formatting
                 epath = pathlib.Path(epath_str)
@@ -384,6 +397,7 @@ def sbom(
                             container_uuid=parent_uuid,
                             install_path=install_prefix,
                             user_institution_name=recorded_institution,
+                            container_prefix=entry.containerPrefix,
                         )
                     except Exception as e:
                         raise RuntimeError(f"Unable to process: {filepath}") from e
@@ -498,6 +512,7 @@ def sbom(
                                         user_institution_name=recorded_institution,
                                         omit_unrecognized_types=omit_unrecognized_types
                                         or entry.omitUnrecognizedTypes,
+                                        container_prefix=entry.containerPrefix,
                                     )
                                 except Exception as e:
                                     raise RuntimeError(f"Unable to process: {filepath}") from e
