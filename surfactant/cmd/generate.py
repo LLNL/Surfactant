@@ -48,19 +48,12 @@ def get_software_entry(
     if root_path is not None and install_path is not None:
         sw_entry.installPath = [real_path_to_install_path(root_path, install_path, filepath)]
     if root_path is not None and container_uuid is not None:
-        # Setup the container prefix as needed
-        prefix = container_prefix if container_prefix is not None else ""
-        if prefix != "":
-            prefix = "/" + prefix
-            # Remove slash at the end since it results in incorrect paths
-            if prefix.endswith("/"):
-                prefix = prefix[:-1]
         # make sure there is a "/" separating container uuid and the filepath
         if root_path != "" and not root_path.endswith("/"):
-            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + prefix, filepath)]
+            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + container_prefix, filepath)]
         else:
             sw_entry.containerPath = [
-                re.sub("^" + root_path, container_uuid + prefix + "/", filepath)
+                re.sub("^" + root_path, container_uuid + container_prefix + "/", filepath)
             ]
     sw_entry.recordedInstitution = user_institution_name
     sw_children: List[Software] = []
@@ -366,6 +359,11 @@ def sbom(
                         "Fixing installPrefix with Windows-style backslash path separator in config file (ideally use / as path separator instead of \\, even for Windows"
                     )
                     entry.installPrefix = entry.installPrefix.replace("\\", "\\\\")
+
+            # Clean up the container prefix if needed
+            entry.containerPrefix = entry.containerPrefix.strip("/") if entry.containerPrefix is not None else ""
+            if entry.containerPrefix != "":
+                entry.containerPrefix = "/" + entry.containerPrefix
 
             for epath_str in entry.extractPaths:
                 # convert to pathlib.Path, ensures trailing "/" won't be present and some more consistent path formatting
