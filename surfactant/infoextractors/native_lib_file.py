@@ -85,7 +85,7 @@ native_lib_manager = EmbaNativeLibDatabaseManager()
 
 
 def supports_file(filetype: str) -> bool:
-    return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
+    return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64", "UIMAGE")
 
 
 @surfactant.plugin.hookimpl
