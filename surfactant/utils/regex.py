@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 import re
+import sys
 from typing import List, Tuple
 
 
@@ -150,7 +151,7 @@ def extract_fixed_prefixes(regex_pattern: str) -> List[str]:
                 break
             prefix.append(next_char)
             i += i_delta
-        elif char.isalnum() or char in "_-":
+        elif char.isalnum() or char in "_-,: '":
             prefix.append(char)
             i += 1
         else:
@@ -159,3 +160,347 @@ def extract_fixed_prefixes(regex_pattern: str) -> List[str]:
         prefixes = [p + "".join(prefix) for p in prefixes] if prefixes else ["".join(prefix)]
 
     return prefixes
+
+
+class RegexNode:
+    """A node in the regex parse tree."""
+
+    def __init__(self, op, value=None, children=None):
+        self.op = op  # Operation type (LITERAL, BRANCH, etc.)
+        self.value = value  # Value for this node (e.g., character for LITERAL)
+        self.children = children if children is not None else []
+
+    def __repr__(self):
+        if self.value is not None:
+            return f"RegexNode({self.op}, {repr(self.value)})"
+        return f"RegexNode({self.op}, children={len(self.children)})"
+
+
+def extract_fixed_literals(pattern, max_possibilities=10, min_length=3):
+    """
+    Extract fixed literals from a regular expression pattern.
+
+    Args:
+        pattern: The regular expression pattern to analyze.
+        max_possibilities: Maximum number of different possibilities to generate.
+        min_length: Minimum length threshold for a potential fixed string.
+
+    Returns:
+        A tuple containing:
+        - A list of fixed literals that could be matched by the pattern
+        - A boolean indicating whether the patterns are prefixes (True) or not (False)
+    """
+    # Choose the appropriate module based on Python version
+    if sys.version_info < (3, 7):
+        import sre_parse as parser
+    else:
+        import sre_parse as parser
+
+    try:
+        # Parse the regex pattern
+        parsed = parser.parse(pattern)
+
+        # Convert to our tree structure
+        regex_tree = build_regex_tree(parsed, parser)
+
+        # First try to extract literal prefixes from the tree
+        literals, is_prefix = extract_prefix_from_tree(
+            regex_tree, max_possibilities, min_length, parser
+        )
+
+        if literals:
+            return literals, is_prefix
+
+        # Try to find fixed internal literals from the tree
+        literals = extract_internal_literals(regex_tree, max_possibilities, min_length, parser)
+        return literals, False
+
+    except Exception as e:
+        print(f"Error processing regex pattern: {e}")
+        return [], False
+
+
+def build_regex_tree(parsed, parser):
+    """Convert the parsed regex into a tree structure."""
+    root = RegexNode("ROOT", children=[])
+
+    for op, av in parsed:
+        if op == parser.LITERAL:
+            # Simple literal character
+            root.children.append(RegexNode(op, value=chr(av)))
+
+        elif op == parser.IN:
+            # Character class [...]
+            chars = extract_chars_from_class(av, parser)
+            node = RegexNode(op, value=chars)
+            root.children.append(node)
+
+        elif op == parser.SUBPATTERN:
+            # Subpattern (...)
+            # Structure varies by Python version
+            subpattern = av[3] if len(av) > 3 else av[1]
+            subtree = build_regex_tree(subpattern, parser)
+            node = RegexNode(op, children=subtree.children)
+            root.children.append(node)
+
+        elif op == parser.BRANCH:
+            # Alternation a|b|c
+            branches = av[1]
+            branch_nodes = []
+
+            for branch in branches:
+                branch_tree = build_regex_tree(branch, parser)
+                branch_nodes.append(branch_tree)
+
+            node = RegexNode(op, children=branch_nodes)
+            root.children.append(node)
+
+        elif op == parser.MAX_REPEAT:
+            # Repetition a*, a+, a{n,m}
+            min_count, max_count, subpattern = av
+            subtree = build_regex_tree(subpattern, parser)
+
+            node = RegexNode(op, value=(min_count, max_count), children=[subtree])
+            root.children.append(node)
+
+        elif op == parser.AT:
+            # Anchors (^, $)
+            # We can ignore these for fixed prefix extraction
+            continue
+
+        else:
+            # Any other operation (ANY, etc.)
+            node = RegexNode(op, value=av)
+            root.children.append(node)
+
+    return root
+
+
+def extract_chars_from_class(char_class, parser):
+    """Extract characters from a character class."""
+    chars = set()
+
+    for op, av in char_class:
+        if op == parser.LITERAL:
+            # Single characters
+            chars.add(chr(av))
+        elif op == parser.RANGE:
+            # Character ranges (e.g., a-z, 0-9)
+            start, end = av
+            for i in range(start, end + 1):
+                chars.add(chr(i))
+
+    return list(chars)
+
+
+def extract_prefix_from_tree(node, max_possibilities, min_length, parser):
+    """Extract literal prefixes from the regex tree."""
+    if node.op == "ROOT":
+        # Process child nodes sequentially for prefixes
+        prefixes = []
+        total_possibilities = 1
+        is_prefix = True
+
+        for child in node.children:
+            # Check if we can still continue with a fixed prefix
+            child_prefixes, child_is_prefix = node_to_prefixes(
+                child, max_possibilities // total_possibilities, parser
+            )
+            print(f"Child node: {child}, prefixes: {child_prefixes}, is prefix: {child_is_prefix}")
+
+            if not child_is_prefix:
+                break
+
+            if not child_prefixes:
+                is_prefix = False
+                break
+
+            # If this would create too many possibilities, stop
+            if len(child_prefixes) * total_possibilities > max_possibilities:
+                is_prefix = False
+                break
+
+            # Combine current prefixes with child prefixes
+            if not prefixes:
+                prefixes = child_prefixes
+            else:
+                new_prefixes = []
+                for prefix in prefixes:
+                    for child_prefix in child_prefixes:
+                        new_prefixes.append(prefix + child_prefix)
+                prefixes = new_prefixes
+            total_possibilities *= len(child_prefixes)
+
+        # Filter by minimum length
+        prefixes = [p for p in prefixes if len(p) >= min_length]
+        return prefixes[:max_possibilities], is_prefix
+
+    return [], False
+
+
+def node_to_prefixes(node, max_possibilities, parser):
+    """Convert a node to its potential literal prefixes."""
+    if node.op == parser.LITERAL:
+        # Single literal character
+        return [node.value], True
+
+    elif node.op == parser.IN:
+        # Character class
+        if len(node.value) > max_possibilities:
+            return [], False
+        return node.value, True
+
+    elif node.op == parser.SUBPATTERN:
+        # Recursively process subpatterns
+        return extract_prefix_from_tree(
+            RegexNode("ROOT", children=node.children), max_possibilities, 0, parser
+        )
+
+    elif node.op == parser.BRANCH:
+        # Alternation - collect prefixes from all branches
+        all_prefixes = []
+        all_are_prefixes = True
+
+        for branch in node.children:
+            branch_prefixes, is_prefix = extract_prefix_from_tree(
+                branch, max_possibilities, 0, parser
+            )
+
+            if not is_prefix:
+                all_are_prefixes = False
+
+            all_prefixes.extend(branch_prefixes)
+
+        if len(all_prefixes) > max_possibilities:
+            return [], False
+
+        return all_prefixes, all_are_prefixes
+
+    elif node.op == parser.MAX_REPEAT:
+        # Repetition
+        min_count, max_count = node.value
+
+        # Only handle simple cases with small, positive min_count
+        if min_count > 3:
+            return [], False  # Too complex
+
+        # Get prefixes for the repeated content
+        sub_tree = node.children[0]
+        sub_prefixes, is_prefix = extract_prefix_from_tree(sub_tree, max_possibilities, 0, parser)
+
+        if not is_prefix or not sub_prefixes:
+            return [], False
+
+        # Generate prefixes for required minimum repetitions
+        # If the min_count is 0, then it is just an empty prefix
+        prefixes = [""]
+        for _ in range(min_count):
+            new_prefixes = []
+            for prefix in prefixes:
+                for sub_prefix in sub_prefixes:
+                    new_prefixes.append(prefix + sub_prefix)
+            prefixes = new_prefixes
+        if len(prefixes) > max_possibilities:
+            return [], False
+
+        # # If the max_count is greater than min_count, we can add more prefixes (within max_possibilities)
+        # if str(max_count) == "MAXREPEAT" or max_count > min_count:
+        #     _max_count = max_count if max_count != "MAXREPEAT" else min_count + 5
+        #     updated_prefixes = list(set(prefixes))
+        #     for _ in range(_max_count - min_count):
+        #         new_prefixes = []
+        #         for prefix in updated_prefixes:
+        #             for sub_prefix in sub_prefixes:
+        #                 new_prefixes.append(prefix + sub_prefix)
+        #         updated_prefixes = list(set(updated_prefixes + new_prefixes))  # Combine old and new prefixes, ensuring uniqueness
+        #         if len(updated_prefixes) <= max_possibilities:
+        #             prefixes = updated_prefixes
+        #         else:
+        #             # Stop if we exceed max_possibilities
+        #             break
+
+        return prefixes, True
+
+    # Any other type of node breaks a fixed prefix
+    return [], False
+
+
+def extract_internal_literals(node, max_possibilities, min_length, parser):
+    """
+    Extract fixed internal literals from the regex tree.
+    This function identifies internal sequences that must always be present.
+    """
+    if node.op == "ROOT":
+        # First, try to find fixed literals at the top level
+        candidates = []
+
+        # Look for consecutive LITERAL nodes
+        current_literal = ""
+        for child in node.children:
+            if child.op == parser.LITERAL:
+                current_literal += child.value
+            else:
+                if len(current_literal) >= min_length:
+                    candidates.append(current_literal)
+                current_literal = ""
+
+                # Recursively check this non-literal node
+                child_literals = extract_internal_literals(
+                    child, max_possibilities, min_length, parser
+                )
+                candidates.extend(child_literals)
+
+        # Check the last literal sequence
+        if len(current_literal) >= min_length:
+            candidates.append(current_literal)
+
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_literals = []
+        for literal in candidates:
+            if literal not in seen:
+                seen.add(literal)
+                unique_literals.append(literal)
+
+        return unique_literals[:max_possibilities]
+
+    elif node.op == parser.SUBPATTERN:
+        # Check inside subpatterns
+        return extract_internal_literals(
+            RegexNode("ROOT", children=node.children), max_possibilities, min_length, parser
+        )
+
+    elif node.op == parser.BRANCH:
+        # For branches, find literals common to all alternatives
+        common_literals = []
+
+        for branch in node.children:
+            branch_literals = extract_internal_literals(
+                branch, max_possibilities, min_length, parser
+            )
+
+            # For the first branch, initialize common_literals
+            if not common_literals and branch_literals:
+                common_literals = branch_literals
+            else:
+                # Keep only literals that appear in all branches
+                common_literals = [
+                    lit for lit in common_literals if any(lit in b_lit for b_lit in branch_literals)
+                ]
+
+        return common_literals
+
+    elif node.op == parser.MAX_REPEAT:
+        min_count = node.value[0]
+
+        # Only consider required repetitions
+        if min_count > 0:
+            sub_tree = node.children[0]
+            sub_literals = extract_internal_literals(
+                sub_tree, max_possibilities, min_length, parser
+            )
+
+            # If always repeated at least once, these literals must be present
+            return sub_literals
+
+    return []
