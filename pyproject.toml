@@ -56,6 +56,7 @@ dependencies = [
     "tomlkit==0.13.*",
     "textual==3.*",
     "requests>=2.32.3",
+    "rarfile==4.2.*",
 ]
 dynamic = ["version"]
 
