@@ -10,14 +10,14 @@ class TestAhoCorasick:
     def test_initialization(self):
         """Test initialization of the AhoCorasick automaton."""
         ac = AhoCorasick()
-        self.assertFalse(ac.is_bytes)
-        self.assertEqual(ac.encoding, "utf-8")
-        self.assertFalse(ac.built)
-        self.assertEqual(ac.pattern_prefixes, {})
+        assert not ac.is_bytes
+        assert ac.encoding == "utf-8"
+        assert not ac.built
+        assert not ac.pattern_prefixes
 
         ac_bytes = AhoCorasick(is_bytes=True, encoding="latin-1")
-        self.assertTrue(ac_bytes.is_bytes)
-        self.assertEqual(ac_bytes.encoding, "latin-1")
+        assert ac_bytes.is_bytes
+        assert ac_bytes.encoding == "latin-1"
 
     def test_add_pattern(self):
         """Test adding patterns to the automaton."""
@@ -27,10 +27,10 @@ class TestAhoCorasick:
         # Check that the pattern was added correctly
         node = ac.root
         for char in "hello":
-            self.assertIn(char, node.goto)
+            assert char in node.goto
             node = node.goto[char]
-        self.assertEqual(node.out, [1])
-        self.assertEqual(ac.pattern_prefixes, {1: "hello"})
+        assert node.out == [1]
+        assert ac.pattern_prefixes == {1: "hello"}
 
     def test_add_pattern_bytes(self):
         """Test adding patterns with byte handling."""
@@ -41,16 +41,16 @@ class TestAhoCorasick:
         # Check pattern addition with bytes
         node = ac.root
         for byte in b"hello":
-            self.assertIn(byte, node.goto)
+            assert byte in node.goto
             node = node.goto[byte]
-        self.assertEqual(node.out, [1])
+        assert node.out == [1]
 
         # Check string converted to bytes
         node = ac.root
         for byte in b"world":
-            self.assertIn(byte, node.goto)
+            assert byte in node.goto
             node = node.goto[byte]
-        self.assertEqual(node.out, [2])
+        assert node.out == [2]
 
     def test_build_and_search_single_pattern(self):
         """Test building and searching with a single pattern."""
@@ -58,19 +58,19 @@ class TestAhoCorasick:
         ac.add_pattern("hello", 1, "hello")
         ac.build_automaton()
 
-        self.assertTrue(ac.built)
+        assert ac.built
 
         # Test exact match
         results = ac.search("hello world")
-        self.assertEqual(results, {1: [0]})
+        assert results == {1: [0]}
 
         # Test no match
         results = ac.search("hi there")
-        self.assertEqual(results, {})
+        assert not results
 
         # Test multiple occurrences
         results = ac.search("hello hello hello")
-        self.assertEqual(results, {1: [0, 6, 12]})
+        assert results == {1: [0, 6, 12]}
 
     def test_search_multiple_patterns(self):
         """Test searching with multiple patterns."""
@@ -82,10 +82,10 @@ class TestAhoCorasick:
         ac.build_automaton()
 
         results = ac.search("she said he told his and hers story")
-        self.assertEqual(results[1], [9])  # "he"
-        self.assertEqual(results[2], [0])  # "she"
-        self.assertEqual(results[3], [15])  # "his"
-        self.assertEqual(results[4], [24])  # "hers"
+        assert results[1] == [1, 9, 25]  # "he"
+        assert results[2] == [0]  # "she"
+        assert results[3] == [17]  # "his"
+        assert results[4] == [25]  # "hers"
 
     def test_overlapping_patterns(self):
         """Test handling of overlapping patterns."""
@@ -96,10 +96,10 @@ class TestAhoCorasick:
         ac.build_automaton()
 
         results = ac.search("abcd")
-        self.assertEqual(set(results.keys()), {1, 2, 3})
-        self.assertEqual(results[1], [0])  # "abcd"
-        self.assertEqual(results[2], [1])  # "bcd"
-        self.assertEqual(results[3], [2])  # "cd"
+        assert set(results.keys()) == {1, 2, 3}
+        assert results[1] == [0]  # "abcd"
+        assert results[2] == [1]  # "bcd"
+        assert results[3] == [2]  # "cd"
 
     def test_bytes_search(self):
         """Test searching with bytes."""
@@ -109,11 +109,11 @@ class TestAhoCorasick:
 
         # Test with bytes input
         results = ac.search(b"hello world")
-        self.assertEqual(results, {1: [0]})
+        assert results == {1: [0]}
 
         # Test with string input that gets converted
         results = ac.search("hello world")
-        self.assertEqual(results, {1: [0]})
+        assert results == {1: [0]}
 
     def test_empty_and_edge_cases(self):
         """Test edge cases."""
@@ -128,14 +128,14 @@ class TestAhoCorasick:
 
         # Empty search text
         results = ac.search("")
-        self.assertEqual(results, {})
+        assert not results
 
         # Reset and test with non-empty pattern
         ac = AhoCorasick()
         ac.add_pattern("test", 1, "test")
         ac.build_automaton()
         results = ac.search("")
-        self.assertEqual(results, {})
+        assert not results
 
     def test_build_regex_prefix_matcher(self):
         """Test the build_regex_prefix_matcher function."""
@@ -146,13 +146,13 @@ class TestAhoCorasick:
 
         # Both patterns should be added as-is
         results = ac.search("hello world")
-        self.assertEqual(set(results.keys()), {1, 2})
-        self.assertEqual(results[1], [0])
-        self.assertEqual(results[2], [6])
+        assert set(results.keys()) == {1, 2}
+        assert results[1] == [0]
+        assert results[2] == [6]
 
         # Test with regex patterns
         regex_patterns = {
-            1: "hel+o",  # Should extract "hel" as prefix
+            1: "hell+o",  # Should extract "hell" as prefix
             2: "wo(rld|w)",  # Should extract "wo" as prefix
         }
 
@@ -160,11 +160,11 @@ class TestAhoCorasick:
 
         # Should match both patterns
         results = ac.search("hello world")
-        self.assertEqual(set(results.keys()), {1, 2})
+        assert set(results.keys()) == {1, 2}
 
         # Complex regex with no fixed prefix should be skipped
         regex_patterns = {
-            1: "hel+o",  # Should extract "hel" as prefix
+            1: "hell+o",  # Should extract "hell" as prefix
             2: ".*(rld|w)",  # No fixed prefix
         }
 
@@ -172,7 +172,7 @@ class TestAhoCorasick:
 
         # Should match only pattern 1
         results = ac.search("hello world")
-        self.assertEqual(set(results.keys()), {1})
+        assert set(results.keys()) == {1}
 
 
 # Some additional tests, at times testing a slighly higher level of abstraction than the above tests

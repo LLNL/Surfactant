@@ -14,17 +14,17 @@ from surfactant.utils.regex import (
 
 class TestHandleEscapedLiteral:
     def test_basic_escaped_literals(self):
-        assert handle_escaped_literal(r"\a", 0, 2) == ("a", 2)
         assert handle_escaped_literal(r"\.", 0, 2) == (".", 2)
         assert handle_escaped_literal(r"\-", 0, 2) == ("-", 2)
 
     def test_special_escape_sequences(self):
+        assert handle_escaped_literal(r"\a", 0, 2) == (None, 0)
         assert handle_escaped_literal(r"\n", 0, 2) == ("\n", 2)
         assert handle_escaped_literal(r"\r", 0, 2) == ("\r", 2)
         assert handle_escaped_literal(r"\t", 0, 2) == ("\t", 2)
         assert handle_escaped_literal(r"\v", 0, 2) == ("\v", 2)
         assert handle_escaped_literal(r"\f", 0, 2) == ("\f", 2)
-        assert handle_escaped_literal(r"\0", 0, 2) == ("\0", 2)
+        assert handle_escaped_literal(r"\0", 0, 2) == (None, 0)
 
     def test_control_characters(self):
         # Test redundant check issue where next_char is checked twice
@@ -50,17 +50,23 @@ class TestHandleEscapedLiteral:
 
     def test_overlapping_character_sets(self):
         # Test "0" which appears in multiple conditions
-        assert handle_escaped_literal(r"\0", 0, 2) == ("\0", 2)  # null char
+        assert handle_escaped_literal(r"\0", 0, 2) == (
+            None,
+            0,
+        )  # null char (potentially also backref though)
 
         # Test digit reference (should return None, 0)
         assert handle_escaped_literal(r"\1", 0, 2) == (None, 0)  # backreference
 
-    def test_incomplete_unicode(self):
+    def test_unicode(self):
         # Testing the incomplete Unicode support
-        assert handle_escaped_literal(r"\u0041", 0, 6) == ("u", 2)  # Should return "u" not "A"
+        assert handle_escaped_literal(r"\u0041", 0, 6) == (
+            None,
+            0,
+        )  # Should return "A" once implemented properly
 
         # Test curly brace Unicode format
-        assert handle_escaped_literal(r"\u{0041}", 0, 8) == ("u", 2)  # Not properly handled
+        assert handle_escaped_literal(r"\u{0041}", 0, 8) == (None, 0)  # Not properly handled
 
 
 class TestExtractFixedPrefixes:
