@@ -12,6 +12,7 @@ from loguru import logger
 # Choose the appropriate module based on Python version
 # Note that this is "undocumented" so could break -- may want to find/write an alternative library
 if sys.version_info < (3, 11):
+    # pylint: disable=deprecated-module
     import sre_parse as re_parser
 else:
     import re._parser as re_parser
@@ -428,6 +429,7 @@ def node_to_prefixes(node, max_possibilities, parser):
 
         # Generate prefixes for required minimum repetitions
         # If the min_count is 0, then it is just an empty prefix
+        # Potential issue here: must either include up to max_count repetitions, or can't include any part of regex past this point
         prefixes = [""]
         for _ in range(min_count):
             new_prefixes = []

@@ -204,7 +204,7 @@ def match_by_attribute(
     if attribute == "filename":
         if isinstance(content, str):
             potential_matches = ac.search(content)
-            for pattern_id, positions in potential_matches.items():
+            for pattern_id, _positions in potential_matches.items():
                 lib_name, attr, pattern = pattern_id
                 if (
                     attr == attribute
