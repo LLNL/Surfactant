@@ -19,6 +19,7 @@ import zipfile
 from queue import Queue
 from typing import Any, Dict, Optional
 
+import rarfile
 from loguru import logger
 
 import surfactant.plugin
@@ -30,7 +31,7 @@ GLOBAL_TEMP_DIRS_LIST = []
 
 
 def supports_file(filetype: str) -> str:
-    if filetype in ("TAR", "GZIP", "ZIP", "BZIP2", "XZ"):
+    if filetype in ("TAR", "GZIP", "ZIP", "BZIP2", "XZ", "RAR"):
         return filetype
     return None
 
@@ -46,7 +47,6 @@ def extract_file_info(
     current_context: Optional[ContextEntry],
 ) -> Optional[Dict[str, Any]]:
     # Check if the file is compressed and get its format
-
     compression_format = supports_file(filetype)
     if not compression_format:
         return None
@@ -108,6 +108,8 @@ def check_compression_type(filename: str, compression_format: str) -> str:
                 )
             # Since it doesn't seem to be a compressed tar file, try just decompressing the file
             temp_folder = decompress_file(filename, compression_format)
+    elif compression_format == "RAR":
+        temp_folder = decompress_rar_file(filename)
     else:
         raise ValueError(f"Unsupported compression format: {compression_format}")
 
@@ -175,6 +177,17 @@ def extract_tar_file(filename):
         logger.error(f"Error extracting tar file: {e}")
 
     return temp_dir
+
+
+def decompress_rar_file(filename):
+    temp_folder = create_temp_dir()
+    try:
+        rf = rarfile.RarFile(filename)
+        rf.extractall(path=temp_folder)
+    except rarfile.Error as e:
+        logger.error(f"Error extracting rar file: {e}")
+
+    return temp_folder
 
 
 def delete_temp_dirs():
