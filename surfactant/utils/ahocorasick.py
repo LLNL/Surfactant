@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Union
 from surfactant.utils.regex import extract_fixed_literals
 
 
+# pylint: disable=too-few-public-methods
 class AhoCorasickNode:
     """Node in the Aho-Corasick trie structure."""
 
@@ -59,7 +60,7 @@ class AhoCorasick:
         """Build the Aho-Corasick automaton by computing failure functions."""
         queue = []
         # Set failure of all depth 1 nodes to root
-        for char, node in self.root.goto.items():
+        for _char, node in self.root.goto.items():
             node.fail = self.root
             queue.append(node)
 
@@ -102,7 +103,7 @@ class AhoCorasick:
         node = self.root
         results = {}
 
-        for i in range(len(text)):
+        for i, char in enumerate(text):
             # For bytes, char will be int value of the byte
             char = text[i]
 
@@ -155,10 +156,6 @@ def build_regex_literal_matcher(
             ac.add_pattern(pattern, pattern_id, pattern)
             continue
         literals, is_prefix = extract_fixed_literals(pattern)
-        print(f"{pattern_id}")
-        print(f"{is_prefix}")
-        print(f"{literals}")
-        print("-------------")
         if len(literals) > 10:  # Skip excessive number of prefixes
             continue
         if (
