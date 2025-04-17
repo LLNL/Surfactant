@@ -152,7 +152,7 @@ class TestAhoCorasick:
 
         # Test with regex patterns
         regex_patterns = {
-            1: "hell+o",  # Should extract "hell" as prefix
+            1: "hel+lo",  # Should extract "hel" as prefix
             2: "wo(rld|w)",  # Should extract "wo" as prefix
         }
 
@@ -164,7 +164,7 @@ class TestAhoCorasick:
 
         # Complex regex with no fixed prefix should be skipped
         regex_patterns = {
-            1: "hell+o",  # Should extract "hell" as prefix
+            1: "hel+lo",  # Should extract "hel" as prefix
             2: ".*(rld|w)",  # No fixed prefix
         }
 

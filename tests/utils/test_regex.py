@@ -266,8 +266,8 @@ def test_extract_fixed_literals():
 
     # Test case 5: Regex with repetition
     regex5 = r"(abc){2,3}"
-    expected5 = (["abcabc"], True)
-    assert extract_fixed_literals(regex5) == expected5
+    expected5 = (["abcabc", "abcabcabc"], True)
+    assert_order_independent(extract_fixed_literals(regex5), expected5)
 
     # Test case 6: Regex with nested capture groups
     regex6 = r"^((foo|bar)baz)"
@@ -319,6 +319,16 @@ def test_extract_fixed_literals():
     expected15 = (["hello123", "world456"], True)
     assert_order_independent(extract_fixed_literals(regex15), expected15)
 
+    # Test case 16: Regex with comprehensive branching
+    regex16 = r"he(l|[0-5])o"
+    expected16 = (["helo", "he0o", "he1o", "he2o", "he3o", "he4o", "he5o"], True)
+    assert_order_independent(extract_fixed_literals(regex16), expected16)
+
+    # Test case 17: Regex with non-comprehensive branching
+    regex17 = r"he(l|[0-5]+)o"
+    expected17 = (["hel", "he0", "he1", "he2", "he3", "he4", "he5"], True)
+    assert_order_independent(extract_fixed_literals(regex17), expected17)
+
 
 def test_extract_fixed_literals_actual_cases():
     # Test case: rflow (only possible prefixes exceed max possibilities threshold of 10)
@@ -332,11 +342,11 @@ def test_extract_fixed_literals_actual_cases():
     assert extract_fixed_literals(miniupnpd) == expected_miniupnpd
 
     # Test case: nlohmann
-    # Actually may be better to change this so it just recognizes "nlohmann[0-9]"..
-    # may also be worth checking to see if upstream pattern is correct and not supposed to be "nlohman::"
+    # Only guaranteed literals are "nlohmann[0-9]" due to infinite max repetitions of the numbers
+    # may be worth checking to see if upstream pattern is correct and not supposed to be "nlohman::"
     nlohmann = r"nlohmann[0-9]+json_abi_v[1-3]+_[0-9]+(_[0-9])?"
     expected_nlohmann = (
-        [f"nlohmann{digit}json_abi_v" for digit in range(10)],
+        [f"nlohmann{digit}" for digit in range(10)],
         True,
     )
     assert_order_independent(extract_fixed_literals(nlohmann), expected_nlohmann)

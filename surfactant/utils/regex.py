@@ -209,7 +209,7 @@ def extract_fixed_literals(pattern, max_possibilities=10, min_length=3):
         regex_tree = build_regex_tree(parsed, re_parser)
 
         # First try to extract literal prefixes from the tree
-        literals, is_prefix = extract_prefix_from_tree(
+        literals, is_prefix, _is_comprehensive = extract_prefix_from_tree(
             regex_tree, max_possibilities, min_length, re_parser
         )
 
@@ -305,10 +305,11 @@ def extract_prefix_from_tree(node, max_possibilities, min_length, parser):
         prefixes = []
         total_possibilities = 1
         is_prefix = True
+        is_comprehensive = True
 
         for child in node.children:
             # Check if we can still continue with a fixed prefix
-            child_prefixes, child_is_prefix = node_to_prefixes(
+            child_prefixes, child_is_prefix, is_comprehensive = node_to_prefixes(
                 child, max_possibilities // total_possibilities, parser
             )
 
@@ -335,24 +336,31 @@ def extract_prefix_from_tree(node, max_possibilities, min_length, parser):
                 prefixes = new_prefixes
             total_possibilities *= len(child_prefixes)
 
+            # If the set of child prefixes returned was not comprehensive, we can't keep going
+            if not is_comprehensive:
+                is_comprehensive = False
+                break
+
         # Filter by minimum length
         prefixes = [p for p in prefixes if len(p) >= min_length]
-        return prefixes[:max_possibilities], is_prefix
+        return prefixes[:max_possibilities], is_prefix, is_comprehensive
 
-    return [], False
+    return [], False, True
 
 
 def node_to_prefixes(node, max_possibilities, parser):
     """Convert a node to its potential literal prefixes."""
+    is_comprehensive = True
+
     if node.op == parser.LITERAL:
         # Single literal character
-        return [node.value], True
+        return [node.value], True, is_comprehensive
 
     if node.op == parser.IN:
         # Character class
         if len(node.value) > max_possibilities:
-            return [], False
-        return node.value, True
+            return [], False, is_comprehensive
+        return node.value, True, is_comprehensive
 
     if node.op == parser.SUBPATTERN:
         # Process children nodes sequentially, just like we do for ROOT nodes
@@ -362,7 +370,7 @@ def node_to_prefixes(node, max_possibilities, parser):
 
         for child in node.children:
             # Get potential prefixes for this child
-            child_prefixes, child_is_prefix = node_to_prefixes(
+            child_prefixes, child_is_prefix, is_comprehensive = node_to_prefixes(
                 child, max_possibilities // total_possibilities, parser
             )
 
@@ -377,9 +385,9 @@ def node_to_prefixes(node, max_possibilities, parser):
             ):
                 # If we already have something, return what we've built so far
                 if prefixes != [""]:
-                    return prefixes, True
+                    return prefixes, True, is_comprehensive
                 # Otherwise, we can't extract a useful prefix
-                return [], False
+                return [], False, is_comprehensive
 
             # Combine current prefixes with child prefixes
             new_prefixes = []
@@ -390,7 +398,12 @@ def node_to_prefixes(node, max_possibilities, parser):
             prefixes = new_prefixes
             total_possibilities *= len(child_prefixes)
 
-        return prefixes, is_fixed_prefix
+            # If the set of child prefixes returned was not comprehensive, we can't keep going
+            if not is_comprehensive:
+                is_comprehensive = False
+                break
+
+        return prefixes, is_fixed_prefix, is_comprehensive
 
     if node.op == parser.BRANCH:
         # Alternation - collect prefixes from all branches
@@ -398,9 +411,13 @@ def node_to_prefixes(node, max_possibilities, parser):
         all_are_prefixes = True
 
         for branch in node.children:
-            branch_prefixes, is_prefix = extract_prefix_from_tree(
+            branch_prefixes, is_prefix, branch_is_comprehensive = extract_prefix_from_tree(
                 branch, max_possibilities, 0, parser
             )
+
+            # If any of the branch prefixes aren't comprehensive, we can't be comprehensive
+            if not branch_is_comprehensive:
+                is_comprehensive = False
 
             if not is_prefix:
                 all_are_prefixes = False
@@ -408,55 +425,82 @@ def node_to_prefixes(node, max_possibilities, parser):
             all_prefixes.extend(branch_prefixes)
 
         if len(all_prefixes) > max_possibilities:
-            return [], False
+            return [], False, is_comprehensive
 
-        return all_prefixes, all_are_prefixes
+        return all_prefixes, all_are_prefixes, is_comprehensive
 
     if node.op == parser.MAX_REPEAT:
         # Repetition
         min_count, max_count = node.value
 
-        # Only handle simple cases with small, positive min_count
-        if min_count > 3:
-            return [], False  # Too complex
-
         # Get prefixes for the repeated content
         sub_tree = node.children[0]
-        sub_prefixes, is_prefix = extract_prefix_from_tree(sub_tree, max_possibilities, 0, parser)
+        sub_prefixes, is_prefix, sub_is_comprehensive = extract_prefix_from_tree(
+            sub_tree, max_possibilities, 0, parser
+        )
 
         if not is_prefix or not sub_prefixes:
-            return [], False
+            return [], False, is_comprehensive
 
-        # Generate prefixes for required minimum repetitions
-        # If the min_count is 0, then it is just an empty prefix
-        # Potential issue here: must either include up to max_count repetitions, or can't include any part of regex past this point
-        prefixes = [""]
-        for _ in range(min_count):
-            new_prefixes = []
-            for prefix in prefixes:
-                for sub_prefix in sub_prefixes:
-                    new_prefixes.append(prefix + sub_prefix)
-            prefixes = new_prefixes
-        if len(prefixes) > max_possibilities:
-            return [], False
+        # If max_count is infinite, bound it to the minimum since there's no point in going futher
+        # later parts of the pattern can't safely add anything to the prefixes returned anyway
+        if str(max_count) == "MAXREPEAT":
+            max_count = min_count
+            is_comprehensive = False
 
-        # If it is optional (0 or 1), add the optional variant to the list
-        # This could potentially be generalized to repeat adding something up to max_count
-        if min_count == 0 and max_count == 1:
-            # Add a new prefix to the list with this sub prefix included
-            optional_prefixes = []
-            for prefix in prefixes:
-                optional_prefixes.append(prefix)  # Include the prefix as-is
-                for sub_prefix in sub_prefixes:
-                    optional_prefixes.append(prefix + sub_prefix)  # Include the optional sub prefix
-            optional_prefixes = list(set(optional_prefixes))  # Ensure uniqueness
-            if len(optional_prefixes) <= max_possibilities:
-                prefixes = optional_prefixes
+        # Create the list of prefixes
+        prefixes = []
 
-        return prefixes, True
+        # If min_count is 0, then the empty prefix will be included (the empty prefix on its own doesn't bring us closer to max_possibilities)
+        # Otherwise we'll build up the guaranteed prefix as close to min_count repetitions as possible
+        guaranteed_prefixes = [""]
+        # If the subtree is comprehensive, we can build up the guaranteed prefixes
+        if sub_is_comprehensive:
+            for _ in range(min_count):
+                new_prefixes = []
+                for prefix in guaranteed_prefixes:
+                    for sub_prefix in sub_prefixes:
+                        new_prefixes.append(prefix + sub_prefix)
+                # If we exceed the max possibilities, flag as not comprehensive and break
+                if len(new_prefixes) > max_possibilities:
+                    is_comprehensive = False
+                    break
+                # Adding this additional repetition stays within the max possibilities
+                guaranteed_prefixes = new_prefixes
+        else:
+            # If the subtree is not comprehensive, we can only add the prefixes as they are
+            guaranteed_prefixes = sub_prefixes
+            is_comprehensive = False
+        prefixes.extend(guaranteed_prefixes)
+
+        # Next, we can try to insert additional prefix variations up to the max if the prefixes will still be comprehensive
+        # If we can reach the max, the additional prefixes can be included
+        # Otherwise, there is no point in adding them and we should set is_comprehensive to False
+        if is_comprehensive:
+            not_guaranteed_prefixes = []
+            prev_new_prefixes = prefixes
+            for _ in range(max_count - min_count):
+                new_prefixes = []
+                for prefix in prev_new_prefixes:
+                    for sub_prefix in sub_prefixes:
+                        new_prefixes.append(prefix + sub_prefix)
+                # If we exceed the max possibilities, flag as not comprehensive and break
+                if (
+                    len(new_prefixes) + len(not_guaranteed_prefixes) + len(prefixes)
+                    > max_possibilities
+                ):
+                    is_comprehensive = False
+                    break
+                not_guaranteed_prefixes.extend(new_prefixes)
+                prev_new_prefixes = new_prefixes
+            # Adding these additional repetitions will stay within the max possibilities if its still comprehensive
+            if is_comprehensive:
+                prefixes.extend(not_guaranteed_prefixes)
+
+        return prefixes, True, is_comprehensive
 
     # Any other type of node breaks a fixed prefix
-    return [], False
+    return [], False, is_comprehensive
 
 
 def extract_internal_literals(node, max_possibilities, min_length, parser):
