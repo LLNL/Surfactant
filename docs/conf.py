@@ -2,13 +2,14 @@ import os
 import sys
 
 import requests
+from surfactant.database_manager.database_utils import download_content
 
 if sys.version_info >= (3, 11):
     import tomllib
 else:
     import tomli as tomllib
 
-from surfactant.database_manager.database_utils import download_content
+
 
 # Configuration file for the Sphinx documentation builder.
 #
