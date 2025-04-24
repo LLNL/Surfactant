@@ -12,7 +12,6 @@ import logging
 
 import tomlkit
 
-from surfactant.database_manager.database_utils import download_content
 
 # URL for the hosted external TOML file on ReadTheDocs
 DEFAULT_EXTERNAL_DB_CONFIG_URL = (
@@ -21,6 +20,7 @@ DEFAULT_EXTERNAL_DB_CONFIG_URL = (
 
 
 def fetch_external_db_config(url: str = DEFAULT_EXTERNAL_DB_CONFIG_URL) -> dict:
+    from surfactant.database_manager.database_utils import download_content
     content = download_content(url)
     try:
         if content is not None:

@@ -51,15 +51,15 @@ class DatabaseConfig:
             # Check that the scheme is valid (http or https)
             if parsed_url.scheme not in {"http", "https"}:
                 raise ValueError(
-                    "Invalid URL scheme: %s. Expected 'http' or 'https'.", parsed_url.scheme
+                    f"Invalid URL scheme: {parsed_url.scheme}. Expected 'http' or 'https'."
                 )
             # Check that netloc is present
             if not parsed_url.netloc:
-                raise ValueError("Invalid URL for source: %s", self.source)
+                raise ValueError(f"Invalid URL for source: {self.source}", )
 
         # Ensure database_file ends with .json
         if not self.database_file.endswith(".json"):
-            raise ValueError("database_file '%s' must end with '.json'.", self.database_file)
+            raise ValueError(f"database_file '{self.database_file}' must end with '.json'.", )
 
 
 class BaseDatabaseManager(ABC):
@@ -244,7 +244,7 @@ def _read_toml_file(file_path: Union[str, Path]) -> Optional[Dict[str, Any]]:
     except FileNotFoundError:
         return None
     except tomlkit.exceptions.TOMLKitError as e:
-        raise ValueError("Error parsing TOML file at %s: %s", file_path, e) from e
+        raise ValueError(f"Error parsing TOML file at {file_path}: {e}") from e
 
 
 def _write_toml_file(file_path: Union[str, Path], data: Dict[str, Any]) -> None:
@@ -314,7 +314,7 @@ def save_db_version_metadata(version_info: Union[str, Path], database_info: Dict
     """
     required_keys = {"database_key", "database_file", "source", "hash_value", "timestamp"}
     if not required_keys.issubset(database_info):
-        raise ValueError("database_info must contain the keys: %s", required_keys)
+        raise ValueError(f"database_info must contain the keys: {required_keys}")
 
     db_metadata = _read_toml_file(version_info) or {}
     new_data = {
