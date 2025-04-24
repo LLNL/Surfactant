@@ -186,11 +186,10 @@ def download_database(url: str, timeout: int = 10, retries: int = 3) -> Optional
             if response.status_code == 200:
                 logger.info(f"Request successful! URL: {url}")
                 return response.text
-            elif response.status_code == 404:
+            if response.status_code == 404:
                 logger.error(f"Resource not found. URL: {url}")
                 return None
-            else:
-                logger.warning(f"Unexpected status code {response.status_code} for URL: {url}")
+            logger.warning(f"Unexpected status code {response.status_code} for URL: {url}")
         except RequestException as e:
             logger.error(f"Attempt {attempt+1} - Error fetching URL {url}: {e}")
 
