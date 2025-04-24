@@ -11,6 +11,7 @@
 import logging
 
 import tomlkit
+
 from . import download_content
 
 # URL for the hosted external TOML file on ReadTheDocs
