@@ -10,7 +10,7 @@
 
 import logging
 import tomlkit
-from .database_utils import download_content
+from . import download_content
 
 # URL for the hosted external TOML file on ReadTheDocs
 DEFAULT_EXTERNAL_DB_CONFIG_URL = (
