@@ -8,11 +8,12 @@
 # SPDX-License-Identifier: MIT
 import hashlib
 import json
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 from urllib.parse import urlparse
 
 import requests
@@ -35,24 +36,21 @@ class DatabaseConfig:
         source (str): The source URL of the database, or "file" if it's a local file.
         plugin_name (Optional[str]): The canonical name or short name of the plugin handling the database.
     """
-
     database_dir: str
     database_key: str
     database_file: str
     source: str
     plugin_name: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Validate that source is either a URL or "file"
         if self.source != "file":
             parsed_url = urlparse(self.source)
-
             # Check that the scheme is valid (http or https)
             if parsed_url.scheme not in {"http", "https"}:
                 raise ValueError(
                     f"Invalid URL scheme: {parsed_url.scheme}. Expected 'http' or 'https'."
                 )
-
             # Check that netloc is present
             if not parsed_url.netloc:
                 raise ValueError(f"Invalid URL for source: {self.source}")
@@ -65,7 +63,7 @@ class DatabaseConfig:
 class BaseDatabaseManager(ABC):
     """Abstract base class for managing databases."""
 
-    def __init__(self, config: DatabaseConfig):
+    def __init__(self, config: DatabaseConfig) -> None:
         self.config = config
         self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[str] = None
@@ -120,7 +118,7 @@ class BaseDatabaseManager(ABC):
     def load_db(self) -> None:
         """Loads the database from a JSON file."""
         try:
-            with open(self.database_file_path, "r") as db_file:
+            with self.database_file_path.open("r") as db_file:
                 self._database = json.load(db_file)
         except FileNotFoundError:
             logger.warning(
@@ -137,7 +135,7 @@ class BaseDatabaseManager(ABC):
     def save_database(self, data: Dict[str, Any]) -> None:
         """Saves the database to a JSON file."""
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        with open(self.database_file_path, "w") as db_file:
+        with self.database_file_path.open("w") as db_file:
             json.dump(data, db_file, indent=4)
         logger.info(f"{self.config.database_key} database saved successfully.")
 
@@ -152,9 +150,7 @@ class BaseDatabaseManager(ABC):
             return "No update occurred. Failed to download database."
 
         new_hash = calculate_hash(raw_data)
-        current_data = load_db_version_metadata(
-            self.database_version_file_path, self.config.database_key
-        )
+        current_data = load_db_version_metadata(self.database_version_file_path, self.config.database_key)
 
         if current_data and new_hash == current_data.get("hash"):
             return "No update occurred. Database is up-to-date."
@@ -170,34 +166,39 @@ class BaseDatabaseManager(ABC):
         return "Update complete."
 
 
-def download_database(url: str) -> Optional[str]:
+def download_database(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
     """
-    Downloads the content of a database from the given URL.
+    Downloads the content of a database from the given URL with retry logic and timeout.
 
     Args:
         url (str): The URL of the database to download.
+        timeout (int): The timeout in seconds for each request attempt.
+        retries (int): Number of retry attempts for the download.
+
     Returns:
         Optional[str]: The content of the database as a string if the request is successful,
                        or None if an error occurs.
     """
-    try:
-        # Perform the HTTP GET request with a timeout
-        response = requests.get(url, timeout=10)
+    attempt = 0
+    while attempt < retries:
+        try:
+            response = requests.get(url, timeout=timeout)
+            if response.status_code == 200:
+                logger.info(f"Request successful! URL: {url}")
+                return response.text
+            elif response.status_code == 404:
+                logger.error(f"Resource not found. URL: {url}")
+                return None
+            else:
+                logger.warning(f"Unexpected status code {response.status_code} for URL: {url}")
+        except RequestException as e:
+            logger.error(f"Attempt {attempt+1} - Error fetching URL {url}: {e}")
 
-        # Handle HTTP status codes
-        if response.status_code == 200:
-            logger.info(f"Request successful! URL: {url}")
-            return response.text
+        attempt += 1
+        sleep_time = 2 ** attempt  # exponential backoff
+        logger.info(f"Retrying in {sleep_time} seconds...")
+        time.sleep(sleep_time)
 
-        if response.status_code == 404:
-            logger.error(f"Resource not found. URL: {url}")
-        else:
-            logger.warning(f"Unexpected status code {response.status_code} for URL: {url}")
-    except RequestException as e:
-        # Handle network-related errors
-        logger.error(f"An error occurred while trying to fetch the URL: {url}. Error: {e}")
-
-    # Return None in case of any failure
     return None
 
 
@@ -214,22 +215,19 @@ def calculate_hash(data: str) -> str:
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
-def _read_toml_file(file_path: str) -> Optional[Dict[str, Any]]:
+def _read_toml_file(file_path: Union[str, Path]) -> Optional[Dict[str, Any]]:
     """
     Read and parse a TOML file.
 
     Args:
-        file_path (str): The path to the TOML file.
+        file_path (Union[str, Path]): The path to the TOML file.
 
     Returns:
         Optional[Dict[str, Any]]: The parsed TOML data, or None if the file does not exist.
     """
+    path = Path(file_path) if not isinstance(file_path, Path) else file_path
     try:
-        # path = Path(file_path)
-
-        # Ensure the parent directory exists
-        # path.parent.mkdir(parents=True, exist_ok=True)
-        with open(file_path, "r") as f:
+        with path.open("r") as f:
             return tomlkit.load(f)
     except FileNotFoundError:
         return None
@@ -237,81 +235,74 @@ def _read_toml_file(file_path: str) -> Optional[Dict[str, Any]]:
         raise ValueError(f"Error parsing TOML file at {file_path}: {e}") from e
 
 
-def _write_toml_file(file_path: str, data: Dict[str, Any]) -> None:
+def _write_toml_file(file_path: Union[str, Path], data: Dict[str, Any]) -> None:
     """
     Write data to a TOML file.
 
     Args:
-        file_path (str): The path to the TOML file.
+        file_path (Union[str, Path]): The path to the TOML file.
         data (Dict[str, Any]): The data to write to the file.
     """
-    # path = Path(file_path)
-
-    # Ensure the parent directory exists
-    # path.parent.mkdir(parents=True, exist_ok=True)
-    with open(file_path, "w") as f:
+    path = Path(file_path) if not isinstance(file_path, Path) else file_path
+    with path.open("w") as f:
         tomlkit.dump(data, f)
 
 
-def load_db_version_metadata(version_file_path: str, database_key: str) -> Optional[Dict[str, str]]:
+def load_db_version_metadata(version_file_path: Union[str, Path], database_key: str) -> Optional[Dict[str, str]]:
     """
     Load the database version metadata for a specific database from the specified TOML file.
 
     Args:
-        version_file_path (str): The path to the TOML file that tracks database versions.
+        version_file_path (Union[str, Path]): The path to the TOML file that tracks database versions.
         database_key (str): The key identifying the database.
 
     Returns:
-        Dict[str, Any]: A dictionary where each top-level key (e.g., "retirejs") maps to its metadata
-        or None if not found.
-            Example structure:
-            {
-                "retirejs": {
-                    "file": "js_library_patterns_retirejs.json",
-                    "source": "https://example.com/source.json",
-                    "hash": "abc123...",
-                    "timestamp": "2025-02-10T19:18:34.784116Z"
-                },
-                "abc": {
-                    "file": "some_other_library_patterns_abc.json",
-                    "source": "https://example.com/other_source.json",
-                    "hash": "def456...",
-                    "timestamp": "2025-02-10T20:00:00.000000Z"
-                }
+        Optional[Dict[str, str]]: A dictionary with metadata for the database, or None if not found.
+        
+        Example structure:
+        {
+            "retirejs": {
+                "file": "js_library_patterns_retirejs.json",
+                "source": "https://example.com/source.json",
+                "hash": "abc123...",
+                "timestamp": "2025-02-10T19:18:34.784116Z"
+            },
+            "abc": {
+                "file": "some_other_library_patterns_abc.json",
+                "source": "https://example.com/other_source.json",
+                "hash": "def456...",
+                "timestamp": "2025-02-10T20:00:00.000000Z"
             }
+        }
     """
     db_metadata = _read_toml_file(version_file_path)
     if db_metadata is None:
         return None
 
-    # Access the specific structure using the provided keys
     return db_metadata.get(database_key, {})
 
 
-def save_db_version_metadata(version_info: str, database_info: Dict[str, str]) -> None:
+def save_db_version_metadata(version_info: Union[str, Path], database_info: Dict[str, str]) -> None:
     """
-    Save the metadata (source, hash, timestamp, and file) for a specific database to the specified TOML file.
+    Save the metadata for a specific database to the specified TOML file.
 
     Args:
-        version_info (str): The path to the TOML file.
-        database_info (Dict[str, str]): A dictionary containing the following keys:
-            - "database_key": The key identifying the database (e.g., "retirejs").
+        version_info (Union[str, Path]): The path to the TOML file.
+        database_info (Dict[str, str]): A dictionary containing keys:
+            - "database_key": The key identifying the database  (e.g., "retirejs")..
             - "database_file": The file name of the database (e.g., "js_library_patterns_retirejs.json").
             - "source": The source URL of the database.
             - "hash_value": The hash value of the database file.
             - "timestamp": The timestamp when the database was downloaded.
 
     Raises:
-        ValueError: If required keys are missing from `database_info`.
+        ValueError: If required keys are missing from database_info.
     """
     required_keys = {"database_key", "database_file", "source", "hash_value", "timestamp"}
     if not required_keys.issubset(database_info):
         raise ValueError(f"database_info must contain the keys: {required_keys}")
 
-    # Read the existing TOML file
     db_metadata = _read_toml_file(version_info) or {}
-
-    # Define the new data structure
     new_data = {
         database_info["database_key"]: {
             "file": database_info["database_file"],
@@ -320,9 +311,5 @@ def save_db_version_metadata(version_info: str, database_info: Dict[str, str]) -
             "timestamp": database_info["timestamp"],
         }
     }
-
-    # Update the existing data with the new data
     db_metadata.update(new_data)
-
-    # Write the updated data back to the TOML file
     _write_toml_file(version_info, db_metadata)
