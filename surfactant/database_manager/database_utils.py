@@ -22,6 +22,7 @@ from loguru import logger
 from requests.exceptions import RequestException
 
 from surfactant.configmanager import ConfigManager
+from surfactant.database_manager.external_db_config import get_source_for
 
 
 @dataclass
@@ -66,6 +67,17 @@ class BaseDatabaseManager(ABC):
 
     def __init__(self, config: DatabaseConfig) -> None:
         self.config = config
+        # Attempt to retrieve an override URL using the database_dir (e.g., "js_library_patterns")
+        # and the database_key (e.g., "retirejs").
+        override_url = get_source_for(
+            self.config.database_dir, self.config.database_key
+            )
+        if override_url:
+            self.config.source = override_url
+            logger.info(f"Using external URL override for {self.config.database_key}: {override_url}")
+        else:
+            logger.info(f"Using built-in URL for {self.config.database_key}")
+        
         self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[str] = None
         self._database: Optional[Dict[str, Any]] = None
@@ -146,7 +158,7 @@ class BaseDatabaseManager(ABC):
         # No implementation needed for abstract methods.
 
     def download_and_update_database(self) -> str:
-        raw_data = download_database(self.config.source)
+        raw_data = download_content(self.config.source)
         if not raw_data:
             return "No update occurred. Failed to download database."
 
@@ -169,17 +181,17 @@ class BaseDatabaseManager(ABC):
         return "Update complete."
 
 
-def download_database(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
+def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
     """
-    Downloads the content of a database from the given URL with retry logic and timeout.
+    Downloads content from a given URL with retry logic and timeout.
 
     Args:
-        url (str): The URL of the database to download.
+        url (str): The URL of the content to download.
         timeout (int): The timeout in seconds for each request attempt.
         retries (int): Number of retry attempts for the download.
 
     Returns:
-        Optional[str]: The content of the database as a string if the request is successful,
+        Optional[str]: The content as a string if the request is successful,
                        or None if an error occurs.
     """
     attempt = 0
