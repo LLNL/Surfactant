@@ -9,11 +9,16 @@
 # surfactant/database_manager/external_db_config.py
 
 import logging
+
 import tomlkit
+
 from surfactant.database_manager.database_utils import download_content
 
 # URL for the hosted external TOML file on ReadTheDocs
-DEFAULT_EXTERNAL_DB_CONFIG_URL = "https://readthedocs.org/projects/surfacet-docs/downloads/latest/database_sources.toml"
+DEFAULT_EXTERNAL_DB_CONFIG_URL = (
+    "https://readthedocs.org/projects/surfacet-docs/downloads/latest/database_sources.toml"
+)
+
 
 def fetch_external_db_config(url: str = DEFAULT_EXTERNAL_DB_CONFIG_URL) -> dict:
     content = download_content(url)
@@ -27,14 +32,15 @@ def fetch_external_db_config(url: str = DEFAULT_EXTERNAL_DB_CONFIG_URL) -> dict:
         logging.warning(f"Error parsing TOML content: {e}")
         return {}
 
+
 def get_source_for(database_category: str, key: str) -> str:
     """
     Retrieve the URL for a given database category and key.
-    
+
     Args:
         database_category (str): The category corresponding to a folder (e.g., 'js_library_patterns').
         key (str): The specific key for the database (e.g., 'retirejs').
-    
+
     Returns:
         str: The URL from the external configuration if available; otherwise, an empty string.
     """

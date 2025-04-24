@@ -1,6 +1,6 @@
+import logging
 import os
 import sys
-import logging
 
 import requests
 
@@ -94,6 +94,7 @@ download_images_from_toml(toml_file_path, image_directory)
 # -- Fetch external database sources TOML ------------------------------------
 # Download the database_sources.toml hosted on ReadTheDocs
 
+
 def download_database_sources(url, dest_file):
     content = download_content(url)
     if content is None:
@@ -101,6 +102,7 @@ def download_database_sources(url, dest_file):
         return
     with open(dest_file, "w") as f:
         f.write(content)
+
 
 # URL for the hosted external TOML file on ReadTheDocs
 db_sources_url = (
