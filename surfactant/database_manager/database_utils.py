@@ -36,6 +36,7 @@ class DatabaseConfig:
         source (str): The source URL of the database, or "file" if it's a local file.
         plugin_name (Optional[str]): The canonical name or short name of the plugin handling the database.
     """
+
     database_dir: str
     database_key: str
     database_file: str
@@ -150,7 +151,9 @@ class BaseDatabaseManager(ABC):
             return "No update occurred. Failed to download database."
 
         new_hash = calculate_hash(raw_data)
-        current_data = load_db_version_metadata(self.database_version_file_path, self.config.database_key)
+        current_data = load_db_version_metadata(
+            self.database_version_file_path, self.config.database_key
+        )
 
         if current_data and new_hash == current_data.get("hash"):
             return "No update occurred. Database is up-to-date."
@@ -192,10 +195,10 @@ def download_database(url: str, timeout: int = 10, retries: int = 3) -> Optional
             else:
                 logger.warning(f"Unexpected status code {response.status_code} for URL: {url}")
         except RequestException as e:
-            logger.error(f"Attempt {attempt+1} - Error fetching URL {url}: {e}")
+            logger.error(f"Attempt {attempt + 1} - Error fetching URL {url}: {e}")
 
         attempt += 1
-        sleep_time = 2 ** attempt  # exponential backoff
+        sleep_time = 2**attempt  # exponential backoff
         logger.info(f"Retrying in {sleep_time} seconds...")
         time.sleep(sleep_time)
 
@@ -248,7 +251,9 @@ def _write_toml_file(file_path: Union[str, Path], data: Dict[str, Any]) -> None:
         tomlkit.dump(data, f)
 
 
-def load_db_version_metadata(version_file_path: Union[str, Path], database_key: str) -> Optional[Dict[str, str]]:
+def load_db_version_metadata(
+    version_file_path: Union[str, Path], database_key: str
+) -> Optional[Dict[str, str]]:
     """
     Load the database version metadata for a specific database from the specified TOML file.
 
@@ -258,7 +263,7 @@ def load_db_version_metadata(version_file_path: Union[str, Path], database_key: 
 
     Returns:
         Optional[Dict[str, str]]: A dictionary with metadata for the database, or None if not found.
-        
+
         Example structure:
         {
             "retirejs": {
