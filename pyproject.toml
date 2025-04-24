@@ -54,13 +54,13 @@ dependencies = [
     "loguru==0.7.*",
     "flask==3.*",
     "tomlkit==0.13.*",
-    "textual==2.*",
+    "textual==3.*",
     "requests>=2.32.3",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-macho = ["lief==0.16.4"]
+macho = ["lief==0.16.5"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]

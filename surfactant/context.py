@@ -7,6 +7,7 @@ from typing import List, Optional
 
 
 @dataclass
+# pylint: disable-next=too-many-instance-attributes
 class ContextEntry:
     """
     Represents an entry in the processing queue for directories/files.
@@ -27,6 +28,8 @@ class ContextEntry:
             will still be included.
         skipProcessingArchive (Optional[bool]): If True, skip processing the given archive file with info extractors.
             Software entry for the archive file will only contain basic information such as hashes. Default is False.
+        containerPrefix (Optional[str]): The prefix to use for the generated SBOM's containerPath.  Used to indicate that the
+            `extractPaths` specified should map to a specific subfolder within the corresponding archive file.
     """
 
     extractPaths: List[str]
@@ -36,3 +39,4 @@ class ContextEntry:
     includeFileExts: Optional[List[str]] = None
     excludeFileExts: Optional[List[str]] = None
     skipProcessingArchive: Optional[bool] = False
+    containerPrefix: Optional[str] = None

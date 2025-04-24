@@ -101,11 +101,17 @@ class SpecimenConfigParamType(click.Path):
                     )
 
                 for entry in config:
+                    if "extractPaths" not in entry:
+                        self.fail(f"missing extractPaths in config file entry: {entry}")
                     extract_path = entry["extractPaths"]
                     for pth in extract_path:
                         extract_path_convert = pathlib.Path(pth)
                         if not extract_path_convert.exists():
                             self.fail(f"invalid extract path in config file: {pth}", param, ctx)
+                    if "archive" in entry:
+                        archive_path = pathlib.Path(entry["archive"])
+                        if not archive_path.exists():
+                            self.fail(f"invalid archive path in config file: {entry['archive']}")
         else:
             self.fail(f"{value!r} is not a valid specimen config type", param, ctx)
 

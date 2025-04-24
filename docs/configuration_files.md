@@ -53,7 +53,7 @@ A specimen configuration file contains the information about the sample to gathe
 - **omitUnrecognizedTypes**: (optional) If set to True, files with unrecognized types will be omitted from the generated SBOM.
 - **includeFileExts**: (optional) A list of file extensions to include, even if not recognized by Surfactant. `omitUnrecognizedTypes` must be set to True for this to take effect.
 - **excludeFileExts**: (optional) A list of file extensions to exclude, even if recognized by Surfactant. Note that if both `omitUnrecognizedTypes` and `includeFileExts` are set, the specified extensions in `includeFileExts` will still be included.
-- **skipProcessingArchive**: (optional) Skip processing the given archive file with info extractors. Software entry for the archive file will only contain basic information such as hashes. Default setting is False.
+- **skipProcessingArchive**: (optional) Skip processing the given archive file with info extractors. Software entry for the archive file will still appear in the SBOM with basic info such as hashes, but no information extraction plugins will run to pull out extra file type specific info. Default setting is False.
 
 ## Example configuration files
 
