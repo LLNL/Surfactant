@@ -12,7 +12,6 @@ import logging
 import tomlkit
 from surfactant.database_manager.database_utils import download_content
 
-
 # URL for the hosted external TOML file on ReadTheDocs
 DEFAULT_EXTERNAL_DB_CONFIG_URL = (
     "https://readthedocs.org/projects/surfacet-docs/downloads/latest/database_sources.toml"

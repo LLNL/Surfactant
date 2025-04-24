@@ -55,11 +55,15 @@ class DatabaseConfig:
                 )
             # Check that netloc is present
             if not parsed_url.netloc:
-                raise ValueError(f"Invalid URL for source: {self.source}", )
+                raise ValueError(
+                    f"Invalid URL for source: {self.source}",
+                )
 
         # Ensure database_file ends with .json
         if not self.database_file.endswith(".json"):
-            raise ValueError(f"database_file '{self.database_file}' must end with '.json'.", )
+            raise ValueError(
+                f"database_file '{self.database_file}' must end with '.json'.",
+            )
 
 
 class BaseDatabaseManager(ABC):
