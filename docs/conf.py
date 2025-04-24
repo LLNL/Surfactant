@@ -94,6 +94,7 @@ download_images_from_toml(toml_file_path, image_directory)
 
 def download_database_sources(url, dest_file):
     from surfactant.database_manager.database_utils import download_content
+
     content = download_content(url)
     if content is not None:
         with open(dest_file, "w") as f:

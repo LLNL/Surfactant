@@ -9,8 +9,10 @@
 # surfactant/database_manager/external_db_config.py
 
 import logging
+
 import tomlkit
-from .database_utils import download_content, _read_toml_file
+
+from .database_utils import download_content
 
 # URL for the hosted external TOML file on ReadTheDocs
 DEFAULT_EXTERNAL_DB_CONFIG_URL = (
