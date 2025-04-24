@@ -3,7 +3,7 @@ version = "1.0"
 last_updated = "2025-04-24"
 
 [sources]
-# JavaScript libraries 
+# JavaScript libraries
 [sources.js_library_patterns]
 retirejs = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
 

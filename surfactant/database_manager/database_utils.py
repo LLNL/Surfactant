@@ -69,9 +69,7 @@ class BaseDatabaseManager(ABC):
         self.config = config
         # Attempt to retrieve an override URL using the database_dir (e.g., "js_library_patterns")
         # and the database_key (e.g., "retirejs").
-        override_url = get_source_for(
-            self.config.database_dir, self.config.database_key
-            )
+        override_url = get_source_for(self.config.database_dir, self.config.database_key)
         if override_url:
             self.config.source = override_url
             logger.info("Using external URL override for %s: %s", self.config.database_key, override_url)
