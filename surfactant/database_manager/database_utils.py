@@ -51,15 +51,15 @@ class DatabaseConfig:
             # Check that the scheme is valid (http or https)
             if parsed_url.scheme not in {"http", "https"}:
                 raise ValueError(
-                    f"Invalid URL scheme: {parsed_url.scheme}. Expected 'http' or 'https'."
+                    "Invalid URL scheme: %s. Expected 'http' or 'https'.", parsed_url.scheme
                 )
             # Check that netloc is present
             if not parsed_url.netloc:
-                raise ValueError(f"Invalid URL for source: {self.source}")
+                raise ValueError("Invalid URL for source: %s", self.source)
 
         # Ensure database_file ends with .json
         if not self.database_file.endswith(".json"):
-            raise ValueError(f"database_file '{self.database_file}' must end with '.json'.")
+            raise ValueError("database_file '%s' must end with '.json'.", self.database_file)
 
 
 class BaseDatabaseManager(ABC):
@@ -74,9 +74,9 @@ class BaseDatabaseManager(ABC):
             )
         if override_url:
             self.config.source = override_url
-            logger.info(f"Using external URL override for {self.config.database_key}: {override_url}")
+            logger.info("Using external URL override for %s: %s", self.config.database_key, override_url)
         else:
-            logger.info(f"Using built-in URL for {self.config.database_key}")
+            logger.info("Using built-in URL for %s", self.config.database_key)
         
         self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[str] = None
@@ -124,9 +124,9 @@ class BaseDatabaseManager(ABC):
             None
         """
         if command_name != "update-db":
-            logger.info(f"Initializing {self.config.plugin_name}...")
+            logger.info("Initializing %s...", self.config.plugin_name)
             self.load_db()
-            logger.info(f"Initializing {self.config.plugin_name} complete.")
+            logger.info("Initializing %s complete.", self.config.plugin_name)
 
     def load_db(self) -> None:
         """Loads the database from a JSON file."""
@@ -135,7 +135,7 @@ class BaseDatabaseManager(ABC):
                 self._database = json.load(db_file)
         except FileNotFoundError:
             logger.warning(
-                f"{self.config.database_key} database could not be loaded. Run `surfactant plugin update-db {self.config.plugin_name}` to fetch the database."
+                "%s database could not be loaded. Run `surfactant plugin update-db %s` to fetch the database.", self.config.database_key, self.config.plugin_name
             )
             self._database = None
 
@@ -150,7 +150,7 @@ class BaseDatabaseManager(ABC):
         self.data_dir.mkdir(parents=True, exist_ok=True)
         with self.database_file_path.open("w") as db_file:
             json.dump(data, db_file, indent=4)
-        logger.info(f"{self.config.database_key} database saved successfully.")
+        logger.info("%s database saved successfully.", self.config.database_key)
 
     @abstractmethod
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
@@ -199,18 +199,18 @@ def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[
         try:
             response = requests.get(url, timeout=timeout)
             if response.status_code == 200:
-                logger.info(f"Request successful! URL: {url}")
+                logger.info("Request successful! URL: %s", url)
                 return response.text
             if response.status_code == 404:
-                logger.error(f"Resource not found. URL: {url}")
+                logger.error("Resource not found. URL: %s", url)
                 return None
-            logger.warning(f"Unexpected status code {response.status_code} for URL: {url}")
+            logger.warning("Unexpected status code %s for URL: %s", response.status_code, url)
         except RequestException as e:
-            logger.error(f"Attempt {attempt + 1} - Error fetching URL {url}: {e}")
+            logger.error("Attempt %s - Error fetching URL %s: %s", str(attempt + 1), url, e)
 
         attempt += 1
         sleep_time = 2**attempt  # exponential backoff
-        logger.info(f"Retrying in {sleep_time} seconds...")
+        logger.info("Retrying in %s seconds...", sleep_time)
         time.sleep(sleep_time)
 
     return None
@@ -246,7 +246,7 @@ def _read_toml_file(file_path: Union[str, Path]) -> Optional[Dict[str, Any]]:
     except FileNotFoundError:
         return None
     except tomlkit.exceptions.TOMLKitError as e:
-        raise ValueError(f"Error parsing TOML file at {file_path}: {e}") from e
+        raise ValueError("Error parsing TOML file at %s: %s", file_path, e) from e
 
 
 def _write_toml_file(file_path: Union[str, Path], data: Dict[str, Any]) -> None:
@@ -316,7 +316,7 @@ def save_db_version_metadata(version_info: Union[str, Path], database_info: Dict
     """
     required_keys = {"database_key", "database_file", "source", "hash_value", "timestamp"}
     if not required_keys.issubset(database_info):
-        raise ValueError(f"database_info must contain the keys: {required_keys}")
+        raise ValueError("database_info must contain the keys: %s", required_keys)
 
     db_metadata = _read_toml_file(version_info) or {}
     new_data = {

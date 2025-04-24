@@ -17,15 +17,13 @@ DEFAULT_EXTERNAL_DB_CONFIG_URL = "https://readthedocs.org/projects/surfacet-docs
 
 def fetch_external_db_config(url: str = DEFAULT_EXTERNAL_DB_CONFIG_URL) -> dict:
     content = download_content(url)
-    if content is None:
-        logging.warning("Failed to download the external database configuration.")
-        return {}
     try:
-        config = tomlkit.parse(content)
-        return config
+        if content is not None:
+            config = tomlkit.parse(content)
+            return config
     except Exception as e:
-        logging.warning(f"Error parsing TOML content: {e}")
-        return {}
+        logging.warning("Error parsing TOML content: %s", e)
+    return {}
 
 def get_source_for(database_category: str, key: str) -> str:
     """
@@ -42,5 +40,5 @@ def get_source_for(database_category: str, key: str) -> str:
     try:
         return config["sources"][database_category][key]
     except KeyError:
-        logging.info(f"No external override found for [{database_category}].{key}")
+        logging.info("No external override found for [%s].%s", database_category, key)
         return ""

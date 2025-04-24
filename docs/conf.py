@@ -96,11 +96,9 @@ download_images_from_toml(toml_file_path, image_directory)
 
 def download_database_sources(url, dest_file):
     content = download_content(url)
-    if content is None:
-        logging.warning(f"Failed to download the external database configuration from {url}")
-        return
-    with open(dest_file, "w") as f:
-        f.write(content)
+    if content is not None:
+        with open(dest_file, "w") as f:
+            f.write(content)
 
 # URL for the hosted external TOML file on ReadTheDocs
 db_sources_url = (

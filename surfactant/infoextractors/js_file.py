@@ -98,9 +98,9 @@ def extract_js_info(filename: str) -> object:
         libs = match_by_attribute("filecontent", filecontent, js_lib_database)
         js_info["jsLibraries"] = libs
     except FileNotFoundError:
-        logger.warning(f"File not found: {filename}")
+        logger.warning("File not found: %s", filename)
     except UnicodeDecodeError:
-        logger.warning(f"File does not appear to be UTF-8: {filename}")
+        logger.warning("File does not appear to be UTF-8: %s", filename)
     return js_info
 
 

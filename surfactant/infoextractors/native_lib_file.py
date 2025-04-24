@@ -56,7 +56,7 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
         for line in lines:
             fields = line.split(";")
             if len(fields) < 4:
-                logger.warning(f"Skipping malformed line: {line}")
+                logger.warning("Skipping malformed line: %s", line)
                 continue
 
             lib_name = fields[0]
@@ -67,7 +67,7 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
                 database.setdefault(lib_name, {"filename": [], "filecontent": []})
                 database[lib_name]["filecontent"].append(filecontent)
             except re.error as e:
-                logger.error(f"Invalid regex in file content: {filecontent}. Error: {e}")
+                logger.error("Invalid regex in file content: %s. Error: %s", filecontent, e)
 
         return database
 
@@ -120,7 +120,7 @@ def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
                 found_libraries.add(library_name)
 
     except FileNotFoundError:
-        logger.warning(f"File not found: {filename}")
+        logger.warning("File not found: %s", filename)
 
     if library_names:
         native_lib_info["nativeLibraries"].append({"isLibrary": library_names})
@@ -195,7 +195,7 @@ def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
                     else:
                         database[lib_name]["filecontent"].append(filecontent)
                 except re.error as e:
-                    logger.error(f"Error parsing file content regexp {filecontent}: {e}")
+                    logger.error("Error parsing file content regexp %s: %s", filecontent, e)
 
     return database
 
