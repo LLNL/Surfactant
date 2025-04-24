@@ -72,10 +72,12 @@ class BaseDatabaseManager(ABC):
         override_url = get_source_for(self.config.database_dir, self.config.database_key)
         if override_url:
             self.config.source = override_url
-            logger.info("Using external URL override for %s: %s", self.config.database_key, override_url)
+            logger.info(
+                "Using external URL override for %s: %s", self.config.database_key, override_url
+            )
         else:
             logger.info("Using built-in URL for %s", self.config.database_key)
-        
+
         self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[str] = None
         self._database: Optional[Dict[str, Any]] = None
@@ -133,7 +135,9 @@ class BaseDatabaseManager(ABC):
                 self._database = json.load(db_file)
         except FileNotFoundError:
             logger.warning(
-                "%s database could not be loaded. Run `surfactant plugin update-db %s` to fetch the database.", self.config.database_key, self.config.plugin_name
+                "%s database could not be loaded. Run `surfactant plugin update-db %s` to fetch the database.",
+                self.config.database_key,
+                self.config.plugin_name,
             )
             self._database = None
 
