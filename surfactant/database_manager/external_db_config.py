@@ -12,7 +12,6 @@ import logging
 
 import tomlkit
 
-
 # URL for the hosted external TOML file on ReadTheDocs
 DEFAULT_EXTERNAL_DB_CONFIG_URL = (
     "https://readthedocs.org/projects/surfacet-docs/downloads/latest/database_sources.toml"
@@ -25,6 +24,7 @@ def fetch_external_db_config(url: str = DEFAULT_EXTERNAL_DB_CONFIG_URL) -> dict:
     Returns an empty dict on failure.
     """
     from .database_utils import download_content
+
     content = download_content(url)
     try:
         if content is not None:
