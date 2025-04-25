@@ -8,8 +8,8 @@
 # SPDX-License-Identifier: MIT
 # surfactant/database_manager/external_db_config.py
 import logging
-import tomlkit
 
+import tomlkit
 
 # URL for the hosted external TOML file on ReadTheDocs
 DEFAULT_EXTERNAL_DB_CONFIG_URL = (
@@ -22,7 +22,8 @@ def fetch_external_db_config(url: str = DEFAULT_EXTERNAL_DB_CONFIG_URL) -> dict:
     Download and parse the external TOML file containing database source overrides.
     Returns an empty dict on failure.
     """
-    from .database_utils import download_content # pylint: disable=import-outside-toplevel
+    from .database_utils import download_content  # pylint: disable=import-outside-toplevel
+
     content = download_content(url)
 
     try:
