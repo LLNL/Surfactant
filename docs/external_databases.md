@@ -18,8 +18,27 @@ retirejs = "https://raw.githubusercontent.com/RetireJS/retire.js/master/reposito
 
 # Native libraries
 [sources.native_library_patterns]
-some_db = "https://example.com/native_patterns.json"
+emba = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
 
 # Additional categories can be added as needed:
 [sources.other_category]
 other_db = "https://example.com/other_patterns.json"
+```
+
+## Adding a New Category
+
+To add a new database category, follow these steps:
+
+1. Open the `database_sources.toml` file in your docs directory.
+2. Under the `[sources]` section, add a new table for your category. For example:
+
+   ```toml
+   [sources.your_category]
+   your_db_key = "https://your.domain/path/to/database.json"
+   ```
+
+3. Save and commit your changes.
+4. Update any plugin code to reference the new category name when fetching overrides.
+5. Run `surfactant plugin update-db <plugin_name>` to fetch and apply the new database.
+
+Once added, Surfactant will automatically pick up the new URL override without requiring a new release.
