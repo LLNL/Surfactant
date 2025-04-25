@@ -18,8 +18,12 @@ from loguru import logger
 
 from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.utils import (
-    download_content, save_db_version_metadata, calculate_hash, load_db_version_metadata, get_source_for
-    )
+    calculate_hash,
+    download_content,
+    get_source_for,
+    load_db_version_metadata,
+    save_db_version_metadata,
+)
 
 
 @dataclass
