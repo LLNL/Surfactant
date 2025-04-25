@@ -22,13 +22,13 @@ index a87d360..23e4ec0 100755
  from loguru import logger
 -from requests.exceptions import RequestException
 +
- 
+
  from surfactant.configmanager import ConfigManager
 +from surfactant.database_manager.utils import (
 +    download_content, save_db_version_metadata, calculate_hash, load_db_version_metadata
 +    )
- 
- 
+
+
  @dataclass
 @@ -184,154 +182,4 @@ class BaseDatabaseManager(ABC):
          self.new_hash = new_hash
@@ -197,7 +197,7 @@ index 63fa6b3..d85fa81 100644
  import logging
 -
  import tomlkit
- 
+
 +
 +from surfactant.database_manager.utils import download_content  # pylint: disable=import-outside-toplevel
 +
@@ -211,5 +211,5 @@ index 63fa6b3..d85fa81 100644
 -    from .database_utils import download_content  # pylint: disable=import-outside-toplevel
 -
      content = download_content(url)
- 
+
      try:

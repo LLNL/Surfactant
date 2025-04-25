@@ -13,8 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
-from loguru import logger
 
+from loguru import logger
 
 from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.utils import (
