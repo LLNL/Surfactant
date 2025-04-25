@@ -1,0 +1,215 @@
+diff --git a/surfactant/database_manager/database_utils.py b/surfactant/database_manager/database_utils.py
+index a87d360..23e4ec0 100755
+--- a/surfactant/database_manager/database_utils.py
++++ b/surfactant/database_manager/database_utils.py
+@@ -6,22 +6,20 @@
+ # See the top-level LICENSE file for details.
+ #
+ # SPDX-License-Identifier: MIT
+-import hashlib
+ import json
+-import time
+ from abc import ABC, abstractmethod
+ from dataclasses import dataclass
+ from datetime import datetime, timezone
+ from pathlib import Path
+-from typing import Any, Dict, Optional, Union
++from typing import Any, Dict, Optional
+ from urllib.parse import urlparse
+-
+-import requests
+-import tomlkit
+ from loguru import logger
+-from requests.exceptions import RequestException
++
+ 
+ from surfactant.configmanager import ConfigManager
++from surfactant.database_manager.utils import (
++    download_content, save_db_version_metadata, calculate_hash, load_db_version_metadata
++    )
+ 
+ 
+ @dataclass
+@@ -184,154 +182,4 @@ class BaseDatabaseManager(ABC):
+         self.new_hash = new_hash
+         self.download_timestamp = datetime.now(timezone.utc).isoformat()
+         save_db_version_metadata(self.database_version_file_path, self.database_info)
+-        return "Update complete."
+-
+-
+-def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
+-    """
+-    Downloads content from a given URL with retry logic and timeout.
+-
+-    Args:
+-        url (str): The URL of the content to download.
+-        timeout (int): The timeout in seconds for each request attempt.
+-        retries (int): Number of retry attempts for the download.
+-
+-    Returns:
+-        Optional[str]: The content as a string if the request is successful,
+-                       or None if an error occurs.
+-    """
+-    attempt = 0
+-    while attempt < retries:
+-        try:
+-            response = requests.get(url, timeout=timeout)
+-            if response.status_code == 200:
+-                logger.info("Request successful! URL: %s", url)
+-                return response.text
+-            if response.status_code == 404:
+-                logger.error("Resource not found. URL: %s", url)
+-                return None
+-            logger.warning("Unexpected status code %s for URL: %s", response.status_code, url)
+-        except RequestException as e:
+-            logger.error("Attempt %s - Error fetching URL %s: %s", str(attempt + 1), url, e)
+-
+-        attempt += 1
+-        sleep_time = 2**attempt  # exponential backoff
+-        logger.info("Retrying in %s seconds...", sleep_time)
+-        time.sleep(sleep_time)
+-
+-    return None
+-
+-
+-def calculate_hash(data: str) -> str:
+-    """
+-    Calculate the SHA-256 hash of the given data.
+-
+-    Args:
+-        data (str): The input string to hash.
+-
+-    Returns:
+-        str: The SHA-256 hash of the input string.
+-    """
+-    return hashlib.sha256(data.encode("utf-8")).hexdigest()
+-
+-
+-def _read_toml_file(file_path: Union[str, Path]) -> Optional[Dict[str, Any]]:
+-    """
+-    Read and parse a TOML file.
+-
+-    Args:
+-        file_path (Union[str, Path]): The path to the TOML file.
+-
+-    Returns:
+-        Optional[Dict[str, Any]]: The parsed TOML data, or None if the file does not exist.
+-    """
+-    path = Path(file_path) if not isinstance(file_path, Path) else file_path
+-    try:
+-        with path.open("r") as f:
+-            return tomlkit.load(f)
+-    except FileNotFoundError:
+-        return None
+-    except tomlkit.exceptions.TOMLKitError as e:
+-        raise ValueError(f"Error parsing TOML file at {file_path}: {e}") from e
+-
+-
+-def _write_toml_file(file_path: Union[str, Path], data: Dict[str, Any]) -> None:
+-    """
+-    Write data to a TOML file.
+-
+-    Args:
+-        file_path (Union[str, Path]): The path to the TOML file.
+-        data (Dict[str, Any]): The data to write to the file.
+-    """
+-    path = Path(file_path) if not isinstance(file_path, Path) else file_path
+-    with path.open("w") as f:
+-        tomlkit.dump(data, f)
+-
+-
+-def load_db_version_metadata(
+-    version_file_path: Union[str, Path], database_key: str
+-) -> Optional[Dict[str, str]]:
+-    """
+-    Load the database version metadata for a specific database from the specified TOML file.
+-
+-    Args:
+-        version_file_path (Union[str, Path]): The path to the TOML file that tracks database versions.
+-        database_key (str): The key identifying the database.
+-
+-    Returns:
+-        Optional[Dict[str, str]]: A dictionary with metadata for the database, or None if not found.
+-
+-        Example structure:
+-        {
+-            "retirejs": {
+-                "file": "js_library_patterns_retirejs.json",
+-                "source": "https://example.com/source.json",
+-                "hash": "abc123...",
+-                "timestamp": "2025-02-10T19:18:34.784116Z"
+-            },
+-            "abc": {
+-                "file": "some_other_library_patterns_abc.json",
+-                "source": "https://example.com/other_source.json",
+-                "hash": "def456...",
+-                "timestamp": "2025-02-10T20:00:00.000000Z"
+-            }
+-        }
+-    """
+-    db_metadata = _read_toml_file(version_file_path)
+-    if db_metadata is None:
+-        return None
+-
+-    return db_metadata.get(database_key, {})
+-
+-
+-def save_db_version_metadata(version_info: Union[str, Path], database_info: Dict[str, str]) -> None:
+-    """
+-    Save the metadata for a specific database to the specified TOML file.
+-
+-    Args:
+-        version_info (Union[str, Path]): The path to the TOML file.
+-        database_info (Dict[str, str]): A dictionary containing keys:
+-            - "database_key": The key identifying the database  (e.g., "retirejs")..
+-            - "database_file": The file name of the database (e.g., "js_library_patterns_retirejs.json").
+-            - "source": The source URL of the database.
+-            - "hash_value": The hash value of the database file.
+-            - "timestamp": The timestamp when the database was downloaded.
+-
+-    Raises:
+-        ValueError: If required keys are missing from database_info.
+-    """
+-    required_keys = {"database_key", "database_file", "source", "hash_value", "timestamp"}
+-    if not required_keys.issubset(database_info):
+-        raise ValueError(f"database_info must contain the keys: {required_keys}")
+-
+-    db_metadata = _read_toml_file(version_info) or {}
+-    new_data = {
+-        database_info["database_key"]: {
+-            "file": database_info["database_file"],
+-            "source": database_info["source"],
+-            "hash": database_info["hash_value"],
+-            "timestamp": database_info["timestamp"],
+-        }
+-    }
+-    db_metadata.update(new_data)
+-    _write_toml_file(version_info, db_metadata)
++        return "Update complete."
+\ No newline at end of file
+diff --git a/surfactant/database_manager/external_db_config.py b/surfactant/database_manager/external_db_config.py
+index 63fa6b3..d85fa81 100644
+--- a/surfactant/database_manager/external_db_config.py
++++ b/surfactant/database_manager/external_db_config.py
+@@ -8,9 +8,11 @@
+ # SPDX-License-Identifier: MIT
+ # surfactant/database_manager/external_db_config.py
+ import logging
+-
+ import tomlkit
+ 
++
++from surfactant.database_manager.utils import download_content  # pylint: disable=import-outside-toplevel
++
+ # URL for the hosted external TOML file on ReadTheDocs
+ DEFAULT_EXTERNAL_DB_CONFIG_URL = (
+     "https://readthedocs.org/projects/surfacet-docs/downloads/latest/database_sources.toml"
+@@ -22,8 +24,6 @@ def fetch_external_db_config(url: str = DEFAULT_EXTERNAL_DB_CONFIG_URL) -> dict:
+     Download and parse the external TOML file containing database source overrides.
+     Returns an empty dict on failure.
+     """
+-    from .database_utils import download_content  # pylint: disable=import-outside-toplevel
+-
+     content = download_content(url)
+ 
+     try:
