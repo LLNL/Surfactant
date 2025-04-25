@@ -189,7 +189,9 @@ def get_source_for(database_category: str, key: str) -> str:
     """
     config = fetch_db_config()
     try:
-        return config["sources"][database_category][key]
+        if config:
+            return config["sources"][database_category][key]
     except KeyError:
         logger.info("No external override found for [{}].{}", database_category, key)
-        return ""
+    
+    return None
