@@ -79,10 +79,10 @@ class BaseDatabaseManager(ABC):
         if override_url:
             self.config.source = override_url
             logger.info(
-                "Using external URL override for %s: %s", self.config.database_key, override_url
+                "Using external URL override for {}: {}", self.config.database_key, override_url
             )
         else:
-            logger.info("Using built-in URL for %s", self.config.database_key)
+            logger.info("Using built-in URL for {}", self.config.database_key)
 
         self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[str] = None
@@ -130,9 +130,9 @@ class BaseDatabaseManager(ABC):
             None
         """
         if command_name != "update-db":
-            logger.info("Initializing %s...", self.config.plugin_name)
+            logger.info("Initializing {}...", self.config.plugin_name)
             self.load_db()
-            logger.info("Initializing %s complete.", self.config.plugin_name)
+            logger.info("Initializing {} complete.", self.config.plugin_name)
 
     def load_db(self) -> None:
         """Loads the database from a JSON file."""
@@ -141,7 +141,7 @@ class BaseDatabaseManager(ABC):
                 self._database = json.load(db_file)
         except FileNotFoundError:
             logger.warning(
-                "%s database could not be loaded. Run `surfactant plugin update-db %s` to fetch the database.",
+                "{} database could not be loaded. Run `surfactant plugin update-db {}` to fetch the database.",
                 self.config.database_key,
                 self.config.plugin_name,
             )
@@ -158,7 +158,7 @@ class BaseDatabaseManager(ABC):
         self.data_dir.mkdir(parents=True, exist_ok=True)
         with self.database_file_path.open("w") as db_file:
             json.dump(data, db_file, indent=4)
-        logger.info("%s database saved successfully.", self.config.database_key)
+        logger.info("{} database saved successfully.", self.config.database_key)
 
     @abstractmethod
     def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
