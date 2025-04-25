@@ -191,8 +191,7 @@ def get_source_for(database_category: str, key: str) -> str:
     try:
         if config:
             return config["sources"][database_category][key]
-        else:
-            logger.warning("Failed to get local database_sources.toml")
+        logger.warning("Failed to get local database_sources.toml")
     except KeyError:
         logger.info("No external override found for [{}].{}", database_category, key)
 
