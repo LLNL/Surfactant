@@ -91,23 +91,8 @@ image_directory = os.path.join(os.path.dirname(__file__), "img")
 # Download images
 download_images_from_toml(toml_file_path, image_directory)
 
-# -- Fetch external database sources TOML ------------------------------------
-# Download the database_sources.toml hosted on ReadTheDocs
-
-
-def download_database_sources(url, dest_file):
-    content = download_content(url)
-    if content is not None:
-        with open(dest_file, "w") as f:
-            f.write(content)
-
-
-# URL for the hosted external TOML file on ReadTheDocs
-db_sources_url = (
-    "https://readthedocs.org/projects/surfacet-docs/downloads/latest/database_sources.toml"
-)
-# Path to save the database_sources.toml file in docs/
-db_sources_dest = os.path.join(os.path.dirname(__file__), "database_sources.toml")
-
-# Download database sources TOML
-download_database_sources(db_sources_url, db_sources_dest)
+# -------------------------------------------------------------------
+# Make database_sources.toml available as a static file at the site root
+# https://surfactant.readthedocs.io/en/latest/database_sources.toml
+# -------------------------------------------------------------------
+html_extra_path = ['database_sources.toml']
