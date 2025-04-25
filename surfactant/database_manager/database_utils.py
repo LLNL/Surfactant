@@ -82,7 +82,7 @@ class BaseDatabaseManager(ABC):
                 "Using external URL override for {}: {}", self.config.database_key, override_url
             )
         else:
-            logger.info("Using built-in URL for {}", self.config.database_key)
+            logger.info("Using hard-coded URL for {}", self.config.database_key)
 
         self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[str] = None
