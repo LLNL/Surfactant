@@ -7,6 +7,7 @@
 #
 # SPDX-License-Identifier: MIT
 import hashlib
+import logging
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
@@ -14,7 +15,6 @@ from typing import Any, Dict, Optional, Union
 import requests
 import tomlkit
 from loguru import logger
-import logging
 from requests.exceptions import RequestException
 
 
@@ -166,6 +166,7 @@ def save_db_version_metadata(version_info: Union[str, Path], database_info: Dict
     }
     db_metadata.update(new_data)
     _write_toml_file(version_info, db_metadata)
+
 
 # URL for the hosted external TOML file on ReadTheDocs
 DEFAULT_EXTERNAL_DB_CONFIG_URL = (
