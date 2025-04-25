@@ -7,7 +7,6 @@
 #
 # SPDX-License-Identifier: MIT
 import hashlib
-import logging
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
