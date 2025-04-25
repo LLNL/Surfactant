@@ -14,7 +14,6 @@ from typing import Any, Dict, Optional, Union
 import requests
 import tomlkit
 from loguru import logger
-import logging
 from requests.exceptions import RequestException
 
 
@@ -36,18 +35,18 @@ def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[
         try:
             response = requests.get(url, timeout=timeout)
             if response.status_code == 200:
-                logger.info("Request successful! URL: %s", url)
+                logger.info("Request successful! URL:{}", url)
                 return response.text
             if response.status_code == 404:
-                logger.error("Resource not found. URL: %s", url)
+                logger.error("Resource not found. URL: {}", url)
                 return None
-            logger.warning("Unexpected status code %s for URL: %s", response.status_code, url)
+            logger.warning("Unexpected status code {} for URL: {}", response.status_code, url)
         except RequestException as e:
-            logger.error("Attempt %s - Error fetching URL %s: %s", str(attempt + 1), url, e)
+            logger.error("Attempt {} - Error fetching URL {}: {}", str(attempt + 1), url, e)
 
         attempt += 1
         sleep_time = 2**attempt  # exponential backoff
-        logger.info("Retrying in %s seconds...", sleep_time)
+        logger.info("Retrying in {} seconds...", sleep_time)
         time.sleep(sleep_time)
 
     return None
@@ -185,7 +184,7 @@ def fetch_external_db_config(url: str = DEFAULT_EXTERNAL_DB_CONFIG_URL) -> dict:
             config = tomlkit.parse(content)
             return config
     except tomlkit.exceptions.ParseError as e:
-        logging.warning("Error parsing TOML content: %s", e)
+        logger.warning("Error parsing TOML content: {}", e)
     return {}
 
 
@@ -204,5 +203,5 @@ def get_source_for(database_category: str, key: str) -> str:
     try:
         return config["sources"][database_category][key]
     except KeyError:
-        logging.info("No external override found for [%s].%s", database_category, key)
+        logger.info("No external override found for [{}].{}", database_category, key)
         return ""
