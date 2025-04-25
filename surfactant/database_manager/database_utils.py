@@ -13,13 +13,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
-from loguru import logger
 
+from loguru import logger
 
 from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.utils import (
-    download_content, save_db_version_metadata, calculate_hash, load_db_version_metadata
-    )
+    calculate_hash,
+    download_content,
+    load_db_version_metadata,
+    save_db_version_metadata,
+)
 
 
 @dataclass

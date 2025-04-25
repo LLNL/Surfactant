@@ -8,10 +8,12 @@
 # SPDX-License-Identifier: MIT
 # surfactant/database_manager/external_db_config.py
 import logging
+
 import tomlkit
 
-
-from surfactant.database_manager.utils import download_content  # pylint: disable=import-outside-toplevel
+from surfactant.database_manager.utils import (
+    download_content,  # pylint: disable=import-outside-toplevel
+)
 
 # URL for the hosted external TOML file on ReadTheDocs
 DEFAULT_EXTERNAL_DB_CONFIG_URL = (

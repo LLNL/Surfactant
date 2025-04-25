@@ -6,14 +6,16 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+import hashlib
+import time
+from pathlib import Path
+from typing import Any, Dict, Optional, Union
+
 import requests
 import tomlkit
-import time
-import hashlib
-from typing import Any, Dict, Optional, Union
-from requests.exceptions import RequestException
-from pathlib import Path
 from loguru import logger
+from requests.exceptions import RequestException
+
 
 def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
     """
