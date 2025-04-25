@@ -174,7 +174,7 @@ def fetch_db_config() -> dict:
     # Get local docs copy in the source tree:
     local = Path(__file__).parents[1] / "docs" / "database_sources.toml"
     return _read_toml_file(local)
-    
+
 
 def get_source_for(database_category: str, key: str) -> str:
     """
