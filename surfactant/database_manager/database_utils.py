@@ -22,7 +22,6 @@ from loguru import logger
 from requests.exceptions import RequestException
 
 from surfactant.configmanager import ConfigManager
-from surfactant.database_manager.external_db_config import get_source_for
 
 
 @dataclass
@@ -73,6 +72,7 @@ class BaseDatabaseManager(ABC):
         self.config = config
         # Attempt to retrieve an override URL using the database_dir (e.g., "js_library_patterns")
         # and the database_key (e.g., "retirejs").
+        from .external_db_config import get_source_for
         override_url = get_source_for(self.config.database_dir, self.config.database_key)
         if override_url:
             self.config.source = override_url
