@@ -456,27 +456,13 @@ class TUI(textual.app.App):
         yield textual.widgets.Header()
         yield textual.widgets.Footer()
         Tab = textual.widgets.Tab
-        yield textual.widgets.Tabs(
-            Tab("Generate", id="Generate"), Tab("Merge", id="Merge"), Tab("Config", id="Config")
-        )
-        yield textual.containers.ScrollableContainer(id="MainContainer")
-
-    def on_mount(self) -> None:
-        self.query_one(textual.widgets.Tabs).focus()
-
-    def on_tabs_tab_activated(self, event: textual.widgets.Tabs.TabActivated) -> None:
-        TABS = (
-            ("Generate", self.generate_tab),
-            ("Merge", self.merge_tab),
-            ("Config", self.config_tab),
-        )
-        main_container = self.get_child_by_id(
-            "MainContainer", textual.containers.ScrollableContainer
-        )
-        main_container.query_children().remove()
-        for name, tab in TABS:
-            if event.tab.id == name:
-                main_container.mount(tab)
+        with textual.widgets.TabbedContent():
+            with textual.widgets.TabPane("Generate"):
+                yield self.generate_tab
+            with textual.widgets.TabPane("Merge"):
+                yield self.merge_tab
+            with textual.widgets.TabPane("Config"):
+                yield self.config_tab
 
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""
