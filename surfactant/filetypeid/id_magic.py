@@ -212,7 +212,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
             # https://www.systutorials.com/docs/linux/man/5-cpio/
             if int.from_bytes(magic_bytes[:2], byteorder="big", signed=False) == 0o70707:
                 return "CPIO_BIN_OLD big"
-            if int.from_bytes(magic_bytes[:2], byteorder="small", signed=False) == 0x70707:
+            if int.from_bytes(magic_bytes[:2], byteorder="small", signed=False) == 0o70707:
                 return "CPIO_BIN_OLD small"
             if magic_bytes[:6] == "070707":
                 return "CPIO_CHAR_OLD"
