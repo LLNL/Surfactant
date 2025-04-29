@@ -1,6 +1,6 @@
 # Database Sources
 
-Surfactant supports external configuration for pattern database URLs via a central TOML file. This file is hosted on ReadTheDocs and enables maintainers to update database source URLs independently of a new Surfactant release.
+Surfactant supports external configuration for pattern database URLs via a central TOML file. This file is hosted on [ReadTheDocs](https://surfactant.readthedocs.io/en/latest/external_databases.html) and enables maintainers to update database source URLs independently of a new Surfactant release. The file can also be find in the [directory tree](https://github.com/LLNL/Surfactant/blob/main/docs/database_sources.toml)
 
 ## TOML File
 
