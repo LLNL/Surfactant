@@ -78,11 +78,11 @@ class BaseDatabaseManager(ABC):
         override_url = get_source_for(self.config.database_dir, self.config.database_key)
         if override_url:
             self.config.source = override_url
-            logger.info(
+            logger.debug(
                 "Using external URL override for {}: {}", self.config.database_key, override_url
             )
         else:
-            logger.info("Using hard-coded URL for {}", self.config.database_key)
+            logger.debug("Using hard-coded URL for {}", self.config.database_key)
 
         self.new_hash: Optional[str] = None
         self.download_timestamp: Optional[str] = None

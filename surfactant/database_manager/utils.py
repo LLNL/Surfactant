@@ -15,6 +15,7 @@ import requests
 import tomlkit
 from loguru import logger
 from requests.exceptions import RequestException
+from surfactant.configmanager import ConfigManager
 
 
 def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
@@ -35,18 +36,18 @@ def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[
         try:
             response = requests.get(url, timeout=timeout)
             if response.status_code == 200:
-                logger.info("Request successful! URL:{}", url)
+                logger.debug("Request successful! URL:{}", url)
                 return response.text
             if response.status_code == 404:
-                logger.error("Resource not found. URL: {}", url)
+                logger.debug("Resource not found. URL: {}", url)
                 return None
-            logger.warning("Unexpected status code {} for URL: {}", response.status_code, url)
+            logger.debug("Unexpected status code {} for URL: {}", response.status_code, url)
         except RequestException as e:
-            logger.error("Attempt {} - Error fetching URL {}: {}", str(attempt + 1), url, e)
+            logger.debug("Attempt {} - Error fetching URL {}: {}", str(attempt + 1), url, e)
 
         attempt += 1
         sleep_time = 2**attempt  # exponential backoff
-        logger.info("Retrying in {} seconds...", sleep_time)
+        logger.debug("Retrying in {} seconds...", sleep_time)
         time.sleep(sleep_time)
 
     return None
@@ -172,7 +173,7 @@ def fetch_db_config() -> dict:
     Load the database_sources.toml from local docs/
     """
     # Get local docs copy in the source tree:
-    local = Path(__file__).parents[1] / "docs" / "database_sources.toml"
+    local = Path(__file__).parents[2] / "docs" / "database_sources.toml"
     return _read_toml_file(local)
 
 
@@ -180,19 +181,28 @@ def get_source_for(database_category: str, key: str) -> str:
     """
     Retrieve the URL for a given database category and key.
 
-    Args:
-        database_category (str): The category corresponding to a folder (e.g., 'js_library_patterns').
-        key (str): The specific key for the database (e.g., 'retirejs').
-
-    Returns:
-        str: The URL from the external configuration if available; otherwise, an empty string.
+    Resolution order:
+      1. Runtime override in user config.
+      2. Local docs/database_sources.toml.
+      3. Fallback to hard-coded URL in code.
     """
+    
+    # First, check the runtime config for an override
+    config_manager = ConfigManager()
+    config = config_manager.config
+    runtime_url = config_manager.get("sources", f"{database_category}.{key}")
+
+    if runtime_url:
+        if runtime_url != "" and runtime_url != [] and runtime_url != {}:
+            return runtime_url  # Return the command line override URL if present
+
+    # Second, check docs/database_sources.toml for the URL
     config = fetch_db_config()
     try:
         if config:
             return config["sources"][database_category][key]
-        logger.warning("Failed to get local database_sources.toml")
+        logger.debug("Failed to get local database_sources.toml")
     except KeyError:
-        logger.info("No external override found for [{}].{}", database_category, key)
+        logger.debug("No external override found for [{}].{}", database_category, key)
 
-    return None
+    return None # Third, fall back to the hardcoded URLs in the code

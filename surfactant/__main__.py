@@ -101,5 +101,6 @@ plugin.add_command(plugin_install_cmd)
 plugin.add_command(plugin_uninstall_cmd)
 plugin.add_command(plugin_update_db_cmd)
 
+
 if __name__ == "__main__":
     main()

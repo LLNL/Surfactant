@@ -1,3 +1,34 @@
+# Command Line Override for Database Sources
+
+In addition to the configuration file (`database_sources.toml`), Surfactant supports overriding database URLs directly through the command line. This feature allows users to set custom database URLs without needing to modify the configuration files manually.
+
+## Command for Overriding Database URLs
+
+Use the following command to override the URL for a specific database category and library:
+
+```bash
+surfactant config sources.<category>.<library> <new_url>
+```
+
+Example Usage
+
+To override the URL for the retirejs library in the js_library_patterns category, use the following command:
+
+```bash
+surfactant config sources.js_library_patterns.retirejs https://new-url.com
+```
+
+This will update the database URL in Surfactant’s runtime configuration file, which will take precedence over any values in database_sources.toml.
+
+Precedence Order
+
+    1. Command Line Override (surfactant config override-db-url <category.library> <new_url>) — Highest precedence.
+
+    2. docs/database_sources.toml — Secondary source for database URLs.
+
+    3. Hardcoded URLs in the Source Code — Last fallback option if no URL is provided through the command line or configuration file.
+
+
 # Database Sources
 
 Surfactant supports external configuration for pattern database URLs via a central TOML file. This file is hosted on [ReadTheDocs](https://surfactant.readthedocs.io/en/latest/external_databases.html) and enables maintainers to update database source URLs independently of a new Surfactant release. The file can also be find in the [directory tree](https://github.com/LLNL/Surfactant/blob/main/docs/database_sources.toml)
