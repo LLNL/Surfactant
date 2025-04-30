@@ -46,4 +46,3 @@ Surfactant supports overriding database source URLs via the sources section in t
         ```bash
         surfactant config sources.js_library_patterns.retirejs https://new-url.com
         ```
-

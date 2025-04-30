@@ -15,6 +15,7 @@ import requests
 import tomlkit
 from loguru import logger
 from requests.exceptions import RequestException
+
 from surfactant.configmanager import ConfigManager
 
 
@@ -186,7 +187,7 @@ def get_source_for(database_category: str, key: str) -> str:
       2. Local docs/database_sources.toml.
       3. Fallback to hard-coded URL in code.
     """
-    
+
     # First, check the runtime config for an override
     config_manager = ConfigManager()
     config = config_manager.config
@@ -205,4 +206,4 @@ def get_source_for(database_category: str, key: str) -> str:
     except KeyError:
         logger.debug("No external override found for [{}].{}", database_category, key)
 
-    return None # Third, fall back to the hardcoded URLs in the code
+    return None  # Third, fall back to the hardcoded URLs in the code
