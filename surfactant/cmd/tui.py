@@ -349,7 +349,7 @@ class ConfigTab(textual.widgets.Static):
     def __init__(self):
         super().__init__()
         self.config_name = textual.widgets.Input(placeholder="Config filename")
-        self.config_input = FileInput("Config directory:", False, self.config_name)
+        self.config_input = FileInput("Config directory:", True, self.config_name)
         self.config_entries: list[ConfigEntry] = []
         self.config_number = 1
 
