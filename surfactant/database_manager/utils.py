@@ -191,10 +191,8 @@ def get_source_for(database_category: str, key: str) -> str:
     config_manager = ConfigManager()
     config = config_manager.config
     runtime_url = config_manager.get("sources", f"{database_category}.{key}")
-
-    if runtime_url:
-        if runtime_url != "" and runtime_url != [] and runtime_url != {}:
-            return runtime_url  # Return the command line override URL if present
+    if runtime_url not in ("", [], {}, "[]", "{}", None, "None"):
+        return runtime_url  # Return the command line override URL if present
 
     # Second, check docs/database_sources.toml for the URL
     config = fetch_db_config()
