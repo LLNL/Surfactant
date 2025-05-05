@@ -140,18 +140,21 @@ def decompress_file(filename, compression_type):
     elif compression_type == "XZ" and filename.endswith(".xz"):
         output_filename = pathlib.Path(filename).stem
 
-    if compression_type == "GZIP":
-        with gzip.open(filename, "rb") as f_in:
-            with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-    elif compression_type == "BZIP2":
-        with bz2.open(filename, "rb") as f_in:
-            with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-    elif compression_type == "XZ":
-        with lzma.open(filename, "rb") as f_in:
-            with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
+    try:
+        if compression_type == "GZIP":
+            with gzip.open(filename, "rb") as f_in:
+                with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        elif compression_type == "BZIP2":
+            with bz2.open(filename, "rb") as f_in:
+                with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        elif compression_type == "XZ":
+            with lzma.open(filename, "rb") as f_in:
+                with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+    except gzip.BadGzipFile as e:
+        print(f"Warning: Trailing garbage bytes or concatenated streams ignored {filename}: {e}")
 
     return temp_folder
 
