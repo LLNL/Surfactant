@@ -229,8 +229,8 @@ def identify_file_type(filepath: str) -> Optional[str]:
             f.seek(0)
             iso_bytes = f.read(0x9001 + 5)
             for offset in (0x8001, 0x8801, 0x9001):
-                print(iso_bytes[offset:offset + 5])
-                if iso_bytes[offset:offset + 5] == b"CD001":
+                print(iso_bytes[offset : offset + 5])
+                if iso_bytes[offset : offset + 5] == b"CD001":
                     return "ISO_9660_CD"
             # MacOS dmg:
             # https://en.wikipedia.org/wiki/List_of_file_signatures
