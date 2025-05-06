@@ -29,6 +29,15 @@ _file_to_file_type = {
     "NET_app_config_test_no1/bin/Debug/net6.0/hello.dll": "PE",
     "Windows_dll_test_no1/hello_world.exe": "PE",
     "Windows_dll_test_no1/testlib.dll": "PE",
+    "cpio_files/hi_little.cpio": "CPIO_BIN little",
+    "cpio_files/hi_big.cpio": "CPIO_BIN big",
+    "cpio_files/cpio_char_new.cpio": "CPIO_ASCII_NEW",
+    "cpio_files/cpio_char_old.cpio": "CPIO_CHAR_OLD",
+    "cd_iso_files/cd_iso_8001.iso": "ISO_9660_CD",
+    "cd_iso_files/cd_iso_8801.iso": "ISO_9660_CD",
+    "cd_iso_files/cd_iso_9001.iso": "ISO_9660_CD",
+    "zstandard/hi.txt.zst": "ZSTANDARD",
+    "mac_os_dmg/mac_os.dmg": "MACOS_DMG",
 }
 
 

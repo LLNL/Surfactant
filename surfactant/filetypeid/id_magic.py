@@ -211,24 +211,33 @@ def identify_file_type(filepath: str) -> Optional[str]:
             # cpio:
             # https://www.systutorials.com/docs/linux/man/5-cpio/
             if int.from_bytes(magic_bytes[:2], byteorder="big", signed=False) == 0o70707:
-                return "CPIO_BIN_OLD big"
-            if int.from_bytes(magic_bytes[:2], byteorder="small", signed=False) == 0o70707:
-                return "CPIO_BIN_OLD small"
-            if magic_bytes[:6] == "070707":
+                return "CPIO_BIN big"
+            if int.from_bytes(magic_bytes[:2], byteorder="little", signed=False) == 0o70707:
+                return "CPIO_BIN little"
+            if magic_bytes[:6] == b"070707":
                 return "CPIO_CHAR_OLD"
-            if magic_bytes[:6] == "070701":
+            if magic_bytes[:6] == b"070701":
                 return "CPIO_ASCII_NEW"
             # zstd:
             # https://datatracker.ietf.org/doc/html/rfc8878
-            if magic_bytes[:4] == "\x28\xb5\x2f\xfd":
+            if magic_bytes[:4] == b"\x28\xb5\x2f\xfd":
                 return "ZSTANDARD"
-            if magic_bytes[:4] == "\x37\xa4\x30\xec":
+            if magic_bytes[:4] == b"\x37\xa4\x30\xec":
                 return "ZSTANDARD_DICTIONARY"
             # iso:
             # https://www.garykessler.net/library/file_sigs.html
+            f.seek(0)
+            iso_bytes = f.read(0x9001 + 5)
             for offset in (0x8001, 0x8801, 0x9001):
-                if magic_bytes[offset:offset + 5] == "CD001":
+                print(iso_bytes[offset:offset + 5])
+                if iso_bytes[offset:offset + 5] == b"CD001":
                     return "ISO_9660_CD"
+            # MacOS dmg:
+            # https://en.wikipedia.org/wiki/List_of_file_signatures
+            f.seek(-512, 2)
+            macos_bytes = f.read(4)
+            if macos_bytes[0:4] == b"koly":
+                return "MACOS_DMG"
 
             return None
     except FileNotFoundError:
