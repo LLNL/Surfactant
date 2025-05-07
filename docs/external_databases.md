@@ -20,7 +20,7 @@ surfactant config sources.js_library_patterns.retirejs https://new-url.com
 
 This will update the database URL in Surfactant’s runtime configuration file, which will take precedence over any values in database_sources.toml.
 
-Precedence Order
+Precedence Order:
 
     1. Command Line Override (surfactant config override-db-url <category.library> <new_url>) — Highest precedence.
 
