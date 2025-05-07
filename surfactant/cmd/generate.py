@@ -114,7 +114,7 @@ def get_software_entry(
             # add any new vendors detected to the list
             for vendor in value:
                 if vendor not in sw_entry.vendor:
-                    sw_entry.vendor.append(value)
+                    sw_entry.vendor.append(vendor)
         elif field == "description" and not sw_entry.description:
             sw_entry.description = value
         elif field == "comments" and not sw_entry.comments:
