@@ -205,9 +205,9 @@ class GenerateTab(textual.widgets.Static):
 
 
 class InputPath(textual.widgets.Static):
-    def __init__(self, desc="Input file:"):
+    def __init__(self, desc="Input file:", allow_dir_selection=False):
         super().__init__()
-        self.path_selector = FileInput(desc, False, None)
+        self.path_selector = FileInput(desc, allow_dir_selection, None)
         self.active = True
 
     def compose(self) -> textual.app.ComposeResult:
@@ -222,24 +222,25 @@ class InputPath(textual.widgets.Static):
 
 
 class InputPathsHolder(textual.widgets.Static):
-    def __init__(self, prompt="Input file:"):
+    def __init__(self, prompt="Input file:", allow_dir_selection=False):
         super().__init__()
         self.input_paths: list[InputPath] = []
         self.prompt = prompt
+        self.allow_dir_selection = allow_dir_selection
 
     def compose(self) -> textual.app.ComposeResult:
-        yield textual.widgets.Button("+", id="add_input_path")
         for m_path in self.input_paths:
             if m_path.active:
                 yield m_path
+        yield textual.widgets.Button("+", id="add_input_path")
 
     @textual.on(textual.widgets.Button.Pressed, "#add_input_path")
     def add_input_path(self):
-        self.input_paths.append(InputPath(self.prompt))
+        self.input_paths.append(InputPath(self.prompt, self.allow_dir_selection))
         self.mount(self.input_paths[-1], before="#add_input_path")
 
     def add_path(self, path: str):
-        self.input_paths.append(InputPath(self.prompt))
+        self.input_paths.append(InputPath(self.prompt, self.allow_dir_selection))
         self.input_paths[-1].path_selector.input_path = path
 
 
@@ -317,13 +318,17 @@ class ConfigEntry(textual.widgets.Static):
         self.border_title = str(header_num)
         self.archive = FileInput("Archive:", False, None)
         self.install_prefix = textual.widgets.Input(placeholder="Install Prefix")
-        self.extract_paths = InputPathsHolder("[Click to set extract path]")
+        self.container_prefix = textual.widgets.Input(placeholder="Container Prefix")
+        self.extract_paths = InputPathsHolder("[Click to set extract path]", True)
 
     def compose(self) -> textual.app.ComposeResult:
         yield textual.widgets.Button("Delete this entry", id="delete_entry")
         yield self.archive
         yield textual.containers.HorizontalGroup(
             textual.widgets.Label("Install Prefix: "), self.install_prefix
+        )
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("Container Prefix: "), self.container_prefix
         )
         yield textual.widgets.Label("Extract Paths:")
         yield self.extract_paths
@@ -344,7 +349,7 @@ class ConfigTab(textual.widgets.Static):
     def __init__(self):
         super().__init__()
         self.config_name = textual.widgets.Input(placeholder="Config filename")
-        self.config_input = FileInput("Config directory:", False, self.config_name)
+        self.config_input = FileInput("Config directory:", True, self.config_name)
         self.config_entries: list[ConfigEntry] = []
         self.config_number = 1
 
@@ -384,6 +389,9 @@ class ConfigTab(textual.widgets.Static):
             for path in entry.extract_paths.input_paths:
                 if path.active:
                     write_to["extractPaths"].append(path.path_selector.input_path)
+            container_prefix = entry.container_prefix.value
+            if len(container_prefix) > 0:
+                write_to["containerPrefix"] = container_prefix
         file_to_save = self.config_input.input_path + "/" + self.config_name.value
         try:
             with open(file_to_save, "w") as f:
@@ -421,6 +429,8 @@ class ConfigTab(textual.widgets.Static):
                     cur_entry.extract_paths.add_path(ep)
             if "installPrefix" in entry:
                 cur_entry.install_prefix.value = entry["installPrefix"]
+            if "containerPrefix" in entry:
+                cur_entry.container_prefix.value = entry["containerPrefix"]
         for entry in self.config_entries:
             self.mount(entry, before="#add_config_entry")
 
@@ -446,27 +456,13 @@ class TUI(textual.app.App):
         yield textual.widgets.Header()
         yield textual.widgets.Footer()
         Tab = textual.widgets.Tab
-        yield textual.widgets.Tabs(
-            Tab("Generate", id="Generate"), Tab("Merge", id="Merge"), Tab("Config", id="Config")
-        )
-        yield textual.containers.ScrollableContainer(id="MainContainer")
-
-    def on_mount(self) -> None:
-        self.query_one(textual.widgets.Tabs).focus()
-
-    def on_tabs_tab_activated(self, event: textual.widgets.Tabs.TabActivated) -> None:
-        TABS = (
-            ("Generate", self.generate_tab),
-            ("Merge", self.merge_tab),
-            ("Config", self.config_tab),
-        )
-        main_container = self.get_child_by_id(
-            "MainContainer", textual.containers.ScrollableContainer
-        )
-        main_container.query_children().remove()
-        for name, tab in TABS:
-            if event.tab.id == name:
-                main_container.mount(tab)
+        with textual.widgets.TabbedContent():
+            with textual.widgets.TabPane("Generate"):
+                yield self.generate_tab
+            with textual.widgets.TabPane("Merge"):
+                yield self.merge_tab
+            with textual.widgets.TabPane("Config"):
+                yield self.config_tab
 
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""
