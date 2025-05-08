@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: MIT
 import os
 import re
-from typing import Any, Dict, List, Optional, Union, Set
+from typing import Any, Dict, List, Optional, Set, Union
 
 from loguru import logger
 
