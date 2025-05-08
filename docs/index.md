@@ -28,6 +28,7 @@ Some links to pages that may be useful are:
    basic_usage
    configuration_files
    plugins
+   external_databases
    settings
    contribution_guide
    changelog

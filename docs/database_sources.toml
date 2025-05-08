@@ -1,0 +1,12 @@
+[metadata]
+version = "1.0"
+last_updated = "2025-04-24"
+
+[sources]
+# JavaScript libraries
+[sources.js_library_patterns]
+retirejs = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
+
+# Native libraries
+[sources.native_library_patterns]
+emba = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
