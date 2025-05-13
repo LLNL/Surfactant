@@ -153,7 +153,7 @@ def decompress_file(filename, compression_type):
             with lzma.open(filename, "rb") as f_in:
                 with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
-    except gzip.BadGzipFile as e:
+    except (gzip.BadGzipFile, OSError) as e:
         print(f"Warning: Trailing garbage bytes or concatenated streams ignored {filename}: {e}")
 
     return temp_folder
