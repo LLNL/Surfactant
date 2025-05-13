@@ -1,0 +1,231 @@
+{
+  "systems": [],
+  "hardware": [],
+  "software": [
+    {
+      "UUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
+      "name": null,
+      "size": 16367492,
+      "fileName": [
+        "helics.tar.gz"
+      ],
+      "installPath": [],
+      "containerPath": [],
+      "captureTime": 1689186146,
+      "version": "",
+      "vendor": [],
+      "description": "",
+      "sha1": "0d21026ee953eeaa31cafef5118be56f46867267",
+      "sha256": "f41ca6f7c447225df3a7eef754d303d22cf877586735fb2d56d1eb15bf1daed9",
+      "md5": "5fbf80df5004db2f0ce1f78b524024fe",
+      "relationshipAssertion": "Unknown",
+      "comments": "",
+      "metadata": [
+        {
+          "collectedBy": "Surfactant",
+          "collectionPlatform": "macOS-11.7.7-x86_64-i386-64bit",
+          "fileInfo": {
+            "mode": "-rw-r--r--",
+            "hidden": false
+          }
+        }
+      ],
+      "supplementaryFiles": [],
+      "provenance": null,
+      "recordedInstitution": "LLNL",
+      "components": []
+    },
+    {
+      "UUID": "4c9a7915-7f5a-440b-97b6-60b13942f739",
+      "name": null,
+      "size": 2654632,
+      "fileName": [
+        "libzmq.so.5.2.4",
+        "libzmq.so",
+        "libzmq.so.5"
+      ],
+      "installPath": [],
+      "containerPath": [
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libzmq.so.5.2.4",
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libzmq.so",
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libzmq.so.5"
+      ],
+      "captureTime": 1689186146,
+      "version": "",
+      "vendor": [],
+      "description": "",
+      "sha1": "7e36b0f61ba8def9f44e513e751c8b71fe33bde0",
+      "sha256": "ec811e0fa8d629510bc24bc90352d41956b99002d35794a443efe4970b726782",
+      "md5": "2ff380e740d2eb09e5d67f6f2cd17636",
+      "relationshipAssertion": "Unknown",
+      "comments": "",
+      "metadata": [
+        {
+          "collectedBy": "Surfactant",
+          "collectionPlatform": "macOS-11.7.7-x86_64-i386-64bit",
+          "fileInfo": {
+            "mode": "-rwxr-xr-x",
+            "hidden": false
+          }
+        },
+        {
+          "OS": "Linux",
+          "elfIdent": {
+            "EI_CLASS": 2,
+            "EI_DATA": 1,
+            "EI_VERSION": 1,
+            "EI_OSABI": 3,
+            "EI_ABIVERSION": 0,
+            "E_MACHINE": 62
+          },
+          "elfDependencies": [
+            "librt.so.1",
+            "libm.so.6",
+            "libpthread.so.0",
+            "libc.so.6",
+            "ld-linux-x86-64.so.2"
+          ],
+          "elfRpath": [
+            "/hbb/lib"
+          ],
+          "elfRunpath": [],
+          "elfSoname": [
+            "libzmq.so.5"
+          ],
+          "elfInterpreter": [],
+          "elfDynamicFlags": [],
+          "elfDynamicFlags1": [],
+          "elfGnuRelro": true,
+          "elfComment": [
+            "GCC: (GNU) 4.4.7 20120313 (Red Hat 4.4.7-23)",
+            "GCC: (GNU) 8.3.1 20190311 (Red Hat 8.3.1-3)"
+          ],
+          "elfNote": [
+            {
+              "sectionName": ".note.gnu.build-id",
+              "name": "GNU",
+              "type": "NT_GNU_BUILD_ID",
+              "desc": "aa1d2db783bf0cfc2fa00db93007be69f16d48e4"
+            }
+          ],
+          "elfOsAbi": "ELFOSABI_LINUX",
+          "elfHumanArch": "x64",
+          "elfArchNumber": 62,
+          "elfArchitecture": "EM_X86_64",
+          "elfIsExe": false,
+          "elfIsLib": true,
+          "elfIsRel": false,
+          "elfIsCore": false
+        }
+      ],
+      "supplementaryFiles": [],
+      "provenance": null,
+      "recordedInstitution": "LLNL",
+      "components": []
+    },
+    {
+      "UUID": "7465416c-4f7b-4958-9842-c18609b0b2ab",
+      "name": null,
+      "size": 7226768,
+      "fileName": [
+        "libhelics.so",
+        "libhelics.so.3",
+        "libhelics.so.3.4.0"
+      ],
+      "installPath": [],
+      "containerPath": [
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libhelics.so",
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libhelics.so.3",
+        "477da45b-bb38-450e-93f7-e525aaaa6862/libhelics.so.3.4.0"
+      ],
+      "captureTime": 1689186146,
+      "version": "",
+      "vendor": [],
+      "description": "",
+      "sha1": "a93ac4a5e0a83a120bb46bf19fb9c8bc59486d90",
+      "sha256": "76f16a79c8794f6378b926c35130cefb7a5ed47ecfb832de8db23adda375d4d9",
+      "md5": "435775db74e3caee6ebbae9ce20240b7",
+      "relationshipAssertion": "Unknown",
+      "comments": "",
+      "metadata": [
+        {
+          "collectedBy": "Surfactant",
+          "collectionPlatform": "macOS-11.7.7-x86_64-i386-64bit",
+          "fileInfo": {
+            "mode": "-rwxr-xr-x",
+            "hidden": false
+          }
+        },
+        {
+          "OS": "Linux",
+          "elfIdent": {
+            "EI_CLASS": 2,
+            "EI_DATA": 1,
+            "EI_VERSION": 1,
+            "EI_OSABI": 3,
+            "EI_ABIVERSION": 0,
+            "E_MACHINE": 62
+          },
+          "elfDependencies": [
+            "librt.so.1",
+            "libzmq.so.5",
+            "libm.so.6",
+            "libpthread.so.0",
+            "libc.so.6",
+            "ld-linux-x86-64.so.2"
+          ],
+          "elfRpath": [
+            "/hbb/lib:$ORIGIN:$ORIGIN/../lib64:/usr/local/bin:/usr/local/lib64"
+          ],
+          "elfRunpath": [],
+          "elfSoname": [
+            "libhelics.so.3"
+          ],
+          "elfInterpreter": [],
+          "elfDynamicFlags": [],
+          "elfDynamicFlags1": [],
+          "elfGnuRelro": true,
+          "elfComment": [
+            "GCC: (GNU) 4.4.7 20120313 (Red Hat 4.4.7-23)",
+            "GCC: (GNU) 8.3.1 20190311 (Red Hat 8.3.1-3)"
+          ],
+          "elfNote": [
+            {
+              "sectionName": ".note.gnu.build-id",
+              "name": "GNU",
+              "type": "NT_GNU_BUILD_ID",
+              "desc": "734ded902b32069f1a174d86fd9229f5e395a8e9"
+            }
+          ],
+          "elfOsAbi": "ELFOSABI_LINUX",
+          "elfHumanArch": "x64",
+          "elfArchNumber": 62,
+          "elfArchitecture": "EM_X86_64",
+          "elfIsExe": false,
+          "elfIsLib": true,
+          "elfIsRel": false,
+          "elfIsCore": false
+        }
+      ],
+      "supplementaryFiles": [],
+      "provenance": null,
+      "recordedInstitution": "LLNL",
+      "components": []
+    }
+  ],
+  "relationships": [
+    {
+      "xUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
+      "yUUID": "4c9a7915-7f5a-440b-97b6-60b13942f739",
+      "relationship": "Contains"
+    },
+    {
+      "xUUID": "477da45b-bb38-450e-93f7-e525aaaa6862",
+      "yUUID": "7465416c-4f7b-4958-9842-c18609b0b2ab",
+      "relationship": "Contains"
+    }
+  ],
+  "analysisData": [],
+  "observations": [],
+  "starRelationships": []
+}
