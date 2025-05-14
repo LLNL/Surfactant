@@ -32,7 +32,7 @@ _file_to_file_type = {
     "cpio_files/hi_little.cpio": "CPIO_BIN little",
     "cpio_files/hi_big.cpio": "CPIO_BIN big",
     "cpio_files/cpio_char_new.cpio": "CPIO_ASCII_NEW",
-    "cpio_files/cpio_char_old.cpio": "CPIO_CHAR_OLD",
+    "cpio_files/cpio_char_old.cpio": "CPIO_ASCII_OLD",
     "cd_iso_files/cd_iso_8001.iso": "ISO_9660_CD",
     "cd_iso_files/cd_iso_8801.iso": "ISO_9660_CD",
     "cd_iso_files/cd_iso_9001.iso": "ISO_9660_CD",
