@@ -184,8 +184,9 @@ def get_source_for(database_category: str, key: str) -> str:
 
     Resolution order:
       1. Runtime override in user config.
-      2. Local docs/database_sources.toml.
-      3. Fallback to hard-coded URL in code.
+      2. Local docs/database_sources.toml when running Surfactant from an editable install from a git clone of the Surfactant repo.
+      3. ReadTheDocs hosted database_sources.toml file.
+      4. Fallback to hard-coded URL in code.
     """
 
     # First, check the runtime config for an override

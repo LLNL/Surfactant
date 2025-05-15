@@ -1,8 +1,10 @@
-# Command Line Override for Database Sources
+# Pattern Database Sources
 
-In addition to the configuration file (`database_sources.toml`), Surfactant supports overriding database URLs directly through the command line. This feature allows users to set custom database URLs without needing to modify the configuration files manually.
+Surfactant supports external configuration for pattern database URLs via a central TOML file. This file is hosted on [ReadTheDocs](https://surfactant.readthedocs.io/en/latest/external_databases.html) and enables maintainers to update database source URLs independently of a new Surfactant release. The file can be found in the [Surfactant git repository](https://github.com/LLNL/Surfactant/blob/main/docs/database_sources.toml), and when running Surfactant from an editable install the copy of the file in your local source code checkout will be used (and can be modified).
 
 ## Command for Overriding Database URLs
+
+Surfactant supports overriding database URLs directly through the command line. This feature allows users to set custom database URLs without needing to modify the configuration files manually.
 
 Use the following command to override the URL for a specific database category and library:
 
@@ -18,22 +20,24 @@ To override the URL for the retirejs library in the js_library_patterns category
 surfactant config sources.js_library_patterns.retirejs https://new-url.com
 ```
 
-This will update the database URL in Surfactant’s runtime configuration file, which will take precedence over any values in database_sources.toml.
+This will update the database URL in Surfactant’s runtime configuration file, which will take precedence over any values in the ReadTheDocs (or local git cloned for editable installs) `database_sources.toml` file.
 
 Precedence Order:
 
-    1. Command Line Override (surfactant config override-db-url <category.library> <new_url>) — Highest precedence.
+    1. Command Line Override (surfactant config override-db-url <category.library> <new_url>) — Highest precedence
 
-    2. docs/database_sources.toml — Secondary source for database URLs.
+    2. docs/database_sources.toml — Only used when running Surfactant from an editable install from a clone of the git repo (e.g. developers adding features to Surfactant)
+    
+    3. ReadTheDocs hosted database_sources.toml — Most common source for the URLs, for the typical user
 
-    3. Hardcoded URLs in the Source Code — Last fallback option if no URL is provided through the command line or configuration file.
+    4. Hardcoded URLs in the Source Code — Last fallback option if no URL is provided through the command line or configuration file
 
 
-# Database Sources
+## Database Sources TOML File
 
-Surfactant supports external configuration for pattern database URLs via a central TOML file. This file is hosted on [ReadTheDocs](https://surfactant.readthedocs.io/en/latest/external_databases.html) and enables maintainers to update database source URLs independently of a new Surfactant release. The file can also be find in the [directory tree](https://github.com/LLNL/Surfactant/blob/main/docs/database_sources.toml)
+Surfactant supports external configuration for pattern database URLs via a central TOML file. This file is hosted on [ReadTheDocs](https://surfactant.readthedocs.io/en/latest/external_databases.html) and enables maintainers to update database source URLs independently of a new Surfactant release. The file that gets added to the ReadTheDocs site can be found at [docs/database_sources.toml](https://github.com/LLNL/Surfactant/blob/main/docs/database_sources.toml) in the Surfactant git repository. Users running Surfactant from an editable install of a git clone of Surfactant can modify this local copy of the file to override URLs (e.g. for testing changes).
 
-## TOML File
+### TOML File Format
 
 The configuration file, `database_sources.toml`, is organized into several sections:
 
@@ -54,22 +58,3 @@ emba = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f2438
 # Additional categories can be added as needed:
 [sources.other_category]
 other_db = "https://example.com/other_patterns.json"
-```
-
-## Adding a New Category
-
-To add a new database category, follow these steps:
-
-1. Open the `database_sources.toml` file in your docs directory.
-2. Under the `[sources]` section, add a new table for your category. For example:
-
-   ```toml
-   [sources.your_category]
-   your_db_key = "https://your.domain/path/to/database.json"
-   ```
-
-3. Save and commit your changes.
-4. Update any plugin code to reference the new category name when fetching overrides.
-5. Run `surfactant plugin update-db <plugin_name>` to fetch and apply the new database.
-
-Once added, Surfactant will automatically pick up the new URL override without requiring a new release.

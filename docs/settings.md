@@ -33,7 +33,7 @@ Surfactant supports overriding database source URLs via the sources section in t
 
 - sources.<category>.<library>
 
-    - erride the URL for the specified database at runtime. Values set via surfactant config take precedence over entries in docs/database_sources.toml and hard-coded defaults.
+    - Override the URL for the specified database at runtime. Values set via surfactant config take precedence over entries in `database_sources.toml` and hard-coded defaults.
 
     - Usage:
 

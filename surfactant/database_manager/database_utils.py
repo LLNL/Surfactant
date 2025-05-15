@@ -72,9 +72,9 @@ class BaseDatabaseManager(ABC):
 
     def __init__(self, config: DatabaseConfig) -> None:
         self.config = config
+
         # Attempt to retrieve an override URL using the database_dir (e.g., "js_library_patterns")
         # and the database_key (e.g., "retirejs").
-
         override_url = get_source_for(self.config.database_dir, self.config.database_key)
         if override_url:
             self.config.source = override_url
@@ -120,7 +120,7 @@ class BaseDatabaseManager(ABC):
 
     def initialize_database(self, command_name: Optional[str] = None) -> None:
         """
-        Initialization hook to load the JavaScript library database.
+        Initialization hook to load the pattern database.
 
         Args:
             command_name (Optional[str], optional): The name of the command invoking the initialization.
@@ -130,9 +130,9 @@ class BaseDatabaseManager(ABC):
             None
         """
         if command_name != "update-db":
-            logger.info("Initializing {}...", self.config.plugin_name)
+            logger.debug("Initializing {}...", self.config.plugin_name)
             self.load_db()
-            logger.info("Initializing {} complete.", self.config.plugin_name)
+            logger.debug("Initializing {} complete.", self.config.plugin_name)
 
     def load_db(self) -> None:
         """Loads the database from a JSON file."""
