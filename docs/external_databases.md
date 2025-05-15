@@ -27,7 +27,7 @@ Precedence Order:
     1. Command Line Override (surfactant config override-db-url <category.library> <new_url>) — Highest precedence
 
     2. docs/database_sources.toml — Only used when running Surfactant from an editable install from a clone of the git repo (e.g. developers adding features to Surfactant)
-    
+
     3. ReadTheDocs hosted database_sources.toml — Most common source for the URLs, for the typical user
 
     4. Hardcoded URLs in the Source Code — Last fallback option if no URL is provided through the command line or configuration file
