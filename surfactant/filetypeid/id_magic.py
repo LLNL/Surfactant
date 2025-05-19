@@ -208,6 +208,40 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 if cm == 8:
                     if (cmf * 256 + flg) % 31 == 0:
                         return "ZLIB"
+            # cpio:
+            # https://commons.apache.org/proper/commons-compress/apidocs/org/apache/commons/compress/archivers/cpio/CpioArchiveEntry.html
+            if int.from_bytes(magic_bytes[:2], byteorder="big", signed=False) == 0o70707:
+                return "CPIO_BIN big"
+            if int.from_bytes(magic_bytes[:2], byteorder="little", signed=False) == 0o70707:
+                return "CPIO_BIN little"
+            if magic_bytes[:6] == b"070707":
+                return "CPIO_ASCII_OLD"
+            if magic_bytes[:6] == b"070701":
+                return "CPIO_ASCII_NEW"
+            if magic_bytes[:6] == b"070702":
+                return "CPIO_ASCII_NEW_CRC"
+            # zstd:
+            # https://datatracker.ietf.org/doc/html/rfc8878
+            if magic_bytes[:4] == b"\x28\xb5\x2f\xfd":
+                return "ZSTANDARD"
+            if magic_bytes[:4] == b"\x37\xa4\x30\xec":
+                return "ZSTANDARD_DICTIONARY"
+            # iso:
+            # https://en.wikipedia.org/wiki/List_of_file_signatures
+            for offset in (0x8001, 0x8801, 0x9001):
+                f.seek(offset)
+                iso_bytes = f.read(5)
+                if iso_bytes == b"CD001":
+                    return "ISO_9660_CD"
+            f.seek(0)
+
+            # MacOS dmg:
+            # https://en.wikipedia.org/wiki/List_of_file_signatures
+            f.seek(-512, 2)
+            macos_bytes = f.read(4)
+            if macos_bytes[0:4] == b"koly":
+                return "MACOS_DMG"
+            f.seek(0)
 
             return None
     except FileNotFoundError:
