@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBOM Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>SBOM Visualizer</h1>
+        <p>Upload and visualize Software Bill of Materials with highlighted common dependencies</p>
+    </header>
+
+    <main>
+        <section class="upload-section">
+            <h2>Upload SBOMs</h2>
+            <div class="upload-container">
+                <div class="upload-dropzone" id="dropZone">
+                    <p>Drag and drop SBOM files here or</p>
+                    <input type="file" id="fileInput" multiple accept=".json">
+                    <label for="fileInput" class="upload-button">Select Files</label>
+                </div>
+                <div class="file-list" id="fileList">
+                    <h3>Uploaded Files</h3>
+                    <ul id="uploadedFiles"></ul>
+                </div>
+            </div>
+            <button id="visualizeBtn" class="primary-button" disabled>Visualize SBOMs</button>
+        </section>
+
+        <section class="visualization-section">
+            <div class="visualization-toolbar">
+                <div class="sort-controls">
+                    <button id="rankBtn" class="toolbar-button">Rank by Shared Dependencies</button>
+                    <button id="rankValidatedBtn" class="toolbar-button">Rank by Validated Files</button>
+                    <button id="alignBtn" class="toolbar-button">Align by Shared Dependencies</button>
+                    <button id="graphViewBtn" class="toolbar-button">Show Graph View</button>
+                </div>
+                <div class="zoom-controls">
+                    <button id="zoomIn">+</button>
+                    <button id="zoomOut">-</button>
+                    <button id="resetZoom">Reset</button>
+                </div>
+            </div>
+            <div class="visualization-container" id="visualization">
+                <!-- Visualization will be rendered here -->
+            </div>
+        </section>
+
+        <section class="info-panel">
+            <div class="legend">
+                <h3>Legend</h3>
+                <div class="legend-item">
+                    <div class="color-box" style="background-color: #e5e5e5;"></div>
+                    <div class="legend-text">Standard Component</div>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background-color: #a8d5ff;"></div>
+                    <div class="legend-text">Unique Dependency</div>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background-color: #ffda85;"></div>
+                    <div class="legend-text">Shared by 2 SBOMs</div>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background-color: #ff7f7f;"></div>
+                    <div class="legend-text">Shared by 3+ SBOMs</div>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box hash-conflict" style="background-color: #e5e5e5;"></div>
+                    <div class="legend-text">Hash Conflict (same name, different hash)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box" style="background-color: #c8e6c9; border: 2px solid #4caf50;"></div>
+                    <div class="legend-text">Validated File (same name, matching hash)</div>
+                </div>
+                 <div class="legend-item">
+                    <div class="color-box component-placeholder" style="border: 1px dashed #ccc; background-color: #f9f9f9;"></div>
+                    <div class="legend-text">Aligned Placeholder</div>
+                </div>
+            </div>
+            <div class="statistics" id="statistics">
+                <h3>Statistics</h3>
+                <p>Total SBOMs: <span id="totalSboms">0</span></p>
+                <p>Total Components: <span id="totalComponents">0</span></p>
+                <p>Common Dependencies: <span id="commonDependencies">0</span></p>
+                <p>Hash Conflicts: <span id="hashConflicts">0</span></p>
+                <p>Validated Files: <span id="validatedFiles">0</span></p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>SBOM Visualizer - Pure HTML, CSS, JavaScript implementation</p>
+    </footer>
+
+    <script src="js/parser.js"></script>
+    <script src="js/visualizer.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 

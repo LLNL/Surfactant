@@ -1,0 +1,753 @@
+/* Global Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+/* Layout */
+header, main, footer {
+    width: 100%;
+    padding: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    padding: 2rem 1rem;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+section {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+}
+
+h2, h3 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+/* Upload Section */
+.upload-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.upload-dropzone {
+    flex: 1;
+    min-width: 300px;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.upload-dropzone.active {
+    border-color: #4caf50;
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+.upload-dropzone p {
+    margin-bottom: 1rem;
+    color: #666;
+}
+
+.upload-dropzone input[type="file"] {
+    display: none;
+}
+
+.upload-button {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    background-color: #3498db;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.upload-button:hover {
+    background-color: #2980b9;
+}
+
+.file-list {
+    flex: 1;
+    min-width: 300px;
+}
+
+.file-list ul {
+    list-style: none;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 0.5rem;
+}
+
+.file-list li {
+    padding: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-list li:last-child {
+    border-bottom: none;
+}
+
+.primary-button {
+    display: block;
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
+    padding: 0.8rem 1.5rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+}
+
+.primary-button:hover {
+    background-color: #2980b9;
+}
+
+.primary-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Visualization Section */
+.visualization-toolbar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+.sort-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap; /* Allow buttons to wrap */
+}
+
+.toolbar-button {
+    padding: 0.5rem 1rem;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    margin-bottom: 0.5rem; /* Add margin for wrapped buttons */
+}
+
+.toolbar-button:hover {
+    background-color: #e0e0e0;
+}
+
+.toolbar-button.active {
+    background-color: #3498db;
+    color: white;
+    border-color: #2980b9;
+}
+
+.zoom-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem; /* Add margin for wrapped buttons */
+}
+
+.zoom-controls button {
+    width: 32px;
+    height: 32px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.zoom-controls button:hover {
+    background-color: #e0e0e0;
+}
+
+.visualization-container {
+    min-height: 700px;
+    height: 700px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden; /* Changed from auto to hidden to avoid nested scrollbars */
+    position: relative;
+}
+
+/* Info Panel */
+.info-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+}
+
+.legend, .statistics {
+    flex: 1;
+    min-width: 250px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.color-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    margin-right: 10px;
+    border: 1px solid #ddd;
+}
+
+/* SBOM Visualization Styles */
+.sbom-container {
+    display: flex;
+    padding: 1rem;
+    gap: 2rem;
+    overflow-x: auto;
+    align-items: flex-start; /* Align columns at the top */
+}
+
+/* Graph View Styles */
+.graph-container {
+    padding: 1rem;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow-x: scroll;
+    overflow-y: scroll;
+    display: block;
+}
+
+.sbom-graph {
+    background-color: #fafafa;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    min-width: 1500px;
+    min-height: 1200px;
+    width: 1500px;
+    height: 1200px;
+}
+
+/* Inspection Box */
+.inspection-box {
+    position: absolute;
+    width: 300px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    padding: 0;
+    pointer-events: none; /* prevents the box from interfering with mouse events */
+    border: 1px solid #ddd;
+    overflow: hidden;
+    font-size: 14px;
+    max-height: 80vh;
+    overflow-y: auto;
+    right: 10px;
+    top: 10px;
+    opacity: 0;
+    transition: opacity 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+}
+
+.inspection-box.visible {
+    opacity: 1;
+    pointer-events: auto; /* Allow hovering when visible */
+}
+
+.inspection-box.pinned {
+    opacity: 1;
+    pointer-events: auto; /* Allow interaction when pinned */
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    border: 1px solid #aaa;
+}
+
+.inspection-header {
+    background-color: #f5f5f5;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.inspection-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+    word-break: break-word;
+}
+
+.inspection-details {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.inspection-details p {
+    margin: 4px 0;
+}
+
+.inspection-list {
+    padding: 8px 15px 12px;
+    max-height: 150px;
+    overflow-y: auto;
+    border-bottom: 1px solid #eee;
+}
+
+.inspection-list:last-child {
+    border-bottom: none;
+}
+
+.hashes-list {
+    background-color: #f9f9f9;
+}
+
+.inspection-subtitle {
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #666;
+    font-size: 13px;
+}
+
+.inspection-item {
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px dotted #eee;
+}
+
+.inspection-item:last-child {
+    border-bottom: none;
+}
+
+.hash-item {
+    display: block;
+    padding: 6px;
+    margin-bottom: 6px;
+    background-color: #ffffff;
+    border-radius: 4px;
+    border: 1px solid #eee;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.component-name {
+    font-weight: bold;
+}
+
+.component-version {
+    margin-left: auto;
+    font-size: 12px;
+    color: #666;
+}
+
+.inspection-more {
+    font-style: italic;
+    color: #888;
+    margin-top: 4px;
+    font-size: 12px;
+    text-align: center;
+    padding: 4px;
+}
+
+.color-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.status-icon {
+    margin-right: 8px;
+    font-size: 14px;
+}
+
+.status-icon.validated {
+    color: #4caf50;
+}
+
+.status-icon.conflict {
+    color: #f44336;
+}
+
+.validation-status {
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.validation-status.validated {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.validation-status.conflict {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.sbom-node {
+    cursor: pointer;
+    transition: fill 0.2s ease;
+}
+
+.sbom-node:hover {
+    fill: #d0e8ff;
+    stroke: #3498db;
+    stroke-width: 3px;
+}
+
+.sbom-label {
+    font-size: 13px;
+    font-weight: bold;
+    pointer-events: none;
+    text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white, 0 0 3px white;
+}
+
+.dependency-node {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dependency-node:hover {
+    filter: brightness(1.1);
+}
+
+.dependency-node-group {
+    cursor: pointer;
+    transition: filter 0.2s ease;
+}
+
+.dependency-node-group:hover {
+    filter: brightness(1.1);
+}
+
+.dependency-node-group:hover path {
+    stroke: #3498db;
+    stroke-width: 1.5px;
+}
+
+.dependency-node-group:hover circle {
+    stroke: #3498db;
+    stroke-width: 1.5px;
+}
+
+.dependency-label {
+    pointer-events: none;
+    fill: #333;
+    font-weight: bold;
+    text-shadow: 0 0 2px white, 0 0 2px white, 0 0 2px white;
+}
+
+.dependency-line {
+    transition: all 0.2s ease;
+}
+
+.dependency-line:hover {
+    stroke-opacity: 1;
+    stroke-width: 6px;
+}
+
+.sbom-dependency-line {
+    transition: all 0.2s ease;
+}
+
+.sbom-dependency-line:hover {
+    stroke-opacity: 1;
+    stroke-width: 3px;
+}
+
+.graph-legend {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.graph-legend-item {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+}
+
+.graph-legend-item .color-box {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.sbom-column {
+    min-width: 300px;
+    width: 300px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 1rem;
+    background-color: #f9f9f9;
+}
+
+.sbom-title {
+    font-weight: bold;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.component {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+    background-color: #e5e5e5;
+    border-left: 5px solid #ccc;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-height: 50px; /* Ensure components have a minimum height */
+}
+
+.component-placeholder {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+    border: 1px dashed #ccc;
+    background-color: #f9f9f9;
+    min-height: 50px; /* Match component min-height for alignment */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+    font-style: italic;
+}
+
+.component-details {
+    font-size: 0.875rem;
+    color: #555;
+}
+
+.dependency {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 3px;
+    background-color: #f0f0f0;
+}
+
+.unique-dependency {
+    background-color: #a8d5ff;
+    border-left: 3px solid #1e88e5;
+}
+
+.shared-dependency-2 {
+    background-color: #ffda85;
+    border-left: 3px solid #ffa000;
+}
+
+.shared-dependency-3plus {
+    background-color: #ff7f7f;
+    border-left: 3px solid #e53935;
+}
+
+/* Hash conflict styling */
+.hash-conflict {
+    border: 2px dotted #e91e63;
+    position: relative;
+}
+
+.hash-conflict::after {
+    content: "⚠️";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 12px;
+}
+
+/* Validated file styling */
+.validated-file {
+    background-color: #c8e6c9;
+    border: 2px solid #4caf50;
+    position: relative;
+}
+
+.validated-file::after {
+    content: "✓";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 12px;
+    color: #4caf50;
+    font-weight: bold;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    color: #777;
+    border-top: 1px solid #e0e0e0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .upload-container {
+        flex-direction: column;
+    }
+    
+    .info-panel {
+        flex-direction: column;
+    }
+    
+    .visualization-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    color: #666;
+    font-size: 14px;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2; /* Ensure it's above other content */
+}
+
+.inspection-box.pinned .close-button {
+    opacity: 1;
+}
+
+.close-button:hover {
+    background-color: #ccc;
+    color: #333;
+}
+
+/* Fullscreen mode styles */
+.fullscreen-graph {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999;
+    background: white;
+    padding: 20px;
+    margin: 0;
+    border-radius: 0;
+    overflow: auto;
+    box-sizing: border-box;
+}
+
+.fullscreen-graph .sbom-graph {
+    min-width: 95vw;
+    min-height: 90vh;
+    margin: 0 auto;
+}
+
+.fullscreen-graph .fullscreen-btn {
+    top: 20px;
+    right: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Add a bit of styling to make fullscreen more obvious */
+.fullscreen-graph::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to right, #3498db, #2ecc71);
+    z-index: 1;
+}
+
+/* Fullscreen button */
+.fullscreen-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.fullscreen-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.fullscreen-icon {
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+}
+
+/* Adjust inspection box in fullscreen mode */
+.fullscreen-graph .inspection-box {
+    right: 20px;
+    top: 20px;
+} 
