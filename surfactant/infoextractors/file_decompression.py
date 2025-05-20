@@ -69,15 +69,16 @@ def extract_file_info(
     temp_folder = check_compression_type(filename, compression_format)
     extract_paths = [temp_folder]
 
-    # Create a new context entry and add it to the queue
-    new_entry = ContextEntry(
-        archive=filename,
-        installPrefix=install_prefix,
-        extractPaths=extract_paths,
-        skipProcessingArchive=True,
-    )
-    context_queue.put(new_entry)
-    logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
+    if temp_folder is not None:
+        # Create a new context entry and add it to the queue
+        new_entry = ContextEntry(
+            archive=filename,
+            installPrefix=install_prefix,
+            extractPaths=extract_paths,
+            skipProcessingArchive=True,
+        )
+        context_queue.put(new_entry)
+        logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
 
     return None
 
@@ -153,8 +154,15 @@ def decompress_file(filename, compression_type):
             with lzma.open(filename, "rb") as f_in:
                 with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
-    except (gzip.BadGzipFile, OSError) as e:
-        print(f"Warning: Trailing garbage bytes or concatenated streams ignored {filename}: {e}")
+    except gzip.BadGzipFile as e:
+        # Likely only the first stream of a concatenated file was decompressed, so we will still keep the temp dir
+        logger.warning(
+            f"Trailing garbage bytes or concatenated streams ignored for {filename}: {e}"
+        )
+    except OSError as e:
+        logger.warning(f"Unable to decompress {filename}: {e}")
+        # Return None since this file will be completely unusable.
+        return None
 
     return temp_folder
 
