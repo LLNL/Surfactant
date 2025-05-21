@@ -45,22 +45,49 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
 
         super().__init__(config)
 
-    def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
-        """Parses raw RetireJS database data into a structured format."""
-        retirejs_db = json.loads(raw_data)
-        clean_db = {}
-        reg_temp = "\u00a7\u00a7version\u00a7\u00a7"
-        version_regex = r"\d+(?:\.\d+)*"
 
-        for library, lib_entry in retirejs_db.items():
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Dict[str, List[str]]]:
+        """
+        Parses a RetireJS JSON dump into a nested dict:
+        { library_name: { 'filename': [regex...], 'filecontent': [...], 'hashes': [...] } }
+        Invalid JSON or invalid regex entries are logged and skipped.
+        """
+
+        try:
+            db = json.loads(raw_data)
+        except json.JSONDecodeError as err:
+            logger.error(f"Failed to parse downloaded database JSON: {err}")
+
+        if not (isinstance(db, dict)):
+            logger.error("Expected top-level JSON object for RetireJS data")
+            return {}
+
+        VERSION_PLACEHOLDER = "\u00a7\u00a7version\u00a7\u00a7"
+        VERSION_NUMBER_PATTERN = r"\d+(?:\.\d+)*"
+
+        clean_db: Dict[str, Dict[str, List[str]]] = {}
+
+        for library, lib_entry in db.items():
             if "extractors" in lib_entry:
                 clean_db[library] = {}
                 for entry in ["filename", "filecontent", "hashes"]:
                     if entry in lib_entry["extractors"]:
-                        clean_db[library][entry] = [
-                            reg.replace(reg_temp, version_regex)
-                            for reg in lib_entry["extractors"][entry]
-                        ]
+                        # Initialize the list in clean_db
+                        clean_db[library][entry] = []
+
+                        # Iterate through each pattern, do the replacement, and append
+                        for reg in lib_entry["extractors"][entry]:
+                            replaced = reg.replace(VERSION_PLACEHOLDER, VERSION_NUMBER_PATTERN)
+                            
+                            try:
+                                re.compile(replaced.encode("utf-8")) # Validate regex
+                                clean_db[library][entry].append(replaced)
+                            except re.error as rex:
+                                logger.error(
+                                    "Invalid regex for %s[%s]: %r — %s",
+                                    library, entry, replaced, rex
+                                )
+                            
         return clean_db
 
 
