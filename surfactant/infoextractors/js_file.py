@@ -45,7 +45,6 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
 
         super().__init__(config)
 
-
     def parse_raw_data(self, raw_data: str) -> Dict[str, Dict[str, List[str]]]:
         """
         Parses a RetireJS JSON dump into a nested dict:
@@ -78,16 +77,19 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
                         # Iterate through each pattern, do the replacement, and append
                         for reg in lib_entry["extractors"][entry]:
                             replaced = reg.replace(VERSION_PLACEHOLDER, VERSION_NUMBER_PATTERN)
-                            
+
                             try:
-                                re.compile(replaced.encode("utf-8")) # Validate regex
+                                re.compile(replaced.encode("utf-8"))  # Validate regex
                                 clean_db[library][entry].append(replaced)
                             except re.error as rex:
                                 logger.error(
                                     "Invalid regex for %s[%s]: %r — %s",
-                                    library, entry, replaced, rex
+                                    library,
+                                    entry,
+                                    replaced,
+                                    rex,
                                 )
-                            
+
         return clean_db
 
 
