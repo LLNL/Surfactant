@@ -97,7 +97,6 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
                         logger.error("Error parsing file content regexp %s: %s", filecontent, rex)
         return database
 
-
     def load_db(self) -> Optional[Dict[str, Any]]:
         """Load the database and build the Aho-Corasick automaton for pattern matching."""
         super().load_db()
