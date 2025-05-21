@@ -17,7 +17,7 @@ def check_if_grype_installed() -> bool:
     try:
         result = subprocess.run(["grype", "--help"], capture_output=True, check=False).returncode
         if result == 0:
-            logger.info("Grype is installed and ready to use.")
+            logger.debug("Grype is installed and ready to use.")
         else:
             logger.warning("Grype is not installed or not functioning correctly.")
         return result == 0

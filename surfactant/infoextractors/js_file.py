@@ -8,21 +8,13 @@
 # SPDX-License-Identifier: MIT
 import json
 import re
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 # from pluggy import get_plugin_manager, get_plugin
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.database_manager.database_utils import (
-    BaseDatabaseManager,
-    DatabaseConfig,
-    calculate_hash,
-    download_database,
-    load_db_version_metadata,
-    save_db_version_metadata,
-)
+from surfactant.database_manager.database_utils import BaseDatabaseManager, DatabaseConfig
 from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
@@ -53,22 +45,51 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
 
         super().__init__(config)
 
-    def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
-        """Parses raw RetireJS database data into a structured format."""
-        retirejs_db = json.loads(raw_data)
-        clean_db = {}
-        reg_temp = "\u00a7\u00a7version\u00a7\u00a7"
-        version_regex = r"\d+(?:\.\d+)*"
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Dict[str, List[str]]]:
+        """
+        Parses a RetireJS JSON dump into a nested dict:
+        { library_name: { 'filename': [regex...], 'filecontent': [...], 'hashes': [...] } }
+        Invalid JSON or invalid regex entries are logged and skipped.
+        """
 
-        for library, lib_entry in retirejs_db.items():
+        try:
+            db = json.loads(raw_data)
+        except json.JSONDecodeError as err:
+            logger.error(f"Failed to parse downloaded database JSON: {err}")
+
+        if not isinstance(db, dict):
+            logger.error("Expected top-level JSON object for RetireJS data")
+            return {}
+
+        VERSION_PLACEHOLDER = "\u00a7\u00a7version\u00a7\u00a7"
+        VERSION_NUMBER_PATTERN = r"\d+(?:\.\d+)*"
+
+        clean_db: Dict[str, Dict[str, List[str]]] = {}
+
+        for library, lib_entry in db.items():
             if "extractors" in lib_entry:
                 clean_db[library] = {}
                 for entry in ["filename", "filecontent", "hashes"]:
                     if entry in lib_entry["extractors"]:
-                        clean_db[library][entry] = [
-                            reg.replace(reg_temp, version_regex)
-                            for reg in lib_entry["extractors"][entry]
-                        ]
+                        # Initialize the list in clean_db
+                        clean_db[library][entry] = []
+
+                        # Iterate through each pattern, do the replacement, and append
+                        for reg in lib_entry["extractors"][entry]:
+                            replaced = reg.replace(VERSION_PLACEHOLDER, VERSION_NUMBER_PATTERN)
+
+                            try:
+                                re.compile(replaced.encode("utf-8"))  # Validate regex
+                                clean_db[library][entry].append(replaced)
+                            except re.error as rex:
+                                logger.error(
+                                    "Invalid regex for %s[%s]: %r — %s",
+                                    library,
+                                    entry,
+                                    replaced,
+                                    rex,
+                                )
+
         return clean_db
 
 
@@ -106,9 +127,9 @@ def extract_js_info(filename: str) -> object:
         libs = match_by_attribute("filecontent", filecontent, js_lib_database)
         js_info["jsLibraries"] = libs
     except FileNotFoundError:
-        logger.warning(f"File not found: {filename}")
+        logger.warning("File not found: %s", filename)
     except UnicodeDecodeError:
-        logger.warning(f"File does not appear to be UTF-8: {filename}")
+        logger.warning("File does not appear to be UTF-8: %s", filename)
     return js_info
 
 
@@ -150,61 +171,9 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
-    # Step 1: Download the raw database data
-    raw_data = download_database(DATABASE_URL_RETIRE_JS)
-    if not raw_data:
-        return "No update occurred. Failed to download database."
-
-    # Step 2: Calculate the hash of the downloaded data
-    new_hash = calculate_hash(raw_data)
-
-    # Step 3: Load the current database metadata (source, hash and timestamp)
-    current_data = load_db_version_metadata(
-        js_db_manager.database_version_file_path,
-        js_db_manager.config.database_key,
-    )
-
-    # Step 4: Check if the database is already up-to-date
-    if current_data and new_hash == current_data.get("hash"):
-        return "No update occurred. Database is up-to-date."
-
-    # Step 5: Parse and clean the raw data
-    try:
-        retirejs = json.loads(raw_data)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse downloaded database JSON: {e}")
-        return "No update occurred. Invalid database format."
-
-    cleaned_data = strip_irrelevant_data(retirejs)
-
-    # Step 6: Save the cleaned database to disk
-    path = js_db_manager.data_dir
-    path.mkdir(parents=True, exist_ok=True)
-    json_file_path = js_db_manager.database_file_path
-    with open(json_file_path, "w") as f:
-        json.dump(cleaned_data, f, indent=4)
-
-    # Step 7: Update the hash and timestamp metadata
-    js_db_manager.new_hash = new_hash
-    js_db_manager.download_timestamp = datetime.now(timezone.utc).isoformat()
-    save_db_version_metadata(js_db_manager.database_version_file_path, js_db_manager.database_info)
-
-    return "Update complete."
+    return js_db_manager.download_and_update_database()
 
 
 @surfactant.plugin.hookimpl
-def init_hook(command_name: Optional[str] = None):
-    """
-    Initialization hook to load the JavaScript library database.
-
-    Args:
-        command_name (Optional[str], optional): The name of the command invoking the initialization.
-            If set to "update-db", the database will not be loaded.
-
-    Returns:
-        None
-    """
-    if command_name != "update-db":  # Do not load the database if only updating the database.
-        logger.info("Initializing js_file...")
-        js_db_manager.load_db()
-        logger.info("Initializing js_file complete.")
+def init_hook(command_name: Optional[str] = None) -> None:
+    js_db_manager.initialize_database(command_name)
