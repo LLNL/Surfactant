@@ -47,32 +47,56 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
         self.ac_filename = None
         self.ac_filecontent = None
 
-    def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
-        """Parses raw EMBA configuration file into a structured database."""
-        database = {}
-        lines = [
-            line.strip()
-            for line in raw_data.splitlines()
-            if line.strip() and not line.startswith("#")
-        ]
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Dict[str, List[str]]]:
+        database: Dict[str, Dict[str, List[str]]] = {}
+        lines = raw_data.splitlines()
+        filtered_lines: List[str] = []
 
         for line in lines:
+            if not (line.startswith("#") or line.startswith("identifier")):
+                filtered_lines.append(line)
+
+        for line in filtered_lines:
+            line = line.strip()
+
             fields = line.split(";")
-            if len(fields) < 4:
-                logger.warning("Skipping malformed line: %s", line)
-                continue
 
             lib_name = fields[0]
-            filecontent = fields[3].strip('"')
 
-            try:
-                re.compile(filecontent.encode("utf-8"))  # Validate regex
-                database.setdefault(lib_name, {"filename": [], "filecontent": []})
-                database[lib_name]["filecontent"].append(filecontent)
-            except re.error as e:
-                logger.error("Invalid regex in file content: %s. Error: %s", filecontent, e)
+            name_patterns: List[str] = []
 
+            if fields[3].startswith('"') and fields[3].endswith('""'):
+                filecontent = fields[3][1:-1]
+            elif fields[3].endswith('""'):
+                filecontent = fields[3][:-1]
+            else:
+                filecontent = fields[3].strip('"')
+
+            if fields[1] == "" or fields[1] == "strict":
+                if fields[1] == "strict":
+                    if lib_name not in database:
+                        database[lib_name] = {
+                            "filename": [lib_name],
+                            "filecontent": [],
+                        }
+                    else:
+                        if lib_name not in database[lib_name]["filename"]:
+                            database[lib_name]["filename"].append(lib_name)
+                else:
+                    try:
+                        re.compile(filecontent.encode("utf-8"))  # Validate regex
+                        if lib_name not in database:
+                            database[lib_name] = {
+                                "filename": name_patterns,
+                                "filecontent": [filecontent],
+                            }
+                        else:
+                            database[lib_name]["filecontent"].append(filecontent)
+
+                    except re.error as rex:
+                        logger.error("Error parsing file content regexp %s: %s", filecontent, rex)
         return database
+
 
     def load_db(self) -> Optional[Dict[str, Any]]:
         """Load the database and build the Aho-Corasick automaton for pattern matching."""
@@ -239,57 +263,6 @@ def match_by_attribute(
                         logger.error(f"Error with regex pattern {pattern}: {e}")
 
     return libs
-
-
-def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
-    database: Dict[str, Dict[str, List[str]]] = {}
-    lines = content.splitlines()
-    filtered_lines: List[str] = []
-
-    for line in lines:
-        if not (line.startswith("#") or line.startswith("identifier")):
-            filtered_lines.append(line)
-
-    for line in filtered_lines:
-        line = line.strip()
-
-        fields = line.split(";")
-
-        lib_name = fields[0]
-
-        name_patterns: List[str] = []
-
-        if fields[3].startswith('"') and fields[3].endswith('""'):
-            filecontent = fields[3][1:-1]
-        elif fields[3].endswith('""'):
-            filecontent = fields[3][:-1]
-        else:
-            filecontent = fields[3].strip('"')
-
-        if fields[1] == "" or fields[1] == "strict":
-            if fields[1] == "strict":
-                if lib_name not in database:
-                    database[lib_name] = {
-                        "filename": [lib_name],
-                        "filecontent": [],
-                    }
-                else:
-                    if lib_name not in database[lib_name]["filename"]:
-                        database[lib_name]["filename"].append(lib_name)
-            else:
-                try:
-                    re.search(filecontent.encode("utf-8"), b"")
-                    if lib_name not in database:
-                        database[lib_name] = {
-                            "filename": name_patterns,
-                            "filecontent": [filecontent],
-                        }
-                    else:
-                        database[lib_name]["filecontent"].append(filecontent)
-                except re.error as e:
-                    logger.error("Error parsing file content regexp %s: %s", filecontent, e)
-
-    return database
 
 
 @surfactant.plugin.hookimpl
