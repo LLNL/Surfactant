@@ -53,7 +53,7 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
         filtered_lines: List[str] = []
 
         for line in lines:
-            if not (line.startswith("#") or line.startswith("identifier")):
+            if not line.startswith("#"):
                 filtered_lines.append(line)
 
         for line in filtered_lines:
