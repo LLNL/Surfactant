@@ -26,3 +26,23 @@ See the [this page](configuration_files.md#settings-configuration-file) for deta
     - Include bindings/exports information for Mach-O files.
 - include_signature_content
     - Include signature content for Mach-O files.
+
+## sources
+
+Surfactant supports overriding database source URLs via the sources section in the settings configuration file. Each option is of the form <category>.<library>, where <category> is a database category (e.g., js_library_patterns or native_library_patterns), and <library> is the specific database key. See the [databases](https://surfactant.readthedocs.io/en/latest/external_databases.html) section for more information about the hosted list of database patterns. Note that this section is to override specific urls in the hosted list.
+
+- sources.<category>.<library>
+
+    - Override the URL for the specified database at runtime. Values set via surfactant config take precedence over entries in `database_sources.toml` and hard-coded defaults.
+
+    - Usage:
+
+        ```bash
+        surfactant config sources.<category>.<library> <new_url>
+        ```
+
+    - Example:
+
+        ```bash
+        surfactant config sources.js_library_patterns.retirejs https://new-url.com
+        ```
