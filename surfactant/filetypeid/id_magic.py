@@ -237,10 +237,13 @@ def identify_file_type(filepath: str) -> Optional[str]:
 
             # MacOS dmg:
             # https://en.wikipedia.org/wiki/List_of_file_signatures
-            f.seek(-512, 2)
-            macos_bytes = f.read(4)
-            if macos_bytes[0:4] == b"koly":
-                return "MACOS_DMG"
+            f.seek(0, 2)
+            file_size = f.tell()
+            if file_size >= 512:
+                f.seek(-512, 2)
+                macos_bytes = f.read(4)
+                if macos_bytes[0:4] == b"koly":
+                    return "MACOS_DMG"
             f.seek(0)
 
             return None
