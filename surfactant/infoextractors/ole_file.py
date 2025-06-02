@@ -7,7 +7,6 @@ from pathlib import Path
 from queue import Queue
 from typing import Any, Dict, List, Optional, Tuple
 
-from surfactant.infoextractors import file_decompression
 import olefile
 import pymsi
 from loguru import logger
@@ -16,6 +15,7 @@ from pymsi.thirdparty.refinery.cab import CabFolder
 
 import surfactant.plugin
 from surfactant.context import ContextEntry
+from surfactant.infoextractors import file_decompression
 from surfactant.sbomtypes import SBOM, Software
 
 
