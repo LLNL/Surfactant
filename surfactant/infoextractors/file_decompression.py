@@ -17,7 +17,7 @@ import tarfile
 import tempfile
 import zipfile
 from queue import Queue
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Callable, Dict, Literal, Optional
 
 from loguru import logger
 
@@ -30,7 +30,7 @@ GLOBAL_TEMP_DIRS_LIST = []
 
 
 def supports_file(filetype: str) -> Optional[str]:
-    if filetype in ("TAR", "GZIP", "ZIP", "BZIP2", "XZ"):
+    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"}:
         return filetype
     return None
 
@@ -61,7 +61,7 @@ def create_extraction(
     filename: str,
     context_queue: "Queue[ContextEntry]",
     current_context: Optional[ContextEntry],
-    decompress,
+    decompress: "Callable[[str, str], None]",
 ):
     install_prefix = ""
     extract_paths = []
@@ -106,7 +106,7 @@ def decompress_to(filename: str, output_folder: str, compression_format: str):
                 "BZIP2": "r:bz2",
                 "XZ": "r:xz",
             }
-            extract_tar_file(filename, output_folder, tar_modes[compression_format])
+            extract_tar_file(filename, output_folder, tar_modes[compression_format], True)
         except tarfile.ReadError as e:
             # Check if we expected it to be readable as a compressed tar file
             if (
@@ -133,8 +133,12 @@ def create_temp_dir():
 
 
 def decompress_zip_file(filename: str, output_folder: str):
-    with zipfile.ZipFile(filename, "r") as f:
-        f.extractall(path=output_folder)
+    try:
+        with zipfile.ZipFile(filename, "r") as f:
+            f.extractall(path=output_folder)
+    except zipfile.BadZipFile as e:
+        logger.error(f"Error extracting ZIP file {filename}: {e}")
+    logger.info(f"Extracted ZIP contents to {output_folder}")
 
 
 def decompress_file(filename: str, output_folder: str, compression_type: str):
@@ -164,6 +168,7 @@ def extract_tar_file(
     filename: str,
     output_folder: str,
     open_mode: Literal["r", "r:*", "r:", "r:gz", "r:bz2", "r:xz"] = "r",
+    throw_on_read_error: bool = True,
 ):
     try:
         with tarfile.open(filename, open_mode) as tar:
@@ -171,8 +176,10 @@ def extract_tar_file(
     except FileNotFoundError:
         logger.error(f"File not found: {filename}")
     except tarfile.TarError as e:
+        if throw_on_read_error and isinstance(e, tarfile.ReadError):
+            raise e
         logger.error(f"Error extracting tar file: {e}")
-    logger.info("Finished TAR file extraction")
+    logger.info(f"Extracted TAR contents to {output_folder}")
 
 
 def delete_temp_dirs():
