@@ -47,9 +47,14 @@ def extract_file_info(
 ) -> Optional[Dict[str, Any]]:
     # Check if the file is compressed and get its format
     compression_format = supports_file(filetype)
-    
+
     if compression_format:
-        create_extraction(filename, context_queue, current_context, lambda f, t: decompress_to(f, t, compression_format))
+        create_extraction(
+            filename,
+            context_queue,
+            current_context,
+            lambda f, t: decompress_to(f, t, compression_format),
+        )
 
     return None
 
