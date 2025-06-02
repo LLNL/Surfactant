@@ -29,6 +29,8 @@ from surfactant.sbomtypes import SBOM, Software
 # Global list to track temp dirs
 GLOBAL_TEMP_DIRS_LIST = []
 
+RAR_SUPPORT = {"enabled": True}
+
 
 def supports_file(filetype: str) -> str:
     if filetype in ("TAR", "GZIP", "ZIP", "BZIP2", "XZ", "RAR"):
@@ -180,6 +182,8 @@ def extract_tar_file(filename):
 
 
 def decompress_rar_file(filename):
+    if not RAR_SUPPORT["enabled"]:
+        return None
     temp_folder = create_temp_dir()
     try:
         rf = rarfile.RarFile(filename)
@@ -195,6 +199,18 @@ def delete_temp_dirs():
         if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
             logger.info(f"Cleaned up temporary directory: {temp_dir}")
+
+
+@surfactant.plugin.hookimpl
+def init_hook(command_name: Optional[str] = None) -> None:
+    result = rarfile.tool_setup()
+    if result.setup["open_cmd"][0] in ("UNRAR_TOOL", "UNAR_TOOL"):
+        RAR_SUPPORT["enabled"] = True
+    else:
+        logger.warning(
+            "Install 'Unrar' or 'unar' tool for RAR archive decompression. RAR decompression disabled until installed."
+        )
+        RAR_SUPPORT["enabled"] = False
 
 
 # Register exit handler
