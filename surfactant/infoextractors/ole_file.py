@@ -7,7 +7,7 @@ from pathlib import Path
 from queue import Queue
 from typing import Any, Dict, List, Optional, Tuple
 
-import file_decompression
+from surfactant.infoextractors import file_decompression
 import olefile
 import pymsi
 from loguru import logger
@@ -90,11 +90,12 @@ def extract_ole_info(filename: str) -> object:
 def extract_msi(filename: str, output_folder: str):
     output_folder = Path(output_folder)
 
-    msi = pymsi.Msi(filename, True)
+    with pymsi.Package(Path(filename)) as package:
+        msi = pymsi.Msi(package, True)
 
-    preprocess_msi_decompression(msi)
+        preprocess_msi_decompression(msi)
 
-    extract_msi_directory(msi.root, output_folder)
+        extract_msi_directory(msi.root, output_folder)
 
     logger.info(f"Extracted MSI contents to {output_folder}")
 
