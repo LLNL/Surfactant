@@ -2,17 +2,17 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import olefile, file_decompression, pymsi
-
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from queue import Queue
 from typing import Any, Dict, List, Optional, Tuple
-from pathlib import Path
+
+import file_decompression
+import olefile
+import pymsi
+from loguru import logger
 from pymsi.msi.directory import Directory
 from pymsi.thirdparty.refinery.cab import CabFolder
-
-from loguru import logger
-
-from concurrent.futures import ThreadPoolExecutor
 
 import surfactant.plugin
 from surfactant.context import ContextEntry
@@ -45,12 +45,14 @@ def extract_file_info(
             software_field_hints.append(("vendor", ole_info["ole"]["author"], 80))
         if "comments" in ole_info["ole"]:
             software_field_hints.append(("comments", ole_info["ole"]["comments"], 80))
-        
+
         if ole_info["ole"].get("clsid_type") == "MSI":
-            file_decompression.create_extraction(filename, context_queue, current_context, extract_msi)
-            
-    
+            file_decompression.create_extraction(
+                filename, context_queue, current_context, extract_msi
+            )
+
     return ole_info
+
 
 def extract_ole_info(filename: str) -> object:
     file_details: Dict[str, Any] = {}
@@ -80,21 +82,23 @@ def extract_ole_info(filename: str) -> object:
                     file_details["ole"][prop] = value.decode("unicode_escape")
                 else:
                     file_details["ole"][prop] = str(value)
-    
+
     return file_details
+
 
 def extract_msi(filename: str, output_folder: str):
     output_folder = Path(output_folder)
-    
+
     msi = pymsi.Msi(filename, True)
-    
+
     preprocess_msi_decompression(msi)
-    
+
     extract_msi_directory(msi.root, output_folder)
-    
+
     logger.info(f"Extracted MSI contents to {output_folder}")
 
-def preprocess_msi_decompression(msi: pymsi.Msi):  
+
+def preprocess_msi_decompression(msi: pymsi.Msi):
     folders: List[CabFolder] = []
     for media in msi.medias.values():
         if media.cabinet and media.cabinet.disks:
@@ -104,7 +108,7 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
                         if folder not in folders:
                             folders.append(folder)
     logger.debug(f"Found {len(folders)} folders in .cab files")
-    
+
     def decompress_folder(folder):
         folder.decompress()
         logger.trace(f"Decompressed .cab folder: {folder}")
@@ -113,8 +117,9 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
     # This is especially useful for LZX, which is implemented in pure Python.
     with ThreadPoolExecutor() as executor:
         executor.map(decompress_folder, folders)
-        
-    logger.debug(f"Decompression of .cab folders completed")
+
+    logger.debug("Decompression of .cab folders completed")
+
 
 def extract_msi_directory(root: Directory, output: Path, is_root: bool = True):
     if not output.exists():

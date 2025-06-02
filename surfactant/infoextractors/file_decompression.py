@@ -51,11 +51,22 @@ def extract_file_info(
     if not compression_format:
         return None
 
-    create_extraction(filename, context_queue, current_context, lambda f, t: decompress_to(f, t, compression_format))
+    create_extraction(
+        filename,
+        context_queue,
+        current_context,
+        lambda f, t: decompress_to(f, t, compression_format),
+    )
 
     return None
 
-def create_extraction(filename: str, context_queue: "Queue[ContextEntry]", current_context: Optional[ContextEntry], decompress):
+
+def create_extraction(
+    filename: str,
+    context_queue: "Queue[ContextEntry]",
+    current_context: Optional[ContextEntry],
+    decompress,
+):
     install_prefix = ""
     extract_paths = []
 
@@ -69,7 +80,7 @@ def create_extraction(filename: str, context_queue: "Queue[ContextEntry]", curre
 
         # Inherit the context entry install prefix for the extracted files
         install_prefix = current_context.installPrefix
-    
+
     # Create a temporary directory for extraction
     temp_folder = create_temp_dir()
     # Decompress the file
@@ -129,6 +140,7 @@ def decompress_zip_file(filename: str, output_folder: str):
     with zipfile.ZipFile(filename, "r") as f:
         f.extractall(path=output_folder)
 
+
 def decompress_file(filename: str, output_folder: str, compression_type: str):
     output_filename = pathlib.Path(filename).name
     if compression_type == "GZIP" and filename.endswith(".gz"):
@@ -151,7 +163,12 @@ def decompress_file(filename: str, output_folder: str, compression_type: str):
             with open(os.path.join(output_folder, output_filename), "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
 
-def extract_tar_file(filename: str, output_folder: str, open_mode: Literal['r', 'r:*', 'r:', 'r:gz', 'r:bz2', 'r:xz'] = "r"):
+
+def extract_tar_file(
+    filename: str,
+    output_folder: str,
+    open_mode: Literal["r", "r:*", "r:", "r:gz", "r:bz2", "r:xz"] = "r",
+):
     try:
         with tarfile.open(filename, open_mode) as tar:
             tar.extractall(path=output_folder)
