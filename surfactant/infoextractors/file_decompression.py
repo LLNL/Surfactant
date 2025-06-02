@@ -56,8 +56,6 @@ def extract_file_info(
             lambda f, t: decompress_to(f, t, compression_format),
         )
 
-    return None
-
 
 def create_extraction(
     filename: str,
