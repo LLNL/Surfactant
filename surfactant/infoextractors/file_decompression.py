@@ -17,7 +17,7 @@ import tarfile
 import tempfile
 import zipfile
 from queue import Queue
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from loguru import logger
 
@@ -29,7 +29,7 @@ from surfactant.sbomtypes import SBOM, Software
 GLOBAL_TEMP_DIRS_LIST = []
 
 
-def supports_file(filetype: str) -> str:
+def supports_file(filetype: str) -> Optional[str]:
     if filetype in ("TAR", "GZIP", "ZIP", "BZIP2", "XZ"):
         return filetype
     return None
@@ -51,6 +51,11 @@ def extract_file_info(
     if not compression_format:
         return None
 
+    create_extraction(filename, context_queue, current_context, lambda f, t: decompress_to(f, t, compression_format))
+
+    return None
+
+def create_extraction(filename: str, context_queue: "Queue[ContextEntry]", current_context: Optional[ContextEntry], decompress):
     install_prefix = ""
     extract_paths = []
 
@@ -64,9 +69,11 @@ def extract_file_info(
 
         # Inherit the context entry install prefix for the extracted files
         install_prefix = current_context.installPrefix
-
-    # Decompress the file based on its format
-    temp_folder = check_compression_type(filename, compression_format)
+    
+    # Create a temporary directory for extraction
+    temp_folder = create_temp_dir()
+    # Decompress the file
+    decompress(filename, temp_folder)
     extract_paths = [temp_folder]
 
     # Create a new context entry and add it to the queue
@@ -79,15 +86,12 @@ def extract_file_info(
     context_queue.put(new_entry)
     logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
 
-    return None
 
-
-def check_compression_type(filename: str, compression_format: str) -> str:
-    temp_folder = None
+def decompress_to(filename: str, output_folder: str, compression_format: str):
     if compression_format == "ZIP":
-        temp_folder = decompress_zip_file(filename)
+        decompress_zip_file(filename, output_folder)
     elif compression_format == "TAR":
-        temp_folder = extract_tar_file(filename)
+        extract_tar_file(filename, output_folder)
     elif compression_format in {"GZIP", "BZIP2", "XZ"}:
         try:
             tar_modes = {
@@ -95,7 +99,7 @@ def check_compression_type(filename: str, compression_format: str) -> str:
                 "BZIP2": "r:bz2",
                 "XZ": "r:xz",
             }
-            temp_folder = decompress_tar_file(filename, tar_modes[compression_format])
+            extract_tar_file(filename, output_folder, tar_modes[compression_format])
         except tarfile.ReadError as e:
             # Check if we expected it to be readable as a compressed tar file
             if (
@@ -107,11 +111,9 @@ def check_compression_type(filename: str, compression_format: str) -> str:
                     f"Attempting to decompress {filename} using the appropriate library as a single file"
                 )
             # Since it doesn't seem to be a compressed tar file, try just decompressing the file
-            temp_folder = decompress_file(filename, compression_format)
+            decompress_file(filename, output_folder, compression_format)
     else:
         raise ValueError(f"Unsupported compression format: {compression_format}")
-
-    return temp_folder
 
 
 def create_temp_dir():
@@ -123,15 +125,11 @@ def create_temp_dir():
     return temp_dir
 
 
-def decompress_zip_file(filename):
-    temp_folder = create_temp_dir()
+def decompress_zip_file(filename: str, output_folder: str):
     with zipfile.ZipFile(filename, "r") as f:
-        f.extractall(path=temp_folder)
-    return temp_folder
+        f.extractall(path=output_folder)
 
-
-def decompress_file(filename, compression_type):
-    temp_folder = create_temp_dir()
+def decompress_file(filename: str, output_folder: str, compression_type: str):
     output_filename = pathlib.Path(filename).name
     if compression_type == "GZIP" and filename.endswith(".gz"):
         output_filename = pathlib.Path(filename).stem
@@ -142,39 +140,26 @@ def decompress_file(filename, compression_type):
 
     if compression_type == "GZIP":
         with gzip.open(filename, "rb") as f_in:
-            with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
+            with open(os.path.join(output_folder, output_filename), "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
     elif compression_type == "BZIP2":
         with bz2.open(filename, "rb") as f_in:
-            with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
+            with open(os.path.join(output_folder, output_filename), "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
     elif compression_type == "XZ":
         with lzma.open(filename, "rb") as f_in:
-            with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
+            with open(os.path.join(output_folder, output_filename), "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
 
-    return temp_folder
-
-
-def decompress_tar_file(filename, compression_type):
-    temp_folder = create_temp_dir()
-    with tarfile.open(filename, compression_type) as tar:
-        tar.extractall(path=temp_folder)
-        logger.info("Finished TAR file decompression")
-    return temp_folder
-
-
-def extract_tar_file(filename):
-    temp_dir = create_temp_dir()
+def extract_tar_file(filename: str, output_folder: str, open_mode: Literal['r', 'r:*', 'r:', 'r:gz', 'r:bz2', 'r:xz'] = "r"):
     try:
-        with tarfile.open(filename, "r") as tar:
-            tar.extractall(path=temp_dir)
+        with tarfile.open(filename, open_mode) as tar:
+            tar.extractall(path=output_folder)
     except FileNotFoundError:
         logger.error(f"File not found: {filename}")
     except tarfile.TarError as e:
         logger.error(f"Error extracting tar file: {e}")
-
-    return temp_dir
+    logger.info("Finished TAR file extraction")
 
 
 def delete_temp_dirs():
