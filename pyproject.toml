@@ -58,7 +58,7 @@ dependencies = [
     "textual==3.*",
     "requests>=2.32.3",
     # TODO: add version info once uploaded to PyPI
-    "msi@git+https://github.com/nightlark/pymsi#egg=asriel",
+    "msi@git+https://github.com/nightlark/pymsi.git@asriel",
 ]
 dynamic = ["version"]
 
