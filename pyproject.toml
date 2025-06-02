@@ -10,6 +10,7 @@ authors = [
     {name = "Micaela Gallegos", email = "gallegos31@llnl.gov"},
     {name = "Alexander Armstrong", email = "armstrong48@llnl.gov"},
     {name = "Shayna Kapadia", email = "kapadia2@llnl.gov"},
+    {name = "Asriel Margarian", email = "margarian1@llnl.gov"},
 ]
 maintainers = [
     {name = "Ryan Mast", email = "mast9@llnl.gov"},
@@ -56,6 +57,8 @@ dependencies = [
     "tomlkit==0.13.*",
     "textual==3.*",
     "requests>=2.32.3",
+    # TODO: add version info once uploaded to PyPI
+    "msi@git+https://github.com/nightlark/pymsi.git@asriel",
 ]
 dynamic = ["version"]
 
