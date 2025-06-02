@@ -46,17 +46,10 @@ def extract_file_info(
     current_context: Optional[ContextEntry],
 ) -> Optional[Dict[str, Any]]:
     # Check if the file is compressed and get its format
-
     compression_format = supports_file(filetype)
-    if not compression_format:
-        return None
-
-    create_extraction(
-        filename,
-        context_queue,
-        current_context,
-        lambda f, t: decompress_to(f, t, compression_format),
-    )
+    
+    if compression_format:
+        create_extraction(filename, context_queue, current_context, lambda f, t: decompress_to(f, t, compression_format))
 
     return None
 
@@ -76,7 +69,7 @@ def create_extraction(
             logger.info(
                 f"Already extracted, skipping extraction for archive: {current_context.archive}"
             )
-            return None
+            return
 
         # Inherit the context entry install prefix for the extracted files
         install_prefix = current_context.installPrefix

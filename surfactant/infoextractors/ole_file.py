@@ -23,6 +23,7 @@ def supports_file(filetype) -> bool:
     return filetype == "OLE"
 
 
+# pylint: disable=too-many-positional-arguments
 @surfactant.plugin.hookimpl
 def extract_file_info(
     sbom: SBOM,
