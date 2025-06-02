@@ -61,7 +61,7 @@ def create_extraction(
     filename: str,
     context_queue: "Queue[ContextEntry]",
     current_context: Optional[ContextEntry],
-    decompress: "Callable[[str, str], None]",
+    decompress: "Callable[[str, str], bool]",
 ):
     install_prefix = ""
     extract_paths = []
@@ -80,10 +80,10 @@ def create_extraction(
     # Create a temporary directory for extraction
     temp_folder = create_temp_dir()
     # Decompress the file
-    decompress(filename, temp_folder)
+    is_successful = decompress(filename, temp_folder)
     extract_paths = [temp_folder]
 
-    if temp_folder is not None:
+    if is_successful:
         # Create a new context entry and add it to the queue
         new_entry = ContextEntry(
             archive=filename,
@@ -95,7 +95,7 @@ def create_extraction(
         logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
 
 
-def decompress_to(filename: str, output_folder: str, compression_format: str):
+def decompress_to(filename: str, output_folder: str, compression_format: str) -> bool:
     if compression_format == "ZIP":
         decompress_zip_file(filename, output_folder)
     elif compression_format == "TAR":
@@ -119,9 +119,10 @@ def decompress_to(filename: str, output_folder: str, compression_format: str):
                     f"Attempting to decompress {filename} using the appropriate library as a single file"
                 )
             # Since it doesn't seem to be a compressed tar file, try just decompressing the file
-            decompress_file(filename, output_folder, compression_format)
+            return decompress_file(filename, output_folder, compression_format)
     else:
         raise ValueError(f"Unsupported compression format: {compression_format}")
+    return True
 
 
 def create_temp_dir():
@@ -142,28 +143,28 @@ def decompress_zip_file(filename: str, output_folder: str):
     logger.info(f"Extracted ZIP contents to {output_folder}")
 
 
-def decompress_file(filename: str, output_folder: str, compression_type: str):
-    output_filename = pathlib.Path(filename).name
-    if compression_type == "GZIP" and filename.endswith(".gz"):
-        output_filename = pathlib.Path(filename).stem
-    elif compression_type == "BZIP2" and filename.endswith(".bz2"):
-        output_filename = pathlib.Path(filename).stem
-    elif compression_type == "XZ" and filename.endswith(".xz"):
-        output_filename = pathlib.Path(filename).stem
+def decompress_file(filename: str, output_folder: str, compression_type: Literal["GZIP", "BZIP2", "XZ"]) -> bool:
+    filepath = pathlib.Path(filename)
+    output_filename = filepath.name
+    
+    extensions = {
+        "GZIP": ".gz",
+        "BZIP2": ".bz2",
+        "XZ": ".xz",
+    }
+    if filename.endswith(extensions[compression_type]):
+        output_filename = filepath.stem
 
+    modules = {
+        "GZIP": gzip,
+        "BZIP2": bz2,
+        "XZ": lzma,
+    }
     try:
-        if compression_type == "GZIP":
-            with gzip.open(filename, "rb") as f_in:
-                with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-        elif compression_type == "BZIP2":
-            with bz2.open(filename, "rb") as f_in:
-                with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-        elif compression_type == "XZ":
-            with lzma.open(filename, "rb") as f_in:
-                with open(os.path.join(temp_folder, output_filename), "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
+        module = modules[compression_type]
+        with module.open(filename, "rb") as f_in:
+            with open(os.path.join(output_folder, output_filename), "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
     except gzip.BadGzipFile as e:
         # Likely only the first stream of a concatenated file was decompressed, so we will still keep the temp dir
         logger.warning(
@@ -171,8 +172,9 @@ def decompress_file(filename: str, output_folder: str, compression_type: str):
         )
     except OSError as e:
         logger.warning(f"Unable to decompress {filename}: {e}")
-        # Return None since this file will be completely unusable.
-        return None
+        # This file will be completely unusable.
+        return False
+    return True
 
 
 def extract_tar_file(

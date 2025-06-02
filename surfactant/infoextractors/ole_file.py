@@ -87,7 +87,7 @@ def extract_ole_info(filename: str) -> object:
     return file_details
 
 
-def extract_msi(filename: str, output_folder: str):
+def extract_msi(filename: str, output_folder: str) -> bool:
     output_folder = Path(output_folder)
 
     with pymsi.Package(Path(filename)) as package:
@@ -98,6 +98,7 @@ def extract_msi(filename: str, output_folder: str):
         extract_msi_directory(msi.root, output_folder)
 
     logger.info(f"Extracted MSI contents to {output_folder}")
+    return True
 
 
 def preprocess_msi_decompression(msi: pymsi.Msi):
