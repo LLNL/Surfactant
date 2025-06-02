@@ -143,10 +143,12 @@ def decompress_zip_file(filename: str, output_folder: str):
     logger.info(f"Extracted ZIP contents to {output_folder}")
 
 
-def decompress_file(filename: str, output_folder: str, compression_type: Literal["GZIP", "BZIP2", "XZ"]) -> bool:
+def decompress_file(
+    filename: str, output_folder: str, compression_type: Literal["GZIP", "BZIP2", "XZ"]
+) -> bool:
     filepath = pathlib.Path(filename)
     output_filename = filepath.name
-    
+
     extensions = {
         "GZIP": ".gz",
         "BZIP2": ".bz2",
