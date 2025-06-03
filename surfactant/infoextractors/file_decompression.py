@@ -19,6 +19,7 @@ import zipfile
 from queue import Queue
 from typing import Any, Callable, Dict, Literal, Optional
 
+import rarfile
 from loguru import logger
 
 import surfactant.plugin
@@ -28,9 +29,10 @@ from surfactant.sbomtypes import SBOM, Software
 # Global list to track temp dirs
 GLOBAL_TEMP_DIRS_LIST = []
 
+RAR_SUPPORT = {"enabled": True}
 
 def supports_file(filetype: str) -> Optional[str]:
-    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"}:
+    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"} or (filetype == "RAR" and RAR_SUPPORT["enabled"]):
         return filetype
     return None
 
@@ -120,6 +122,8 @@ def decompress_to(filename: str, output_folder: str, compression_format: str) ->
                 )
             # Since it doesn't seem to be a compressed tar file, try just decompressing the file
             return decompress_file(filename, output_folder, compression_format)
+    elif compression_format == "RAR":
+        decompress_rar_file(filename, output_folder)
     else:
         raise ValueError(f"Unsupported compression format: {compression_format}")
     return True
@@ -197,11 +201,32 @@ def extract_tar_file(
     logger.info(f"Extracted TAR contents to {output_folder}")
 
 
+def decompress_rar_file(filename: str, output_folder: str):
+    try:
+        with rarfile.RarFile(filename) as rf:
+            rf.extractall(path=output_folder)
+    except rarfile.Error as e:
+        logger.error(f"Error extracting rar file: {e}")
+    logger.info(f"Extracted RAR contents to {output_folder}")
+
+
 def delete_temp_dirs():
     for temp_dir in GLOBAL_TEMP_DIRS_LIST:
         if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
             logger.info(f"Cleaned up temporary directory: {temp_dir}")
+
+
+@surfactant.plugin.hookimpl
+def init_hook(command_name: Optional[str] = None) -> None:
+    result = rarfile.tool_setup()
+    if result.setup["open_cmd"][0] in ("UNRAR_TOOL", "UNAR_TOOL"):
+        RAR_SUPPORT["enabled"] = True
+    else:
+        logger.warning(
+            "Install 'Unrar' or 'unar' tool for RAR archive decompression. RAR decompression disabled until installed."
+        )
+        RAR_SUPPORT["enabled"] = False
 
 
 # Register exit handler

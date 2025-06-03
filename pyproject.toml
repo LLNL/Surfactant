@@ -57,6 +57,7 @@ dependencies = [
     "tomlkit==0.13.*",
     "textual==3.*",
     "requests>=2.32.3",
+    "rarfile==4.2.*",
     # TODO: add version info once uploaded to PyPI
     "msi@git+https://github.com/nightlark/pymsi.git@asriel",
 ]
