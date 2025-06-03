@@ -18,6 +18,12 @@ from surfactant.context import ContextEntry
 from surfactant.infoextractors import file_decompression
 from surfactant.sbomtypes import SBOM, Software
 
+DEFAULT_PATHS = {
+    
+}
+
+def id_replacements(id: str) -> str:
+    
 
 def supports_file(filetype) -> bool:
     return filetype == "OLE"
@@ -119,6 +125,7 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
     executor = ThreadPoolExecutor()
     completed_count = 0
     futures = {}
+    # pylint: disable=broad-exception-caught
     try:
         for folder in folders:
             future = executor.submit(folder.decompress)
