@@ -110,10 +110,10 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
                     for folder in directory.folders:
                         if folder not in folders:
                             folders.append(folder)
-                            
+
     total_folders = len(folders)
     logger.debug(f"Found {total_folders} folders in .cab files")
-    
+
     # Use ThreadPoolExecutor to speed up decompression.
     # This is especially useful for LZX, which is implemented in pure Python.
     executor = ThreadPoolExecutor()
@@ -123,7 +123,7 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
         for folder in folders:
             future = executor.submit(folder.decompress)
             futures[future] = folder
-        
+
         for future in as_completed(futures):
             try:
                 future.result()
@@ -138,7 +138,7 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
         for future in futures:
             future.cancel()
         executor.shutdown(wait=False)
-    
+
     logger.debug("Decompression of .cab folders completed")
 
 

@@ -31,8 +31,11 @@ GLOBAL_TEMP_DIRS_LIST = []
 
 RAR_SUPPORT = {"enabled": True}
 
+
 def supports_file(filetype: str) -> Optional[str]:
-    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"} or (filetype == "RAR" and RAR_SUPPORT["enabled"]):
+    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"} or (
+        filetype == "RAR" and RAR_SUPPORT["enabled"]
+    ):
         return filetype
     return None
 
