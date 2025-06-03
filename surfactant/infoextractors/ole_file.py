@@ -2,7 +2,7 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from queue import Queue
 from typing import Any, Dict, List, Optional, Tuple
@@ -110,17 +110,35 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
                     for folder in directory.folders:
                         if folder not in folders:
                             folders.append(folder)
-    logger.debug(f"Found {len(folders)} folders in .cab files")
-
-    def decompress_folder(folder):
-        folder.decompress()
-        logger.trace(f"Decompressed .cab folder: {folder}")
-
+                            
+    total_folders = len(folders)
+    logger.debug(f"Found {total_folders} folders in .cab files")
+    
     # Use ThreadPoolExecutor to speed up decompression.
     # This is especially useful for LZX, which is implemented in pure Python.
-    with ThreadPoolExecutor() as executor:
-        executor.map(decompress_folder, folders)
-
+    executor = ThreadPoolExecutor()
+    completed_count = 0
+    futures = {}
+    try:
+        for folder in folders:
+            future = executor.submit(folder.decompress)
+            futures[future] = folder
+        
+        for future in as_completed(futures):
+            try:
+                future.result()
+                completed_count += 1
+                folder = futures[future]
+                logger.trace(f"Decompressed .cab folder: {folder}")
+            except KeyboardInterrupt as e:
+                raise e
+            except Exception as e:
+                logger.opt(exception=True).error(f"Error decompressing folder {futures[future]}")
+    finally:
+        for future in futures:
+            future.cancel()
+        executor.shutdown(wait=False)
+    
     logger.debug("Decompression of .cab folders completed")
 
 
