@@ -92,7 +92,7 @@ def create_extraction(
     entries = decompress(filename, temp_folder)
 
     # Simple case where the decompressor doesn't need multiple entries
-    if entries == True:
+    if entries is True:
         entries = [(None, temp_folder)]
 
     # If False or an empty list

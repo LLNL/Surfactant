@@ -51,9 +51,8 @@ DEFAULT_PATHS = {
     "WindowsVolume": "C:\\",
 }
 
-
-def replace_root_id(id: str) -> Optional[str]:
-    path = ConfigManager().get("ole", f"replacement_{id}", DEFAULT_PATHS.get(id))
+def replace_root_id(system_folder_id: str) -> Optional[str]:
+    path = ConfigManager().get("ole", f"replacement_{system_folder_id}", DEFAULT_PATHS.get(system_folder_id))
     if path:
         path = path.replace("\\", "/")
     return path
@@ -201,9 +200,9 @@ def extract_msi_root(root: Directory, output: Path) -> List[Tuple[str, str]]:
             )
             temp_installdir.parent = root
         if isinstance(item, Component):
-            temp_installdir._add_component(item)
+            temp_installdir.components[item.id] = component
         elif isinstance(item, Directory):
-            temp_installdir._add_child(item)
+            temp_installdir.children[item.id] = item
         else:
             raise TypeError(f"Unsupported item type: {type(item)}")
 
