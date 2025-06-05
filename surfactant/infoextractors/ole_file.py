@@ -5,25 +5,57 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from queue import Queue
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import olefile
 import pymsi
 from loguru import logger
 from pymsi.msi.directory import Directory
+from pymsi.msi.component import Component
 from pymsi.thirdparty.refinery.cab import CabFolder
 
+from surfactant.configmanager import ConfigManager
 import surfactant.plugin
 from surfactant.context import ContextEntry
 from surfactant.infoextractors import file_decompression
 from surfactant.sbomtypes import SBOM, Software
 
+# https://learn.microsoft.com/en-us/windows/win32/msi/property-reference#system-folder-properties
 DEFAULT_PATHS = {
-    
+    "AdminToolsFolder": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Administrative Tools",
+    "AppDataFolder": "C:\\Users\\USER\\AppData\\Roaming",
+    "CommonAppDataFolder": "C:\\ProgramData",
+    "CommonFiles64Folder": "C:\\Program Files\\Common Files",
+    "CommonFilesFolder": "C:\\Program Files (x86)\\Common Files",
+    "DesktopFolder": "C:\\Users\\USER\\Desktop",
+    "FavoritesFolder": "C:\\Users\\USER\\Favorites",
+    "FontsFolder": "C:\\Windows\\Fonts",
+    "LocalAppDataFolder": "C:\\Users\\USER\\AppData\\Local",
+    "MyPicturesFolder": "C:\\Users\\USER\\Pictures",
+    "NetHoodFolder": "C:\\Users\\USER\\AppData\\Roaming\\Microsoft\\Windows\\Network Shortcuts",
+    "PersonalFolder": "C:\\Users\\USER\\Documents",
+    "PrintHoodFolder": "C:\\Users\\USER\\AppData\\Roaming\\Microsoft\\Windows\\Printer Shortcuts",
+    "ProgramFiles64Folder": "C:\\Program Files",
+    "ProgramFilesFolder": "C:\\Program Files (x86)",
+    "ProgramMenuFolder": "C:\\Users\\USER\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs",
+    "RecentFolder": "C:\\Users\\USER\\AppData\\Roaming\\Microsoft\\Windows\\Recent",
+    "SendToFolder": "C:\\Users\\USER\\AppData\\Roaming\\Microsoft\\Windows\\SendTo",
+    "StartMenuFolder": "C:\\Users\\USER\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu",
+    "StartupFolder": "C:\\Users\\USER\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup",
+    "System16Folder": "C:\\Windows\\System",
+    "System64Folder": "C:\\Windows\\System32",
+    "SystemFolder": "C:\\Windows\\System32",
+    "TempFolder": "C:\\Users\\USER\\AppData\\Local\\Temp",
+    "TemplateFolder": "C:\\Users\\USER\\AppData\\Roaming\\Microsoft\\Windows\\Templates",
+    "WindowsFolder": "C:\\Windows",
+    "WindowsVolume": "C:\\",
 }
 
-def id_replacements(id: str) -> str:
-    
+def replace_root_id(id: str) -> Optional[str]:
+    path = ConfigManager().get("ole", f"replacement_{id}", DEFAULT_PATHS.get(id))
+    if path:
+        path = path.replace("\\", "/")
+    return path
 
 def supports_file(filetype) -> bool:
     return filetype == "OLE"
@@ -93,18 +125,19 @@ def extract_ole_info(filename: str) -> object:
     return file_details
 
 
-def extract_msi(filename: str, output_folder: str) -> bool:
-    output_folder = Path(output_folder)
+def extract_msi(filename: str, output_folder: str) -> List[Tuple[str, str]]:
+    output_path = Path(output_folder)
 
     with pymsi.Package(Path(filename)) as package:
         msi = pymsi.Msi(package, True)
 
         preprocess_msi_decompression(msi)
 
-        extract_msi_directory(msi.root, output_folder)
-
-    logger.info(f"Extracted MSI contents to {output_folder}")
-    return True
+        entries = extract_msi_root(msi.root, output_path)
+        if entries:
+            logger.debug(f"Extracted {entries}")
+            logger.info(f"Extracted MSI contents to {output_path}")
+        return entries
 
 
 def preprocess_msi_decompression(msi: pymsi.Msi):
@@ -125,7 +158,6 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
     executor = ThreadPoolExecutor()
     completed_count = 0
     futures = {}
-    # pylint: disable=broad-exception-caught
     try:
         for folder in folders:
             future = executor.submit(folder.decompress)
@@ -139,7 +171,7 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
                 logger.trace(f"Decompressed .cab folder: {folder}")
             except KeyboardInterrupt as e:
                 raise e
-            except Exception as e:
+            except (ValueError, RuntimeError, NotImplementedError, EOFError):
                 logger.opt(exception=True).error(f"Error decompressing folder {futures[future]}")
     finally:
         for future in futures:
@@ -149,29 +181,63 @@ def preprocess_msi_decompression(msi: pymsi.Msi):
     logger.debug("Decompression of .cab folders completed")
 
 
-def extract_msi_directory(root: Directory, output: Path, is_root: bool = True):
+def extract_msi_root(root: Directory, output: Path) -> List[Tuple[str, str]]:
     if not output.exists():
         output.mkdir(parents=True, exist_ok=True)
 
+    temp_installdir: Optional[Directory] = None
+    
+    def move_to_temp_installdir(item: Union[Component, Directory]):
+        nonlocal temp_installdir
+        if not temp_installdir:
+            temp_installdir = Directory({
+                "Directory": "_TEMPINSTALLDIR",
+                "Directory_Parent": root.id,
+                "DefaultDir": "INSTALLDIR",
+            })
+            temp_installdir.parent = root
+        if isinstance(item, Component):
+            temp_installdir._add_component(item)
+        elif isinstance(item, Directory):
+            temp_installdir._add_child(item)
+        else:
+            raise TypeError(f"Unsupported item type: {type(item)}")
+    
+    for component in root.components.values():
+        move_to_temp_installdir(component)
+    
+    entries = []
+    
+    for child in root.children.values():
+        folder_name = child.id
+        if "." in folder_name:
+            folder_name, guid = folder_name.split(".", 1)
+            if child.id != folder_name:
+                logger.warning(f"MSI Directory ID '{child.id}' has a GUID suffix ({guid}).")
+                
+        if not replace_root_id(folder_name):
+            logger.warning(f"MSI Directory ID '{folder_name}' has no replacement path defined. The MSI file may still be valid, but the path will not be accurate.")
+            move_to_temp_installdir(child)
+            continue
+        extract_msi_directory(child, output / folder_name)
+        entries.append((replace_root_id(folder_name), str(output / folder_name)))
+    
+    if temp_installdir is not None:
+        extract_msi_directory(temp_installdir, output / temp_installdir.name)
+        entries.append((None, str(output / temp_installdir.name)))
+        
+    return entries
+
+def extract_msi_directory(root: Directory, output: Path):
+    if not output.exists():
+        output.mkdir(parents=True, exist_ok=True)
+    
     for component in root.components.values():
         for file in component.files.values():
             if file.media is None:
                 continue
             cab_file = file.resolve()
             (output / file.name).write_bytes(cab_file.decompress())
-
+            
     for child in root.children.values():
-        folder_name = child.name
-        if is_root:
-            # Currently, folder_names are kept as Directory IDs.
-            # These should be later resolved to better paths, however the user sees fit.
-            # However, we're currently extracting to a temporary directory, so I don't
-            # know how necessary that is right now.
-            # https://learn.microsoft.com/en-us/windows/win32/msi/property-reference#system-folder-properties
-            if "." in child.id:
-                folder_name, guid = child.id.split(".", 1)
-                if child.id != folder_name:
-                    logger.warning(f"MSI Directory ID '{child.id}' has a GUID suffix ({guid}).")
-            else:
-                folder_name = child.id
-        extract_msi_directory(child, output / folder_name, False)
+        extract_msi_directory(child, output / child.name)

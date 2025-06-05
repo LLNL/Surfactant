@@ -17,7 +17,7 @@ import tarfile
 import tempfile
 import zipfile
 from queue import Queue
-from typing import Any, Callable, Dict, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import rarfile
 from loguru import logger
@@ -61,15 +61,18 @@ def extract_file_info(
             lambda f, t: decompress_to(f, t, compression_format),
         )
 
-
+# decompress takes a filename and an output folder, and decompresses the file into that folder.
+# Returning a boolean indicates an attempt (True) or refusal (False) to decompress.
+# Returning a list of 2-tuples indicates that different ContextEntries should be created. The
+#  first element is the install prefix (or None if not applicable), and the second is the path
+#  to the extracted folder that should be under the install prefix.
 def create_extraction(
     filename: str,
     context_queue: "Queue[ContextEntry]",
     current_context: Optional[ContextEntry],
-    decompress: "Callable[[str, str], bool]",
+    decompress: Callable[[str, str], Union[bool, List[Tuple[str, str]]]],
 ):
     install_prefix = ""
-    extract_paths = []
 
     # Check that archive key exists and filename is same as archive file
     if current_context.archive and current_context.archive == filename:
@@ -85,19 +88,30 @@ def create_extraction(
     # Create a temporary directory for extraction
     temp_folder = create_temp_dir()
     # Decompress the file
-    is_successful = decompress(filename, temp_folder)
-    extract_paths = [temp_folder]
+    entries = decompress(filename, temp_folder)
+    
+    # Simple case where the decompressor doesn't need multiple entries
+    if entries == True:
+        entries = [(None, temp_folder)]
+            
+    # If False or an empty list
+    if not entries:
+        logger.error(f"Failed to decompress {filename}. No entries created.")
+        return
 
-    if is_successful:
+    for entry_prefix, extract_path in entries:
+        # Merges our install prefix with the entry's install prefix (where applicable)
+        entry_prefix = "/".join(filter(None, [install_prefix, entry_prefix]))
+        
         # Create a new context entry and add it to the queue
         new_entry = ContextEntry(
             archive=filename,
-            installPrefix=install_prefix,
-            extractPaths=extract_paths,
+            installPrefix=entry_prefix,
+            extractPaths=[extract_path],
             skipProcessingArchive=True,
         )
         context_queue.put(new_entry)
-        logger.info(f"New ContextEntry added for extracted files: {temp_folder}")
+        logger.info(f"New ContextEntry added for extracted files: {extract_path} (prefix: {entry_prefix})")
 
 
 def decompress_to(filename: str, output_folder: str, compression_format: str) -> bool:
@@ -222,14 +236,17 @@ def delete_temp_dirs():
 
 @surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:
-    result = rarfile.tool_setup()
-    if result.setup["open_cmd"][0] in ("UNRAR_TOOL", "UNAR_TOOL"):
-        RAR_SUPPORT["enabled"] = True
-    else:
-        logger.warning(
-            "Install 'Unrar' or 'unar' tool for RAR archive decompression. RAR decompression disabled until installed."
-        )
-        RAR_SUPPORT["enabled"] = False
+    RAR_SUPPORT["enabled"] = False
+    try:
+        result = rarfile.tool_setup()
+        if result.setup["open_cmd"][0] in ("UNRAR_TOOL", "UNAR_TOOL"):
+            RAR_SUPPORT["enabled"] = True
+            return
+    except rarfile.RarCannotExec:
+        pass
+    logger.warning(
+        "Install 'Unrar' or 'unar' tool for RAR archive decompression. RAR decompression disabled until installed."
+    )
 
 
 # Register exit handler
