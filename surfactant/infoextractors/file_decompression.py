@@ -19,6 +19,7 @@ import zipfile
 from queue import Queue
 from typing import Any, Dict, Optional
 
+import rarfile
 from loguru import logger
 
 import surfactant.plugin
@@ -28,9 +29,11 @@ from surfactant.sbomtypes import SBOM, Software
 # Global list to track temp dirs
 GLOBAL_TEMP_DIRS_LIST = []
 
+RAR_SUPPORT = {"enabled": True}
+
 
 def supports_file(filetype: str) -> str:
-    if filetype in ("TAR", "GZIP", "ZIP", "BZIP2", "XZ"):
+    if filetype in ("TAR", "GZIP", "ZIP", "BZIP2", "XZ", "RAR"):
         return filetype
     return None
 
@@ -46,7 +49,6 @@ def extract_file_info(
     current_context: Optional[ContextEntry],
 ) -> Optional[Dict[str, Any]]:
     # Check if the file is compressed and get its format
-
     compression_format = supports_file(filetype)
     if not compression_format:
         return None
@@ -109,6 +111,8 @@ def check_compression_type(filename: str, compression_format: str) -> str:
                 )
             # Since it doesn't seem to be a compressed tar file, try just decompressing the file
             temp_folder = decompress_file(filename, compression_format)
+    elif compression_format == "RAR":
+        temp_folder = decompress_rar_file(filename)
     else:
         raise ValueError(f"Unsupported compression format: {compression_format}")
 
@@ -188,11 +192,36 @@ def extract_tar_file(filename):
     return temp_dir
 
 
+def decompress_rar_file(filename):
+    if not RAR_SUPPORT["enabled"]:
+        return None
+    temp_folder = create_temp_dir()
+    try:
+        rf = rarfile.RarFile(filename)
+        rf.extractall(path=temp_folder)
+    except rarfile.Error as e:
+        logger.error(f"Error extracting rar file: {e}")
+
+    return temp_folder
+
+
 def delete_temp_dirs():
     for temp_dir in GLOBAL_TEMP_DIRS_LIST:
         if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
             logger.info(f"Cleaned up temporary directory: {temp_dir}")
+
+
+@surfactant.plugin.hookimpl
+def init_hook(command_name: Optional[str] = None) -> None:
+    result = rarfile.tool_setup()
+    if result.setup["open_cmd"][0] in ("UNRAR_TOOL", "UNAR_TOOL"):
+        RAR_SUPPORT["enabled"] = True
+    else:
+        logger.warning(
+            "Install 'Unrar' or 'unar' tool for RAR archive decompression. RAR decompression disabled until installed."
+        )
+        RAR_SUPPORT["enabled"] = False
 
 
 # Register exit handler
