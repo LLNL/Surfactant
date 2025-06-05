@@ -61,6 +61,7 @@ def extract_file_info(
             lambda f, t: decompress_to(f, t, compression_format),
         )
 
+
 # decompress takes a filename and an output folder, and decompresses the file into that folder.
 # Returning a boolean indicates an attempt (True) or refusal (False) to decompress.
 # Returning a list of 2-tuples indicates that different ContextEntries should be created. The
@@ -89,11 +90,11 @@ def create_extraction(
     temp_folder = create_temp_dir()
     # Decompress the file
     entries = decompress(filename, temp_folder)
-    
+
     # Simple case where the decompressor doesn't need multiple entries
     if entries == True:
         entries = [(None, temp_folder)]
-            
+
     # If False or an empty list
     if not entries:
         logger.error(f"Failed to decompress {filename}. No entries created.")
@@ -102,7 +103,7 @@ def create_extraction(
     for entry_prefix, extract_path in entries:
         # Merges our install prefix with the entry's install prefix (where applicable)
         entry_prefix = "/".join(filter(None, [install_prefix, entry_prefix]))
-        
+
         # Create a new context entry and add it to the queue
         new_entry = ContextEntry(
             archive=filename,
@@ -111,7 +112,9 @@ def create_extraction(
             skipProcessingArchive=True,
         )
         context_queue.put(new_entry)
-        logger.info(f"New ContextEntry added for extracted files: {extract_path} (prefix: {entry_prefix})")
+        logger.info(
+            f"New ContextEntry added for extracted files: {extract_path} (prefix: {entry_prefix})"
+        )
 
 
 def decompress_to(filename: str, output_folder: str, compression_format: str) -> bool:

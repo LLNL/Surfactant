@@ -10,12 +10,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import olefile
 import pymsi
 from loguru import logger
-from pymsi.msi.directory import Directory
 from pymsi.msi.component import Component
+from pymsi.msi.directory import Directory
 from pymsi.thirdparty.refinery.cab import CabFolder
 
-from surfactant.configmanager import ConfigManager
 import surfactant.plugin
+from surfactant.configmanager import ConfigManager
 from surfactant.context import ContextEntry
 from surfactant.infoextractors import file_decompression
 from surfactant.sbomtypes import SBOM, Software
@@ -51,11 +51,13 @@ DEFAULT_PATHS = {
     "WindowsVolume": "C:\\",
 }
 
+
 def replace_root_id(id: str) -> Optional[str]:
     path = ConfigManager().get("ole", f"replacement_{id}", DEFAULT_PATHS.get(id))
     if path:
         path = path.replace("\\", "/")
     return path
+
 
 def supports_file(filetype) -> bool:
     return filetype == "OLE"
@@ -186,15 +188,17 @@ def extract_msi_root(root: Directory, output: Path) -> List[Tuple[str, str]]:
         output.mkdir(parents=True, exist_ok=True)
 
     temp_installdir: Optional[Directory] = None
-    
+
     def move_to_temp_installdir(item: Union[Component, Directory]):
         nonlocal temp_installdir
         if not temp_installdir:
-            temp_installdir = Directory({
-                "Directory": "_TEMPINSTALLDIR",
-                "Directory_Parent": root.id,
-                "DefaultDir": "INSTALLDIR",
-            })
+            temp_installdir = Directory(
+                {
+                    "Directory": "_TEMPINSTALLDIR",
+                    "Directory_Parent": root.id,
+                    "DefaultDir": "INSTALLDIR",
+                }
+            )
             temp_installdir.parent = root
         if isinstance(item, Component):
             temp_installdir._add_component(item)
@@ -202,42 +206,45 @@ def extract_msi_root(root: Directory, output: Path) -> List[Tuple[str, str]]:
             temp_installdir._add_child(item)
         else:
             raise TypeError(f"Unsupported item type: {type(item)}")
-    
+
     for component in root.components.values():
         move_to_temp_installdir(component)
-    
+
     entries = []
-    
+
     for child in root.children.values():
         folder_name = child.id
         if "." in folder_name:
             folder_name, guid = folder_name.split(".", 1)
             if child.id != folder_name:
                 logger.warning(f"MSI Directory ID '{child.id}' has a GUID suffix ({guid}).")
-                
+
         if not replace_root_id(folder_name):
-            logger.warning(f"MSI Directory ID '{folder_name}' has no replacement path defined. The MSI file may still be valid, but the path will not be accurate.")
+            logger.warning(
+                f"MSI Directory ID '{folder_name}' has no replacement path defined. The MSI file may still be valid, but the path will not be accurate."
+            )
             move_to_temp_installdir(child)
             continue
         extract_msi_directory(child, output / folder_name)
         entries.append((replace_root_id(folder_name), str(output / folder_name)))
-    
+
     if temp_installdir is not None:
         extract_msi_directory(temp_installdir, output / temp_installdir.name)
         entries.append((None, str(output / temp_installdir.name)))
-        
+
     return entries
+
 
 def extract_msi_directory(root: Directory, output: Path):
     if not output.exists():
         output.mkdir(parents=True, exist_ok=True)
-    
+
     for component in root.components.values():
         for file in component.files.values():
             if file.media is None:
                 continue
             cab_file = file.resolve()
             (output / file.name).write_bytes(cab_file.decompress())
-            
+
     for child in root.children.values():
         extract_msi_directory(child, output / child.name)
