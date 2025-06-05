@@ -51,8 +51,11 @@ DEFAULT_PATHS = {
     "WindowsVolume": "C:\\",
 }
 
+
 def replace_root_id(system_folder_id: str) -> Optional[str]:
-    path = ConfigManager().get("ole", f"replacement_{system_folder_id}", DEFAULT_PATHS.get(system_folder_id))
+    path = ConfigManager().get(
+        "ole", f"replacement_{system_folder_id}", DEFAULT_PATHS.get(system_folder_id)
+    )
     if path:
         path = path.replace("\\", "/")
     return path
