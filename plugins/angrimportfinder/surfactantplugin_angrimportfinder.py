@@ -43,7 +43,10 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
     if existing_json:
         with open(existing_json, "r") as json_file:
             existing_data = json.load(json_file)
-        if "imported function names" in existing_data and "exported function names" in existing_data:
+        if (
+            "imported function names" in existing_data
+            and "exported function names" in existing_data
+        ):
             logger.info(f"Already extracted {filename.name}")
         else:
             try:

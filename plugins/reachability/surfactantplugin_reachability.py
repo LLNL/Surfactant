@@ -56,40 +56,42 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
                 existing_data["exported function dependencies"] = {}
 
                 # Create an angr project
-                project = angr.Project(filename, load_options = {'auto_load_libs': True})
+                project = angr.Project(filename, load_options={"auto_load_libs": True})
 
-                #library dependencies {import: library}
+                # library dependencies {import: library}
                 lookup = {}
                 for obj in project.loader.main_object.imports.keys():
                     lookup[obj] = project.loader.find_symbol(obj).owner.provides
 
-                #recreates our angr project without the libraries loaded to save on time
-                project = angr.Project(filename, load_options = {'auto_load_libs': False})
+                # recreates our angr project without the libraries loaded to save on time
+                project = angr.Project(filename, load_options={"auto_load_libs": False})
 
-                #holds our data for our JSON file
+                # holds our data for our JSON file
                 database = existing_data["exported function dependencies"]
 
                 cfg = project.analyses.CFGFast()
 
-                #holds every export address error is here
-                exports = [func.rebased_addr for func in project.loader.main_object.symbols if func.is_export] #_exports is only available for PE files
+                # holds every export address error is here
+                exports = [
+                    func.rebased_addr
+                    for func in project.loader.main_object.symbols
+                    if func.is_export
+                ]  # _exports is only available for PE files
 
-                #go through every exported function
+                # go through every exported function
                 for exp_addr in exports:
-
                     exp_name = project.kb.functions[exp_addr].name
                     database[exp_name] = []
 
-                    #goes through every function that is reachable from exported function
+                    # goes through every function that is reachable from exported function
                     for imported_address in cfg.functions.callgraph.successors(exp_addr):
                         imported_function = cfg.functions.get(imported_address)
 
-                        #checks if the function is imported
+                        # checks if the function is imported
                         if imported_function.name in project.loader.main_object.imports.keys():
-
                             library = lookup[imported_function.name]
 
-                            #adds our entry in the form of list[library, imported_function]
+                            # adds our entry in the form of list[library, imported_function]
                             database[exp_name].append([library, imported_function.name])
 
                 # Write the string_dict to the output JSON file
@@ -108,42 +110,42 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
             metadata = {}
             metadata["sha256hash"] = filehash
             metadata["filename"] = [filename.name]
-            metadata['exported function dependencies'] = {}
+            metadata["exported function dependencies"] = {}
             # Create an angr project
-            project = angr.Project(filename, load_options = {'auto_load_libs': True})
+            project = angr.Project(filename, load_options={"auto_load_libs": True})
 
-            #library dependencies {import: library}
+            # library dependencies {import: library}
             lookup = {}
             for obj in project.loader.main_object.imports.keys():
                 lookup[obj] = project.loader.find_symbol(obj).owner.provides
 
-            #recreates our angr project without the libraries loaded to save on time
-            project = angr.Project(filename, load_options = {'auto_load_libs': False})
+            # recreates our angr project without the libraries loaded to save on time
+            project = angr.Project(filename, load_options={"auto_load_libs": False})
 
-            #holds our data for our JSON file
+            # holds our data for our JSON file
             database = metadata["exported function dependencies"]
 
             cfg = project.analyses.CFGFast()
 
-            #holds every export address error is here
-            exports = [func.rebased_addr for func in project.loader.main_object.symbols if func.is_export] #_exports is only available for PE files
+            # holds every export address error is here
+            exports = [
+                func.rebased_addr for func in project.loader.main_object.symbols if func.is_export
+            ]  # _exports is only available for PE files
 
-            #go through every exported function
+            # go through every exported function
             for exp_addr in exports:
-
                 exp_name = project.kb.functions[exp_addr].name
                 database[exp_name] = []
 
-                #goes through every function that is reachable from exported function
+                # goes through every function that is reachable from exported function
                 for imported_address in cfg.functions.callgraph.successors(exp_addr):
                     imported_function = cfg.functions.get(imported_address)
 
-                    #checks if the function is imported
+                    # checks if the function is imported
                     if imported_function.name in project.loader.main_object.imports.keys():
-
                         library = lookup[imported_function.name]
 
-                        #adds our entry in the form of list[library, imported_function]
+                        # adds our entry in the form of list[library, imported_function]
                         database[exp_name].append([library, imported_function.name])
 
             # Write the string_dict to the output JSON file

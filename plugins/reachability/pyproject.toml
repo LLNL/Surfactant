@@ -31,4 +31,3 @@ dynamic = ["version"]
 
 [tool.setuptools]
 py-modules=["surfactantplugin_reachability"]
-
