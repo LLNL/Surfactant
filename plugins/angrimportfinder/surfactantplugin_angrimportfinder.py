@@ -61,9 +61,9 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
                 # Get the imported functions using symbol information
                 for symbol in project.loader.main_object.symbols:
                     if symbol.is_import:
-                        metadata["imported function names"].append(symbol.name)
+                        existing_data["imported function names"].append(symbol.name)
                     elif symbol.is_export:
-                        metadata["exported function names"].append(symbol.name)
+                        existing_data["exported function names"].append(symbol.name)
 
                 # Write the string_dict to the output JSON file
                 with open(output_name, "w") as json_file:
