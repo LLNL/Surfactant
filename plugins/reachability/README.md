@@ -19,11 +19,11 @@ Output Filename: `$(sha256hash)_additional_metadata.json`
 
 ```json
 {
-  "sha256hash": " ",
+  "sha256hash": "",
   "filename": [],
   "exported function dependencies": {
-    "exported function 1": [],
-    "exported function 2": []
+    ["library", "exported_function1"],
+    ["library", "exported_function2"]
   }
 }
 ```
