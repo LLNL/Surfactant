@@ -7,6 +7,7 @@ from __future__ import annotations
 import uuid as uuid_module
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
+import networkx as nx
 
 from dataclasses_json import dataclass_json
 from loguru import logger
@@ -35,11 +36,20 @@ class SBOM:
     observations: List[Observation] = field(default_factory=list)
     starRelationships: Set[StarRelationship] = field(default_factory=set)
     software_lookup_by_sha256: Dict = field(default_factory=dict)
+    graph: nx.DiGraph = field(init=False, repr=False)
 
     def __post_init__(self):
         self.__dataclass_fields__ = {
             k: v for k, v in self.__dataclass_fields__.items() if k not in INTERNAL_FIELDS
         }
+        # Initialize the directed graph and populate any pre-existing nodes/edges
+        self.graph = nx.DiGraph()
+        for sw in self.software:
+            self.graph.add_node(sw.UUID, type="Software")
+        for sys in self.systems:
+            self.graph.add_nodes(sys.UUID, type="System")
+        for rel in self.relationships:
+            self.graph.add_edge(rel.xUUID, rel.yUUID, relationship=rel.relationship)
 
     def add_relationship(self, rel: Relationship) -> None:
         self.relationships.add(rel)
@@ -47,6 +57,14 @@ class SBOM:
     def create_relationship(self, xUUID: str, yUUID: str, relationship: str) -> Relationship:
         rel = Relationship(xUUID, yUUID, relationship)
         self.relationships.add(rel)
+
+        # Also add the edge into the NetworkX graph
+        if not self.graph.has_node(xUUID):
+            self.graph.add_node(xUUID, type="Unknown")
+        if not self.graph.has_node(yUUID):
+            self.graph.add_node(yUUID, type="Unknown")
+        self.graph.add_edge(xUUID, yUUID, relationship=relationship)
+        
         return rel
 
     def find_relationship_object(self, relationship: Relationship) -> bool:
@@ -81,6 +99,10 @@ class SBOM:
         if sw.sha256 is not None:
             self.software_lookup_by_sha256[sw.sha256] = sw
         self.software.append(sw)
+
+        # Add a node for the new software
+        if not self.graph.has_node(sw.UUID):
+            self.graph.add_node(sw.UUID, type="Software")
 
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
@@ -183,8 +205,24 @@ class SBOM:
                     u1, u2 = existing_system.merge(system)
                     logger.info(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
                     uuid_updates[u2] = u1
+
+                
+                    # Redirect any existing edges from us -> u1 in self.graph
+                    if hasattr(self, "graph") and self.graph.has_node(u2):
+                        # for each predecessor of u2, add edge (pred -> u1)
+                        for pred, _, attrs in self.graph.in_edges(u2, data=True):
+                            self.graph.add_edge(pred, u1, **attrs)
+                        # For each successor of u2, add edge (u1 -> succ)
+                        for _, succ, attrs in self.graph.out_edges(u2, data=True):
+                            self.graph.add_edge(u1, succ, **attrs)
+                        self.graph.remove_node(u2)
+
                 else:
                     self.systems.append(system)
+
+                    # Add the new system node into the graph
+                    if hasattr(self, "graph"):
+                        self.graph.add_node(system.UUID, type="System")
 
         # merge software entries
         if sbom_m.software:
@@ -196,8 +234,21 @@ class SBOM:
                     u1, u2 = existing_sw.merge(sw)
                     logger.info(f"MERGE DUPLICATE: uuid1={u1}, uuid2={u2}")
                     uuid_updates[u2] = u1
+
+                    # Redirect any existing edges from u2 -> u1 in self.graph
+                    if hasattr(self, "graph") and self.graph.has_node(u2):
+                        for pred, _, attrs in self.graph.in_edges(u2, data=True):
+                            self.graph.add_edge(pred, u1, **attrs)
+                        for _, succ, attrs in self.graph.out_edges(u2, data=True):
+                            self.graph.add_edge(u1, succ, **attrs)
+                        self.graph.remove_node(u2)
+
                 else:
                     self.software.append(sw)
+
+                    # Add the new software node in the graph
+                    if hasattr(self, "graph"):
+                        self.graph.add_node(sw.UUID, type="Software")
 
         # merge relationships
         if sbom_m.relationships:
@@ -215,6 +266,10 @@ class SBOM:
                     logger.info(f"DUPLICATE RELATIONSHIP: {existing_rel}")
                 else:
                     self.relationships.add(rel)
+
+                    # Also add an edge in the graph
+                    if hasattr(self, "graph"):
+                        self.graph.add_edge(rel.xUUID, rel.xUUID, relationship=rel.relationship)
 
         # rewrite container path UUIDs using rewrite map/list
         for sw in self.software:
