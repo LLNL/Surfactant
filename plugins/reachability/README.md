@@ -15,15 +15,17 @@ to get about security related features.
 After the plugin installation, run Surfactant as you normally would to create an SBOM. For binary files analyzed by this plugin, additional JSON files will be generated containing vulnerability data extracted from the binaries. If there are duplicate hashed files, the extractor will check if they have the exported functions entries and skip remaking the output file if so.
 
 Example:
-Output Filename: `$(sha256hash)_additional_metadata.json`
+Output Filename: `reachability.json`
 
 ```json
 {
-  "sha256hash": "",
-  "filename": [],
-  "exported function dependencies": {
-    ["library", "exported_function1"],
-    ["library", "exported_function2"]
+  "filename": {
+    "exp_func": {
+      "library": [
+        "imp_func1",
+        "imp_func2"
+      ]
+    }
   }
 }
 ```

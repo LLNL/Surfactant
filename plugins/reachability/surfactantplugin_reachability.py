@@ -10,13 +10,11 @@ from cle import CLECompatibilityError
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.sbomtypes import SBOM, Software
-
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 # extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str):
 # def angrimport_finder(filename: str, filetype: str, filehash: str):
-def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: str):
+def reachability(filename: str, filetype: str):
     """
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
     :param software(Software): The software entry associated with the file to extract information from.
@@ -27,131 +25,66 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
     # Only parsing executable files
     if filetype not in ["ELF", "PE"]:
         pass
-    filehash = str(software.sha256)
     filename = Path(filename)
-    flist = []
 
-    # Performing check to see if file has been analyzed already
-    existing_json = None
-    output_name = None
-    for f in Path.cwd().glob("*_additional_metadata.json"):
-        flist.append((f.stem).split("_")[0])
-        if filehash == (f.stem).split("_")[0]:
-            existing_json = f
-            output_name = f
+    # Performing check to see if the file exists or not
+    output_path = Path.cwd() / "reachability.json"
 
-    if existing_json:
-        with open(existing_json, "r") as json_file:
-            existing_data = json.load(json_file)
-        if "exported function dependencies" in existing_data:
-            logger.info(f"Already extracted {filename.name}")
-        else:
-            try:
-                logger.info(
-                    f"Found existing JSON file for {filename.name} but without 'exported function dependencies' keys. Proceeding with extraction."
-                )
-                # Add your extraction code here.
-                if filename.name not in existing_data["filename"]:
-                    existing_data["filename"].append(filename.name)
-                existing_data["exported function dependencies"] = {}
-
-                # Create an angr project
-                project = angr.Project(filename, load_options={"auto_load_libs": True})
-
-                # library dependencies {import: library}
-                lookup = {}
-                for obj in project.loader.main_object.imports.keys():
-                    lookup[obj] = project.loader.find_symbol(obj).owner.provides
-
-                # recreates our angr project without the libraries loaded to save on time
-                project = angr.Project(filename, load_options={"auto_load_libs": False})
-
-                # holds our data for our JSON file
-                database = existing_data["exported function dependencies"]
-
-                cfg = project.analyses.CFGFast()
-
-                # holds every export address error is here
-                exports = [
-                    func.rebased_addr
-                    for func in project.loader.main_object.symbols
-                    if func.is_export
-                ]  # _exports is only available for PE files
-
-                # go through every exported function
-                for exp_addr in exports:
-                    exp_name = project.kb.functions[exp_addr].name
-                    database[exp_name] = []
-
-                    # goes through every function that is reachable from exported function
-                    for imported_address in cfg.functions.callgraph.successors(exp_addr):
-                        imported_function = cfg.functions.get(imported_address)
-
-                        # checks if the function is imported
-                        if imported_function.name in project.loader.main_object.imports.keys():
-                            library = lookup[imported_function.name]
-
-                            # adds our entry in the form of list[library, imported_function]
-                            database[exp_name].append([library, imported_function.name])
-
-                # Write the string_dict to the output JSON file
-                with open(output_name, "w") as json_file:
-                    json.dump(existing_data, json_file, indent=4)
-            except CLECompatibilityError as e:
-                logger.info(f"Angr Error {filename} {e}")
+    if output_path.exists():
+        with open(output_path, "r") as json_file:
+            database = json.load(json_file)
     else:
-        try:
-            # Validate the file path
-            if not filename.exists():
-                raise FileNotFoundError(f"No such file: '{filename}'")
+        database = {}
 
-            # Extract filename without extension
-            output_path = Path.cwd() / f"{filehash}_additional_metadata.json"
-            metadata = {}
-            metadata["sha256hash"] = filehash
-            metadata["filename"] = [filename.name]
-            metadata["exported function dependencies"] = {}
-            # Create an angr project
-            project = angr.Project(filename, load_options={"auto_load_libs": True})
+    try:
+        if not filename.exists():
+            raise FileNotFoundError(f"No such file: '{filename}'")
+        # Add your extraction code here.
+        # Create an angr project
+        project = angr.Project(filename, load_options={"auto_load_libs": True})
 
-            # library dependencies {import: library}
-            lookup = {}
-            for obj in project.loader.main_object.imports.keys():
-                lookup[obj] = project.loader.find_symbol(obj).owner.provides
+        # library dependencies {import: library}
+        lookup = {}
+        for obj in project.loader.main_object.imports.keys():
+            library = project.loader.find_symbol(obj).owner.provides
+            lookup[obj] = library
 
-            # recreates our angr project without the libraries loaded to save on time
-            project = angr.Project(filename, load_options={"auto_load_libs": False})
+        # recreates our angr project without the libraries loaded to save on time
+        project = angr.Project(filename, load_options={"auto_load_libs": False})
 
-            # holds our data for our JSON file
-            database = metadata["exported function dependencies"]
+        cfg = project.analyses.CFGFast()
 
-            cfg = project.analyses.CFGFast()
+        # holds every export address error is here
+        exports = [
+            func.rebased_addr
+            for func in project.loader.main_object.symbols
+            if func.is_export
+        ]  # _exports is only available for PE files
+        database[filename.name] = {}
 
-            # holds every export address error is here
-            exports = [
-                func.rebased_addr for func in project.loader.main_object.symbols if func.is_export
-            ]  # _exports is only available for PE files
+        # go through every exported function
+        for exp_addr in exports:
+            exp_name = cfg.functions.get(exp_addr).name
+            database[filename.name][exp_name] = {}
 
-            # go through every exported function
-            for exp_addr in exports:
-                exp_name = project.kb.functions[exp_addr].name
-                database[exp_name] = []
+            # goes through every function that is reachable from exported function
+            for imported_address in cfg.functions.callgraph.successors(exp_addr):
+                imported_function = cfg.functions.get(imported_address)
 
-                # goes through every function that is reachable from exported function
-                for imported_address in cfg.functions.callgraph.successors(exp_addr):
-                    imported_function = cfg.functions.get(imported_address)
+                # checks if the function is imported
+                if imported_function.name in project.loader.main_object.imports.keys():
+                    library = lookup[imported_function.name]
 
-                    # checks if the function is imported
-                    if imported_function.name in project.loader.main_object.imports.keys():
-                        library = lookup[imported_function.name]
+                    if library not in database[filename.name][exp_name].keys():
+                        database[filename.name][exp_name][library] = []
 
-                        # adds our entry in the form of list[library, imported_function]
-                        database[exp_name].append([library, imported_function.name])
+                    # adds our reachable imported function as a dependency
+                    if imported_function.name not in database[filename.name][exp_name][library]:
+                        database[filename.name][exp_name][library].append(imported_function.name)
 
-            # Write the string_dict to the output JSON file
-            with open(output_path, "w") as json_file:
-                json.dump(metadata, json_file, indent=4)
+        # Write the string_dict to the output JSON file
+        with open(output_path, "w") as json_file:
+            json.dump(database, json_file, indent=4)
 
-            logger.info(f"Data written to {output_path}")
-        except CLECompatibilityError as e:
-            logger.info(f"Angr Error {filename} {e}")
+    except CLECompatibilityError as e:
+        logger.info(f"Angr Error {filename} {e}")
