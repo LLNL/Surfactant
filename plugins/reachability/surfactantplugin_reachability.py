@@ -27,14 +27,7 @@ def reachability(filename: str, filetype: str):
         pass
     filename = Path(filename)
 
-    # Performing check to see if the file exists or not
-    output_path = Path.cwd() / "reachability.json"
-
-    if output_path.exists():
-        with open(output_path, "r") as json_file:
-            database = json.load(json_file)
-    else:
-        database = {}
+    database = {}
 
     try:
         if not filename.exists():
@@ -60,12 +53,11 @@ def reachability(filename: str, filetype: str):
             for func in project.loader.main_object.symbols
             if func.is_export
         ]  # _exports is only available for PE files
-        database[filename.name] = {}
 
         # go through every exported function
         for exp_addr in exports:
             exp_name = cfg.functions.get(exp_addr).name
-            database[filename.name][exp_name] = {}
+            database[exp_name] = {}
 
             # goes through every function that is reachable from exported function
             for imported_address in cfg.functions.callgraph.successors(exp_addr):
@@ -75,16 +67,14 @@ def reachability(filename: str, filetype: str):
                 if imported_function.name in project.loader.main_object.imports.keys():
                     library = lookup[imported_function.name]
 
-                    if library not in database[filename.name][exp_name].keys():
-                        database[filename.name][exp_name][library] = []
+                    if library not in database[exp_name].keys():
+                        database[exp_name][library] = []
 
                     # adds our reachable imported function as a dependency
-                    if imported_function.name not in database[filename.name][exp_name][library]:
-                        database[filename.name][exp_name][library].append(imported_function.name)
+                    if imported_function.name not in database[exp_name][library]:
+                        database[exp_name][library].append(imported_function.name)
 
-        # Write the string_dict to the output JSON file
-        with open(output_path, "w") as json_file:
-            json.dump(database, json_file, indent=4)
+        return database
 
     except CLECompatibilityError as e:
         logger.info(f"Angr Error {filename} {e}")
