@@ -13,14 +13,13 @@ from typing import Any, Dict, Optional, Union
 
 import requests
 import tomlkit
-from tomlkit import parse
 from loguru import logger
 from requests.exceptions import RequestException
+from tomlkit import parse
 
 from surfactant.configmanager import ConfigManager
 
-
-RTD_URL = 'https://surfactant.readthedocs.io/en/latest/database_sources.toml'
+RTD_URL = "https://surfactant.readthedocs.io/en/latest/database_sources.toml"
 
 
 def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
@@ -198,9 +197,7 @@ def get_source_for(database_category: str, key: str) -> str:
     config = config_manager.config
     runtime_url = config_manager.get("sources", f"{database_category}.{key}")
     if runtime_url not in ("", [], {}, "[]", "{}", None, "None"):
-        logger.debug(
-                "Using command line overide url: {}", runtime_url
-            )
+        logger.debug("Using command line overide url: {}", runtime_url)
         return runtime_url  # Return the command line override URL if present
 
     # Second, check docs/database_sources.toml for the URL
@@ -208,16 +205,17 @@ def get_source_for(database_category: str, key: str) -> str:
     try:
         if config:
             logger.debug(
-                "Using command docs/database_sources.toml: {}", config["sources"][database_category][key]
+                "Using command docs/database_sources.toml: {}",
+                config["sources"][database_category][key],
             )
             return config["sources"][database_category][key]
         logger.debug("Failed to get local docs/database_sources.toml")
     except KeyError:
         logger.debug("No external override found for [{}].{}", database_category, key)
 
-    
-    # Third, check ReadTheDocs 
+    # Third, check ReadTheDocs
     raw_data = download_content(RTD_URL)
+<<<<<<< HEAD
     if raw_data :
         config = parse(raw_data) # Parse the raw TOML text into a tomlkit.document.Document
         try:
@@ -229,6 +227,12 @@ def get_source_for(database_category: str, key: str) -> str:
         except tomlkit.exceptions.NonExistentKey:
             logger.debug("No RTD override found for [{}].{}", database_category, key)
 
-
+=======
+    config = parse(raw_data)  # Parse the raw TOML text into a tomlkit.document.Document
+    runtime_url = config_manager.get("sources", f"{database_category}.{key}")
+    if runtime_url not in ("", [], {}, "[]", "{}", None, "None"):
+        logger.debug("Using RTD url: {}", runtime_url)
+        return runtime_url  # Return url from RTD
+>>>>>>> e844d9d0e0fdc4b09fb0677ab8c47419b3c0b265
 
     return None  # 4th, fall back to the hardcoded URLs in the code
