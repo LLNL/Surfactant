@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: MIT
 import hashlib
 import time
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -16,11 +17,11 @@ import tomlkit
 from loguru import logger
 from requests.exceptions import RequestException
 from tomlkit import parse
-from functools import lru_cache
 
 from surfactant.configmanager import ConfigManager
 
 RTD_URL = "https://surfactant.readthedocs.io/en/latest/database_sources.toml"
+
 
 @lru_cache(maxsize=1)
 def _get_rtd_raw() -> Optional[str]:
