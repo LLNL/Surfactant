@@ -16,18 +16,17 @@ import tomlkit
 from loguru import logger
 from requests.exceptions import RequestException
 from tomlkit import parse
+from functools import lru_cache
 
 from surfactant.configmanager import ConfigManager
 
 RTD_URL = "https://surfactant.readthedocs.io/en/latest/database_sources.toml"
-_RTD_RAW: Optional[str] = None
 
+@lru_cache(maxsize=1)
 def _get_rtd_raw() -> Optional[str]:
-    global _RTD_RAW
-    if _RTD_RAW is None:
-        _RTD_RAW = download_content(RTD_URL)
-        logger.debug("RTD RAW Singleton ran on URL: {}", RTD_URL)
-    return _RTD_RAW
+    raw = download_content(RTD_URL)
+    logger.debug("Fetched RTD singleton for URL: {}", RTD_URL)
+    return raw
 
 
 def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
