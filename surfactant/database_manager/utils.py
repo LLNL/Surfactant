@@ -215,7 +215,6 @@ def get_source_for(database_category: str, key: str) -> str:
 
     # Third, check ReadTheDocs
     raw_data = download_content(RTD_URL)
-<<<<<<< HEAD
     if raw_data :
         config = parse(raw_data) # Parse the raw TOML text into a tomlkit.document.Document
         try:
@@ -227,12 +226,5 @@ def get_source_for(database_category: str, key: str) -> str:
         except tomlkit.exceptions.NonExistentKey:
             logger.debug("No RTD override found for [{}].{}", database_category, key)
 
-=======
-    config = parse(raw_data)  # Parse the raw TOML text into a tomlkit.document.Document
-    runtime_url = config_manager.get("sources", f"{database_category}.{key}")
-    if runtime_url not in ("", [], {}, "[]", "{}", None, "None"):
-        logger.debug("Using RTD url: {}", runtime_url)
-        return runtime_url  # Return url from RTD
->>>>>>> e844d9d0e0fdc4b09fb0677ab8c47419b3c0b265
 
     return None  # 4th, fall back to the hardcoded URLs in the code
