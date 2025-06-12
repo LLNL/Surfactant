@@ -11,6 +11,7 @@ from loguru import logger
 
 import surfactant.plugin
 
+
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 # extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str):
 # def angrimport_finder(filename: str, filetype: str, filehash: str):
@@ -56,9 +57,7 @@ def reachability(filename: str, filetype: str):
 
         # holds every export address error is here
         exports = [
-            func.rebased_addr
-            for func in project.loader.main_object.symbols
-            if func.is_export
+            func.rebased_addr for func in project.loader.main_object.symbols if func.is_export
         ]  # _exports is only available for PE files
         database[filename.name] = {}
 
