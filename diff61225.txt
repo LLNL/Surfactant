@@ -1,0 +1,28 @@
+diff --git a/surfactant/database_manager/utils.py b/surfactant/database_manager/utils.py
+index 8bfd502..32bc484 100644
+--- a/surfactant/database_manager/utils.py
++++ b/surfactant/database_manager/utils.py
+@@ -20,6 +20,14 @@ from tomlkit import parse
+ from surfactant.configmanager import ConfigManager
+ 
+ RTD_URL = "https://surfactant.readthedocs.io/en/latest/database_sources.toml"
++_RTD_RAW: Optional[str] = None
++
++def _get_rtd_raw() -> Optional[str]:
++    global _RTD_RAW
++    if _RTD_RAW is None:
++        _RTD_RAW = download_content(RTD_URL)
++        logger.debug("RTD RAW Singleton ran on URL: {}", RTD_URL)
++    return _RTD_RAW
+ 
+ 
+ def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
+@@ -214,7 +222,7 @@ def get_source_for(database_category: str, key: str) -> str:
+         logger.debug("No external override found for [{}].{}", database_category, key)
+ 
+     # Third, check ReadTheDocs
+-    raw_data = download_content(RTD_URL)
++    raw_data = _get_rtd_raw()
+     if raw_data :
+         config = parse(raw_data) # Parse the raw TOML text into a tomlkit.document.Document
+         try:
