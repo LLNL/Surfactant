@@ -22,6 +22,7 @@ from surfactant.configmanager import ConfigManager
 RTD_URL = "https://surfactant.readthedocs.io/en/latest/database_sources.toml"
 _RTD_RAW: Optional[str] = None
 
+
 def _get_rtd_raw() -> Optional[str]:
     global _RTD_RAW
     if _RTD_RAW is None:
@@ -223,8 +224,8 @@ def get_source_for(database_category: str, key: str) -> str:
 
     # Third, check ReadTheDocs
     raw_data = _get_rtd_raw()
-    if raw_data :
-        config = parse(raw_data) # Parse the raw TOML text into a tomlkit.document.Document
+    if raw_data:
+        config = parse(raw_data)  # Parse the raw TOML text into a tomlkit.document.Document
         try:
             runtime_url = config["sources"][database_category][key]
             logger.debug("Using RTD url: {}", runtime_url)
