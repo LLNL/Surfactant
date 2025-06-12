@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 import json
+import os
 import pathlib
 import tarfile
 from enum import Enum, auto
@@ -237,11 +238,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
 
             # MacOS dmg:
             # https://en.wikipedia.org/wiki/List_of_file_signatures
-            f.seek(-512, 2)
-            macos_bytes = f.read(4)
-            if macos_bytes[0:4] == b"koly":
-                return "MACOS_DMG"
-            f.seek(0)
+            file_size = f.seek(0, os.SEEK_END)
+            if file_size >= 512:
+                f.seek(-512, os.SEEK_END)
+                macos_bytes = f.read(4)
+                if macos_bytes[0:4] == b"koly":
+                    return "MACOS_DMG"
 
             return None
     except FileNotFoundError:
