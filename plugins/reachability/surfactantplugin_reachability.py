@@ -2,7 +2,6 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import json
 from pathlib import Path
 
 import angr
