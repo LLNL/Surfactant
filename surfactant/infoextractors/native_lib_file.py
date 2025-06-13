@@ -40,6 +40,7 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
             database_key="emba",  # The key for this classes database in the version_info toml file.
             database_file="emba_db.json",  # The json file name for the database.
             source=DATABASE_URL_EMBA,  # The source of the database (put "file" or the source url)
+            gpl=True,
             plugin_name=name,
         )
 

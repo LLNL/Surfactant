@@ -23,6 +23,7 @@ from surfactant.database_manager.utils import (
     get_source_for,
     load_db_version_metadata,
     save_db_version_metadata,
+    check_gpl_acceptance,
 )
 
 
@@ -43,6 +44,7 @@ class DatabaseConfig:
     database_key: str
     database_file: str
     source: str
+    gpl: Optional[bool] = False
     plugin_name: Optional[str] = None
 
     def __post_init__(self) -> None:
@@ -75,13 +77,16 @@ class BaseDatabaseManager(ABC):
 
         # Attempt to retrieve an override URL using the database_dir (e.g., "js_library_patterns")
         # and the database_key (e.g., "retirejs").
-        override_url = get_source_for(self.config.database_dir, self.config.database_key)
-        if override_url:
-            self.config.source = override_url
+        url, gpl, overridden = get_source_for(self.config.database_dir, self.config.database_key)
+        if url:
+            self.config.source = url
+            self.config.gpl = gpl
+            self._overridden = overridden
             logger.debug(
-                "Using external URL override for {}: {}", self.config.database_key, override_url
+                "Using external URL override for {}: {}", self.config.database_key, url
             )
         else:
+            self._overridden = False
             logger.debug("Using hard-coded URL for {}", self.config.database_key)
 
         self.new_hash: Optional[str] = None
@@ -166,6 +171,11 @@ class BaseDatabaseManager(ABC):
         # No implementation needed for abstract methods.
 
     def download_and_update_database(self) -> str:
+        # Check GPL acceptance before download
+        if self.config.gpl:
+            if not check_gpl_acceptance(self.config.database_dir, self.config.database_key, self.config.gpl, getattr(self, '_overridden', False)):
+                return f"Download aborted: '{self.config.database_key}' is GPL-licensed and user did not accept."
+
         raw_data = download_content(self.config.source)
         if not raw_data:
             return "No update occurred. Failed to download database."

@@ -9,7 +9,7 @@
 import hashlib
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import requests
 import tomlkit
@@ -178,31 +178,74 @@ def fetch_db_config() -> dict:
     return _read_toml_file(local)
 
 
-def get_source_for(database_category: str, key: str) -> str:
+def get_source_for(database_category: str, key: str) -> Tuple[Optional[str], Optional[bool], bool]:
     """
-    Retrieve the URL for a given database category and key.
+    Retrieve the URL and GPL status for a given database category and key.
 
     Resolution order:
       1. Runtime override in user config.
       2. Local docs/database_sources.toml when running Surfactant from an editable install from a git clone of the Surfactant repo.
       3. ReadTheDocs hosted database_sources.toml file.
       4. Fallback to hard-coded URL in code.
-    """
 
-    # First, check the runtime config for an override
+    Returns:
+        (url, gpl, overridden):
+            url (str or None): The resolved URL.
+            gpl (bool or None): True if GPL, False if not, None if unknown.
+            overridden (bool): True if user override, False otherwise.
+    """
+    # 1. Handle user overrides for source URLs
     config_manager = ConfigManager()
-    config = config_manager.config
     runtime_url = config_manager.get("sources", f"{database_category}.{key}")
     if runtime_url not in ("", [], {}, "[]", "{}", None, "None"):
-        return runtime_url  # Return the command line override URL if present
+        # Return the command line override URL if present, with the override flag set to skip GPL check
+        return runtime_url, None, True
 
-    # Second, check docs/database_sources.toml for the URL
+    # 2. Check local database_sources.toml file for editable/developer installs
     config = fetch_db_config()
     try:
         if config:
-            return config["sources"][database_category][key]
+            url = config["sources"][database_category][key]
+            gpl = config["sources"][database_category].get(key + "_gpl", False)
+            return url, gpl, False
         logger.debug("Failed to get local database_sources.toml")
     except KeyError:
         logger.debug("No external override found for [{}].{}", database_category, key)
 
-    return None  # Third, fall back to the hardcoded URLs in the code
+    # Fallback: hardcoded URL, must prompt if GPL
+    return None, None, False
+
+
+def check_gpl_acceptance(database_category: str, key: str, gpl: bool, overridden: bool) -> bool:
+    """
+    Check config for GPL acceptance, prompt user if needed. Returns True if download is allowed.
+    """
+    if not gpl or overridden:
+        return True
+    config_manager = ConfigManager()
+    gpl_setting = config_manager.get("sources", "gpl_license_ok")
+    if gpl_setting in ("always", "a", True):
+        return True
+    if gpl_setting in ("never", "n", False):
+        return False
+    # Prompt user
+    prompt = (
+        f"The pattern database '{key}' in category '{database_category}' is GPL-licensed. "
+        "Do you want to download it? [y]es/[n]o/[a]lways/[N]ever: "
+    )
+    try:
+        user_input = input(prompt).strip()
+        user_input_lower = user_input.lower()
+    except Exception:
+        return False
+    if user_input_lower in ("a", "always"):
+        config_manager.set("Settings", "gpl_license_ok", "always")
+        return True
+    if user_input_lower in ("never") or user_input in ("N"):
+        config_manager.set("Settings", "gpl_license_ok", "never")
+        return False
+    if user_input_lower in ("no") or user_input in ("n"):
+        return False
+    if user_input_lower in ("y", "yes"):
+        return True
+    return False
