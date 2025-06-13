@@ -77,3 +77,4 @@ def reachability(filename: str, filetype: str):
 
     except CLECompatibilityError as e:
         logger.info(f"Angr Error {filename} {e}")
+        return None
