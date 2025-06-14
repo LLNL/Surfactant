@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 
 import click
 from loguru import logger
+import networkx as nx
 
 from surfactant.configmanager import ConfigManager
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
@@ -97,8 +98,17 @@ def merge(
     for sbom_m in input_sboms[1:]:
         merged_sbom.merge(sbom_m)
 
-    rel_graph = construct_relationship_graph(merged_sbom)
-    roots = get_roots_check_cycles(rel_graph)
+    # roots = nodes with no incoming edges
+    roots = [n for n, deg in merged_sbom.graph.in_degree() if deg == 0]
+    logger.info(f"ROOT NODES: {roots}")
+
+    # detect any cycles in the directed graph
+    cycles = list(nx.simple_cycles(merged_sbom.graph))
+
+    if cycles:
+        logger.warning(f"SBOM CYCLE(S) DETECTED: {cycles}")
+    else:
+        logger.info("No cycles detected in SBOM graph")
 
     # Check if provided UUID for a system object already exists to avoid creating a duplicate
     if config and "system" in config:
@@ -117,9 +127,7 @@ def merge(
         if config and "systemRelationship" in config:
             system_relationship = config["systemRelationship"]
         for r in roots:
-            merged_sbom.relationships.add(
-                Relationship(xUUID=system.UUID, yUUID=r, relationship=system_relationship)
-            )
+            merged_sbom.create_relationship(system.UUID, r, system_relationship)
     else:
         logger.warning(
             "No top-level system relationships added; enable the add system option to randomly generate a UUID, or specify a system UUID"
@@ -128,78 +136,78 @@ def merge(
     output_writer.write_sbom(merged_sbom, sbom_outfile)
 
 
-def construct_relationship_graph(sbom: SBOM):
-    """Function to get create a relationship graph of systems and software within an sbom
+# def construct_relationship_graph(sbom: SBOM):
+#     """Function to get create a relationship graph of systems and software within an sbom
 
-    Args:
-        sbom (SBOM): The sbom to generate relationship graph from.
-    """
-    # construct a graph for adding a system relationship to all root software entries
-    rel_graph: Dict[str, List[str]] = {}
-    # add all UUIDs as nodes in the graph
-    for system in sbom.systems:
-        rel_graph[system.UUID] = []
-    for sw in sbom.software:
-        rel_graph[sw.UUID] = []
-    # iterate through all relationships, adding edges to the adjacency list
-    for rel in sbom.relationships:
-        if rel.xUUID not in rel_graph or rel.yUUID not in rel_graph:
-            logger.error(
-                f"Either the xUUID or yUUID for the relationship does not exist in the graph: {rel = }"
-            )
-            continue
-        # consider also including relationship type for the edge
-        # treat as directed graph, with inverted edges (pointing to parents) so dfs will eventually lead to the root parent node for a (sub)graph
-        rel_graph[rel.yUUID].append(rel.xUUID)
-    return rel_graph
+#     Args:
+#         sbom (SBOM): The sbom to generate relationship graph from.
+#     """
+#     # construct a graph for adding a system relationship to all root software entries
+#     rel_graph: Dict[str, List[str]] = {}
+#     # add all UUIDs as nodes in the graph
+#     for system in sbom.systems:
+#         rel_graph[system.UUID] = []
+#     for sw in sbom.software:
+#         rel_graph[sw.UUID] = []
+#     # iterate through all relationships, adding edges to the adjacency list
+#     for rel in sbom.relationships:
+#         if rel.xUUID not in rel_graph or rel.yUUID not in rel_graph:
+#             logger.error(
+#                 f"Either the xUUID or yUUID for the relationship does not exist in the graph: {rel = }"
+#             )
+#             continue
+#         # consider also including relationship type for the edge
+#         # treat as directed graph, with inverted edges (pointing to parents) so dfs will eventually lead to the root parent node for a (sub)graph
+#         rel_graph[rel.yUUID].append(rel.xUUID)
+#     return rel_graph
 
 
-def get_roots_check_cycles(rel_graph):
-    """Function to get roots of the sbom and check for circular dependencies
+# def get_roots_check_cycles(rel_graph):
+#     """Function to get roots of the sbom and check for circular dependencies
 
-    Args:
-        rel_graph: The relationship graph for an sbom.
-    """
-    visited = set()
-    roots = set()
-    rootFound = set()
-    recursionStack = deque()
+#     Args:
+#         rel_graph: The relationship graph for an sbom.
+#     """
+#     visited = set()
+#     roots = set()
+#     rootFound = set()
+#     recursionStack = deque()
 
-    def dfs(rel):
-        recursionStack.append(rel)
-        # if the node is already visited, no revisiting required
-        if rel in visited:
-            recursionStack.pop()
-            return rel in rootFound
-        # mark the node as visited
-        visited.add(rel)
-        # the node has no parents, it is a root
-        if not rel_graph[rel]:
-            roots.add(rel)
-            rootFound.add(rel)
-            recursionStack.pop()
-            return True
-        cycle = False
-        # node is not a root, move on to parents
-        for parent in rel_graph[rel]:
-            # detect cycles
-            if parent in recursionStack:
-                logger.info(f"CYCLE DETECTED: {parent} {rel}")
-                cycle = True
-            if dfs(parent):
-                rootFound.add(rel)
-        # if there was a cycle, and none of the parents led to a definite root node
-        if cycle and rel not in rootFound:
-            logger.info(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
-            roots.add(rel)
-            rootFound.add(rel)
-        recursionStack.pop()
-        return rel in rootFound
+#     def dfs(rel):
+#         recursionStack.append(rel)
+#         # if the node is already visited, no revisiting required
+#         if rel in visited:
+#             recursionStack.pop()
+#             return rel in rootFound
+#         # mark the node as visited
+#         visited.add(rel)
+#         # the node has no parents, it is a root
+#         if not rel_graph[rel]:
+#             roots.add(rel)
+#             rootFound.add(rel)
+#             recursionStack.pop()
+#             return True
+#         cycle = False
+#         # node is not a root, move on to parents
+#         for parent in rel_graph[rel]:
+#             # detect cycles
+#             if parent in recursionStack:
+#                 logger.info(f"CYCLE DETECTED: {parent} {rel}")
+#                 cycle = True
+#             if dfs(parent):
+#                 rootFound.add(rel)
+#         # if there was a cycle, and none of the parents led to a definite root node
+#         if cycle and rel not in rootFound:
+#             logger.info(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
+#             roots.add(rel)
+#             rootFound.add(rel)
+#         recursionStack.pop()
+#         return rel in rootFound
 
-    for rel in rel_graph:
-        dfs(rel)
-    logger.info(f"ROOTS: {roots}")
-    return roots
+#     for rel in rel_graph:
+#         dfs(rel)
+#     logger.info(f"ROOTS: {roots}")
+#     return roots
 
 
 def create_system_object(sbom: SBOM, config=None, system_uuid=None) -> Tuple[System, bool]:

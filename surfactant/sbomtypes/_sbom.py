@@ -36,18 +36,22 @@ class SBOM:
     observations: List[Observation] = field(default_factory=list)
     starRelationships: Set[StarRelationship] = field(default_factory=set)
     software_lookup_by_sha256: Dict = field(default_factory=dict)
-    graph: nx.DiGraph = field(init=False, repr=False)
+    graph: nx.DiGraph = field(init=False, repr=False) # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
         self.__dataclass_fields__ = {
             k: v for k, v in self.__dataclass_fields__.items() if k not in INTERNAL_FIELDS
         }
         # Initialize the directed graph and populate any pre-existing nodes/edges
+        self.build_graph()
+
+    def build_graph(self) -> None:
+        """Rebuild the internal NetworkX DiGraph from current software, system, and relationship sets."""
         self.graph = nx.DiGraph()
+        for sys in self.systems:
+            self.graph.add_node(sys.UUID, type="System")
         for sw in self.software:
             self.graph.add_node(sw.UUID, type="Software")
-        for sys in self.systems:
-            self.graph.add_nodes(sys.UUID, type="System")
         for rel in self.relationships:
             self.graph.add_edge(rel.xUUID, rel.yUUID, relationship=rel.relationship)
 
@@ -447,3 +451,27 @@ class SBOM:
         except ValueError:
             return False
         return str(u_test) == u
+    
+
+    def get_children(self, uuid: str, rel_type: Optional[str] = None) -> List[str]:
+        """
+        Return all nodes `y` such that there is an edge (uuid → y) in `graph`.
+        If `rel_type` is provided (“Contains”, “Uses”, …), filter only edges with that relationship.
+        """
+        children = []
+        for _, v, attrs in self.graph.out_edges(uuid, data=True):
+            if not rel_type or attrs.get("relationship", "").upper() == rel_type.upper():
+                children.append(v)
+        return children
+
+
+    def get_parents(self, uuid: str, rel_type: Optional[str] = None) -> List[str]:
+        """
+        Return all nodes `x` such that there is an edge (x → uuid) in `graph`.
+        If `rel_type` is provided, filter accordingly.
+        """
+        parents = []
+        for u, _, attrs in self.graph.in_edges(uuid, data=True):
+            if not rel_type or attrs.get("relationship", "").upper() == rel_type.upper():
+                parents.append(u)
+        return parents
