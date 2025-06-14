@@ -113,6 +113,8 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 if is_docker_archive(filepath):
                     return "DOCKER_TAR"
                 return "TAR"
+            if magic_bytes[:6] == b"\x52\x61\x72\x21\x1a\x07":
+                return "RAR"
             if magic_bytes[:4] in [b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"]:
                 suffix = pathlib.Path(filepath).suffix.lower()
                 if suffix in [".zip", ".zipx"]:
