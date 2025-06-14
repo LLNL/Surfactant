@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: MIT
 import hashlib
 import time
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -15,8 +16,18 @@ import requests
 import tomlkit
 from loguru import logger
 from requests.exceptions import RequestException
+from tomlkit import parse
 
 from surfactant.configmanager import ConfigManager
+
+RTD_URL = "https://surfactant.readthedocs.io/en/latest/database_sources.toml"
+
+
+@lru_cache(maxsize=1)
+def _get_rtd_raw() -> Optional[str]:
+    raw = download_content(RTD_URL)
+    logger.debug("Fetched RTD singleton for URL: {}", RTD_URL)
+    return raw
 
 
 def download_content(url: str, timeout: int = 10, retries: int = 3) -> Optional[str]:
@@ -186,7 +197,7 @@ def get_source_for(database_category: str, key: str) -> str:
       1. Runtime override in user config.
       2. Local docs/database_sources.toml when running Surfactant from an editable install from a git clone of the Surfactant repo.
       3. ReadTheDocs hosted database_sources.toml file.
-      4. Fallback to hard-coded URL in code.
+      4. Fallback to hard-coded URL in child class code.
     """
 
     # First, check the runtime config for an override
@@ -194,15 +205,31 @@ def get_source_for(database_category: str, key: str) -> str:
     config = config_manager.config
     runtime_url = config_manager.get("sources", f"{database_category}.{key}")
     if runtime_url not in ("", [], {}, "[]", "{}", None, "None"):
+        logger.debug("Using command line overide url: {}", runtime_url)
         return runtime_url  # Return the command line override URL if present
 
     # Second, check docs/database_sources.toml for the URL
     config = fetch_db_config()
     try:
         if config:
+            logger.debug(
+                "Using command docs/database_sources.toml: {}",
+                config["sources"][database_category][key],
+            )
             return config["sources"][database_category][key]
-        logger.debug("Failed to get local database_sources.toml")
+        logger.debug("Failed to get local docs/database_sources.toml")
     except KeyError:
         logger.debug("No external override found for [{}].{}", database_category, key)
 
-    return None  # Third, fall back to the hardcoded URLs in the code
+    # Third, check ReadTheDocs
+    raw_data = _get_rtd_raw()
+    if raw_data:
+        config = parse(raw_data)  # Parse the raw TOML text into a tomlkit.document.Document
+        try:
+            runtime_url = config["sources"][database_category][key]
+            logger.debug("Using RTD url: {}", runtime_url)
+            return runtime_url  # Return url from RTD
+        except tomlkit.exceptions.NonExistentKey:
+            logger.debug("No RTD override found for [{}].{}", database_category, key)
+
+    return None  # 4th, fall back to the hardcoded URLs in the code
