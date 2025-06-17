@@ -1,0 +1,210 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        {% if cdn_resources=="in_line" %}
+            <script>{%  include 'lib/bindings/utils.js' %}</script>
+            <style>{%  include 'lib/vis-9.1.2/vis-network.css' %}</style>
+            <script>{%  include 'lib/vis-9.1.2/vis-network.min.js' %}</script>
+            <style>{%  include 'lib/tom-select/tom-select.css' %}</style>
+            <script>{%  include 'lib/tom-select/tom-select.complete.min.js' %}</script>
+
+        {%  elif cdn_resources=="remote" %}
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/fontawesome.min.css" integrity="sha384-NvKbDTEnL+A8F/AA5Tc5kmMLSJHUO868P+lDtTpJIeQdGYaUIuLr4lVGOEA1OcMy" crossorigin="anonymous">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+        {%  endif %}
+
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+        <style>
+            {%  include 'src/main.css' %}
+        </style>
+
+        <style type="text/css">
+             #mynetwork {
+                 min-width: {{width}};
+                 min-height: {{height}};
+                 background-color: {{bgcolor}};
+                 position: relative;
+                 float: left;
+                 transition: margin-left .4s;
+                 padding: 0 !important;
+             }
+
+             body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+
+             {% if nodes|length > 100 and physics_enabled %}
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 min-width: {{width}};
+                 min-height: {{height}};
+                 background-color: var(--darkBackground);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+                 z-index:100;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:2px;
+                 left:2px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:3px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:0px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+                 font-family: sans-serif;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             {% endif %}
+        </style>
+
+        <script>
+            // pyvis will replace the Jinja templates, the rest of the code is in src/main.js
+            var nodes = new vis.DataSet({{nodes|tojson}});
+            var edges = new vis.DataSet({{edges|tojson}});
+            var options = {{options|safe}};
+        </script>
+
+        <script>
+            {%  include 'src/main.js' %}
+        </script>
+    </head>
+
+    <body>
+        <div class="card" style="position: relative; width: 100%; height: 100%; border: none; background-color: var(--darkBackground);;">
+            <div id="sidebar">
+                <div class="section">
+                    <div id='sidebar-title-header' class="section-header">
+                        <i id='sidebar-title-header-icon' class=""></i>
+                        <h4 id='sidebar-title-header-name'>Click on a node to get started</h4>
+                    </div>
+                </div>
+
+                <div id="sidebar-basic-info-section" class="section" style="visibility: hidden;">
+                    <div class="section-header">
+                        <h4>Basic Info</h4>
+                    </div>
+                    <div class="section-body"></div>
+                </div>
+
+                <div id="sidebar-hashes-section" class="section" style="visibility: hidden;">
+                    <div class="section-header">
+                            <h4>Hashes</h4>
+                    </div>
+                    <div class="section-body"></div>
+                </div>
+
+                <div id="sidebar-relationships-section" class="section" style="visibility: hidden;">
+                    <div class="section-header">
+                        <h4>Relationships</h4>
+                    </div>
+                    <div class="section-body"></div>
+                </div>
+
+                <div id="sidebar-metadata-section" class="section" style="visibility: hidden;">
+                    <div class="section-header">
+                            <h4>Metadata</h4>
+                    </div>
+                    <div class="section-body"></div>
+                </div>
+            </div>
+
+            <div id="sidebarButtons">
+                <button id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar"><i class="fa-solid fa-circle-chevron-right"></i></button>
+                <button id="physicsToggle" onclick="togglePhysics()" title="Toggle physics"><i class="fa-solid fa-circle-pause"></i></button>
+                <button id="zoomToView" class="invert" onclick="zoomToView()" title="Fit graph to view"><i class="fa-solid fa-expand"></i></button>
+            </div>
+
+            <div id="mynetwork" class="card-body" oncontextmenu="return false"></div>
+
+            <div id="tooltip">
+                <h6 id="tooltip-header">Placeholder</h6>
+                <div id="tooltip-body">
+                </div>
+            </div>
+
+            <div id="logo">
+                <img src="https://raw.githubusercontent.com/LLNL/Surfactant/refs/heads/main/docs/logos/surfactant-logo-dark.png"/>
+                <h1>Surfactant</h1>
+            </div>
+        </div>
+
+        {% if nodes|length > 100 and physics_enabled %}
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        {% endif %}
+    </body>
+</html>
