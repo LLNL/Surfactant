@@ -52,7 +52,6 @@ dependencies = [
     "cyclonedx-python-lib==9.1.0",
     "pluggy==1.*",
     "click==8.*",
-    "javatools>=1.6,==1.*",
     "loguru==0.7.*",
     "flask==3.*",
     "tomlkit==0.13.*",
@@ -66,6 +65,7 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 macho = ["lief==0.16.6"]
+java = ["javatools>=1.6,==1.*"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]
