@@ -17,7 +17,7 @@ maintainers = [
 ]
 description = "Modular framework to gather file information, analyze dependencies, and generate an SBOM"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.8.1"
 keywords = ["sbom", "pe", "elf", "ole", "msi"]
 license = {text = "MIT License"}
 classifiers = [
