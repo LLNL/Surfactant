@@ -53,7 +53,6 @@ dependencies = [
     "pluggy==1.*",
     "click==8.*",
     "loguru==0.7.*",
-    "flask==3.*",
     "tomlkit==0.13.*",
     "textual==3.*",
     "requests>=2.32.3",

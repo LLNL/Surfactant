@@ -33,7 +33,6 @@ from surfactant.cmd.plugin import (
 )
 from surfactant.cmd.stat import stat
 from surfactant.cmd.tui import tui
-from surfactant.cmd.ui import ui
 
 
 @click.group()
@@ -81,7 +80,6 @@ main.add_command(config)
 main.add_command(stat)
 main.add_command(merge_command)
 main.add_command(create_config)
-main.add_command(ui)
 main.add_command(plugin)
 main.add_command(config_tui)
 main.add_command(tui)
