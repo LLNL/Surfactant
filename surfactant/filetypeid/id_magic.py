@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 import json
+import os
 import pathlib
 import tarfile
 from enum import Enum, auto
@@ -112,6 +113,8 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 if is_docker_archive(filepath):
                     return "DOCKER_TAR"
                 return "TAR"
+            if magic_bytes[:6] == b"\x52\x61\x72\x21\x1a\x07":
+                return "RAR"
             if magic_bytes[:4] in [b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"]:
                 suffix = pathlib.Path(filepath).suffix.lower()
                 if suffix in [".zip", ".zipx"]:
@@ -237,11 +240,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
 
             # MacOS dmg:
             # https://en.wikipedia.org/wiki/List_of_file_signatures
-            f.seek(-512, 2)
-            macos_bytes = f.read(4)
-            if macos_bytes[0:4] == b"koly":
-                return "MACOS_DMG"
-            f.seek(0)
+            file_size = f.seek(0, os.SEEK_END)
+            if file_size >= 512:
+                f.seek(-512, os.SEEK_END)
+                macos_bytes = f.read(4)
+                if macos_bytes[0:4] == b"koly":
+                    return "MACOS_DMG"
 
             return None
     except FileNotFoundError:

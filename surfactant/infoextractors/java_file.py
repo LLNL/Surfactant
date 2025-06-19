@@ -1,6 +1,10 @@
+from sys import modules
 from typing import Any, Dict
 
-import javatools.jarinfo
+try:
+    import javatools.jarinfo
+except ModuleNotFoundError:
+    pass
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -17,6 +21,16 @@ def supports_file(filetype: str) -> bool:
 @surfactant.plugin.hookimpl
 def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
     if not supports_file(filetype):
+        return None
+    if "javatools" not in modules:
+        # If the optional "java" dependency group isn't installed, skip gathering this info
+        # javatools is LGPL licensed so making it optional is probably safer legally
+        # and javatools also depends on Cheetah3 (ct3), which uses a compiled Python extension
+        # that makes it less than portable (project isn't releasing pre-compiled wheels for
+        # many platforms... and we don't use any of the functionality that depends on ct3)
+        # In the future, may want to write our own simpler module to handle java class files
+        # that could also support newer JDK opcodes, since javatools doesn't seem to get updated
+        # regularly either
         return None
     return extract_java_info(filename, filetype)
 
@@ -47,7 +61,7 @@ _JAVA_VERSION_MAPPING = {
 }
 
 
-def handle_java_class(info: Dict[str, Any], class_info: javatools.JavaClassInfo):
+def handle_java_class(info: Dict[str, Any], class_info: "javatools.JavaClassInfo"):
     # This shouldn't happen but just in-case it does don't overwrite information
     if class_info.get_this() in info["javaClasses"]:
         return

@@ -8,6 +8,7 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -87,3 +88,9 @@ image_directory = os.path.join(os.path.dirname(__file__), "img")
 
 # Download images
 download_images_from_toml(toml_file_path, image_directory)
+
+# -------------------------------------------------------------------
+# Make database_sources.toml available as a static file at the site root
+# https://surfactant.readthedocs.io/en/latest/database_sources.toml
+# -------------------------------------------------------------------
+html_extra_path = ["database_sources.toml"]
