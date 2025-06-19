@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
 import networkx as nx
 
-from dataclasses_json import dataclass_json
+from dataclasses_json import dataclass_json, config
 from loguru import logger
 
 from ._analysisdata import AnalysisData
@@ -36,7 +36,11 @@ class SBOM:
     observations: List[Observation] = field(default_factory=list)
     starRelationships: Set[StarRelationship] = field(default_factory=set)
     software_lookup_by_sha256: Dict = field(default_factory=dict)
-    graph: nx.DiGraph = field(init=False, repr=False) # Add a NetworkX directed graph for quick traversal/query
+    graph: nx.DiGraph = field(
+        init=False,
+        repr=False,
+        metadata=config(exclude=lambda _: True)
+    ) # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
         self.__dataclass_fields__ = {
