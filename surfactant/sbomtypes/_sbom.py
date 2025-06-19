@@ -31,6 +31,8 @@ class SBOM:
     systems: List[System] = field(default_factory=list)
     hardware: List[Hardware] = field(default_factory=list)
     software: List[Software] = field(default_factory=list)
+    # Primary relationships storage; serialized to JSON
+    # DEPRECATED: use `graph.edges(data=True)` for lookups; retained for SBOM JSON output
     relationships: Set[Relationship] = field(default_factory=set)
     analysisData: List[AnalysisData] = field(default_factory=list)
     observations: List[Observation] = field(default_factory=list)
@@ -39,7 +41,7 @@ class SBOM:
     graph: nx.DiGraph = field(
         init=False,
         repr=False,
-        metadata=config(exclude=lambda _: True)
+        metadata=config(exclude=lambda _: True) # internal graph; excluded from JSON
     ) # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
@@ -48,6 +50,7 @@ class SBOM:
         }
         # Initialize the directed graph and populate any pre-existing nodes/edges
         self.build_graph()
+ 
 
     def build_graph(self) -> None:
         """Rebuild the internal NetworkX DiGraph from current software, system, and relationship sets."""
@@ -56,11 +59,18 @@ class SBOM:
             self.graph.add_node(sys.UUID, type="System")
         for sw in self.software:
             self.graph.add_node(sw.UUID, type="Software")
-        for rel in self.relationships:
+        for rel in self.relationships: 
             self.graph.add_edge(rel.xUUID, rel.yUUID, relationship=rel.relationship)
+        
+        self.relationships = {
+            Relationship(xUUID=u, yUUID=v, relationship=attrs["relationship"])
+            for u, v, attrs in self.graph.edges(data=True)
+        }
 
     def add_relationship(self, rel: Relationship) -> None:
         self.relationships.add(rel)
+        # Legacy API still supported, but graph is now canonical
+        self.graph.add_edge(rel.xUUID, rel.yUUID, relationship=rel.relationship)
 
     def create_relationship(self, xUUID: str, yUUID: str, relationship: str) -> Relationship:
         rel = Relationship(xUUID, yUUID, relationship)
@@ -72,8 +82,10 @@ class SBOM:
         if not self.graph.has_node(yUUID):
             self.graph.add_node(yUUID, type="Unknown")
         self.graph.add_edge(xUUID, yUUID, relationship=relationship)
-        
+       
+       # Return a relationship object for compatibility
         return rel
+
 
     def find_relationship_object(self, relationship: Relationship) -> bool:
         return relationship in self.relationships
@@ -277,7 +289,7 @@ class SBOM:
 
                     # Also add an edge in the graph
                     if hasattr(self, "graph"):
-                        self.graph.add_edge(rel.xUUID, rel.xUUID, relationship=rel.relationship)
+                        self.graph.add_edge(rel.xUUID, rel.yUUID, relationship=rel.relationship)
 
         # rewrite container path UUIDs using rewrite map/list
         for sw in self.software:
@@ -479,3 +491,22 @@ class SBOM:
             if not rel_type or attrs.get("relationship", "").upper() == rel_type.upper():
                 parents.append(u)
         return parents
+    
+
+    # -------------------------------------------------------------------------
+    # Override serialization so that "relationships" in the JSON output
+    # always comes straight from graph.edges(data=True).
+    # -------------------------------------------------------------------------
+    def to_dict(self) -> dict:
+        # get the usual dict (without graph)
+        base = super().to_dict()
+        # inject our own relationships list
+        base["relationships"] = [
+            {"xUUID": u, "yUUID": v, "relationship": attrs["relationship"]}
+            for u, v, attrs in self.graph.edges(data=True)
+        ]
+        return base
+
+    def to_json(self, *args, **kwargs) -> str:
+        import json
+        return json.dumps(self.to_dict(), *args, **kwargs)
