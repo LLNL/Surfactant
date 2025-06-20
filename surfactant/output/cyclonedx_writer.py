@@ -89,14 +89,15 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         bom.dependencies.add(dep)
 
     # Output the BOM in the requested format
-    output_fmt = cyclonedx.output.OutputFormat.JSON if outformat == "json" else cyclonedx.output.OutputFormat.XML
+    output_fmt = (
+        cyclonedx.output.OutputFormat.JSON
+        if outformat == "json"
+        else cyclonedx.output.OutputFormat.XML
+    )
     outputter: cyclonedx.output.BaseOutput = cyclonedx.output.make_outputter(
-        bom=bom,
-        output_format=output_fmt,
-        schema_version=cyclonedx.schema.SchemaVersion.V1_5
+        bom=bom, output_format=output_fmt, schema_version=cyclonedx.schema.SchemaVersion.V1_5
     )
     outfile.write(outputter.output_as_string())
-
 
 
 @surfactant.plugin.hookimpl

@@ -28,7 +28,6 @@ from surfactant import __version__ as surfactant_version
 from surfactant.sbomtypes import SBOM, Software, System
 
 
-
 @surfactant.plugin.hookimpl
 def write_sbom(sbom: SBOM, outfile) -> None:
     """Writes the contents of the SBOM to a SPDX file.
@@ -142,9 +141,7 @@ def write_sbom(sbom: SBOM, outfile) -> None:
             and rel.related_spdx_element_id == pkg.spdx_id
         }
 
-        files_for_verification = [
-            f for f in spdx_doc.files if f.spdx_id in related_ids
-        ]
+        files_for_verification = [f for f in spdx_doc.files if f.spdx_id in related_ids]
         pkg.verification_code = calculate_package_verification_code(files_for_verification)
 
     # Write out
@@ -158,7 +155,6 @@ def write_sbom(sbom: SBOM, outfile) -> None:
             tvwriter.write_document_to_stream(spdx_doc, outfile)
         except ValueError as e:
             sys.stderr.write(str(e))
-
 
 
 @surfactant.plugin.hookimpl

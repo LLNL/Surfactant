@@ -7,8 +7,8 @@ from __future__ import annotations
 import uuid as uuid_module
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
-import networkx as nx
 
+import networkx as nx
 from dataclasses_json import config
 from loguru import logger
 
@@ -31,9 +31,11 @@ class SBOM:
     hardware: List[Hardware] = field(default_factory=list)
     software: List[Software] = field(default_factory=list)
     # relationships: Set[Relationship] = field(default_factory=set)  # (removed relationships field. Graph is now the single source of truth)
-    _loaded_relationships: List[Relationship] = field( # this metadata will capture the old array on load (but won’t re-emit it)
-        default_factory=list,
-        metadata=config(field_name="relationships", exclude=lambda _: True)
+    _loaded_relationships: List[Relationship] = (
+        field(  # this metadata will capture the old array on load (but won’t re-emit it)
+            default_factory=list,
+            metadata=config(field_name="relationships", exclude=lambda _: True),
+        )
     )
     analysisData: List[AnalysisData] = field(default_factory=list)
     observations: List[Observation] = field(default_factory=list)
@@ -42,8 +44,8 @@ class SBOM:
     graph: nx.DiGraph = field(
         init=False,
         repr=False,
-        metadata=config(exclude=lambda _: True) # internal graph; excluded from JSON
-    ) # Add a NetworkX directed graph for quick traversal/query
+        metadata=config(exclude=lambda _: True),  # internal graph; excluded from JSON
+    )  # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
         self.__dataclass_fields__ = {
@@ -51,7 +53,6 @@ class SBOM:
         }
         # Initialize the directed graph and populate any pre-existing nodes/edges
         self.build_graph()
- 
 
     def build_graph(self) -> None:
         """Rebuild the directed graph from systems, software, and any loaded relationships."""
@@ -77,13 +78,15 @@ class SBOM:
         if not self.graph.has_node(yUUID):
             self.graph.add_node(yUUID, type="Unknown")
         self.graph.add_edge(xUUID, yUUID, relationship=relationship)
-       
-       # Return a relationship object for compatibility
+
+        # Return a relationship object for compatibility
         return rel
 
-
     def find_relationship_object(self, r: Relationship) -> bool:
-        return self.graph.has_edge(r.xUUID, r.yUUID) and self.graph.edges[r.xUUID, r.yUUID]["relationship"] == r.relationship
+        return (
+            self.graph.has_edge(r.xUUID, r.yUUID)
+            and self.graph.edges[r.xUUID, r.yUUID]["relationship"] == r.relationship
+        )
 
     def find_relationship(self, xUUID: str, yUUID: str, relationship: str) -> bool:
         if not self.graph.has_edge(xUUID, yUUID):
@@ -98,9 +101,12 @@ class SBOM:
     ) -> bool:
         for u, v, attrs in self.graph.edges(data=True):
             # We iterate until we find a relationship that meets all the conditions
-            if xUUID and u != xUUID: continue
-            if yUUID and v != yUUID: continue
-            if relationship and attrs["relationship"].upper() != relationship.upper(): continue
+            if xUUID and u != xUUID:
+                continue
+            if yUUID and v != yUUID:
+                continue
+            if relationship and attrs["relationship"].upper() != relationship.upper():
+                continue
             return True
         return False
 
@@ -226,7 +232,6 @@ class SBOM:
                     logger.info(f"MERGE_DUPLICATE_SYS: uuid1={u1}, uuid2={u2}")
                     uuid_updates[u2] = u1
 
-                
                     # Redirect any existing edges from us -> u1 in self.graph
                     if hasattr(self, "graph") and self.graph.has_node(u2):
                         # for each predecessor of u2, add edge (pred -> u1)
@@ -270,7 +275,6 @@ class SBOM:
                     if hasattr(self, "graph"):
                         self.graph.add_node(sw.UUID, type="Software")
 
-    
         # 3) Merge relationships from the incoming SBOM’s graph
         for src, dst, attrs in sbom_m.graph.edges(data=True):
             # apply any UUID remaps from merged systems/software
@@ -279,7 +283,9 @@ class SBOM:
 
             # skip if we already have that exact relationship
             if self.find_relationship(xUUID, yUUID, attrs["relationship"]):
-                logger.info(f"DUPLICATE RELATIONSHIP: xUUID={xUUID}, yUUID{yUUID} rel={attrs["relationship"]}")
+                logger.info(
+                    f"DUPLICATE RELATIONSHIP: xUUID={xUUID}, yUUID{yUUID} rel={attrs['relationship']}"
+                )
                 continue
 
             # add into our SBOM (graph + JSON via to_dict)
@@ -300,7 +306,7 @@ class SBOM:
 
         logger.info(f"UUID UPDATES: {uuid_updates}")
 
-         # 5) Merge analysisData, observations, starRelationships
+        # 5) Merge analysisData, observations, starRelationships
         for ad in sbom_m.analysisData:
             self.analysisData.append(ad)
         for obs in sbom_m.observations:
@@ -456,7 +462,6 @@ class SBOM:
         except ValueError:
             return False
         return str(u_test) == u
-    
 
     def get_children(self, uuid: str, rel_type: Optional[str] = None) -> List[str]:
         """
@@ -469,7 +474,6 @@ class SBOM:
                 children.append(v)
         return children
 
-
     def get_parents(self, uuid: str, rel_type: Optional[str] = None) -> List[str]:
         """
         Return all nodes `x` such that there is an edge (x → uuid) in `graph`.
@@ -480,16 +484,16 @@ class SBOM:
             if not rel_type or attrs.get("relationship", "").upper() == rel_type.upper():
                 parents.append(u)
         return parents
-    
 
     def to_dict(self) -> dict:
         """Serialize all fields except internal graph/loader, then inject graph-derived relationships."""
         from dataclasses import asdict
+
         logger.debug("HERE")
 
         # 1) Dump every dataclass field into a plain dict
         data = asdict(self)
-        
+
         # 2) Drop internal‐only bits
         data.pop("graph", None)
         data.pop("_loaded_relationships", None)
@@ -505,11 +509,11 @@ class SBOM:
             for u, v, attrs in self.graph.edges(data=True)
         ]
         return data
-    
 
     def to_json(self, *args, **kwargs) -> str:
         """Dump our custom to_dict() to JSON."""
         logger.debug("HERE")
         import json
+
         logger.debug("SBOM.to_json() running override")
         return json.dumps(self.to_dict(), *args, **kwargs)

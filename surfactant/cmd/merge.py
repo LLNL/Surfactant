@@ -4,12 +4,11 @@ from collections import deque
 from typing import Dict, List, Tuple
 
 import click
-from loguru import logger
 import networkx as nx
+from loguru import logger
 
 from surfactant.configmanager import ConfigManager
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
-from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
 from surfactant.sbomtypes._system import System
 
