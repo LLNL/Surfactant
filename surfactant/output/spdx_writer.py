@@ -28,6 +28,7 @@ from surfactant import __version__ as surfactant_version
 from surfactant.sbomtypes import SBOM, Software, System
 
 
+
 @surfactant.plugin.hookimpl
 def write_sbom(sbom: SBOM, outfile) -> None:
     """Writes the contents of the SBOM to a SPDX file.

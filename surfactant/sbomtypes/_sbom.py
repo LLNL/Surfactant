@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
 import networkx as nx
 
-from dataclasses_json import dataclass_json, config
+from dataclasses_json import config
 from loguru import logger
 
 from ._analysisdata import AnalysisData
@@ -24,16 +24,17 @@ from ._system import System
 INTERNAL_FIELDS = {"software_lookup_by_sha256"}
 
 
-@dataclass_json
 @dataclass
 class SBOM:
     # pylint: disable=R0902
     systems: List[System] = field(default_factory=list)
     hardware: List[Hardware] = field(default_factory=list)
     software: List[Software] = field(default_factory=list)
-    # Primary relationships storage; serialized to JSON
-    # DEPRECATED: use `graph.edges(data=True)` for lookups; retained for SBOM JSON output
-    relationships: Set[Relationship] = field(default_factory=set)
+    # relationships: Set[Relationship] = field(default_factory=set)  # (removed relationships field. Graph is now the single source of truth)
+    _loaded_relationships: List[Relationship] = field( # this metadata will capture the old array on load (but won’t re-emit it)
+        default_factory=list,
+        metadata=config(field_name="relationships", exclude=lambda _: True)
+    )
     analysisData: List[AnalysisData] = field(default_factory=list)
     observations: List[Observation] = field(default_factory=list)
     starRelationships: Set[StarRelationship] = field(default_factory=set)
@@ -53,28 +54,22 @@ class SBOM:
  
 
     def build_graph(self) -> None:
-        """Rebuild the internal NetworkX DiGraph from current software, system, and relationship sets."""
+        """Rebuild the directed graph from systems, software, and any loaded relationships."""
         self.graph = nx.DiGraph()
         for sys in self.systems:
             self.graph.add_node(sys.UUID, type="System")
         for sw in self.software:
             self.graph.add_node(sw.UUID, type="Software")
-        for rel in self.relationships: 
+        # rehydrate edges from loaded JSON (if any)
+        for rel in self._loaded_relationships:
             self.graph.add_edge(rel.xUUID, rel.yUUID, relationship=rel.relationship)
-        
-        self.relationships = {
-            Relationship(xUUID=u, yUUID=v, relationship=attrs["relationship"])
-            for u, v, attrs in self.graph.edges(data=True)
-        }
 
     def add_relationship(self, rel: Relationship) -> None:
-        self.relationships.add(rel)
-        # Legacy API still supported, but graph is now canonical
+        # graph is now canonical
         self.graph.add_edge(rel.xUUID, rel.yUUID, relationship=rel.relationship)
 
     def create_relationship(self, xUUID: str, yUUID: str, relationship: str) -> Relationship:
         rel = Relationship(xUUID, yUUID, relationship)
-        self.relationships.add(rel)
 
         # Also add the edge into the NetworkX graph
         if not self.graph.has_node(xUUID):
@@ -87,11 +82,13 @@ class SBOM:
         return rel
 
 
-    def find_relationship_object(self, relationship: Relationship) -> bool:
-        return relationship in self.relationships
+    def find_relationship_object(self, r: Relationship) -> bool:
+        return self.graph.has_edge(r.xUUID, r.yUUID) and self.graph.edges[r.xUUID, r.yUUID]["relationship"] == r.relationship
 
     def find_relationship(self, xUUID: str, yUUID: str, relationship: str) -> bool:
-        return Relationship(xUUID, yUUID, relationship) in self.relationships
+        if not self.graph.has_edge(xUUID, yUUID):
+            return False
+        return self.graph.edges[xUUID, yUUID]["relationship"].upper() == relationship.upper()
 
     def has_relationship(
         self,
@@ -99,14 +96,11 @@ class SBOM:
         yUUID: Optional[str] = None,
         relationship: Optional[str] = None,
     ) -> bool:
-        for rel in self.relationships:
+        for u, v, attrs in self.graph.edges(data=True):
             # We iterate until we find a relationship that meets all the conditions
-            if xUUID and rel.xUUID != xUUID:
-                continue
-            if yUUID and rel.yUUID != yUUID:
-                continue
-            if relationship and rel.relationship.upper() != relationship.upper():
-                continue
+            if xUUID and u != xUUID: continue
+            if yUUID and v != yUUID: continue
+            if relationship and attrs["relationship"].upper() != relationship.upper(): continue
             return True
         return False
 
@@ -146,12 +140,18 @@ class SBOM:
                 self.add_software(e)
             else:
                 existing_uuid, entry_uuid = existing_sw.merge(e)
-                # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs)
-                for rel in self.relationships:
-                    if rel.xUUID == entry_uuid:
-                        rel.xUUID = existing_uuid
-                    if rel.yUUID == entry_uuid:
-                        rel.yUUID = existing_uuid
+                # go through relationships and see if any need existing entries updated for the replaced uuid (e.g. merging SBOMs).
+                # Rewire any graph edges from entry_uuid → existing_uuid.
+                if hasattr(self, "graph") and self.graph.has_node(entry_uuid):
+                    # 1) Redirect incoming edges (pred → entry_uuid) to (pred → existing_uuid)
+                    for pred, _, attrs in list(self.graph.in_edges(entry_uuid, data=True)):
+                        self.graph.add_edge(pred, existing_uuid, **attrs)
+                    # 2) Redirect outgoing edges (entry_uuid → succ) to (existing_uuid → succ)
+                    for _, succ, attrs in list(self.graph.out_edges(entry_uuid, data=True)):
+                        self.graph.add_edge(existing_uuid, succ, **attrs)
+                    # 3) Remove the old node
+                    self.graph.remove_node(entry_uuid)
+
             # if a parent/container was specified for the file, add the new entry as a "Contains" relationship
             if parent_entry:
                 parent_uuid = parent_entry.UUID
@@ -216,7 +216,7 @@ class SBOM:
         # merged/old to new UUID map
         uuid_updates = {}
 
-        # merge systems entries
+        # 1) Merge systems
         if sbom_m.systems:
             for system in sbom_m.systems:
                 # check for duplicate UUID/name, merge with existing entry
@@ -244,7 +244,7 @@ class SBOM:
                     if hasattr(self, "graph"):
                         self.graph.add_node(system.UUID, type="System")
 
-        # merge software entries
+        # 2) Merge software
         if sbom_m.software:
             for sw in sbom_m.software:
                 # NOTE: Do we want to pass in teh UUID here? What if we have two different UUIDs for the same file? Should hashes be required?
@@ -270,28 +270,22 @@ class SBOM:
                     if hasattr(self, "graph"):
                         self.graph.add_node(sw.UUID, type="Software")
 
-        # merge relationships
-        if sbom_m.relationships:
-            for rel in sbom_m.relationships:
-                # rewrite UUIDs before doing the search
-                if rel.xUUID in uuid_updates:
-                    rel.xUUID = uuid_updates[rel.xUUID]
-                if rel.yUUID in uuid_updates:
-                    rel.yUUID = uuid_updates[rel.yUUID]
-                if existing_rel := self._find_relationship_entry(
-                    xUUID=rel.xUUID,
-                    yUUID=rel.yUUID,
-                    relationship=rel.relationship,
-                ):
-                    logger.info(f"DUPLICATE RELATIONSHIP: {existing_rel}")
-                else:
-                    self.relationships.add(rel)
+    
+        # 3) Merge relationships from the incoming SBOM’s graph
+        for src, dst, attrs in sbom_m.graph.edges(data=True):
+            # apply any UUID remaps from merged systems/software
+            xUUID = uuid_updates.get(src, src)
+            yUUID = uuid_updates.get(dst, dst)
 
-                    # Also add an edge in the graph
-                    if hasattr(self, "graph"):
-                        self.graph.add_edge(rel.xUUID, rel.yUUID, relationship=rel.relationship)
+            # skip if we already have that exact relationship
+            if self.find_relationship(xUUID, yUUID, attrs["relationship"]):
+                logger.info(f"DUPLICATE RELATIONSHIP: xUUID={xUUID}, yUUID{yUUID} rel={attrs["relationship"]}")
+                continue
 
-        # rewrite container path UUIDs using rewrite map/list
+            # add into our SBOM (graph + JSON via to_dict)
+            self.create_relationship(xUUID, yUUID, attrs["relationship"])
+
+        # 4) Rewrite any containerPath UUIDs
         for sw in self.software:
             if sw.containerPath:
                 for idx, path in enumerate(sw.containerPath):
@@ -303,31 +297,28 @@ class SBOM:
                             sw.containerPath[idx] = updated_path
                 # remove duplicates
                 sw.containerPath = [*set(sw.containerPath)]
+
         logger.info(f"UUID UPDATES: {uuid_updates}")
-        # merge analysisData
-        if sbom_m.analysisData:
-            for analysisData in sbom_m.analysisData:
-                self.analysisData.append(analysisData)
-        # merge observations
-        if sbom_m.observations:
-            for observation in sbom_m.observations:
-                self.observations.append(observation)
-        # merge starRelationships
-        if sbom_m.starRelationships:
-            for star_rel in sbom_m.starRelationships:
-                # rewrite UUIDs before doing the search
-                if star_rel.xUUID in uuid_updates:
-                    star_rel.xUUID = uuid_updates[star_rel.xUUID]
-                if star_rel.yUUID in uuid_updates:
-                    star_rel.yUUID = uuid_updates[star_rel.yUUID]
-                if existing_star_rel := self._find_star_relationship_entry(
-                    xUUID=star_rel.xUUID,
-                    yUUID=star_rel.yUUID,
-                    relationship=star_rel.relationship,
-                ):
-                    logger.info(f"DUPLICATE STAR RELATIONSHIP: {existing_star_rel}")
-                else:
-                    self.starRelationships.add(star_rel)
+
+         # 5) Merge analysisData, observations, starRelationships
+        for ad in sbom_m.analysisData:
+            self.analysisData.append(ad)
+        for obs in sbom_m.observations:
+            self.observations.append(obs)
+        for star_rel in sbom_m.starRelationships:
+            # rewrite UUIDs before doing the search
+            if star_rel.xUUID in uuid_updates:
+                star_rel.xUUID = uuid_updates[star_rel.xUUID]
+            if star_rel.yUUID in uuid_updates:
+                star_rel.yUUID = uuid_updates[star_rel.yUUID]
+            if existing_star_rel := self._find_star_relationship_entry(
+                xUUID=star_rel.xUUID,
+                yUUID=star_rel.yUUID,
+                relationship=star_rel.relationship,
+            ):
+                logger.info(f"DUPLICATE STAR RELATIONSHIP: {existing_star_rel}")
+            else:
+                self.starRelationships.add(star_rel)
 
     def _find_systems_entry(
         self, uuid: Optional[str] = None, name: Optional[str] = None
@@ -410,17 +401,15 @@ class SBOM:
         Returns:
             Optional[Relationship]: The relationship entry found that matches the given criteria, otherwise None.
         """
-        for rel in self.relationships:
-            if xUUID:
-                if rel.xUUID != xUUID:
-                    continue
-            if yUUID:
-                if rel.yUUID != yUUID:
-                    continue
-            if relationship:
-                if rel.relationship != relationship:
-                    continue
-            return rel
+        for u, v, attrs in self.graph.edges(data=True):
+            if xUUID and u != xUUID:
+                continue
+            if yUUID and v != yUUID:
+                continue
+            if relationship and attrs.get("relationship", "").upper() != relationship.upper():
+                continue
+            # reconstruct the Relationship object for merge‐logic
+            return Relationship(xUUID=u, yUUID=v, relationship=attrs["relationship"])
         return None
 
     def _find_star_relationship_entry(
@@ -493,20 +482,34 @@ class SBOM:
         return parents
     
 
-    # -------------------------------------------------------------------------
-    # Override serialization so that "relationships" in the JSON output
-    # always comes straight from graph.edges(data=True).
-    # -------------------------------------------------------------------------
     def to_dict(self) -> dict:
-        # get the usual dict (without graph)
-        base = super().to_dict()
-        # inject our own relationships list
-        base["relationships"] = [
+        """Serialize all fields except internal graph/loader, then inject graph-derived relationships."""
+        from dataclasses import asdict
+        logger.debug("HERE")
+
+        # 1) Dump every dataclass field into a plain dict
+        data = asdict(self)
+        
+        # 2) Drop internal‐only bits
+        data.pop("graph", None)
+        data.pop("_loaded_relationships", None)
+
+        # 3) Convert any sets → lists so JSON can handle them
+        for key, val in list(data.items()):
+            if isinstance(val, set):
+                data[key] = list(val)
+
+        # 4) Inject the canonical relationships list from the graph
+        data["relationships"] = [
             {"xUUID": u, "yUUID": v, "relationship": attrs["relationship"]}
             for u, v, attrs in self.graph.edges(data=True)
         ]
-        return base
+        return data
+    
 
     def to_json(self, *args, **kwargs) -> str:
+        """Dump our custom to_dict() to JSON."""
+        logger.debug("HERE")
         import json
+        logger.debug("SBOM.to_json() running override")
         return json.dumps(self.to_dict(), *args, **kwargs)

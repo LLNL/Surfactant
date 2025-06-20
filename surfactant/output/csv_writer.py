@@ -10,6 +10,7 @@ from typing import List, Optional
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
+
 default_fields = [
     "Path",
     "SHA1",
