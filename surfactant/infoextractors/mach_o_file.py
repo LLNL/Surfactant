@@ -7,7 +7,7 @@
 # https://lief.re/doc/stable/api/python/macho.html
 
 from sys import modules
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from loguru import logger
 
@@ -27,12 +27,16 @@ __include_bindings_exports = __config_manager.get("macho", "include_bindings_exp
 __include_signature_content = __config_manager.get("macho", "include_signature_content", False)
 
 
-def supports_file(filetype) -> bool:
-    return filetype in ("MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
+def supports_file(filetype: List[str]) -> bool:
+    supported_types = ("MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
+    for ft in filetype:
+        if ft in supported_types:
+            return True
+    return False
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
     if not supports_file(filetype):
         return None
     if "lief" not in modules:
