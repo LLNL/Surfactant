@@ -16,7 +16,7 @@ import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
 
-def supports_file(filetype) -> bool:
+def supports_file(filetype: List[str]) -> bool:
     return "ELF" in filetype
 
 

@@ -9,9 +9,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype: List[str]) -> bool:
-    if "COFF" in filetype:
-        return True
-    return False
+    return "COFF" in filetype
 
 
 @surfactant.plugin.hookimpl
