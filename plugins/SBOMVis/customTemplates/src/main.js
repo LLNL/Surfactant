@@ -634,3 +634,11 @@ function zoomToView(nodes) {
 
 	network.fit(options);
 }
+
+function exportImage() {
+	const canvas = document.getElementById("mynetwork").querySelector("canvas");
+
+	canvas.toBlob((blob) => {
+		saveAs(blob, "SBOM.png");
+	});
+}

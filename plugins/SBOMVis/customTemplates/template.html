@@ -16,6 +16,7 @@
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/fontawesome.min.css" integrity="sha384-NvKbDTEnL+A8F/AA5Tc5kmMLSJHUO868P+lDtTpJIeQdGYaUIuLr4lVGOEA1OcMy" crossorigin="anonymous">
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
             <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha512-Qlv6VSKh1gDKGoJbnyA5RMXYcvnpIqhO++MhIM2fStMcGT9i2T//tSwYFlcyoRRDcDZ+TYHpH8azBBCyhpSeqw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
         {%  endif %}
 
         <link
@@ -180,6 +181,7 @@
                 <button id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar"><i class="fa-solid fa-circle-chevron-right"></i></button>
                 <button id="physicsToggle" onclick="togglePhysics()" title="Toggle physics"><i class="fa-solid fa-circle-pause"></i></button>
                 <button id="zoomToView" class="invert" onclick="zoomToView()" title="Fit graph to view"><i class="fa-solid fa-expand"></i></button>
+                <button id="exportImage" onclick="exportImage()" title="Export as PNG"><i class="fa-solid fa-circle-down"></i></button>
             </div>
 
             <div id="mynetwork" class="card-body" oncontextmenu="return false"></div>
