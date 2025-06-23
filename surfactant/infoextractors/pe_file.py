@@ -20,8 +20,8 @@ import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
 
-def supports_file(filetype) -> bool:
-    return filetype == "PE"
+def supports_file(filetype: List[str]) -> bool:
+    return "PE" in filetype
 
 
 @surfactant.plugin.hookimpl
@@ -29,11 +29,12 @@ def extract_file_info(
     sbom: SBOM,
     software: Software,
     filename: str,
-    filetype: str,
+    filetype: List[str],
     software_field_hints: List[Tuple[str, object, int]],
 ) -> object:
     if not supports_file(filetype):
         return None
+    print("PE support")
     pe_info = extract_pe_info(filename)
     if pe_info:
         if "FileInfo" in pe_info:
