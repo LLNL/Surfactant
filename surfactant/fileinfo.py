@@ -7,6 +7,8 @@ import stat
 import sys
 from hashlib import md5, sha1, sha256
 
+from loguru import logger
+
 
 def get_file_info(filename):
     """Get information about a file.
@@ -90,11 +92,15 @@ def sha256sum(filename):
     Raises:
         FileNotFoundError: If the given filename could not be found.
     """
-    h = sha256()
-    with open(filename, "rb") as f:
-        # Reading is buffered by default (https://docs.python.org/3/library/functions.html#open)
-        chunk = f.read(h.block_size)
-        while chunk:
-            h.update(chunk)
+    if os.path.isfile(filename):
+        h = sha256()
+        with open(filename, "rb") as f:
+            print("filenamae: ", filename)
+            # Reading is buffered by default (https://docs.python.org/3/library/functions.html#open)
             chunk = f.read(h.block_size)
-    return h.hexdigest()
+            while chunk:
+                h.update(chunk)
+                chunk = f.read(h.block_size)
+        return h.hexdigest()
+    logger.warning(f"Skipping non-file: {filename}")
+    return None

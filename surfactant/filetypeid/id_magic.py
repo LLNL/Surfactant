@@ -75,10 +75,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 # If coff_addr is still longer than what has been read so far, it points off the end
                 # of the file, so the file is either malformed or something else is up.
                 if coff_addr + 4 > len(magic_bytes):
-                    # return "Malformed PE"
                     filetype_matches.append("Malformed PE")
-                    # do we need to return immediately here?
-                    return filetype_matches
 
                 if magic_bytes[coff_addr : coff_addr + 4] != b"PE\x00\x00":
                     filetype_matches.append("DOS")
@@ -182,6 +179,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 in COFF_MAGIC_TARGET_NAME
             ):
                 filetype_matches.append("COFF")
+            print("filetype: ", filetype_matches)
             # XCOFF:
             # https://www.ibm.com/docs/en/aix/7.3?topic=formats-xcoff-object-file-format
             if magic_bytes[:2] == "\x1d\x00":
@@ -241,7 +239,6 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 if iso_bytes == b"CD001":
                     filetype_matches.append("ISO_9660_CD")
             f.seek(0)
-
             # MacOS dmg:
             # https://en.wikipedia.org/wiki/List_of_file_signatures
             file_size = f.seek(0, os.SEEK_END)
@@ -250,13 +247,12 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 macos_bytes = f.read(4)
                 if macos_bytes[0:4] == b"koly":
                     filetype_matches.append("MACOS_DMG")
-
             # rpm:
             # https://rpm-software-management.github.io/rpm/manual/
             if magic_bytes[:4] == b"\xed\xab\xee\xdb":
-                return "RPM Package"
+                filetype_matches.append("RPM Package")
 
-            return None
     except FileNotFoundError:
         return None
+
     return filetype_matches
