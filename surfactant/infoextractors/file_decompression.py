@@ -34,6 +34,8 @@ RAR_SUPPORT = {"enabled": True}
 
 
 def supports_file(filetype: list[str]) -> Optional[list[str]]:
+    if filetype is None:
+        return None
     supported_types = {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"}
     supported = []
     # Filter out non-archive types
@@ -62,12 +64,13 @@ def extract_file_info(
     compression_format = supports_file(filetype)
 
     if compression_format:
-        create_extraction(
-            filename,
-            context_queue,
-            current_context,
-            lambda f, t: decompress_to(f, t, compression_format),
-        )
+        for fmt in compression_format:
+            create_extraction(
+                filename,
+                context_queue,
+                current_context,
+                lambda f, t, fmt=fmt: decompress_to(f, t, fmt),
+            )
 
 
 # decompress takes a filename and an output folder, and decompresses the file into that folder.
