@@ -68,21 +68,20 @@ def generate_dependency_graph(
             nodeMetadata=dataclasses.asdict(metadata),
         )
 
-    match edgeType:
-        case EdgeType.FileRelationship:
-            for i in sbom.relationships:
-                if i.relationship == "Uses":
-                    g.add_edge(i.yUUID, i.xUUID, container=False)
+    if edgeType == EdgeType.FileRelationship:
+        for i in sbom.relationships:
+            if i.relationship == "Uses":
+                g.add_edge(i.yUUID, i.xUUID, container=False)
 
-                elif i.relationship == "Contains":
-                    g.add_edge(i.xUUID, i.yUUID, container=True)
-                    g.nodes[i.xUUID]["nodeMetadata"]["type"] = NodeType.Container
+            elif i.relationship == "Contains":
+                g.add_edge(i.xUUID, i.yUUID, container=True)
+                g.nodes[i.xUUID]["nodeMetadata"]["type"] = NodeType.Container
 
-                else:
-                    logger.warning(f"Unimplemented relationship: {i.relationship}")
+            else:
+                logger.warning(f"Unimplemented relationship: {i.relationship}")
 
-        case EdgeType.MetadataSimilarity:
-            pass
+    elif edgeType == EdgeType.MetadataSimilarity:
+        pass
 
     if enableCulling:
         g.remove_nodes_from(list(networkx.isolates(g)))  # Cull nodes with no edges
@@ -94,11 +93,11 @@ def generate_dependency_graph(
     # Set node size based on connected edges
     updatedValues = {}
     for ID in g.nodes:
-        match g.nodes[ID]["nodeMetadata"]["type"]:
-            case NodeType.File:
-                updatedValues[ID] = DisplaySettings.icon_scale_factor * max(2, g.in_degree(ID))
-            case NodeType.Container:
-                updatedValues[ID] = DisplaySettings.icon_scale_factor * max(1, g.degree(ID))
+        fileType = g.nodes[ID]["nodeMetadata"]["type"]
+        if fileType == NodeType.File:
+            updatedValues[ID] = DisplaySettings.icon_scale_factor * max(2, g.in_degree(ID))
+        elif fileType == NodeType.Container:
+            updatedValues[ID] = DisplaySettings.icon_scale_factor * max(1, g.degree(ID))
 
     networkx.set_node_attributes(g, updatedValues, "size")
 
