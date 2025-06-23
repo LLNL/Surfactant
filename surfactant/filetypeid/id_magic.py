@@ -51,7 +51,6 @@ def is_docker_archive(filepath: str) -> bool:
 
 @surfactant.plugin.hookimpl(tryfirst=True)
 def identify_file_type(filepath: str) -> Optional[str]:
-    # pylint: disable=too-many-return-statements
     filetype_matches = []
     try:
         with open(filepath, "rb") as f:

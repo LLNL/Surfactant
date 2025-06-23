@@ -49,7 +49,8 @@ def identify_file_type(filepath: str) -> Optional[List[str]]:
                 head = head[:end_line]
                 for interpreter, filetype in _interpreters.items():
                     if re.search(interpreter, head):
-                        return filetype
+                        filetype_matches.extend(filetype)
+                        # return filetype
                 filetype_matches.append("SHEBANG")
     except FileNotFoundError:
         logger.warning(f"File not found: {filepath}")

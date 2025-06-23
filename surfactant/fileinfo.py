@@ -95,7 +95,6 @@ def sha256sum(filename):
     if os.path.isfile(filename):
         h = sha256()
         with open(filename, "rb") as f:
-            print("filenamae: ", filename)
             # Reading is buffered by default (https://docs.python.org/3/library/functions.html#open)
             chunk = f.read(h.block_size)
             while chunk:

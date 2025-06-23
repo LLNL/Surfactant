@@ -96,7 +96,7 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
 js_db_manager = RetireJSDatabaseManager()
 
 
-def supports_file(filetype) -> bool:
+def supports_file(filetype: List[str]) -> bool:
     return "JAVASCRIPT" in filetype
 
 
