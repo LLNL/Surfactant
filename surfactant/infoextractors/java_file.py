@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 from sys import modules
 from typing import Any, Dict
+=======
+from typing import Any, Dict, List
+>>>>>>> 6212ffa (changing filetype to list[str])
 
 try:
     import javatools.jarinfo
@@ -14,12 +18,16 @@ from surfactant.sbomtypes import SBOM, Software
 # https://gitlab.com/m2crypto/m2crypto/-/blob/master/INSTALL.rst
 
 
-def supports_file(filetype: str) -> bool:
-    return filetype in ("JAVACLASS", "JAR", "WAR", "EAR")
+def supports_file(filetype: List[str]) -> bool:
+    supported_types = ("JAVACLASS", "JAR", "WAR", "EAR")
+    for ft in filetype:
+        if ft in supported_types:
+            return True
+    return False
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
     if not supports_file(filetype):
         return None
     if "javatools" not in modules:
@@ -80,13 +88,13 @@ def handle_java_class(info: Dict[str, Any], class_info: "javatools.JavaClassInfo
         add_to["javaImports"] = []
 
 
-def extract_java_info(filename: str, filetype: str) -> object:
+def extract_java_info(filename: str, filetype: List[str]) -> object:
     info: Dict[str, Any] = {"javaClasses": {}}
-    if filetype in ("JAR", "EAR", "WAR"):
+    if "JAR" in filetype or "EAR" in filetype or "WAR" in filetype:
         with javatools.jarinfo.JarInfo(filename) as jarinfo:
             for class_ in jarinfo.get_classes():
                 handle_java_class(info, jarinfo.get_classinfo(class_))
-    elif filetype == "JAVACLASS":
+    elif "JAVACLASS" in filetype:
         with open(filename, "rb") as f:
             class_info = javatools.JavaClassInfo()
             class_info.unpack(javatools.unpack(f))
