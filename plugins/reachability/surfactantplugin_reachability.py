@@ -9,12 +9,12 @@ from cle import CLECompatibilityError
 from loguru import logger
 
 import surfactant.plugin
-
+from surfactant.sbomtypes import SBOM, Software
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 # extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str):
 # def angrimport_finder(filename: str, filetype: str, filehash: str):
-def reachability(filename: str, filetype: str):
+def reachability(sbom: SBOM, software: Software, filename: str, filetype: str):
     """
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
     :param software(Software): The software entry associated with the file to extract information from.
@@ -26,6 +26,9 @@ def reachability(filename: str, filetype: str):
     if filetype not in ["ELF", "PE"]:
         pass
     filename = Path(filename)
+
+    print(sbom)
+    print(software)
 
     database = {}
 
@@ -72,7 +75,7 @@ def reachability(filename: str, filetype: str):
                     if imported_function.name not in database[exp_name][library]:
                         database[exp_name][library].append(imported_function.name)
 
-        return database
+        return {"export_fn_reachability": database}
 
     except CLECompatibilityError as e:
         logger.info(f"Angr Error {filename} {e}")
