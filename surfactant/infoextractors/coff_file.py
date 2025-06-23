@@ -2,19 +2,23 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+from typing import List
+
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
 
-def supports_file(filetype: str) -> bool:
-    return filetype == "COFF"
+def supports_file(filetype: List[str]) -> bool:
+    if "COFF" in filetype:
+        return True
+    return False
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
     if not supports_file(filetype):
         return None
-    return extract_coff_out_info(filetype, filename)
+    return extract_coff_out_info(filename)
 
 
 # Machine types:
@@ -33,7 +37,7 @@ COFF_MAGIC_TARGET_NAME = {
 }
 
 
-def extract_coff_out_info(filetype: str, filename: str) -> object:
+def extract_coff_out_info(filename: str) -> object:
     try:
         with open(filename, "rb") as f:
             magic_bytes = f.read(4)

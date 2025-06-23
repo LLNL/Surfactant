@@ -6,7 +6,7 @@ import gzip
 import json
 import subprocess
 import tempfile
-from typing import Optional
+from typing import List, Optional
 
 from loguru import logger
 
@@ -70,22 +70,24 @@ class DockerScoutManager:
 dsManager = DockerScoutManager()
 
 
-def supports_file(filetype: str) -> bool:
+def supports_file(filetype: List[str]) -> bool:
     """Check if the file type is supported."""
-    return filetype in ("DOCKER_TAR", "DOCKER_GZIP")
+    if "DOCKER_TAR" in filetype or "DOCKER_GZIP" in filetype:
+        return True
+    return False
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
     """Extract file information using Docker Scout if supported."""
     if dsManager.disable_docker_scout or not supports_file(filetype):
         return None
     return extract_docker_info(filetype, filename)
 
 
-def extract_docker_info(filetype: str, filename: str) -> object:
+def extract_docker_info(filetype: List[str], filename: str) -> object:
     """Extract Docker information based on file type."""
-    if filetype == "DOCKER_GZIP":
+    if "DOCKER_GZIP" in filetype:
         with open(filename, "rb") as gzip_in:
             gzip_data = gzip_in.read()
         with tempfile.NamedTemporaryFile() as gzip_out:

@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 import struct
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from elftools.common.exceptions import ELFError, ELFParseError
 from elftools.elf.dynamic import DynamicSection
@@ -17,11 +17,11 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype) -> bool:
-    return filetype == "ELF"
+    return "ELF" in filetype
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
     if not supports_file(filetype):
         return None
     return extract_elf_info(filename)
