@@ -1,14 +1,5 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
 from sys import modules
 from typing import Any, Dict
-=======
-from typing import Any, Dict, List
->>>>>>> 6212ffa (changing filetype to list[str])
-=======
-from sys import modules
-from typing import Any, Dict
->>>>>>> 71977f3 (fix id_extension.py)
 
 try:
     import javatools.jarinfo
