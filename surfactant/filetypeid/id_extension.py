@@ -4,15 +4,18 @@
 # SPDX-License-Identifier: MIT
 import pathlib
 import re
-from typing import List, Optional
+from typing import Optional
 
 from loguru import logger
 
 import surfactant.plugin
 
+print("hello JS")
+
 
 @surfactant.plugin.hookimpl
-def identify_file_type(filepath: str) -> Optional[List[str]]:
+def identify_file_type(filepath: str) -> Optional[str]:
+    print("inside JS")
     # pylint: disable=too-many-return-statements
     _filetype_extensions = {
         ".sh": "SHELL",
@@ -38,26 +41,25 @@ def identify_file_type(filepath: str) -> Optional[List[str]]:
         b"python3": "PYTHON",
         b"perl": "PERL",
     }
-    filetype_matches = []
     try:
+        print("hello")
         with open(filepath, "rb") as f:
             head = f.read(256)
             if head.startswith(b"<!DOCTYPE html>"):
-                filetype_matches.append("HTML")
+                return ["HTML"]
             if head.startswith(b"#!") and b"\n" in head:
                 end_line = head.index(b"\n")
                 head = head[:end_line]
                 for interpreter, filetype in _interpreters.items():
                     if re.search(interpreter, head):
-                        filetype_matches.extend(filetype)
-                        # return filetype
-                filetype_matches.append("SHEBANG")
+                        return [filetype]
+                return ["SHEBANG"]
     except FileNotFoundError:
         logger.warning(f"File not found: {filepath}")
         return None
     suffix = pathlib.Path(filepath).suffix.lower()
     if suffix in _filetype_extensions:
-        filetype_matches.append(_filetype_extensions[suffix])
-    if filetype_matches:
-        return filetype_matches
+        print("suffix: ", suffix)
+        print("filetype: ", [_filetype_extensions[suffix]])
+        return [_filetype_extensions[suffix]]
     return None
