@@ -21,7 +21,8 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype: List[str]) -> bool:
-    return "PE" in filetype
+    # return "PE" in filetype
+    return filetype == "PE"
 
 
 @surfactant.plugin.hookimpl
