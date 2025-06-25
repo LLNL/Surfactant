@@ -3,7 +3,11 @@ import {
 	toggleSidebar,
 } from "#buttonEventHandlersModule";
 import { createPopupElement } from "#popupModule";
-import { buildNodeSelectionSidebar, buildSearchSidebar } from "#sidebarModule";
+import {
+	buildNodeSelectionSidebar,
+	buildSBOMOverviewSidebar,
+	buildSearchSidebar,
+} from "#sidebarModule";
 
 // This method is responsible for drawing the graph, returns the drawn network
 function drawGraph() {
@@ -211,6 +215,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			.load('normal normal 900 24px/1 "Font Awesome 6 Free"')
 			.catch(console.error("Failed to load Font Awesome 6"))
 			.then(() => {
+				document
+					.getElementById("sidebar")
+					.replaceChildren(...buildSBOMOverviewSidebar());
 				setButtonEventHandlers();
 				drawGraph();
 			})

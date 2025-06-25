@@ -228,6 +228,14 @@ function createSection({ title, icon = null, body = [] }) {
 	return section;
 }
 
+export function buildSBOMOverviewSidebar() {
+	return [
+		createSection({
+			title: "Click on a node to get started",
+		}),
+	];
+}
+
 export function buildNodeSelectionSidebar(nodeID) {
 	let clickedNode = null;
 
