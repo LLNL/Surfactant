@@ -198,14 +198,14 @@ function getIconClassForFileType(type) {
 	}
 }
 
-function createSection(title, icon) {
+function createSection({ title, icon = null, body = [] }) {
 	const section = document.createElement("div");
 	section.classList = "section";
 
 	const header = document.createElement("div");
 	header.classList = "section-header";
 
-	if (icon !== undefined) {
+	if (icon !== null) {
 		const iconElement = document.createElement("i");
 		iconElement.classList = icon;
 		header.appendChild(iconElement);
@@ -217,9 +217,13 @@ function createSection(title, icon) {
 
 	section.append(header);
 
-	const body = document.createElement("div");
-	body.classList = "section-body";
-	section.appendChild(body);
+	if (body.length !== 0) {
+		const bodyElement = document.createElement("div");
+		bodyElement.classList = "section-body";
+		for (const e of body) bodyElement.appendChild(e);
+
+		section.appendChild(bodyElement);
+	}
 
 	return section;
 }
@@ -227,21 +231,20 @@ function createSection(title, icon) {
 export function buildNodeSelectionSidebar(nodeID) {
 	let clickedNode = null;
 
-	const sidebarTitleHeaderIcon = document.getElementById(
-		"sidebar-title-header-icon",
-	);
+	let titleIcon = null;
 	if (network.isCluster(nodeID)) {
-		sidebarTitleHeaderIcon.className = "fa-solid fa-file-zipper";
+		titleIconName = "fa-solid fa-file-zipper";
 		clickedNode = nodes.get(nodeID.split(":")[1]);
 	} else {
 		clickedNode = nodes.get(nodeID);
-		sidebarTitleHeaderIcon.className = getIconClassForFileType(
-			clickedNode.nodeMetadata.type,
-		);
+		titleIcon = getIconClassForFileType(clickedNode.nodeMetadata.type);
 	}
 
-	document.getElementById("sidebar-title-header-name").innerText =
-		clickedNode.nodeMetadata.nodeFileName; // Update name
+	// Title section
+	const titleSection = createSection({
+		title: clickedNode.nodeMetadata.nodeFileName,
+		icon: titleIcon,
+	});
 
 	function convertNodeIDsToFileNames(nodeIDs) {
 		return nodeIDs.map((id) => ({
@@ -265,9 +268,9 @@ export function buildNodeSelectionSidebar(nodeID) {
 
 	const sbom = clickedNode.surfactantSoftwareStruct;
 
-	document
-		.querySelector("#sidebar-basic-info-section .section-body")
-		.replaceChildren(
+	const basicInfoSection = createSection({
+		title: "Basic Info",
+		body: [
 			createSectionInfoTable([
 				{ displayName: "Install path", value: sbom.installPath },
 				{ displayName: "File size (bytes)", value: sbom.size },
@@ -276,23 +279,25 @@ export function buildNodeSelectionSidebar(nodeID) {
 				{ displayName: "Description", value: sbom.description },
 				{ displayName: "Comments", value: sbom.comments },
 			]),
-		);
+		],
+	});
 
-	document
-		.querySelector("#sidebar-hashes-section .section-body")
-		.replaceChildren(
+	const hashesSection = createSection({
+		title: "Hashes",
+		body: [
 			createSectionInfoTable([
 				{ displayName: "SHA1", value: sbom.sha1 },
 				{ displayName: "SHA256", value: sbom.sha256 },
 				{ displayName: "MD5", value: sbom.md5 },
 			]),
-		);
+		],
+	});
 
 	const usesNodeIDs = network.getConnectedNodes(nodeID, "from");
 	const usedByNodeIDs = network.getConnectedNodes(nodeID, "to");
-	document
-		.querySelector("#sidebar-relationships-section .section-body")
-		.replaceChildren(
+	const relationshipsSection = createSection({
+		title: "Relationships",
+		body: [
 			createFoldableSectionInfoTable(
 				`Uses (${usesNodeIDs.length})`,
 				convertNodeIDsToFileNames(usesNodeIDs),
@@ -301,19 +306,26 @@ export function buildNodeSelectionSidebar(nodeID) {
 				`Used By (${usedByNodeIDs.length})`,
 				convertNodeIDsToFileNames(usedByNodeIDs),
 			),
-		);
+		],
+	});
 
 	const metadataSectionDiv = document.createElement("div");
 	metadataSectionDiv.classList = "nested-foldable-subsection-body";
 	const foldedSection = createNestedFoldedSectionFromJSON(sbom, "Root");
 	foldedSection.open = false;
 	metadataSectionDiv.appendChild(foldedSection);
-	document
-		.querySelector("#sidebar-metadata-section .section-body")
-		.replaceChildren(metadataSectionDiv);
+	const metadataSection = createSection({
+		title: "Metadata",
+		body: [metadataSectionDiv],
+	});
 
-	for (const i of document.querySelectorAll("#sidebar .section"))
-		i.style.visibility = "visible";
+	return [
+		titleSection,
+		basicInfoSection,
+		hashesSection,
+		relationshipsSection,
+		metadataSection,
+	];
 }
 
 export function buildSearchSidebar() {}

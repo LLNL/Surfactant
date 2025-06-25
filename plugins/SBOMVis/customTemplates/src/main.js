@@ -70,7 +70,10 @@ function drawGraph() {
 	function onClick(params) {
 		const nodeID = params.nodes[0];
 
-		if (params.nodes.length !== 0) buildNodeSelectionSidebar(nodeID);
+		if (params.nodes.length !== 0)
+			document
+				.getElementById("sidebar")
+				.replaceChildren(...buildNodeSelectionSidebar(nodeID));
 
 		const sidebar = document.getElementById("sidebar");
 		if (params.nodes.length !== 0 && !sidebar.classList.contains("open"))
