@@ -131,10 +131,21 @@
             var nodes = new vis.DataSet({{nodes|tojson}});
             var edges = new vis.DataSet({{edges|tojson}});
             var options = {{options|safe}};
+            var network;
         </script>
 
-        <script>
-            {%  include 'src/main.js' %}
+        <script type="inline-module" id="buttonEventHandlersModule">
+            {% include 'src/buttonEventHandlers.js' %}
+        </script>
+
+        <script type="inline-module" id="sidebarModule">
+            {% include 'src/sidebar.js' %}
+        </script>
+
+        <script src="https://unpkg.com/inline-module/index.js"></script> <!-- Inline modules aren't supported in ES, this is a workaround that makes integrating embedded code from Jinja cleaner & easier -->
+
+        <script type="module">
+            {% include 'src/main.js' %}
         </script>
     </head>
 
@@ -178,10 +189,10 @@
             </div>
 
             <div id="sidebarButtons">
-                <button id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar"><i class="fa-solid fa-circle-chevron-right"></i></button>
-                <button id="physicsToggle" onclick="togglePhysics()" title="Toggle physics"><i class="fa-solid fa-circle-pause"></i></button>
-                <button id="zoomToView" class="invert" onclick="zoomToView()" title="Fit graph to view"><i class="fa-solid fa-expand"></i></button>
-                <button id="exportImage" onclick="exportImage()" title="Export as PNG"><i class="fa-solid fa-circle-down"></i></button>
+                <button id="sidebarToggle" title="Toggle sidebar"><i class="fa-solid fa-circle-chevron-right"></i></button>
+                <button id="physicsToggle" title="Toggle physics"><i class="fa-solid fa-circle-pause"></i></button>
+                <button id="zoomToView" class="invert" title="Fit graph to view"><i class="fa-solid fa-expand"></i></button>
+                <button id="exportImage" title="Export as PNG"><i class="fa-solid fa-circle-down"></i></button>
             </div>
 
             <div id="mynetwork" class="card-body" oncontextmenu="return false"></div>
