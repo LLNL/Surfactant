@@ -4,8 +4,6 @@ import {
 } from "#buttonEventHandlersModule";
 import { buildNodeSelectionSidebar, buildSearchSidebar } from "#sidebarModule";
 
-let nodeColors;
-
 // This method is responsible for drawing the graph, returns the drawn network
 function drawGraph() {
 	const container = document.getElementById("mynetwork");
