@@ -198,6 +198,32 @@ function getIconClassForFileType(type) {
 	}
 }
 
+function createSection(title, icon) {
+	const section = document.createElement("div");
+	section.classList = "section";
+
+	const header = document.createElement("div");
+	header.classList = "section-header";
+
+	if (icon !== undefined) {
+		const iconElement = document.createElement("i");
+		iconElement.classList = icon;
+		header.appendChild(iconElement);
+	}
+
+	const headerText = document.createElement("h4");
+	headerText.textContent = title;
+	header.appendChild(headerText);
+
+	section.append(header);
+
+	const body = document.createElement("div");
+	body.classList = "section-body";
+	section.appendChild(body);
+
+	return section;
+}
+
 export function buildNodeSelectionSidebar(nodeID) {
 	let clickedNode = null;
 
