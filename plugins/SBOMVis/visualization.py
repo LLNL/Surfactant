@@ -74,7 +74,7 @@ def generate_dependency_graph(
                 g.add_edge(i.yUUID, i.xUUID, container=False)
 
             elif i.relationship == "Contains":
-                g.add_edge(i.xUUID, i.yUUID, container=True)
+                g.add_edge(i.xUUID, i.yUUID, container=True, dashes=True)
                 g.nodes[i.xUUID]["nodeMetadata"]["type"] = NodeType.Container
 
             else:
