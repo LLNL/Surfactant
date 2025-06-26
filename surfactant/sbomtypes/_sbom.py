@@ -20,6 +20,8 @@ from ._provenance import SoftwareProvenance
 from ._relationship import Relationship, StarRelationship
 from ._software import Software, SoftwareComponent
 from ._system import System
+import json
+from dataclasses import asdict
 
 INTERNAL_FIELDS = {"software_lookup_by_sha256"}
 
@@ -83,10 +85,13 @@ class SBOM:
         return rel
 
     def find_relationship_object(self, r: Relationship) -> bool:
-        return (
-            self.graph.has_edge(r.xUUID, r.yUUID)
-            and self.graph.edges[r.xUUID, r.yUUID]["relationship"] == r.relationship
-        )
+        # Fast-fail if there's no such edge
+        if not self.graph.has_edge(r.xUUID, r.yUUID):
+            return False
+
+        # Compare stored relationship type in a case-insensitive way
+        stored = self.graph.edges[r.xUUID, r.yUUID].get("relationship", "")
+        return stored.upper() == r.relationship.upper()
 
     def find_relationship(self, xUUID: str, yUUID: str, relationship: str) -> bool:
         if not self.graph.has_edge(xUUID, yUUID):
@@ -487,9 +492,6 @@ class SBOM:
 
     def to_dict(self) -> dict:
         """Serialize all fields except internal graph/loader, then inject graph-derived relationships."""
-        from dataclasses import asdict
-
-        logger.debug("HERE")
 
         # 1) Dump every dataclass field into a plain dict
         data = asdict(self)
@@ -512,8 +514,6 @@ class SBOM:
 
     def to_json(self, *args, **kwargs) -> str:
         """Dump our custom to_dict() to JSON."""
-        logger.debug("HERE")
-        import json
 
         logger.debug("SBOM.to_json() running override")
         return json.dumps(self.to_dict(), *args, **kwargs)
