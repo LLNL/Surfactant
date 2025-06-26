@@ -64,6 +64,7 @@ class SBOM:
     )  # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
+        # pylint: disable=access-member-before-definition
         # if someone called SBOM(raw_dict), let dataclasses_json
         # do the real parsing via the marshmallow schema
         if (
