@@ -33,7 +33,7 @@ def recover_serializers(cls):
     if hasattr(cls, "to_dict_override"):
         cls.to_dict = cls.to_dict_override
     if hasattr(cls, "to_json_override"):
-        cls.to_json = cls.to_dict_override
+        cls.to_json = cls.to_json_override
     return cls
 
 
@@ -64,10 +64,29 @@ class SBOM:
     )  # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
+        # if someone called SBOM(raw_dict), let dataclasses_json
+        # do the real parsing via the marshmallow schema
+        if (
+            len(getattr(self, "systems", [])) == 1
+            and isinstance(self.systems, dict)
+            and not self.hardware
+            and not self.software
+        ):
+            raw = self.systems
+            # load a fresh SBOM instance from the raw dict
+            loaded: SBOM = type(self).schema().load(raw)
+            # copy every field except graph into self
+            for name in self.__dataclass_fields__.keys():
+                if name == "graph":
+                    continue
+                setattr(self, name, getattr(loaded, name))
+
+        # strip out any internal‐only fields before building the graph
         self.__dataclass_fields__ = {
             k: v for k, v in self.__dataclass_fields__.items() if k not in INTERNAL_FIELDS
         }
-        # Initialize the directed graph and populate any pre-existing nodes/edges
+
+        # now seed the graph from systems/software and any loaded relationships
         self.build_graph()
 
     def build_graph(self) -> None:
