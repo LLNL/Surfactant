@@ -77,7 +77,7 @@ function drawGraph() {
 		if (params.nodes.length !== 0)
 			document
 				.getElementById("sidebar")
-				.replaceChildren(...buildNodeSelectionSidebar(nodeID));
+				.replaceChildren(buildNodeSelectionSidebar(nodeID));
 
 		const sidebar = document.getElementById("sidebar");
 		if (params.nodes.length !== 0 && !sidebar.classList.contains("open"))
@@ -217,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			.then(() => {
 				document
 					.getElementById("sidebar")
-					.replaceChildren(...buildSBOMOverviewSidebar());
+					.replaceChildren(buildSBOMOverviewSidebar());
 				setButtonEventHandlers();
 				drawGraph();
 			})

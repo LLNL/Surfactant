@@ -229,14 +229,18 @@ function createSection({ title, icon = null, body = [] }) {
 }
 
 export function buildSBOMOverviewSidebar() {
-	return [
+    const fragment = document.createDocumentFragment();
+
+	fragment.appendChild(
 		createSection({
 			title: "Click on a node to get started",
 		}),
-	];
+	);
 }
 
 export function buildNodeSelectionSidebar(nodeID) {
+    const fragment = document.createDocumentFragment();
+
 	let clickedNode = null;
 
 	let titleIcon = null;
@@ -249,10 +253,12 @@ export function buildNodeSelectionSidebar(nodeID) {
 	}
 
 	// Title section
-	const titleSection = createSection({
-		title: clickedNode.nodeMetadata.nodeFileName,
-		icon: titleIcon,
-	});
+	fragment.appendChild(
+		createSection({
+			title: clickedNode.nodeMetadata.nodeFileName,
+			icon: titleIcon,
+		}),
+	);
 
 	function convertNodeIDsToFileNames(nodeIDs) {
 		return nodeIDs.map((id) => ({
@@ -276,67 +282,71 @@ export function buildNodeSelectionSidebar(nodeID) {
 
 	const sbom = clickedNode.surfactantSoftwareStruct;
 
-	const basicInfoSection = createSection({
-		title: "Basic Info",
-		body: [
-			createSectionInfoTable([
-				{ displayName: "Install path", value: sbom.installPath },
-				{ displayName: "File size (bytes)", value: sbom.size },
-				{ displayName: "Version", value: sbom.version },
-				{ displayName: "Vendor", value: sbom.vendor },
-				{ displayName: "Description", value: sbom.description },
-				{ displayName: "Comments", value: sbom.comments },
-			]),
-		],
-	});
+	fragment.appendChild(
+		createSection({
+			title: "Basic Info",
+			body: [
+				createSectionInfoTable([
+					{ displayName: "Install path", value: sbom.installPath },
+					{ displayName: "File size (bytes)", value: sbom.size },
+					{ displayName: "Version", value: sbom.version },
+					{ displayName: "Vendor", value: sbom.vendor },
+					{ displayName: "Description", value: sbom.description },
+					{ displayName: "Comments", value: sbom.comments },
+				]),
+			],
+		}),
+	);
 
-	const hashesSection = createSection({
-		title: "Hashes",
-		body: [
-			createSectionInfoTable([
-				{ displayName: "SHA1", value: sbom.sha1 },
-				{ displayName: "SHA256", value: sbom.sha256 },
-				{ displayName: "MD5", value: sbom.md5 },
-			]),
-		],
-	});
+	fragment.appendChild(
+		createSection({
+			title: "Hashes",
+			body: [
+				createSectionInfoTable([
+					{ displayName: "SHA1", value: sbom.sha1 },
+					{ displayName: "SHA256", value: sbom.sha256 },
+					{ displayName: "MD5", value: sbom.md5 },
+				]),
+			],
+		}),
+	);
 
 	const usesNodeIDs = network.getConnectedNodes(nodeID, "from");
 	const usedByNodeIDs = network.getConnectedNodes(nodeID, "to");
-	const relationshipsSection = createSection({
-		title: "Relationships",
-		body: [
-			createFoldableSectionInfoTable(
-				`Uses (${usesNodeIDs.length})`,
-				convertNodeIDsToFileNames(usesNodeIDs),
-			),
-			createFoldableSectionInfoTable(
-				`Used By (${usedByNodeIDs.length})`,
-				convertNodeIDsToFileNames(usedByNodeIDs),
-			),
-		],
-	});
+	fragment.appendChild(
+		createSection({
+			title: "Relationships",
+			body: [
+				createFoldableSectionInfoTable(
+					`Uses (${usesNodeIDs.length})`,
+					convertNodeIDsToFileNames(usesNodeIDs),
+				),
+				createFoldableSectionInfoTable(
+					`Used By (${usedByNodeIDs.length})`,
+					convertNodeIDsToFileNames(usedByNodeIDs),
+				),
+			],
+		}),
+	);
 
 	const metadataSectionDiv = document.createElement("div");
 	metadataSectionDiv.classList = "nested-foldable-subsection-body";
 	const foldedSection = createNestedFoldedSectionFromJSON(sbom, "Root");
 	foldedSection.open = false;
 	metadataSectionDiv.appendChild(foldedSection);
-	const metadataSection = createSection({
-		title: "Metadata",
-		body: [metadataSectionDiv],
-	});
+	fragment.appendChild(
+		createSection({
+			title: "Metadata",
+			body: [metadataSectionDiv],
+		}),
+	);
 
-	return [
-		titleSection,
-		basicInfoSection,
-		hashesSection,
-		relationshipsSection,
-		metadataSection,
-	];
+	return fragment;
 }
 
 export function buildSearchSidebar() {
+    const fragment = document.createDocumentFragment();
+
 	const searchBarSection = document.createElement("div");
 	searchBarSection.classList = "section";
 
@@ -344,6 +354,8 @@ export function buildSearchSidebar() {
 	searchBox.id = "searchBox";
 	searchBox.placeholder = "Start typing to search...";
 	searchBarSection.appendChild(searchBox);
+
+    fragment.appendChild(searchBarSection);
 
 	new TomSelect(searchBox, {
 		maxItems: null,
@@ -356,5 +368,5 @@ export function buildSearchSidebar() {
 		},
 	});
 
-	return [searchBarSection];
+	return fragment.cloneNode(true);
 }
