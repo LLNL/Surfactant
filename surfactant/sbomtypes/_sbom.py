@@ -64,30 +64,71 @@ class SBOM:
     )  # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
-        # pylint: disable=access-member-before-definition
-        # if someone called SBOM(raw_dict), let dataclasses_json
-        # do the real parsing via the marshmallow schema
+        # If this SBOM was called with a single raw‐dict arg (e.g. SBOM({...})),
+        # rebuild every sub‐list from that dict rather than using schema().load()
         if (
-            len(getattr(self, "systems", [])) == 1
-            and isinstance(self.systems, dict)
+            isinstance(self.systems, dict)
             and not self.hardware
             and not self.software
         ):
-            raw = self.systems
-            # load a fresh SBOM instance from the raw dict
-            loaded: SBOM = type(self).schema().load(raw)
-            # copy every field except graph into self
-            for name in self.__dataclass_fields__.keys():
-                if name == "graph":
-                    continue
-                setattr(self, name, getattr(loaded, name))
+            raw = self.systems  # the dict the user passed in
 
-        # strip out any internal‐only fields before building the graph
+            # Clear out all fields
+            self.systems = []
+            self.hardware = []
+            self.software = []
+            self.analysisData = []
+            self.observations = []
+            self._loaded_relationships = []
+            self.starRelationships = set()
+
+            # Import types for manual construction
+            from surfactant.sbomtypes import (
+                System,
+                Hardware,
+                Software,
+                Relationship,
+                AnalysisData,
+                Observation,
+                StarRelationship,
+            )
+
+            # Rehydrate systems
+            for sys_data in raw.get("systems", []):
+                self.systems.append(System(**sys_data))
+
+            # Rehydrate hardware
+            for hw_data in raw.get("hardware", []):
+                self.hardware.append(Hardware(**hw_data))
+
+            # Rehydrate software
+            for sw_data in raw.get("software", []):
+                self.software.append(Software(**sw_data))
+
+            # Rehydrate relationships *only* into our loader list
+            for rel_data in raw.get("relationships", []):
+                self._loaded_relationships.append(Relationship(**rel_data))
+
+            # Rehydrate analysisData
+            for ad_data in raw.get("analysisData", []):
+                self.analysisData.append(AnalysisData(**ad_data))
+
+            # Rehydrate observations
+            for obs_data in raw.get("observations", []):
+                self.observations.append(Observation(**obs_data))
+
+            # Rehydrate starRelationships
+            for sr_data in raw.get("starRelationships", []):
+                self.starRelationships.add(StarRelationship(**sr_data))
+
+        # pylint: disable=access-member-before-definition
+        # Strip out any internal‐only fields so they don’t show in serialization
         self.__dataclass_fields__ = {
-            k: v for k, v in self.__dataclass_fields__.items() if k not in INTERNAL_FIELDS
+            k: v for k, v in self.__dataclass_fields__.items()
+            if k not in INTERNAL_FIELDS
         }
 
-        # now seed the graph from systems/software and any loaded relationships
+        # Now build the NetworkX graph from systems/software and loaded relationships
         self.build_graph()
 
     def build_graph(self) -> None:
