@@ -165,27 +165,38 @@ def test_simple_merge_method():
     sbom2 = get_sbom2()
     merged_sbom = sbom1
     merged_sbom.merge(sbom2)
-    softwares = sbom1.software
-    softwares.extend(sbom2.software)
-    assert merged_sbom.software.sort(key=lambda x: x.UUID) == softwares.sort(key=lambda x: x.UUID)
-    relations = sbom1.relationships
-    relations.update(sbom2.relationships)
-    assert sorted(merged_sbom.relationships, key=lambda x: x.xUUID) == sorted(
-        relations, key=lambda x: x.xUUID
+
+    # 1) Software list must be the union of the two, sorted by UUID
+    expected_sw = sbom1.software + sbom2.software
+    assert sorted(merged_sbom.software, key=lambda x: x.UUID) == sorted(
+        expected_sw, key=lambda x: x.UUID
     )
 
+    # 2) Graph edges must be the union of each SBOM’s edges
+    def extract_edges(sbom):
+        return {
+            (u, v, data["relationship"])
+            for u, v, data in sbom.graph.edges(data=True)
+        }
+
+    edges1 = extract_edges(get_sbom1())
+    edges2 = extract_edges(get_sbom2())
+    expected_edges = edges1.union(edges2)
+
+    merged_edges = extract_edges(merged_sbom)
+    assert merged_edges == expected_edges
 
 @pytest.mark.skip(reason="No way of validating this test yet")
 def test_merge_with_circular_dependency():
     sbom1 = get_sbom1()
     sbom2 = get_sbom2()
     circular_dependency_sbom = sbom1
-    circular_dependency_sbom.relationships.add(
-        Relationship(
-            xUUID="a5db7e12-fe3d-490e-90b8-98a8bfaace09",
-            yUUID="dd6f7f6b-7c31-4a4a-afef-14678b9942bf",
-            relationship="Contains",
-        )
+
+    # Use the SBOM API to insert a circular "Contains" edge into the graph
+    circular_dependency_sbom.create_relationship(
+        "a5db7e12-fe3d-490e-90b8-98a8bfaace09",
+        "dd6f7f6b-7c31-4a4a-afef-14678b9942bf",
+        "Contains",
     )
 
     outfile_name = generate_filename("test_merge_with_circular_dependency")

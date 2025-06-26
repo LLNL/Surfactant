@@ -10,6 +10,7 @@ import pytest
 from surfactant.cmd.cli import cli_add, cli_find
 from surfactant.cmd.cli_commands import Cli
 from surfactant.sbomtypes import SBOM, Relationship
+import networkx as nx
 
 
 @pytest.fixture(name="test_sbom")
@@ -20,23 +21,39 @@ def fixture_test_sbom():
 
 
 def _compare_sboms(one: SBOM, two: SBOM) -> bool:
-    # Sort software list
-    one.software = sorted(one.software, key=lambda x: x.UUID)
-    two.software = sorted(two.software, key=lambda x: x.UUID)
-
-    # Sort hardware list
-    one.hardware = sorted(one.hardware, key=lambda x: x.UUID)
-    two.hardware = sorted(two.hardware, key=lambda x: x.UUID)
-
-    # Sort system list
+    # 1) Sort systems, hardware, software for deterministic ordering
     one.systems = sorted(one.systems, key=lambda x: x.UUID)
     two.systems = sorted(two.systems, key=lambda x: x.UUID)
 
-    # Sort relationship list
-    one.relationships = sorted(one.relationships, key=lambda x: x.yUUID)
-    two.relationships = sorted(two.relationships, key=lambda x: x.yUUID)
+    one.hardware = sorted(one.hardware, key=lambda x: x.UUID)
+    two.hardware = sorted(two.hardware, key=lambda x: x.UUID)
 
-    return one.to_dict() == two.to_dict()
+    one.software = sorted(one.software, key=lambda x: x.UUID)
+    two.software = sorted(two.software, key=lambda x: x.UUID)
+
+    # 2) Compare node sets
+    nodes_one = set(one.graph.nodes())
+    nodes_two = set(two.graph.nodes())
+    if nodes_one != nodes_two:
+        return False
+
+    # 3) Compare edge sets, including the 'relationship' attribute
+    def edge_signature(graph: nx.DiGraph):
+        return {
+            (u, v, data.get("relationship", "").upper())
+            for u, v, data in graph.edges(data=True)
+        }
+
+    edges_one = edge_signature(one.graph)
+    edges_two = edge_signature(two.graph)
+    if edges_one != edges_two:
+        return False
+
+    # 4) Finally, you can still compare the rest of the SBOM dict if you like:
+    #    drop relationships from the dict since you've already checked them
+    d1 = one.to_dict().copy(); d2 = two.to_dict().copy()
+    d1.pop("relationships", None); d2.pop("relationships", None)
+    return d1 == d2
 
 
 bad_sbom = SBOM(
@@ -162,10 +179,17 @@ def test_add_relationship(test_sbom):
         "yUUID": "e286a415-6c6b-427d-9fe6-d7dbb0486f7d",
         "relationship": "Uses",
     }
-    previous_rel_len = len(test_sbom.relationships)
+
+    # Pull the pre-existing relationships from the SBOM dict
+    previous_rels = test_sbom.to_dict()["relationships"]
+    previous_rel_len = len(previous_rels)
+
+    # Add the new relationship via the CLI
     out_bom = cli_add().execute(test_sbom, relationship=relationship)
-    assert len(out_bom.relationships) == previous_rel_len + 1
-    test_sbom.relationships.discard(Relationship(**relationship))
+
+    # Pull the updated relationships and verify one more was added
+    current_rels = out_bom.to_dict()["relationships"]
+    assert len(current_rels) == previous_rel_len + 1
 
 
 def test_add_installpath(test_sbom):
