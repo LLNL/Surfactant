@@ -84,7 +84,7 @@ class SBOM:
         return rel
 
     def find_relationship_object(self, r: Relationship) -> bool:
-        # Fast-fail if there's no such edge
+        # If there’s no edge from xUUID → yUUID, fail fast
         if not self.graph.has_edge(r.xUUID, r.yUUID):
             return False
 
