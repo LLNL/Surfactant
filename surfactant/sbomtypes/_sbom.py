@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Set
 
 import networkx as nx
-from dataclasses_json import config
+from dataclasses_json import config, dataclass_json
 from loguru import logger
 
 from ._analysisdata import AnalysisData
@@ -21,9 +21,9 @@ from ._provenance import SoftwareProvenance
 from ._relationship import Relationship, StarRelationship
 from ._software import Software, SoftwareComponent
 from ._system import System
-from dataclasses_json import dataclass_json
 
 INTERNAL_FIELDS = {"software_lookup_by_sha256"}
+
 
 def recover_serializers(cls):
     """
@@ -35,6 +35,7 @@ def recover_serializers(cls):
     if hasattr(cls, "_to_json"):
         cls.to_json = cls._to_json
     return cls
+
 
 @recover_serializers
 @dataclass_json
@@ -59,7 +60,7 @@ class SBOM:
         init=False,
         repr=False,
         # metadata=config(exclude=lambda _: True),  # internal graph; excluded from JSON
-        metadata=config(exclude=lambda _: True)
+        metadata=config(exclude=lambda _: True),
     )  # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
