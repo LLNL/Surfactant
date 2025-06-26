@@ -21,10 +21,23 @@ from ._provenance import SoftwareProvenance
 from ._relationship import Relationship, StarRelationship
 from ._software import Software, SoftwareComponent
 from ._system import System
+from dataclasses_json import dataclass_json
 
 INTERNAL_FIELDS = {"software_lookup_by_sha256"}
 
+def recover_serializers(cls):
+    """
+    After dataclass_json has bound its own to_dict/to_json,
+    restore any _to_dict/_to_json to custom definitions.
+    """
+    if hasattr(cls, "_to_dict"):
+        cls.to_dict = getattr(cls, "_to_dict")
+    if hasattr(cls, "_to_json"):
+        cls.to_json = getattr(cls, "_to_json")
+    return cls
 
+@recover_serializers
+@dataclass_json
 @dataclass
 class SBOM:
     # pylint: disable=R0902
@@ -45,7 +58,8 @@ class SBOM:
     graph: nx.DiGraph = field(
         init=False,
         repr=False,
-        metadata=config(exclude=lambda _: True),  # internal graph; excluded from JSON
+        # metadata=config(exclude=lambda _: True),  # internal graph; excluded from JSON
+        metadata=config(exclude=lambda _: True)
     )  # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
@@ -489,7 +503,7 @@ class SBOM:
                 parents.append(u)
         return parents
 
-    def to_dict(self) -> dict:
+    def _to_dict(self) -> dict:
         """Serialize all fields except internal graph/loader, then inject graph-derived relationships."""
 
         # 1) Dump every dataclass field into a plain dict
@@ -511,8 +525,6 @@ class SBOM:
         ]
         return data
 
-    def to_json(self, *args, **kwargs) -> str:
+    def _to_json(self, *args, **kwargs) -> str:
         """Dump our custom to_dict() to JSON."""
-
-        logger.debug("SBOM.to_json() running override")
-        return json.dumps(self.to_dict(), *args, **kwargs)
+        return json.dumps(self._to_dict(), *args, **kwargs)
