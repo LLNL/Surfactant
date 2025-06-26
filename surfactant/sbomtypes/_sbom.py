@@ -78,13 +78,13 @@ class SBOM:
             self.starRelationships = set()
 
             # prepare valid field-name sets
-            SYSTEM_FIELDS        = {f.name for f in fields(System)}
-            HARDWARE_FIELDS      = {f.name for f in fields(Hardware)}
-            SOFTWARE_FIELDS      = {f.name for f in fields(Software)}
-            REL_FIELDS           = {f.name for f in fields(Relationship)}
-            AD_FIELDS            = {f.name for f in fields(AnalysisData)}
-            OBS_FIELDS           = {f.name for f in fields(Observation)}
-            STAR_FIELDS          = {f.name for f in fields(StarRelationship)}
+            SYSTEM_FIELDS = {f.name for f in fields(System)}
+            HARDWARE_FIELDS = {f.name for f in fields(Hardware)}
+            SOFTWARE_FIELDS = {f.name for f in fields(Software)}
+            REL_FIELDS = {f.name for f in fields(Relationship)}
+            AD_FIELDS = {f.name for f in fields(AnalysisData)}
+            OBS_FIELDS = {f.name for f in fields(Observation)}
+            STAR_FIELDS = {f.name for f in fields(StarRelationship)}
 
             # rehydrate systems
             for sys_data in raw.get("systems", []):
