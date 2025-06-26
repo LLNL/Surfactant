@@ -28,12 +28,12 @@ INTERNAL_FIELDS = {"software_lookup_by_sha256"}
 def recover_serializers(cls):
     """
     After dataclass_json has bound its own to_dict/to_json,
-    restore any _to_dict/_to_json to custom definitions.
+    restore any _to_dict/_to_json overrides.
     """
     if hasattr(cls, "_to_dict"):
-        cls.to_dict = getattr(cls, "_to_dict")
+        cls.to_dict = cls._to_dict
     if hasattr(cls, "_to_json"):
-        cls.to_json = getattr(cls, "_to_json")
+        cls.to_json = cls._to_json
     return cls
 
 @recover_serializers
