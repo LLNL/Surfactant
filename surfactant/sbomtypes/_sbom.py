@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import uuid as uuid_module
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from typing import Dict, List, Optional, Set
 
 import networkx as nx
@@ -64,16 +64,11 @@ class SBOM:
     )  # Add a NetworkX directed graph for quick traversal/query
 
     def __post_init__(self):
-        # If this SBOM was called with a single raw‐dict arg (e.g. SBOM({...})),
-        # rebuild every sub‐list from that dict rather than using schema().load()
-        if (
-            isinstance(self.systems, dict)
-            and not self.hardware
-            and not self.software
-        ):
-            raw = self.systems  # the dict the user passed in
+        # If called like SBOM(raw_dict), raw_dict will be in .systems
+        if isinstance(self.systems, dict) and not self.hardware and not self.software:
+            raw = self.systems
 
-            # Clear out all fields
+            # zero out every container
             self.systems = []
             self.hardware = []
             self.software = []
@@ -82,53 +77,58 @@ class SBOM:
             self._loaded_relationships = []
             self.starRelationships = set()
 
-            # Import types for manual construction
-            from surfactant.sbomtypes import (
-                System,
-                Hardware,
-                Software,
-                Relationship,
-                AnalysisData,
-                Observation,
-                StarRelationship,
-            )
+            # prepare valid field-name sets
+            SYSTEM_FIELDS        = {f.name for f in fields(System)}
+            HARDWARE_FIELDS      = {f.name for f in fields(Hardware)}
+            SOFTWARE_FIELDS      = {f.name for f in fields(Software)}
+            REL_FIELDS           = {f.name for f in fields(Relationship)}
+            AD_FIELDS            = {f.name for f in fields(AnalysisData)}
+            OBS_FIELDS           = {f.name for f in fields(Observation)}
+            STAR_FIELDS          = {f.name for f in fields(StarRelationship)}
 
-            # Rehydrate systems
+            # rehydrate systems
             for sys_data in raw.get("systems", []):
-                self.systems.append(System(**sys_data))
+                clean = {k: v for k, v in sys_data.items() if k in SYSTEM_FIELDS}
+                self.systems.append(System(**clean))
 
-            # Rehydrate hardware
+            # rehydrate hardware
             for hw_data in raw.get("hardware", []):
-                self.hardware.append(Hardware(**hw_data))
+                clean = {k: v for k, v in hw_data.items() if k in HARDWARE_FIELDS}
+                self.hardware.append(Hardware(**clean))
 
-            # Rehydrate software
+            # rehydrate software
             for sw_data in raw.get("software", []):
-                self.software.append(Software(**sw_data))
+                clean = {k: v for k, v in sw_data.items() if k in SOFTWARE_FIELDS}
+                self.software.append(Software(**clean))
 
-            # Rehydrate relationships *only* into our loader list
+            # rehydrate relationships into the loader list
             for rel_data in raw.get("relationships", []):
-                self._loaded_relationships.append(Relationship(**rel_data))
+                clean = {k: v for k, v in rel_data.items() if k in REL_FIELDS}
+                self._loaded_relationships.append(Relationship(**clean))
 
-            # Rehydrate analysisData
+            # rehydrate analysisData
             for ad_data in raw.get("analysisData", []):
-                self.analysisData.append(AnalysisData(**ad_data))
+                clean = {k: v for k, v in ad_data.items() if k in AD_FIELDS}
+                self.analysisData.append(AnalysisData(**clean))
 
-            # Rehydrate observations
+            # rehydrate observations
             for obs_data in raw.get("observations", []):
-                self.observations.append(Observation(**obs_data))
+                clean = {k: v for k, v in obs_data.items() if k in OBS_FIELDS}
+                self.observations.append(Observation(**clean))
 
-            # Rehydrate starRelationships
+            # rehydrate starRelationships
             for sr_data in raw.get("starRelationships", []):
-                self.starRelationships.add(StarRelationship(**sr_data))
+                clean = {k: v for k, v in sr_data.items() if k in STAR_FIELDS}
+                self.starRelationships.add(StarRelationship(**clean))
 
+        # Strip out internal-only fields so dataclass logic and JSON serializers ignore them
         # pylint: disable=access-member-before-definition
-        # Strip out any internal‐only fields so they don’t show in serialization
         self.__dataclass_fields__ = {
             k: v for k, v in self.__dataclass_fields__.items()
             if k not in INTERNAL_FIELDS
         }
 
-        # Now build the NetworkX graph from systems/software and loaded relationships
+        # Build the NetworkX graph from systems/software and loaded relationships
         self.build_graph()
 
     def build_graph(self) -> None:
