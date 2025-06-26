@@ -113,6 +113,11 @@ div.vis-tooltip {
 	.section {
 		margin-bottom: 10px;
 		font-family: "Source Sans Pro", sans-serif;
+
+		input,
+		select {
+			cursor: text;
+		}
 	}
 
 	.section-header {

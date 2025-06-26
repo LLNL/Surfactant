@@ -1,3 +1,5 @@
+import { buildSearchSidebar } from "#sidebarModule";
+
 export function toggleSidebar() {
 	const sidebar = document.getElementById("sidebar");
 	const toggle = document.getElementById("sidebarButtons");
@@ -7,11 +9,9 @@ export function toggleSidebar() {
 	toggle.classList.toggle("open");
 
 	if (sidebar.classList.contains("open")) {
-		icon.classList.remove("fa-circle-chevron-right");
-		icon.classList.add("fa-circle-chevron-left");
+		icon.classList = "fa-solid fa-circle-chevron-left";
 	} else {
-		icon.classList.remove("fa-circle-chevron-left");
-		icon.classList.add("fa-circle-chevron-right");
+		icon.classList = "fa-solid fa-circle-chevron-right";
 	}
 }
 
@@ -48,6 +48,13 @@ export function exportImage() {
 	});
 }
 
+export function handleSearch() {
+	document.getElementById("sidebar").replaceChildren(...buildSearchSidebar());
+
+	if (!document.getElementById("sidebar").classList.contains("open"))
+		toggleSidebar();
+}
+
 export function setButtonEventHandlers() {
 	document
 		.getElementById("sidebarToggle")
@@ -55,6 +62,9 @@ export function setButtonEventHandlers() {
 	document
 		.getElementById("physicsToggle")
 		.addEventListener("click", togglePhysics);
+	document
+		.getElementById("searchButton")
+		.addEventListener("click", handleSearch);
 	document.getElementById("zoomToView").addEventListener("click", zoomToView);
 	document.getElementById("exportImage").addEventListener("click", exportImage);
 }

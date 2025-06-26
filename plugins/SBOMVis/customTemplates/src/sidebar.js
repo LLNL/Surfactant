@@ -336,4 +336,25 @@ export function buildNodeSelectionSidebar(nodeID) {
 	];
 }
 
-export function buildSearchSidebar() {}
+export function buildSearchSidebar() {
+	const searchBarSection = document.createElement("div");
+	searchBarSection.classList = "section";
+
+	const searchBox = document.createElement("select");
+	searchBox.id = "searchBox";
+	searchBox.placeholder = "Start typing to search...";
+	searchBarSection.appendChild(searchBox);
+
+	new TomSelect(searchBox, {
+		maxItems: null,
+		maxOptions: 100,
+		plugins: {
+			remove_button: {
+				title: "Remove",
+			},
+			caret_position: {},
+		},
+	});
+
+	return [searchBarSection];
+}
