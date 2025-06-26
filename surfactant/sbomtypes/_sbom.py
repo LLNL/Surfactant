@@ -30,10 +30,10 @@ def recover_serializers(cls):
     After dataclass_json has bound its own to_dict/to_json,
     restore any _to_dict/_to_json overrides.
     """
-    if hasattr(cls, "_to_dict"):
-        cls.to_dict = cls._to_dict
-    if hasattr(cls, "_to_json"):
-        cls.to_json = cls._to_json
+    if hasattr(cls, "to_dict_override"):
+        cls.to_dict = cls.to_dict_override
+    if hasattr(cls, "to_json_override"):
+        cls.to_json = cls.to_dict_override
     return cls
 
 
@@ -504,7 +504,7 @@ class SBOM:
                 parents.append(u)
         return parents
 
-    def _to_dict(self) -> dict:
+    def to_dict_override(self) -> dict:
         """Serialize all fields except internal graph/loader, then inject graph-derived relationships."""
 
         # 1) Dump every dataclass field into a plain dict
@@ -526,6 +526,6 @@ class SBOM:
         ]
         return data
 
-    def _to_json(self, *args, **kwargs) -> str:
+    def to_json_override(self, *args, **kwargs) -> str:
         """Dump our custom to_dict() to JSON."""
-        return json.dumps(self._to_dict(), *args, **kwargs)
+        return json.dumps(self.to_dict_override(), *args, **kwargs)
