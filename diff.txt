@@ -8,8 +8,8 @@ index 1e2bf07..78dec71 100644
      ],
 -    relationships=[],
  )
- 
- 
+
+
 diff --git a/tests/relationships/test_java.py b/tests/relationships/test_java.py
 index 7a8252c..64a41c3 100644
 --- a/tests/relationships/test_java.py
@@ -20,5 +20,5 @@ index 7a8252c..64a41c3 100644
      ],
 -    relationships=[],
  )
- 
- 
+
+
