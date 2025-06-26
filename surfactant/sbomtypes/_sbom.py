@@ -124,8 +124,7 @@ class SBOM:
         # Strip out internal-only fields so dataclass logic and JSON serializers ignore them
         # pylint: disable=access-member-before-definition
         self.__dataclass_fields__ = {
-            k: v for k, v in self.__dataclass_fields__.items()
-            if k not in INTERNAL_FIELDS
+            k: v for k, v in self.__dataclass_fields__.items() if k not in INTERNAL_FIELDS
         }
 
         # Build the NetworkX graph from systems/software and loaded relationships
