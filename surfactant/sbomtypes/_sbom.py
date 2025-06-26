@@ -66,11 +66,7 @@ class SBOM:
     def __post_init__(self):
         # If this SBOM was called with a single raw‐dict arg (e.g. SBOM({...})),
         # rebuild every sub‐list from that dict rather than using schema().load()
-        if (
-            isinstance(self.systems, dict)
-            and not self.hardware
-            and not self.software
-        ):
+        if isinstance(self.systems, dict) and not self.hardware and not self.software:
             raw = self.systems  # the dict the user passed in
 
             # Clear out all fields
@@ -84,13 +80,13 @@ class SBOM:
 
             # Import types for manual construction
             from surfactant.sbomtypes import (
-                System,
-                Hardware,
-                Software,
-                Relationship,
                 AnalysisData,
+                Hardware,
                 Observation,
+                Relationship,
+                Software,
                 StarRelationship,
+                System,
             )
 
             # Rehydrate systems
@@ -124,8 +120,7 @@ class SBOM:
         # pylint: disable=access-member-before-definition
         # Strip out any internal‐only fields so they don’t show in serialization
         self.__dataclass_fields__ = {
-            k: v for k, v in self.__dataclass_fields__.items()
-            if k not in INTERNAL_FIELDS
+            k: v for k, v in self.__dataclass_fields__.items() if k not in INTERNAL_FIELDS
         }
 
         # Now build the NetworkX graph from systems/software and loaded relationships
