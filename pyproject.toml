@@ -58,9 +58,9 @@ dependencies = [
     "requests>=2.32.3",
     "rarfile==4.2.*",
     # Pinned to specific version for potential breaking changes
-    "python-msi==0.0.0a0",
     "networkx>=2.6",
-]
+    "python-msi==0.0.0a2",
+
 dynamic = ["version"]
 
 [project.optional-dependencies]
