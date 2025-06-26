@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: MIT
 from __future__ import annotations
 
+import json
 import uuid as uuid_module
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Set
 
 import networkx as nx
@@ -20,8 +21,6 @@ from ._provenance import SoftwareProvenance
 from ._relationship import Relationship, StarRelationship
 from ._software import Software, SoftwareComponent
 from ._system import System
-import json
-from dataclasses import asdict
 
 INTERNAL_FIELDS = {"software_lookup_by_sha256"}
 
