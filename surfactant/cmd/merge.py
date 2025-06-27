@@ -4,11 +4,11 @@ from collections import deque
 from typing import Dict, List, Tuple
 
 import click
+import networkx as nx
 from loguru import logger
 
 from surfactant.configmanager import ConfigManager
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
-from surfactant.sbomtypes._relationship import Relationship
 from surfactant.sbomtypes._sbom import SBOM
 from surfactant.sbomtypes._system import System
 
@@ -97,8 +97,17 @@ def merge(
     for sbom_m in input_sboms[1:]:
         merged_sbom.merge(sbom_m)
 
-    rel_graph = construct_relationship_graph(merged_sbom)
-    roots = get_roots_check_cycles(rel_graph)
+    # roots = nodes with no incoming edges
+    roots = [n for n, deg in merged_sbom.graph.in_degree() if deg == 0]
+    logger.info(f"ROOT NODES: {roots}")
+
+    # detect any cycles in the directed graph
+    cycles = list(nx.simple_cycles(merged_sbom.graph))
+
+    if cycles:
+        logger.warning(f"SBOM CYCLE(S) DETECTED: {cycles}")
+    else:
+        logger.info("No cycles detected in SBOM graph")
 
     # Check if provided UUID for a system object already exists to avoid creating a duplicate
     if config and "system" in config:
@@ -117,9 +126,7 @@ def merge(
         if config and "systemRelationship" in config:
             system_relationship = config["systemRelationship"]
         for r in roots:
-            merged_sbom.relationships.add(
-                Relationship(xUUID=system.UUID, yUUID=r, relationship=system_relationship)
-            )
+            merged_sbom.create_relationship(system.UUID, r, system_relationship)
     else:
         logger.warning(
             "No top-level system relationships added; enable the add system option to randomly generate a UUID, or specify a system UUID"
