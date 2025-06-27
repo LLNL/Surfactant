@@ -1,0 +1,64 @@
+
+
+Pull Request: Migrate SBOM relationship handling to NetworkX graph
+
+Summary
+This PR removes the old SBOM.relationships set and fully embraces a networkx.DiGraph as the single source of truth for all relationships. It also updates the merge logic, output writers, and tests to work against the new graph-based API.
+
+Key changes
+
+    Dependencies & tooling
+        Bump ruff-pre-commit to v0.12.0 and add networkx>=2.6 to pyproject.toml.
+
+    merge command (surfuctant/cmd/merge.py)
+        Import networkx to compute root nodes (in_degree() == 0) and detect cycles with nx.simple_cycles.
+        Replace direct .relationships.add(...) calls with SBOM.create_relationship().
+
+    Output writers
+
+        CycloneDX (cyclonedx_writer.py):
+            Drop sbom.has_relationship(...) in favor of sbom.get_children(uuid, "Contains").
+            Iterate sbom.graph.edges(data=True) to build Dependency objects.
+
+        SPDX (spdx_writer.py):
+            Use sbom.get_children(...) for “Contains” checks.
+            Loop over sbom.graph.edges(data=True) to emit SPDX Relationship entries.
+
+        CyTRICS (cytrics_writer.py):
+            no functional changes.
+
+    Relationship parsing (surfuctant/relationships/__init__.py)
+        Add a logger.debug(...) when a new relationship is actually added to the SBOM.
+
+    Core SBOM model (surfuctant/sbomtypes/_sbom.py)
+
+        Introduce a private _loaded_relationships list to capture incoming JSON relationships on load, and drop the public relationships field entirely.
+
+        Add a graph: nx.DiGraph field (excluded from serialization) and a build_graph() helper invoked in __post_init__ to seed nodes and edges from _loaded_relationships.
+
+        Replace all add_relationship, create_relationship, find_relationship(_object), and has_relationship implementations to operate on the graph.
+
+        Update add_software_entries and merge() to rewire nodes and edges in the graph when systems/software are deduplicated.
+
+        Provide get_children() and get_parents() utility functions for graph traversal.
+
+        Supply to_dict_override() and to_json_override() (recovered via a recover_serializers decorator) that:
+            Dump all dataclass fields via asdict()
+            Pop out internal fields (graph, _loaded_relationships)
+            Convert any set to list
+            Inject a fresh top-level "relationships" list from graph.edges(data=True)
+
+    Tests updates
+
+        CLI tests (tests/cmd/test_cli.py):
+            Replace direct SBOM.relationships and assert sbom == deserialized with graph-based comparisons via _compare_sboms().
+            Update test_add_relationship to inspect out_bom.to_dict()["relationships"].
+
+        Merge tests (tests/cmd/test_merge.py):
+            In test_simple_merge_method, capture software lists before merge and assert that merged_sbom.graph.edges equals the union of the inputs’ edge sets.
+            Change test_merge_with_circular_dependency to call create_relationship() instead of touching the removed .relationships set.
+
+        Relationship unit tests (tests/relationships/test_elf.py, test_java.py):
+            Remove now-invalid relationships=[] constructor arguments.
+
+All existing tests have been updated to reference the graph rather than the deprecated SBOM.relationships set, and the full SBOM JSON output once again includes a top-level "relationships" array built from the graph.

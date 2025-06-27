@@ -165,8 +165,7 @@ def test_simple_merge_method():
     sbom2 = get_sbom2()
 
     # Capture each SBOM's original software entries
-    orig_sw1 = list(sbom1.software)
-    orig_sw2 = list(sbom2.software)
+    orig_sw1, orig_sw2 = list(sbom1.software), list(sbom2.software)
 
     # Merge in place
     merged_sbom = sbom1
@@ -178,12 +177,9 @@ def test_simple_merge_method():
         expected_sw, key=lambda x: x.UUID
     )
 
-    # Verify the graph edges are the union of the two SBOMs' edges
+    # Verify graph edges union: use edges(keys=True) to pull relationship key
     def extract_edges(sbom):
-        return {
-            (u, v, data["relationship"])
-            for u, v, data in sbom.graph.edges(data=True)
-        }
+        return {(u, v, key) for u, v, key in sbom.graph.edges(keys=True)}
 
     expected_edges = extract_edges(get_sbom1()) | extract_edges(get_sbom2())
     assert extract_edges(merged_sbom) == expected_edges
@@ -195,7 +191,7 @@ def test_merge_with_circular_dependency():
     sbom2 = get_sbom2()
     circular_dependency_sbom = sbom1
 
-    # Use the SBOM API to insert a circular "Contains" edge into the graph
+    # inject a circular edge via the new graph API
     circular_dependency_sbom.create_relationship(
         "a5db7e12-fe3d-490e-90b8-98a8bfaace09",
         "dd6f7f6b-7c31-4a4a-afef-14678b9942bf",

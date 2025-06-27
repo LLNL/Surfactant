@@ -56,9 +56,9 @@ def write_sbom(sbom: SBOM, outfile) -> None:
     # Build a map of Dependency objects keyed by UUID
     cdx_rels: Dict[str, Dependency] = {}
 
-    # Walk the directed graph for relationships
-    for parent_uuid, child_uuid, attrs in sbom.graph.edges(data=True):
-        rel_type = attrs.get("relationship", "").upper()
+    # Walk every edge, pulling the relationship out of the key
+    for parent_uuid, child_uuid, rel_type in sbom.graph.edges(keys=True):
+        rel_type = rel_type.upper()
 
         # skip duplicate CONTAINS if we've already mapped a container path
         if (
@@ -73,15 +73,11 @@ def write_sbom(sbom: SBOM, outfile) -> None:
             cdx_rels[parent_uuid] = Dependency(ref=BomRef(parent_uuid))
         parent_dep = cdx_rels[parent_uuid]
 
-        # add the child dependency if not already present
         if rel_type == "CONTAINS":
-            # direct containment
             parent_dep.dependencies.add(Dependency(ref=BomRef(child_uuid)))
         elif rel_type in ("USES", "DEPENDS_ON", "REQUIRES"):
-            # map runtime‐style relationships
             parent_dep.add_scope_dependency(Dependency(ref=BomRef(child_uuid)), scope="runtime")
         else:
-            # for any other relationship types you might want custom handling:
             parent_dep.add_scope_dependency(Dependency(ref=BomRef(child_uuid)), scope="unknown")
 
     # Attach all built dependencies to the BOM

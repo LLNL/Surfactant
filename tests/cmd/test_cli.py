@@ -21,7 +21,7 @@ def fixture_test_sbom():
 
 
 def _compare_sboms(one: SBOM, two: SBOM) -> bool:
-    # 1) Sort systems, hardware, software for deterministic ordering
+    # Sort systems, hardware, software for deterministic ordering
     one.systems = sorted(one.systems, key=lambda x: x.UUID)
     two.systems = sorted(two.systems, key=lambda x: x.UUID)
 
@@ -31,29 +31,16 @@ def _compare_sboms(one: SBOM, two: SBOM) -> bool:
     one.software = sorted(one.software, key=lambda x: x.UUID)
     two.software = sorted(two.software, key=lambda x: x.UUID)
 
-    # 2) Compare node sets
-    nodes_one = set(one.graph.nodes())
-    nodes_two = set(two.graph.nodes())
-    if nodes_one != nodes_two:
+    # Compare graphs directly:
+    def edge_sig(g):
+        return {(u, v, key.upper()) for u, v, key in g.edges(keys=True)}
+
+    if edge_sig(one.graph) != edge_sig(two.graph):
         return False
 
-    # 3) Compare edge sets, including the 'relationship' attribute
-    def edge_signature(graph: nx.DiGraph):
-        return {
-            (u, v, data.get("relationship", "").upper()) for u, v, data in graph.edges(data=True)
-        }
-
-    edges_one = edge_signature(one.graph)
-    edges_two = edge_signature(two.graph)
-    if edges_one != edges_two:
-        return False
-
-    # 4) Finally, you can still compare the rest of the SBOM dict if you like:
-    #    drop relationships from the dict since you've already checked them
-    d1 = one.to_dict().copy()
-    d2 = two.to_dict().copy()
-    d1.pop("relationships", None)
-    d2.pop("relationships", None)
+    # finally compare everything else via to_dict except relationships:
+    d1 = one.to_dict(); d2 = two.to_dict()
+    d1.pop("relationships", None); d2.pop("relationships", None)
     return d1 == d2
 
 
@@ -181,16 +168,14 @@ def test_add_relationship(test_sbom):
         "relationship": "Uses",
     }
 
-    # Pull the pre-existing relationships from the SBOM dict
-    previous_rels = test_sbom.to_dict()["relationships"]
-    previous_rel_len = len(previous_rels)
+    # count pre-existing edges
+    previous_rel_len = test_sbom.graph.number_of_edges()
 
     # Add the new relationship via the CLI
     out_bom = cli_add().execute(test_sbom, relationship=relationship)
 
-    # Pull the updated relationships and verify one more was added
-    current_rels = out_bom.to_dict()["relationships"]
-    assert len(current_rels) == previous_rel_len + 1
+    # after add, graph should have one more edge
+    assert out_bom.graph.number_of_edges() == previous_rel_len + 1
 
 
 def test_add_installpath(test_sbom):
@@ -206,5 +191,5 @@ def test_cli_base_serialization(test_sbom):
     serialized = Cli.serialize(test_sbom)
     deserialized = Cli.deserialize(serialized)
 
-    # ignore internal graph identity, compare by contents (including relationships from graph)
+    # compare by graph contents and other fields, ignore object identity
     assert _compare_sboms(test_sbom, deserialized)

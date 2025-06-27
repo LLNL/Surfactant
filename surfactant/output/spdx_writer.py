@@ -91,9 +91,9 @@ def write_sbom(sbom: SBOM, outfile) -> None:
             )
         )
 
-    # --- refactored: use sbom.graph.edges(data=True) ---
-    for parent_uuid, child_uuid, attrs in sbom.graph.edges(data=True):
-        rel_type = attrs.get("relationship", "").upper()
+    # Iterate with keys=True to get each distinct relationship key
+    for parent_uuid, child_uuid, rel_type in sbom.graph.edges(keys=True):
+        rel_type = rel_type.upper()
 
         # skip duplicate CONTAINS for container-path dedupe
         if (
@@ -103,7 +103,6 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         ):
             continue
 
-        # only process if both endpoints have SPDX IDs
         if parent_uuid not in uuid_to_spdxid or child_uuid not in uuid_to_spdxid:
             continue
 
@@ -113,7 +112,6 @@ def write_sbom(sbom: SBOM, outfile) -> None:
                 try:
                     rel_enum = RelationshipType[rel_type]
                 except KeyError:
-                    # SPDX doesn’t support this exact type
                     comment = f"Type: {rel_type}"
                     rel_enum = RelationshipType.OTHER
 
