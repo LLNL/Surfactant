@@ -604,11 +604,6 @@ class SBOM:
             if isinstance(v, set):
                 data[k] = list(v)
 
-        # Fix up any None provenance on systems → always emit an array
-        for sys in data.get("systems", []):
-            if sys.get("provenance") is None:
-                sys["provenance"] = []
-
         # Rebuild 'relationships' from the graph's edge keys
         data["relationships"] = [
             {"xUUID": u, "yUUID": v, "relationship": key}

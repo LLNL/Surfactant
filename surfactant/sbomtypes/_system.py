@@ -9,6 +9,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field, fields
 from typing import List, Optional
 
+from ._provenance import SystemProvenance
+
 # pylint: disable=too-many-instance-attributes
 
 
@@ -21,7 +23,7 @@ class System:
     officialName: Optional[str] = None
     vendor: Optional[List[str]] = None
     description: Optional[str] = None
-    provenance: List[Provenance] = field(default_factory=list)
+    provenance: List[SystemProvenance] = field(default_factory=list)
 
     def merge(self, sy: System):
         if sy and self != sy:
