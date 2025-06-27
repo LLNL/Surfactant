@@ -171,9 +171,7 @@ class SBOM:
         """
         return self.graph.has_edge(r.xUUID, r.yUUID, key=r.relationship)
 
-    def find_relationship(
-        self, xUUID: str, yUUID: str, relationship: str
-    ) -> bool:
+    def find_relationship(self, xUUID: str, yUUID: str, relationship: str) -> bool:
         """
         Same as find_relationship_object, but takes raw args.
         """
@@ -192,7 +190,7 @@ class SBOM:
         # Fast-path if all three are specified
         if xUUID and yUUID and relationship:
             return self.graph.has_edge(xUUID, yUUID, key=relationship)
-        
+
         # Otherwise scan all edges with keys
         for u, v, key in self.graph.edges(keys=True):
             if xUUID and u != xUUID:
@@ -233,9 +231,7 @@ class SBOM:
         for e in entries:
             existing = self.find_software(e.sha256)
             if existing and Software.check_for_hash_collision(existing, e):
-                logger.warning(
-                    f"Hash collision between {existing.name} and {e.name}"
-                )
+                logger.warning(f"Hash collision between {existing.name} and {e.name}")
 
             if not existing:
                 # new software → add node
@@ -246,9 +242,7 @@ class SBOM:
                 kept_uuid, old_uuid = existing.merge(e)
 
                 # redirect *incoming* edges to the kept node
-                for src, _, key, attrs in list(
-                    self.graph.in_edges(old_uuid, keys=True, data=True)
-                ):
+                for src, _, key, attrs in list(self.graph.in_edges(old_uuid, keys=True, data=True)):
                     self.graph.add_edge(src, kept_uuid, key=key, **attrs)
 
                 # redirect *outgoing* edges from the old node
@@ -336,12 +330,12 @@ class SBOM:
                         # Redirect incoming edges to the merged node u1
                         for pred, _, key, attrs in self.graph.in_edges(u2, keys=True, data=True):
                             self.graph.add_edge(pred, u1, key=key, **attrs)
-                        
+
                         # For each successor of u2, add edge (u1 -> succ)
                         # Redirect outgoing edges from u2 → u1
                         for _, succ, key, attrs in self.graph.out_edges(u2, keys=True, data=True):
                             self.graph.add_edge(u1, succ, key=key, **attrs)
-                        
+
                         # Then drop the old node
                         self.graph.remove_node(u2)
 
@@ -371,7 +365,7 @@ class SBOM:
                         # Redirect outgoing edges from u2 → u1
                         for _, succ, key, attrs in self.graph.out_edges(u2, keys=True, data=True):
                             self.graph.add_edge(u1, succ, key=key, **attrs)
-                        
+
                         # Then drop the old node
                         self.graph.remove_node(u2)
 

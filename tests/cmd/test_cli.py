@@ -5,7 +5,6 @@
 
 import pathlib
 
-import networkx as nx
 import pytest
 
 from surfactant.cmd.cli import cli_add, cli_find
@@ -39,8 +38,10 @@ def _compare_sboms(one: SBOM, two: SBOM) -> bool:
         return False
 
     # finally compare everything else via to_dict except relationships:
-    d1 = one.to_dict(); d2 = two.to_dict()
-    d1.pop("relationships", None); d2.pop("relationships", None)
+    d1 = one.to_dict()
+    d2 = two.to_dict()
+    d1.pop("relationships", None)
+    d2.pop("relationships", None)
     return d1 == d2
 
 
