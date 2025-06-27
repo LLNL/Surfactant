@@ -163,18 +163,27 @@ def get_sbom4():
 def test_simple_merge_method():
     sbom1 = get_sbom1()
     sbom2 = get_sbom2()
+
+    # Capture each SBOM's original software entries
+    orig_sw1 = list(sbom1.software)
+    orig_sw2 = list(sbom2.software)
+
+    # Merge in place
     merged_sbom = sbom1
     merged_sbom.merge(sbom2)
 
-    # Software list must be the union of the two, sorted by UUID
-    expected_sw = sbom1.software + sbom2.software
+    # Expect the merged list to be the union of the two originals
+    expected_sw = orig_sw1 + orig_sw2
     assert sorted(merged_sbom.software, key=lambda x: x.UUID) == sorted(
         expected_sw, key=lambda x: x.UUID
     )
 
-    # Graph edges must be the union of each SBOM’s edges
+    # Verify the graph edges are the union of the two SBOMs' edges
     def extract_edges(sbom):
-        return {(u, v, data["relationship"]) for u, v, data in sbom.graph.edges(data=True)}
+        return {
+            (u, v, data["relationship"])
+            for u, v, data in sbom.graph.edges(data=True)
+        }
 
     expected_edges = extract_edges(get_sbom1()) | extract_edges(get_sbom2())
     assert extract_edges(merged_sbom) == expected_edges
