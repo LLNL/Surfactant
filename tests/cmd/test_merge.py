@@ -179,7 +179,7 @@ def test_simple_merge_method():
 
     # Verify graph edges union: use edges(keys=True) to pull relationship key
     def extract_edges(sbom):
-        return {(u, v, key) for u, v, key in sbom.graph.edges(keys=True)}
+        return set(sbom.graph.edges(keys=True))
 
     expected_edges = extract_edges(get_sbom1()) | extract_edges(get_sbom2())
     assert extract_edges(merged_sbom) == expected_edges
