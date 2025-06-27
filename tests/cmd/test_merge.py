@@ -13,7 +13,7 @@ import pytest
 
 from surfactant.cmd.merge import merge
 from surfactant.plugin.manager import get_plugin_manager
-from surfactant.sbomtypes import SBOM, Relationship
+from surfactant.sbomtypes import SBOM
 
 # Generate Sample SBOMs
 sbom1_json = """{
@@ -174,13 +174,11 @@ def test_simple_merge_method():
 
     # Graph edges must be the union of each SBOM’s edges
     def extract_edges(sbom):
-        return {
-            (u, v, data["relationship"])
-            for u, v, data in sbom.graph.edges(data=True)
-        }
+        return {(u, v, data["relationship"]) for u, v, data in sbom.graph.edges(data=True)}
 
     expected_edges = extract_edges(get_sbom1()) | extract_edges(get_sbom2())
     assert extract_edges(merged_sbom) == expected_edges
+
 
 @pytest.mark.skip(reason="No way of validating this test yet")
 def test_merge_with_circular_dependency():

@@ -5,12 +5,12 @@
 
 import pathlib
 
+import networkx as nx
 import pytest
 
 from surfactant.cmd.cli import cli_add, cli_find
 from surfactant.cmd.cli_commands import Cli
-from surfactant.sbomtypes import SBOM, Relationship
-import networkx as nx
+from surfactant.sbomtypes import SBOM
 
 
 @pytest.fixture(name="test_sbom")
@@ -40,8 +40,7 @@ def _compare_sboms(one: SBOM, two: SBOM) -> bool:
     # 3) Compare edge sets, including the 'relationship' attribute
     def edge_signature(graph: nx.DiGraph):
         return {
-            (u, v, data.get("relationship", "").upper())
-            for u, v, data in graph.edges(data=True)
+            (u, v, data.get("relationship", "").upper()) for u, v, data in graph.edges(data=True)
         }
 
     edges_one = edge_signature(one.graph)
@@ -51,8 +50,10 @@ def _compare_sboms(one: SBOM, two: SBOM) -> bool:
 
     # 4) Finally, you can still compare the rest of the SBOM dict if you like:
     #    drop relationships from the dict since you've already checked them
-    d1 = one.to_dict().copy(); d2 = two.to_dict().copy()
-    d1.pop("relationships", None); d2.pop("relationships", None)
+    d1 = one.to_dict().copy()
+    d2 = two.to_dict().copy()
+    d1.pop("relationships", None)
+    d2.pop("relationships", None)
     return d1 == d2
 
 
