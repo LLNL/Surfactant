@@ -1,0 +1,46 @@
+diff --git a/tests/cmd/test_cli.py b/tests/cmd/test_cli.py
+index b478fbe..4e6a5aa 100644
+--- a/tests/cmd/test_cli.py
++++ b/tests/cmd/test_cli.py
+@@ -204,5 +204,6 @@ def test_add_installpath(test_sbom):
+ def test_cli_base_serialization(test_sbom):
+     serialized = Cli.serialize(test_sbom)
+     deserialized = Cli.deserialize(serialized)
+-    assert test_sbom == deserialized
++    
++    # ignore internal graph identity, compare by contents (including relationships from graph)
+     assert _compare_sboms(test_sbom, deserialized)
+diff --git a/tests/cmd/test_merge.py b/tests/cmd/test_merge.py
+index a09bcc1..88d72ab 100644
+--- a/tests/cmd/test_merge.py
++++ b/tests/cmd/test_merge.py
+@@ -166,25 +166,21 @@ def test_simple_merge_method():
+     merged_sbom = sbom1
+     merged_sbom.merge(sbom2)
+ 
+-    # 1) Software list must be the union of the two, sorted by UUID
++    # Software list must be the union of the two, sorted by UUID
+     expected_sw = sbom1.software + sbom2.software
+     assert sorted(merged_sbom.software, key=lambda x: x.UUID) == sorted(
+         expected_sw, key=lambda x: x.UUID
+     )
+ 
+-    # 2) Graph edges must be the union of each SBOM’s edges
++    # Graph edges must be the union of each SBOM’s edges
+     def extract_edges(sbom):
+         return {
+             (u, v, data["relationship"])
+             for u, v, data in sbom.graph.edges(data=True)
+         }
+ 
+-    edges1 = extract_edges(get_sbom1())
+-    edges2 = extract_edges(get_sbom2())
+-    expected_edges = edges1.union(edges2)
+-
+-    merged_edges = extract_edges(merged_sbom)
+-    assert merged_edges == expected_edges
++    expected_edges = extract_edges(get_sbom1()) | extract_edges(get_sbom2())
++    assert extract_edges(merged_sbom) == expected_edges
+ 
+ @pytest.mark.skip(reason="No way of validating this test yet")
+ def test_merge_with_circular_dependency():

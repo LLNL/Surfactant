@@ -204,5 +204,6 @@ def test_add_installpath(test_sbom):
 def test_cli_base_serialization(test_sbom):
     serialized = Cli.serialize(test_sbom)
     deserialized = Cli.deserialize(serialized)
-    assert test_sbom == deserialized
+    
+    # ignore internal graph identity, compare by contents (including relationships from graph)
     assert _compare_sboms(test_sbom, deserialized)
