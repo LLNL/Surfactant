@@ -180,10 +180,7 @@ def test_simple_merge_method():
 
     # Verify the graph edges are the union of the two SBOMs' edges
     def extract_edges(sbom):
-        return {
-            (u, v, data["relationship"])
-            for u, v, data in sbom.graph.edges(data=True)
-        }
+        return {(u, v, data["relationship"]) for u, v, data in sbom.graph.edges(data=True)}
 
     expected_edges = extract_edges(get_sbom1()) | extract_edges(get_sbom2())
     assert extract_edges(merged_sbom) == expected_edges
