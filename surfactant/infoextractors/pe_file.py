@@ -21,8 +21,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype: List[str]) -> bool:
-    # return "PE" in filetype
-    return filetype == "PE"
+    return "PE" in filetype
 
 
 @surfactant.plugin.hookimpl
@@ -37,8 +36,11 @@ def extract_file_info(
         return None
     print("PE support")
     pe_info = extract_pe_info(filename)
+    print("1")
     if pe_info:
+        print("2")
         if "FileInfo" in pe_info:
+            print("3")
             fi = pe_info["FileInfo"]
             if "ProductName" in fi:
                 software_field_hints.append(("name", fi["ProductName"], 80))
@@ -116,8 +118,11 @@ pe_subsystem_types = {
 
 
 def extract_pe_info(filename: str) -> object:
+    print("in side extract")
     try:
+        print("in side extract 2")
         pe = dnfile.dnPE(filename, fast_load=False)
+        print("in side extract 3")
     except (OSError, dnfile.PEFormatError):
         return {}
 
@@ -284,8 +289,9 @@ def get_assemblyref_info(asmref_info) -> Dict[str, Any]:
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
     # HeapItemBinary value is the bytes following the compressed int (indicating the length)
     # raw_data attribute has the compressed int indicating length included
+
     asmref["HashValue"] = asmref_info.HashValue.value.hex()
-    add_assembly_flags_info(asmref, asmref_info)
+    hash_value = getattr(asmref_info, "HashValue", None)
     return asmref
 
 

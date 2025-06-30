@@ -10,12 +10,9 @@ from loguru import logger
 
 import surfactant.plugin
 
-print("hello JS")
-
 
 @surfactant.plugin.hookimpl
 def identify_file_type(filepath: str) -> Optional[str]:
-    print("inside JS")
     # pylint: disable=too-many-return-statements
     _filetype_extensions = {
         ".sh": "SHELL",
@@ -42,7 +39,6 @@ def identify_file_type(filepath: str) -> Optional[str]:
         b"perl": "PERL",
     }
     try:
-        print("hello")
         with open(filepath, "rb") as f:
             head = f.read(256)
             if head.startswith(b"<!DOCTYPE html>"):
@@ -59,7 +55,5 @@ def identify_file_type(filepath: str) -> Optional[str]:
         return None
     suffix = pathlib.Path(filepath).suffix.lower()
     if suffix in _filetype_extensions:
-        print("suffix: ", suffix)
-        print("filetype: ", [_filetype_extensions[suffix]])
         return [_filetype_extensions[suffix]]
     return None
