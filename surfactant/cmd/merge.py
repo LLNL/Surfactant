@@ -89,124 +89,52 @@ def merge(
     config,
     output_writer,
     system_uuid=None,
-    system_relationship="Contains",  # remember: keep in-sync with click arg default
+    system_relationship="Contains",
     add_system=False,
 ):
-    """Merge two or more SBOMs."""
+    """Merge two or more SBOMs, then optionally wrap in a top‐level system."""
+    # Merge all input SBOMs into the first one
     merged_sbom = input_sboms[0]
     for sbom_m in input_sboms[1:]:
         merged_sbom.merge(sbom_m)
 
-    # roots = nodes with no incoming edges
+    # Find root nodes: those with zero incoming edges
     roots = [n for n, deg in merged_sbom.graph.in_degree() if deg == 0]
     logger.info(f"ROOT NODES: {roots}")
 
-    # detect any cycles in the directed graph
+    # Detect any directed cycles
     cycles = list(nx.simple_cycles(merged_sbom.graph))
-
     if cycles:
         logger.warning(f"SBOM CYCLE(S) DETECTED: {cycles}")
     else:
         logger.info("No cycles detected in SBOM graph")
 
-    # Check if provided UUID for a system object already exists to avoid creating a duplicate
-    if config and "system" in config:
-        if "UUID" in config["system"]:
-            for s in merged_sbom.systems:
-                if config["system"]["UUID"] == s.UUID:
-                    add_system = False
-                    break
-    # Even if not adding the system, create a dummy/placeholder with the UUID for creating relationships
-    system, using_random_uuid = create_system_object(merged_sbom, config, system_uuid)
-    if add_system:
-        merged_sbom.systems.append(system)
+    # Prepare (or suppress) the top‐level system entry
+    if config and "system" in config and "UUID" in config["system"]:
+        if any(s.UUID == config["system"]["UUID"] for s in merged_sbom.systems):
+            add_system = False
 
-    # Add a system relationship to each root software/systems entry identified
-    if not using_random_uuid or add_system:
+    system_obj, using_random = create_system_object(merged_sbom, config, system_uuid)
+    if add_system:
+        merged_sbom.systems.append(system_obj)
+
+    # Attach a system‐to‐root relationship for each root
+    if not using_random or add_system:
         if config and "systemRelationship" in config:
             system_relationship = config["systemRelationship"]
-        for r in roots:
-            merged_sbom.create_relationship(system.UUID, r, system_relationship)
+        for root_uuid in roots:
+            merged_sbom.create_relationship(
+                system_obj.UUID, root_uuid, system_relationship
+            )
     else:
         logger.warning(
-            "No top-level system relationships added; enable the add system option to randomly generate a UUID, or specify a system UUID"
+            "No top‐level system relationships added; "
+            "either specify --add_system or provide a system UUID."
         )
 
+    # Write out
     output_writer.write_sbom(merged_sbom, sbom_outfile)
 
-
-def construct_relationship_graph(sbom: SBOM):
-    """Function to get create a relationship graph of systems and software within an sbom
-
-    Args:
-        sbom (SBOM): The sbom to generate relationship graph from.
-    """
-    # construct a graph for adding a system relationship to all root software entries
-    rel_graph: Dict[str, List[str]] = {}
-    # add all UUIDs as nodes in the graph
-    for system in sbom.systems:
-        rel_graph[system.UUID] = []
-    for sw in sbom.software:
-        rel_graph[sw.UUID] = []
-    # iterate through all relationships, adding edges to the adjacency list
-    for rel in sbom.relationships:
-        if rel.xUUID not in rel_graph or rel.yUUID not in rel_graph:
-            logger.error(
-                f"Either the xUUID or yUUID for the relationship does not exist in the graph: {rel = }"
-            )
-            continue
-        # consider also including relationship type for the edge
-        # treat as directed graph, with inverted edges (pointing to parents) so dfs will eventually lead to the root parent node for a (sub)graph
-        rel_graph[rel.yUUID].append(rel.xUUID)
-    return rel_graph
-
-
-def get_roots_check_cycles(rel_graph):
-    """Function to get roots of the sbom and check for circular dependencies
-
-    Args:
-        rel_graph: The relationship graph for an sbom.
-    """
-    visited = set()
-    roots = set()
-    rootFound = set()
-    recursionStack = deque()
-
-    def dfs(rel):
-        recursionStack.append(rel)
-        # if the node is already visited, no revisiting required
-        if rel in visited:
-            recursionStack.pop()
-            return rel in rootFound
-        # mark the node as visited
-        visited.add(rel)
-        # the node has no parents, it is a root
-        if not rel_graph[rel]:
-            roots.add(rel)
-            rootFound.add(rel)
-            recursionStack.pop()
-            return True
-        cycle = False
-        # node is not a root, move on to parents
-        for parent in rel_graph[rel]:
-            # detect cycles
-            if parent in recursionStack:
-                logger.info(f"CYCLE DETECTED: {parent} {rel}")
-                cycle = True
-            if dfs(parent):
-                rootFound.add(rel)
-        # if there was a cycle, and none of the parents led to a definite root node
-        if cycle and rel not in rootFound:
-            logger.info(f"CYCLE AND NO ROOT FOUND, SETTING {rel} AS THE ROOT")
-            roots.add(rel)
-            rootFound.add(rel)
-        recursionStack.pop()
-        return rel in rootFound
-
-    for rel in rel_graph:
-        dfs(rel)
-    logger.info(f"ROOTS: {roots}")
-    return roots
 
 
 def create_system_object(sbom: SBOM, config=None, system_uuid=None) -> Tuple[System, bool]:
