@@ -19,7 +19,8 @@ description = "Modular framework to gather file information, analyze dependencie
 readme = "README.md"
 requires-python = ">=3.8.1"
 keywords = ["sbom", "pe", "elf", "ole", "msi"]
-license = {text = "MIT License"}
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
@@ -37,7 +38,6 @@ classifiers = [
     "Topic :: Software Development",
     "Topic :: System",
     "Topic :: Utilities",
-    "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
     "dataclasses_json==0.6.*",
