@@ -1,7 +1,6 @@
 import json
 import uuid as uuid_module
-from collections import deque
-from typing import Dict, List, Tuple
+from typing import Tuple
 
 import click
 import networkx as nx
@@ -123,9 +122,7 @@ def merge(
         if config and "systemRelationship" in config:
             system_relationship = config["systemRelationship"]
         for root_uuid in roots:
-            merged_sbom.create_relationship(
-                system_obj.UUID, root_uuid, system_relationship
-            )
+            merged_sbom.create_relationship(system_obj.UUID, root_uuid, system_relationship)
     else:
         logger.warning(
             "No top‐level system relationships added; "
@@ -134,7 +131,6 @@ def merge(
 
     # Write out
     output_writer.write_sbom(merged_sbom, sbom_outfile)
-
 
 
 def create_system_object(sbom: SBOM, config=None, system_uuid=None) -> Tuple[System, bool]:
