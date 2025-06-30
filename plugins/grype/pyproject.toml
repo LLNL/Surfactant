@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Surfactant plugin for running grype on files"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["surfactant"]
 license = "MIT"
 classifiers = [
