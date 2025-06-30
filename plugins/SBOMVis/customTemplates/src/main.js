@@ -6,7 +6,7 @@ import { createPopupElement } from "#popupModule";
 import {
 	buildNodeSelectionSidebar,
 	buildSBOMOverviewSidebar,
-	buildSearchSidebar,
+	insertSearchSidebar,
 } from "#sidebarModule";
 
 // This method is responsible for drawing the graph, returns the drawn network

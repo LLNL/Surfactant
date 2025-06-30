@@ -229,7 +229,7 @@ function createSection({ title, icon = null, body = [] }) {
 }
 
 export function buildSBOMOverviewSidebar() {
-    const fragment = document.createDocumentFragment();
+	const fragment = document.createDocumentFragment();
 
 	fragment.appendChild(
 		createSection({
@@ -239,7 +239,7 @@ export function buildSBOMOverviewSidebar() {
 }
 
 export function buildNodeSelectionSidebar(nodeID) {
-    const fragment = document.createDocumentFragment();
+	const fragment = document.createDocumentFragment();
 
 	let clickedNode = null;
 
@@ -344,29 +344,119 @@ export function buildNodeSelectionSidebar(nodeID) {
 	return fragment;
 }
 
-export function buildSearchSidebar() {
-    const fragment = document.createDocumentFragment();
+export function insertSearchSidebar(id) {
+	const rootNode = document.getElementById(id);
+	const fragment = document.createDocumentFragment();
 
 	const searchBarSection = document.createElement("div");
-	searchBarSection.classList = "section";
+	searchBarSection.className = "section";
 
 	const searchBox = document.createElement("select");
 	searchBox.id = "searchBox";
-	searchBox.placeholder = "Start typing to search...";
+	searchBox.setAttribute("placeholder", "Start typing to search...");
 	searchBarSection.appendChild(searchBox);
 
-    fragment.appendChild(searchBarSection);
+	fragment.appendChild(searchBarSection);
+
+	const resultsSection = document.createElement("div");
+	resultsSection.className = "section";
+	resultsSection.id = "resultsSection";
+	fragment.appendChild(resultsSection);
+
+	rootNode.replaceChildren(fragment);
+
+	function generateSearchData() {
+		const options = []; // [ { 'UUID': <UUID>, 'data': [name, sha, ...] }, ... ]
+		for (const [nodeID, n] of Object.entries(network.body.nodes)) {
+			if (nodeID.includes("edgeId")) continue; // Skip edges
+
+			const sbom = n.options.surfactantSoftwareStruct;
+			const entry = {
+				UUID: nodeID,
+				data: [],
+				label: n.options.nodeMetadata.nodeFileName,
+			};
+
+			for (const [sbomK, sbomV] of Object.entries(sbom)) {
+				if (Array.isArray(sbomV))
+					entry.data.push(
+						...sbomV.filter(
+							(x) =>
+								typeof x !== "function" && typeof x !== "object" && x !== "",
+						),
+					);
+				if (
+					typeof sbomV !== "function" &&
+					typeof sbomV !== "object" &&
+					sbomV !== ""
+				)
+					entry.data.push(sbomV);
+			}
+
+			options.push(entry);
+		}
+		return options;
+	}
+
+	function appendNodeToResults(nodeID, ...args) {
+		const node = network.body.nodes[nodeID];
+
+		const resultsCard = document.createElement("div");
+		resultsCard.className = "search-results-card";
+
+		const header = document.createElement("div");
+		header.classList = "section-header";
+
+		const iconElement = document.createElement("i");
+		iconElement.classList = getIconClassForFileType(
+			node.options.nodeMetadata.type,
+		);
+		header.appendChild(iconElement);
+
+		const headerText = document.createElement("h5");
+		headerText.textContent = node.options.nodeMetadata.nodeFileName;
+		header.appendChild(headerText);
+
+		resultsCard.append(header);
+
+		document.getElementById("resultsSection").appendChild(resultsCard);
+	}
+
+	function removeNodes(nodes) {
+		for (const nodeID of nodes) {
+			const node = network.body.nodes[nodeID];
+			const fileName = node.options.nodeMetadata.nodeFileName;
+
+			for (const c of document
+				.getElementById("resultsSection")
+				.querySelectorAll(".search-results-card")) {
+				const headerFileName = c.querySelector("h5").innerText;
+				if (fileName === headerFileName) {
+					c.remove();
+				}
+			}
+		}
+	}
+
+	const searchData = generateSearchData();
 
 	new TomSelect(searchBox, {
 		maxItems: null,
 		maxOptions: 100,
+
+		valueField: "UUID",
+		labelField: "label",
+		searchField: ["data"],
+
 		plugins: {
 			remove_button: {
 				title: "Remove",
 			},
 			caret_position: {},
 		},
-	});
+		options: searchData,
 
-	return fragment.cloneNode(true);
+		onItemAdd: appendNodeToResults,
+		onDelete: removeNodes,
+	});
 }

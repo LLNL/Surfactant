@@ -1,4 +1,4 @@
-import { buildSearchSidebar } from "#sidebarModule";
+import { insertSearchSidebar } from "#sidebarModule";
 
 export function toggleSidebar() {
 	const sidebar = document.getElementById("sidebar");
@@ -49,7 +49,7 @@ export function exportImage() {
 }
 
 export function handleSearch() {
-	document.getElementById("sidebar").replaceChildren(...buildSearchSidebar());
+	insertSearchSidebar("sidebar");
 
 	if (!document.getElementById("sidebar").classList.contains("open"))
 		toggleSidebar();

@@ -134,7 +134,8 @@ div.vis-tooltip {
 			align-items: center;
 		}
 
-		h4 {
+		h4,
+		h5 {
 			margin: 0;
 			line-height: 1;
 
@@ -236,6 +237,10 @@ div.vis-tooltip {
 				margin: 0 0 0 1rem;
 			}
 		}
+	}
+
+	.search-results-card {
+		margin-bottom: 5px;
 	}
 
 	&.open {
