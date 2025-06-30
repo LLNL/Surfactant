@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 from pathlib import Path
+from typing import List
 
 from checksec.__main__ import checksec_file
 from checksec.elf import ELFChecksecData
@@ -13,8 +14,8 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
-    if filetype not in ["ELF", "PE"]:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
+    if not ("ELF" in filetype or "PE" in filetype):
         return None
     checksec_data = checksec_file(Path(filename))
     data = {}
