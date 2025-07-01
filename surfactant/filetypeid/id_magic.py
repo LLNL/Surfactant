@@ -58,16 +58,24 @@ def identify_file_type(filepath: str) -> Optional[str]:
             if magic_bytes[:4] == b"\x7fELF":
                 filetype_matches.append("ELF")
             if magic_bytes[:2] == b"MZ":
+                # Several file types start with the same `MZ` signature, so we need to handle them.
+                # Regardless, the initial header (may) contain a pointer to an additional COFF
+                # header, so we look for that as the first step.
                 coff_addr = (
                     int.from_bytes(magic_bytes[0x3C:0x40], byteorder="little", signed=False)
                     & 0xFFFF
                 )
+                # Check to see if the coff_addr is still within the initial read; if not, we read up
+                # to where it is.
                 if coff_addr > len(magic_bytes):
                     magic_bytes += f.read(coff_addr + 4 - len(magic_bytes))
+                # If coff_addr is still longer than what has been read so far, it points off the end
+                # of the file, so the file is either malformed or something else is up.
                 if coff_addr + 4 > len(magic_bytes):
                     filetype_matches.append("Malformed PE")
                 elif magic_bytes[coff_addr : coff_addr + 4] != b"PE\x00\x00":
                     filetype_matches.append("DOS")
+                # Check for the linux kernel header at 0x202 (may require a second read)
                 elif len(magic_bytes) < 0x206:
                     magic_bytes += f.read(265)
                     if magic_bytes[0x202:0x206] == b"HdrS":
@@ -76,6 +84,7 @@ def identify_file_type(filepath: str) -> Optional[str]:
                         filetype_matches.append("PE")
                 elif magic_bytes[0x202:0x206] == b"HdrS":
                     filetype_matches.append("Linux Kernel Image")
+                # Otherwise, call it a PE and be done with it.
                 else:
                     filetype_matches.append("PE")
 

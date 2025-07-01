@@ -10,11 +10,11 @@ from surfactant.sbomtypes import SBOM, Relationship, Software
 
 @surfactant.plugin.hookimpl
 def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str, children: list
+    sbom: SBOM, software: Software, filename: str, filetype: List[str], children: list
 ) -> Optional[List[Software]]:
     pm = get_plugin_manager()
     # Change to properly filter filetypes, add to if statement for filetypes syft should run for
-    if filetype == "TAR":
+    if "TAR" in filetype:
         data = subprocess.check_output(
             "anchore_syft " + filename + " -o json --scope all-layers", shell=True
         )
