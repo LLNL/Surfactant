@@ -10,6 +10,9 @@
 	--darkSidebarLabel: #aaa;
 
 	--scrollbarBackground: #1e1e20;
+
+	--graphInactiveColor: rgba(200, 200, 200, 0.5);
+	--graphHighlightColor: null;
 }
 
 div.vis-tooltip {
