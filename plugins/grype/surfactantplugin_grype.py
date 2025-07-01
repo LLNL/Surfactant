@@ -76,16 +76,16 @@ def run_grype(filename: str) -> object:
 
 @surfactant.plugin.hookimpl
 def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str, children: list
+    sbom: SBOM, software: Software, filename: str, filetype: List[str], children: list
 ) -> Optional[List[Software]]:
     if disable_plugin:
         return None
 
-    if filetype not in ("DOCKER_TAR", "DOCKER_GZIP"):
+    if not ("DOCKER_TAR" in filetype or "DOCKER_GZIP" in filetype):
         return None
 
     try:
-        if filetype == "DOCKER_GZIP":
+        if "DOCKER_GZIP" in filetype:
             logger.debug(f"Decompressing gzip file: {filename}")
             with open(filename, "rb") as gzip_in:
                 gzip_data = gzip_in.read()
