@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 import json
 from pathlib import Path
+from typing import List
 
 import angr
 from cle import CLECompatibilityError
@@ -16,17 +17,17 @@ from surfactant.sbomtypes import SBOM, Software
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 # extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str):
 # def angrimport_finder(filename: str, filetype: str, filehash: str):
-def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: str):
+def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: List[str]):
     """
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
     :param software(Software): The software entry associated with the file to extract information from.
     :param filename (str): The full path to the file to extract information from.
-    :param filetype (str): File type information based on magic bytes.
+    :param filetype (List[str]): File type information based on magic bytes.
     """
 
     # Only parsing executable files
-    if filetype not in ["ELF", "PE"]:
-        pass
+    if not ("ELF" in filetype or "PE" in filetype):
+        return
     filehash = str(software.sha256)
     filename = Path(filename)
     flist = []
