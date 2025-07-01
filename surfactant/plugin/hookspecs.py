@@ -50,7 +50,7 @@ def extract_file_info(
         sbom (SBOM): The SBOM that the software entry is part of. Can be used to add observations or analysis data.
         software (Software): The software entry the gathered information will be added to.
         filename (str): The full path to the file to extract information from.
-        filetype (List[str]): File type information based on magic bytes.
+        filetype (List[str]): File type information based on magic bytes and other heuristics.
         context_queue (Queue[ContextEntry]): Modifiable queue of entries typically initialized from the input specimen
             config file. Plugins can add new entries to the queue to make Surfactant process additional files/folders.
             Existing plugins should still work without adding this parameter.

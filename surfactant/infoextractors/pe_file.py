@@ -34,13 +34,9 @@ def extract_file_info(
 ) -> object:
     if not supports_file(filetype):
         return None
-    print("PE support")
     pe_info = extract_pe_info(filename)
-    print("1")
     if pe_info:
-        print("2")
         if "FileInfo" in pe_info:
-            print("3")
             fi = pe_info["FileInfo"]
             if "ProductName" in fi:
                 software_field_hints.append(("name", fi["ProductName"], 80))
@@ -118,11 +114,8 @@ pe_subsystem_types = {
 
 
 def extract_pe_info(filename: str) -> object:
-    print("in side extract")
     try:
-        print("in side extract 2")
         pe = dnfile.dnPE(filename, fast_load=False)
-        print("in side extract 3")
     except (OSError, dnfile.PEFormatError):
         return {}
 
@@ -291,7 +284,7 @@ def get_assemblyref_info(asmref_info) -> Dict[str, Any]:
     # raw_data attribute has the compressed int indicating length included
 
     asmref["HashValue"] = asmref_info.HashValue.value.hex()
-    hash_value = getattr(asmref_info, "HashValue", None)
+    add_assembly_flags_info(asmref, asmref_info)
     return asmref
 
 
