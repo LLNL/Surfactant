@@ -179,7 +179,6 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 in COFF_MAGIC_TARGET_NAME
             ):
                 filetype_matches.append("COFF")
-            print("filetype: ", filetype_matches)
             # XCOFF:
             # https://www.ibm.com/docs/en/aix/7.3?topic=formats-xcoff-object-file-format
             if magic_bytes[:2] == "\x1d\x00":
