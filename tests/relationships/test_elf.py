@@ -79,7 +79,6 @@ sbom = SBOM(
             ],
         ),
     ],
-    relationships=[],
 )
 
 
