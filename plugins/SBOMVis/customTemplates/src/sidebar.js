@@ -198,6 +198,13 @@ function getIconClassForFileType(type) {
 	}
 }
 
+function jumpToNodeOnClick() {
+	const nodeID = this.getAttribute("nodeID");
+
+	zoomToView([nodeID]);
+	buildNodeSelectionSidebar(nodeID);
+}
+
 function createSection({ title, icon = null, body = [] }) {
 	const section = document.createElement("div");
 	section.classList = "section";
@@ -245,7 +252,7 @@ export function buildNodeSelectionSidebar(nodeID) {
 
 	let titleIcon = null;
 	if (network.isCluster(nodeID)) {
-		titleIconName = "fa-solid fa-file-zipper";
+		titleIcon = "fa-solid fa-file-zipper";
 		clickedNode = nodes.get(nodeID.split(":")[1]);
 	} else {
 		clickedNode = nodes.get(nodeID);
@@ -269,15 +276,8 @@ export function buildNodeSelectionSidebar(nodeID) {
 				{ key: "nodeID", value: id },
 				{ key: "style", value: "cursor: pointer" },
 			],
-			onClick: relationshipsColumnOnClick,
+			onClick: jumpToNodeOnClick,
 		}));
-	}
-
-	function relationshipsColumnOnClick() {
-		const nodeID = this.getAttribute("nodeID");
-
-		zoomToView([nodeID]);
-		buildNodeSelectionSidebar(nodeID);
 	}
 
 	const sbom = clickedNode.surfactantSoftwareStruct;
@@ -419,6 +419,8 @@ export function insertSearchSidebar(id) {
 				"--graphInactiveColor",
 			);
 			setGraphColor(inactiveColor);
+
+			network.unselectAll();
 		}
 
 		nodes.update({ id: nodeID, color: null }); // Use default graph color for highlight
@@ -427,6 +429,9 @@ export function insertSearchSidebar(id) {
 
 		const resultsCard = document.createElement("div");
 		resultsCard.className = "search-results-card";
+
+		resultsCard.setAttribute("nodeID", nodeID);
+		resultsCard.addEventListener("click", jumpToNodeOnClick);
 
 		const header = document.createElement("div");
 		header.classList = "section-header";
@@ -448,14 +453,11 @@ export function insertSearchSidebar(id) {
 
 	function removeNodes(nodes) {
 		for (const nodeID of nodes) {
-			const node = network.body.nodes[nodeID];
-			const fileName = node.options.nodeMetadata.nodeFileName;
-
 			for (const c of document
 				.getElementById("resultsSection")
 				.querySelectorAll(".search-results-card")) {
-				const headerFileName = c.querySelector("h5").innerText;
-				if (fileName === headerFileName) {
+				const cardNodeID = c.getAttribute("nodeID");
+				if (cardNodeID === nodeID) {
 					if (tsInstance.items.length === 1) setGraphColor(null); // Revert to default
 
 					c.remove();

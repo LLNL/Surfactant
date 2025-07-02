@@ -244,6 +244,7 @@ div.vis-tooltip {
 
 	.search-results-card {
 		margin-bottom: 5px;
+		cursor: pointer;
 	}
 
 	&.open {
