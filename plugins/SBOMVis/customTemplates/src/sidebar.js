@@ -345,7 +345,6 @@ export function buildNodeSelectionSidebar(nodeID) {
 }
 
 export function insertSearchSidebar(id) {
-	let tsInstance = null;
 	const rootNode = document.getElementById(id);
 	const fragment = document.createDocumentFragment();
 
@@ -414,7 +413,7 @@ export function insertSearchSidebar(id) {
 	}
 
 	function appendNodeToResults(nodeID, ...args) {
-		if (tsInstance.items.length === 1) {
+		if (this.items.length === 1) {
 			const inactiveColor = getComputedStyle(document.body).getPropertyValue(
 				"--graphInactiveColor",
 			);
@@ -449,6 +448,9 @@ export function insertSearchSidebar(id) {
 		resultsCard.append(header);
 
 		document.getElementById("resultsSection").appendChild(resultsCard);
+
+		this.setTextboxValue("");
+		this.refreshOptions();
 	}
 
 	function removeNodes(nodes) {
@@ -458,7 +460,7 @@ export function insertSearchSidebar(id) {
 				.querySelectorAll(".search-results-card")) {
 				const cardNodeID = c.getAttribute("nodeID");
 				if (cardNodeID === nodeID) {
-					if (tsInstance.items.length === 1) setGraphColor(null); // Revert to default
+					if (this.items.length === 1) setGraphColor(null); // Revert to default
 
 					c.remove();
 				}
@@ -468,7 +470,7 @@ export function insertSearchSidebar(id) {
 
 	const searchData = generateSearchData();
 
-	tsInstance = new TomSelect(searchBox, {
+	new TomSelect(searchBox, {
 		maxItems: null,
 		maxOptions: 100,
 
