@@ -243,6 +243,8 @@ export function buildSBOMOverviewSidebar() {
 			title: "Click on a node to get started",
 		}),
 	);
+
+	return fragment;
 }
 
 export function buildNodeSelectionSidebar(nodeID) {
