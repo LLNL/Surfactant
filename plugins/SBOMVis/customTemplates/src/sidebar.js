@@ -482,6 +482,9 @@ export function insertSearchSidebar(id) {
 			remove_button: {
 				title: "Remove",
 			},
+			clear_button: {
+				title: "Remove all nodes",
+			},
 			caret_position: {},
 		},
 		options: searchData,
