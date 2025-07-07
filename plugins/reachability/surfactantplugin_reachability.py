@@ -5,6 +5,7 @@
 from pathlib import Path
 
 import angr
+import pyvex
 from cle import CLECompatibilityError
 from loguru import logger
 
@@ -27,9 +28,6 @@ def reachability(sbom: SBOM, software: Software, filename: str, filetype: str):
         pass
     filename = Path(filename)
 
-    print(sbom)
-    print(software)
-
     database = {}
 
     try:
@@ -42,23 +40,28 @@ def reachability(sbom: SBOM, software: Software, filename: str, filetype: str):
         # library dependencies {import: library}
         lookup = {}
         for obj in project.loader.main_object.imports.keys():
-            library = project.loader.find_symbol(obj).owner.provides
-            lookup[obj] = library
+            library = project.loader.find_symbol(obj)
+            if library is None:
+                continue
+            lookup[obj] = library.owner.provides
 
         # recreates our angr project without the libraries loaded to save on time
         project = angr.Project(filename, load_options={"auto_load_libs": False})
-
-        cfg = project.analyses.CFGFast()
 
         # holds every export address error is here
         exports = [
             func.rebased_addr for func in project.loader.main_object.symbols if func.is_export
         ]  # _exports is only available for PE files
 
+        cfg = project.analyses.CFGFast(start_at_entry=False, force_smart_scan=False, function_starts=exports)
+
         # go through every exported function
         for exp_addr in exports:
-            exp_name = cfg.functions.get(exp_addr).name
-            database[exp_name] = {}
+            exp_name = cfg.functions.get(exp_addr)
+            if exp_name is None:
+                continue
+            database[exp_name.name] = {} 
+            exp_name = exp_name.name
 
             # goes through every function that is reachable from exported function
             for imported_address in cfg.functions.callgraph.successors(exp_addr):
