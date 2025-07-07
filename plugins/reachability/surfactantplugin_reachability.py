@@ -5,7 +5,6 @@
 from pathlib import Path
 
 import angr
-import pyvex
 from cle import CLECompatibilityError
 from loguru import logger
 
@@ -54,14 +53,16 @@ def reachability(sbom: SBOM, software: Software, filename: str, filetype: str):
             func.rebased_addr for func in project.loader.main_object.symbols if func.is_export
         ]  # _exports is only available for PE files
 
-        cfg = project.analyses.CFGFast(start_at_entry=False, force_smart_scan=False, function_starts=exports)
+        cfg = project.analyses.CFGFast(
+            start_at_entry=False, force_smart_scan=False, function_starts=exports
+        )
 
         # go through every exported function
         for exp_addr in exports:
             exp_name = cfg.functions.get(exp_addr)
             if exp_name is None:
                 continue
-            database[exp_name.name] = {} 
+            database[exp_name.name] = {}
             exp_name = exp_name.name
 
             # goes through every function that is reachable from exported function
