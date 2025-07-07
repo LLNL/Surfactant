@@ -80,10 +80,6 @@ def identify_file_type(filepath: str) -> Optional[str]:
                     magic_bytes += f.read(265)
                     if magic_bytes[0x202:0x206] == b"HdrS":
                         filetype_matches.append("Linux Kernel Image")
-                    else:
-                        filetype_matches.append("PE")
-                elif magic_bytes[0x202:0x206] == b"HdrS":
-                    filetype_matches.append("Linux Kernel Image")
                 # Otherwise, call it a PE and be done with it.
                 else:
                     filetype_matches.append("PE")
