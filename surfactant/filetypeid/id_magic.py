@@ -76,8 +76,9 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 elif magic_bytes[coff_addr : coff_addr + 4] != b"PE\x00\x00":
                     filetype_matches.append("DOS")
                 # Check for the linux kernel header at 0x202 (may require a second read)
-                elif len(magic_bytes) < 0x206:
-                    magic_bytes += f.read(265)
+                else:
+                    if len(magic_bytes) < 0x206:
+                        magic_bytes += f.read(265)
                     if magic_bytes[0x202:0x206] == b"HdrS":
                         filetype_matches.append("Linux Kernel Image")
                     # Otherwise, call it a PE and be done with it.
