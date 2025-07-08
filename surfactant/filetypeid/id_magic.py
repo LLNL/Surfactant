@@ -247,6 +247,11 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 if macos_bytes[0:4] == b"koly":
                     return "MACOS_DMG"
 
+            # rpm:
+            # https://rpm-software-management.github.io/rpm/manual/
+            if magic_bytes[:4] == b"\xed\xab\xee\xdb":
+                return "RPM Package"
+
             return None
     except FileNotFoundError:
         return None
