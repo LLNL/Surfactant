@@ -111,7 +111,7 @@ def generate_sbom_string(
                 )
             except Exception as e:
                 raise RuntimeError(f"Failed to invoke SBOM generation: {e}") from e
-    
+
     # Get the output as a string
     return output_buffer.getvalue()
 
