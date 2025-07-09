@@ -9,7 +9,7 @@ import string
 import sys
 import uuid
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 import spdx_tools.spdx.writer.json.json_writer as jsonwriter
@@ -300,7 +300,7 @@ def create_spdx_doc() -> Document:
         creators=[
             Actor(name=f"Surfactant-{surfactant_version}", actor_type=ActorType.TOOL)
         ],  # Organization or Person can also be added as creators (may use "anonymous")
-        created=datetime.utcnow().replace(microsecond=0),
+        created=datetime.now(timezone.utc).replace(microsecond=0),
         creator_comment="This SPDX document was created by using Surfactant.",
         document_comment="This is a DRAFT SPDX document, and is incomplete.",
     )
