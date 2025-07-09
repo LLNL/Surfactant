@@ -71,7 +71,7 @@ jobs:
               return;
             }
             console.log(`Using run ${target.id} (${target.head_sha})`);
-            
+
             // locate our artifact
             const arts = await github.actions.listWorkflowRunArtifacts({
               owner, repo,
@@ -113,7 +113,7 @@ jobs:
         with:
           name: diff-output
           path: diff.json
-      
+
       - name: Wipe previous comments (PR)
         if: github.event_name == 'pull_request_target'
         uses: actions/github-script@v7
@@ -133,13 +133,13 @@ jobs:
                       minimizedComment {
                         isMinimized
                         viewerCanMinimize
-                      }   
+                      }
                     }
                   }
                 `, { classifier: 'OUTDATED', id: c.node_id });
               }
             }
-      
+
       - name: Post Validation Results (PR)
         if: github.event_name == 'pull_request_target'
         uses: actions/github-script@v7
