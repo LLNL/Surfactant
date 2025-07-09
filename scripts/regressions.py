@@ -7,10 +7,13 @@ import argparse
 import datetime
 import difflib
 import io
+import json
+import os
 import random
 import sys
 import time
 import uuid
+import traceback
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
@@ -19,8 +22,6 @@ from unittest.mock import patch
 import click
 from loguru import logger
 
-# Add the parent directory to the path to import surfactant modules
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from surfactant.cmd.generate import sbom
 
 
@@ -117,20 +118,18 @@ def generate_sbom_string(
     return output_buffer.getvalue()
 
 
+data_path = Path(__file__).parent.parent / "tests" / "data"
+data_folders = []
+if not data_path.exists():
+    logger.error(f"Test data directory does not exist: {data_path}")
+else:
+    data_folders = [item for item in data_path.iterdir() if item.is_dir()]
+
+
 def test_all_data_folders():
     """
     Test the generate_sbom_string function with all folders in tests/data.
     """
-    # Get the path to the tests/data directory
-    test_data_path = Path(__file__).parent.parent / "tests" / "data"
-
-    if not test_data_path.exists():
-        logger.error(f"Test data directory does not exist: {test_data_path}")
-        return
-
-    # Get all subdirectories in tests/data
-    data_folders = [item for item in test_data_path.iterdir() if item.is_dir()]
-
     if not data_folders:
         logger.warning("No test data folders found")
         return
@@ -175,7 +174,8 @@ def test_all_data_folders():
                 else:
                     logger.warning("Deterministic outputs are different (unexpected)")
                     # Show differences between the two deterministic runs
-                    show_diff(sbom_string_det1, sbom_string_det2)
+                    for line in show_diff(sbom_string_det1, sbom_string_det2).splitlines():
+                        logger.info(line)
             else:
                 logger.warning("SBOM generated but appears to be empty")
 
@@ -183,7 +183,96 @@ def test_all_data_folders():
             logger.error(f"Error generating SBOM for {folder.name}: {e}")
 
 
-def show_diff(text1: str, text2: str, max_lines: int = 20):
+def test_gha(old_folders: dict[str, dict[str, Optional[str]]], repo: Optional[str], current_run: Optional[tuple[str, str]], last_run: Optional[tuple[str, str]]) -> tuple[str, dict[str, dict[str, Optional[str]]]]:
+    """
+    Test function for CI/CD mode.
+
+    Args:
+        old_folders (dict[str, str]): Dictionary of old folder names and their SBOM strings.
+        repo_prefix (Optional[str]): Optional prefix for the repository URL to link to the folders.
+
+    Returns:
+        str: A github step summary message.
+    """
+    folders = [folder.name for folder in data_folders]
+    created_folders = [folder for folder in folders if folder not in old_folders]
+    removed_folders = [folder for folder in old_folders if folder not in folders]
+
+    summary = ""
+
+    if created_folders:
+        logger.info(f"New folders detected: {', '.join(created_folders)}")
+        summary += f"## 🆕 New Folders ({len(created_folders)})\n"
+        for folder in created_folders:
+            summary += f"- {folder}\n"
+        summary += "\n"
+    if removed_folders:
+        logger.info(f"Removed folders: {', '.join(removed_folders)}")
+        summary += f"## 🗑️ Removed Folders ({len(removed_folders)})\n"
+        for folder in removed_folders:
+            summary += f"- {folder}\n"
+        summary += "\n"
+
+    logger.info(f"Testing SBOM generation for {len(data_folders)} folders")
+
+    new_folders = {}
+    if not data_folders:
+        summary += "## ❓ No Test Folders Found\n"
+    else:
+        results = {}
+        for folder in data_folders:
+            old_data = old_folders.get(folder.name, {'sbom': '', 'stacktrace': None})
+            new_data = {'sbom': old_data['sbom'], 'stacktrace': None}
+            try:
+                new_data['sbom'] = generate_sbom_string(
+                    input_folder=str(folder),
+                    deterministic=True,
+                )
+            except (FileNotFoundError, ValueError, RuntimeError) as e:
+                logger.error(f"Error generating SBOM for {folder.name}: {e}")
+                new_data['stacktrace'] = traceback.format_exc()
+                
+            new_folders[folder.name] = new_data
+            if new_data['sbom'] != old_data['sbom'] and new_data['sbom']:
+                logger.info(f"Changes detected in folder: {folder.name}")
+                for line in show_diff(old_data['sbom'], new_data['sbom']).splitlines():
+                    logger.info(line)
+                results[folder.name] = { 'diff': show_diff(old_data['sbom'], new_data['sbom'], 100) }
+            elif new_data['stacktrace']:
+                results[folder.name] = {'stacktrace': new_data['stacktrace']}
+
+        if not results:
+            summary += "## ✅ No SBOM Changes Detected\n"
+        else:
+            summary += f"## 🧪 SBOM Results ({len(results)}/{len(data_folders)})\n\n"
+            for folder_name, result in results.items():
+                summary += "<details>\n"
+                summary += "<summary><h3>"
+                if 'stacktrace' in result:
+                    summary += f"❗️ "
+                summary += f"{folder_name}"
+                if repo and current_run:
+                    href = f"https://github.com/{repo}/tree/{current_run[0]}/tests/data/{folder_name}"
+                    summary += f' (<a href="{href}">Link</a>)'
+                summary += "</h3></summary>\n\n"
+                if 'stacktrace' in result:
+                    summary += f"```\n{result['stacktrace']}\n```\n"
+                elif 'diff' in result:
+                    summary += f"```diff\n{result['diff']}\n```\n"
+                summary += "</details>\n"
+        
+        if repo and current_run:
+            run_href = f"https://github.com/{repo}/actions/runs/{current_run[1]}"
+            commit_href = f"https://github.com/{repo}/commit/{current_run[0]}"
+            summary += f"\n<sub>For commit <a href='{commit_href}'><code>{current_run[0][:7]}</code></a> (Run <a href='{run_href}'>{current_run[1]}</a>)</sub>"
+        if repo and last_run:
+            run_href = f"https://github.com/{repo}/actions/runs/{last_run[1]}"
+            commit_href = f"https://github.com/{repo}/commit/{last_run[0]}"
+            summary += f"\n<sub>Compared against commit <a href='{commit_href}'><code>{last_run[0][:7]}</code></a> (Run <a href='{run_href}'>{last_run[1]}</a>)</sub>"
+    return summary.rstrip(), new_folders
+
+
+def show_diff(text1: str, text2: str, max_lines: int = 20) -> str:
     """
     Show differences between two texts.
 
@@ -191,6 +280,9 @@ def show_diff(text1: str, text2: str, max_lines: int = 20):
         text1 (str): First text to compare
         text2 (str): Second text to compare
         max_lines (int): Maximum number of diff lines to show
+
+    Returns:
+        str: Formatted string showing the differences
     """
     lines1 = text1.splitlines(keepends=True)
     lines2 = text2.splitlines(keepends=True)
@@ -198,11 +290,12 @@ def show_diff(text1: str, text2: str, max_lines: int = 20):
     diff = list(difflib.unified_diff(lines1, lines2, lineterm=""))
 
     # Show first max_lines lines of diff
-    for line in diff[:max_lines]:
-        logger.info(line.rstrip())
+    lines = [line.rstrip() for line in diff[:max_lines]]
 
     if len(diff) > max_lines:
-        logger.info(f"... and {len(diff) - max_lines} more diff lines")
+        lines.append(f"... and {len(diff) - max_lines} more lines")
+
+    return "\n".join(lines)
 
 
 def main():
@@ -220,8 +313,41 @@ def main():
     parser.add_argument(
         "--test-all", action="store_true", help="Test with all folders in tests/data"
     )
+    parser.add_argument("--gha", action="store_true", help="CI/CD mode")
 
     args = parser.parse_args()
+
+    if args.gha:
+        logger.info("Running in CI/CD mode o/")
+        input_file = os.environ.get("DIFF_INPUT", None)
+        output_file = os.environ.get("DIFF_OUTPUT", None)
+        summary_file = os.environ.get("SUMMARY_OUTPUT", None)
+        repo = os.environ.get("REPO", None)
+        current_sha = os.environ.get("CURRENT_RUN_SHA", None)
+        current_id = os.environ.get("CURRENT_RUN_ID", None)
+        last_sha = os.environ.get("LAST_RUN_SHA", None)
+        last_id = os.environ.get("LAST_RUN_ID", None)
+        gh_summary = os.environ.get("GITHUB_STEP_SUMMARY", None)
+        old_folders = {}
+        if input_file:
+            with open(input_file, "r") as f:
+                old_folders = json.load(f)
+        summary, new_folders = test_gha(old_folders, repo, (current_sha, current_id) if current_sha and current_id else None, (last_sha, last_id) if last_sha and last_id else None)
+        
+        if summary_file:
+            with open(summary_file, "w") as f:
+                print(summary, file=f)
+        else:
+            print(summary)
+            
+        if gh_summary:
+            with open(gh_summary, "a") as f:
+                print(summary, file=f)
+        
+        if output_file:
+            with open(output_file, "w") as f:
+                json.dump(new_folders, f, indent=4)
+        return
 
     if args.test_all:
         test_all_data_folders()
