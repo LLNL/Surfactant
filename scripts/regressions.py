@@ -201,7 +201,7 @@ def test_gha(old_folders: dict[str, str], repo_prefix: Optional[str]) -> tuple[s
 
     if created_folders:
         logger.info(f"New folders detected: {', '.join(created_folders)}")
-        summary += f"## 🆕 New Folders ({len(created_folders)}\n"
+        summary += f"## 🆕 New Folders ({len(created_folders)})\n"
         for folder in created_folders:
             summary += f"- {folder}\n"
         summary += "\n"
@@ -277,23 +277,6 @@ def show_diff(text1: str, text2: str, max_lines: int = 20) -> str:
     return "\n".join(lines)
 
 
-def write_to_output(key: str, value: str):
-    """
-    Write a key-value pair to the GITHUB_OUTPUT file if it exists.
-    If GITHUB_OUTPUT is not set, it prints the key-value pair to stdout.
-
-    Args:
-        key (str): The key to write
-        value (str): The value to write
-    """
-    if "GITHUB_OUTPUT" in os.environ:
-        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-            delimeter = str(uuid.uuid4())
-            f.write(f"{key}<<{delimeter}\n{value}\n{delimeter}\n")
-    else:
-        print(f"{key}={value}")
-
-
 def main():
     """
     Example usage of the generate_sbom_string function.
@@ -315,15 +298,22 @@ def main():
 
     if args.gha:
         logger.info("Running in CI/CD mode o/")
-        old_folders = {}
-        if "DIFF_INPUT" in os.environ:
-            with open(os.environ["DIFF_INPUT"], "r") as f:
-                old_folders = json.load(f)
         repo_prefix = os.environ.get("REPO_PREFIX", None)
+        input_file = os.environ.get("DIFF_INPUT", None)
+        output_file = os.environ.get("DIFF_OUTPUT", None)
+        summary_file = os.environ.get("GITHUB_STEP_SUMMARY", None)
+        old_folders = {}
+        if input_file:
+            with open(input_file, "r") as f:
+                old_folders = json.load(f)
         summary, new_folders = test_gha(old_folders, repo_prefix)
-        write_to_output("summary", summary)
-        if "DIFF_OUTPUT" in os.environ:
-            with open(os.environ["DIFF_OUTPUT"], "w") as f:
+        if summary_file:
+            with open(summary_file, "a") as f:
+                print(summary, file=f)
+        else:
+            print(summary)
+        if output_file:
+            with open(output_file, "w") as f:
                 json.dump(new_folders, f, indent=4)
         return
 
