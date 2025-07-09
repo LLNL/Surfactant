@@ -110,8 +110,8 @@ def generate_sbom_string(
                     sbom_outfile=output_buffer,
                 )
             except Exception as e:
-                raise RuntimeError(f"Failed to invoke SBOM generation: {e}")
-
+                raise RuntimeError(f"Failed to invoke SBOM generation: {e}") from e
+    
     # Get the output as a string
     return output_buffer.getvalue()
 
@@ -197,7 +197,7 @@ def show_diff(text1: str, text2: str, max_lines: int = 20):
     diff = list(difflib.unified_diff(lines1, lines2, lineterm=""))
 
     # Show first max_lines lines of diff
-    for i, line in enumerate(diff[:max_lines]):
+    for line in diff[:max_lines]:
         logger.info(line.rstrip())
 
     if len(diff) > max_lines:
