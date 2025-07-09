@@ -3,6 +3,7 @@
 Oneshot utility to generate SBOM from a single input folder and return as string.
 """
 
+import argparse
 import datetime
 import difflib
 import io
@@ -163,7 +164,7 @@ def test_all_data_folders():
                 logger.success("SBOM generated successfully")
 
                 # Verify deterministic output is different from regular output
-                if sbom_string == sbom_string_det1 or sbom_string == sbom_string_det2:
+                if sbom_string in (sbom_string_det1, sbom_string_det2):
                     logger.warning("Deterministic and regular output are identical (unexpected)")
                 else:
                     logger.success("Deterministic mode produces different output as expected")
@@ -178,7 +179,7 @@ def test_all_data_folders():
             else:
                 logger.warning("SBOM generated but appears to be empty")
 
-        except Exception as e:
+        except (FileNotFoundError, ValueError, RuntimeError) as e:
             logger.error(f"Error generating SBOM for {folder.name}: {e}")
 
 
@@ -208,8 +209,6 @@ def main():
     """
     Example usage of the generate_sbom_string function.
     """
-    import argparse
-
     parser = argparse.ArgumentParser(description="Generate SBOM from a single folder")
     parser.add_argument("folder", nargs="?", help="Path to the folder to analyze")
     parser.add_argument("--install-prefix", help="Install prefix for the software")
@@ -240,7 +239,7 @@ def main():
             deterministic=args.deterministic,
         )
         print(sbom_string)
-    except Exception as e:
+    except (FileNotFoundError, ValueError, RuntimeError) as e:
         logger.error(f"Error generating SBOM: {e}")
         sys.exit(1)
 
