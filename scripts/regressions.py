@@ -12,8 +12,8 @@ import os
 import random
 import sys
 import time
-import uuid
 import traceback
+import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
@@ -183,7 +183,12 @@ def test_all_data_folders():
             logger.error(f"Error generating SBOM for {folder.name}: {e}")
 
 
-def test_gha(old_folders: dict[str, dict[str, Optional[str]]], repo: Optional[str], current_run: Optional[tuple[str, str]], last_run: Optional[tuple[str, str]]) -> tuple[str, dict[str, dict[str, Optional[str]]]]:
+def test_gha(
+    old_folders: dict[str, dict[str, Optional[str]]],
+    repo: Optional[str],
+    current_run: Optional[tuple[str, str]],
+    last_run: Optional[tuple[str, str]],
+) -> tuple[str, dict[str, dict[str, Optional[str]]]]:
     """
     Test function for CI/CD mode.
 
@@ -221,25 +226,25 @@ def test_gha(old_folders: dict[str, dict[str, Optional[str]]], repo: Optional[st
     else:
         results = {}
         for folder in data_folders:
-            old_data = old_folders.get(folder.name, {'sbom': '', 'stacktrace': None})
-            new_data = {'sbom': old_data['sbom'], 'stacktrace': None}
+            old_data = old_folders.get(folder.name, {"sbom": "", "stacktrace": None})
+            new_data = {"sbom": old_data["sbom"], "stacktrace": None}
             try:
-                new_data['sbom'] = generate_sbom_string(
+                new_data["sbom"] = generate_sbom_string(
                     input_folder=str(folder),
                     deterministic=True,
                 )
             except (FileNotFoundError, ValueError, RuntimeError) as e:
                 logger.error(f"Error generating SBOM for {folder.name}: {e}")
-                new_data['stacktrace'] = traceback.format_exc()
-                
+                new_data["stacktrace"] = traceback.format_exc()
+
             new_folders[folder.name] = new_data
-            if new_data['sbom'] != old_data['sbom'] and new_data['sbom']:
+            if new_data["sbom"] != old_data["sbom"] and new_data["sbom"]:
                 logger.info(f"Changes detected in folder: {folder.name}")
-                for line in show_diff(old_data['sbom'], new_data['sbom']).splitlines():
+                for line in show_diff(old_data["sbom"], new_data["sbom"]).splitlines():
                     logger.info(line)
-                results[folder.name] = { 'diff': show_diff(old_data['sbom'], new_data['sbom'], 100) }
-            elif new_data['stacktrace']:
-                results[folder.name] = {'stacktrace': new_data['stacktrace']}
+                results[folder.name] = {"diff": show_diff(old_data["sbom"], new_data["sbom"], 100)}
+            elif new_data["stacktrace"]:
+                results[folder.name] = {"stacktrace": new_data["stacktrace"]}
 
         if not results:
             summary += "## ✅ No SBOM Changes Detected\n"
@@ -248,19 +253,21 @@ def test_gha(old_folders: dict[str, dict[str, Optional[str]]], repo: Optional[st
             for folder_name, result in results.items():
                 summary += "<details>\n"
                 summary += "<summary><h3>"
-                if 'stacktrace' in result:
-                    summary += f"❗️ "
+                if "stacktrace" in result:
+                    summary += "❗️ "
                 summary += f"{folder_name}"
                 if repo and current_run:
-                    href = f"https://github.com/{repo}/tree/{current_run[0]}/tests/data/{folder_name}"
+                    href = (
+                        f"https://github.com/{repo}/tree/{current_run[0]}/tests/data/{folder_name}"
+                    )
                     summary += f' (<a href="{href}">Link</a>)'
                 summary += "</h3></summary>\n\n"
-                if 'stacktrace' in result:
+                if "stacktrace" in result:
                     summary += f"```\n{result['stacktrace']}\n```\n"
-                elif 'diff' in result:
+                elif "diff" in result:
                     summary += f"```diff\n{result['diff']}\n```\n"
                 summary += "</details>\n"
-        
+
         if repo and current_run:
             run_href = f"https://github.com/{repo}/actions/runs/{current_run[1]}"
             commit_href = f"https://github.com/{repo}/commit/{current_run[0]}"
@@ -332,18 +339,23 @@ def main():
         if input_file:
             with open(input_file, "r") as f:
                 old_folders = json.load(f)
-        summary, new_folders = test_gha(old_folders, repo, (current_sha, current_id) if current_sha and current_id else None, (last_sha, last_id) if last_sha and last_id else None)
-        
+        summary, new_folders = test_gha(
+            old_folders,
+            repo,
+            (current_sha, current_id) if current_sha and current_id else None,
+            (last_sha, last_id) if last_sha and last_id else None,
+        )
+
         if summary_file:
             with open(summary_file, "w") as f:
                 print(summary, file=f)
         else:
             print(summary)
-            
+
         if gh_summary:
             with open(gh_summary, "a") as f:
                 print(summary, file=f)
-        
+
         if output_file:
             with open(output_file, "w") as f:
                 json.dump(new_folders, f, indent=4)

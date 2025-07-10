@@ -85,7 +85,7 @@ jobs:
               run_id: context.runId,
             });
             const workflow_id = run.workflow_id;
-            
+
             // list recent successful runs of this workflow
             const runs = await github.rest.actions.listWorkflowRuns({
               owner, repo,
@@ -152,18 +152,18 @@ jobs:
         with:
           script: |
             const summary = require('fs').readFileSync('summary.txt', 'utf-8');
-            
+
             // Find existing comment from github-actions[bot]
             const comments = (await github.rest.issues.listComments({
               issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo
             })).data;
-            
-            const existingComment = comments.find(comment => 
+
+            const existingComment = comments.find(comment =>
               comment.user.login === 'github-actions[bot]'
             );
-            
+
             if (existingComment) {
               // Update existing comment
               await github.rest.issues.updateComment({
