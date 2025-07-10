@@ -30,7 +30,6 @@ sbom = SBOM(
             ],
         ),
     ],
-    relationships=[],
 )
 
 
