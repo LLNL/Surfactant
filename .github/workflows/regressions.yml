@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   diff:
+    name: Regressions
     runs-on: ubuntu-latest
 
     steps:

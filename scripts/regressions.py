@@ -239,11 +239,10 @@ def test_gha(old_folders: dict[str, str], repo_prefix: Optional[str]) -> tuple[s
         for folder_name, diff in diffs.items():
             summary += "<details>\n"
             summary += "<summary><h3>"
+            summary += f"{folder_name}"
             if repo_prefix is not None:
                 href = f"{repo_prefix}/tests/data/{folder_name}"
-                summary += f'<a href="{href}">{folder_name}</a>'
-            else:
-                summary += folder_name
+                summary += f' (<a href="{href}">Link</a>)'
             summary += "</h3></summary>\n\n"
             summary += f"```diff\n{diff}\n```\n"
             summary += "</details>\n"
