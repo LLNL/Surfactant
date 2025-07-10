@@ -252,7 +252,8 @@ class SBOM:
                     self.graph.add_edge(kept_uuid, dst, key=key, **attrs)
 
                 # remove the old UUID entirely
-                self.graph.remove_node(old_uuid)
+                if self.graph.has_node(old_uuid):
+                    self.graph.remove_node(old_uuid)
                 entry_uuid = kept_uuid
 
             # if a parent/package container was provided, attach a "Contains" edge
