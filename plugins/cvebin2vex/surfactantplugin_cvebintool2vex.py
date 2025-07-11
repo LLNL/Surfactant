@@ -2,7 +2,7 @@ import json
 import subprocess
 import sys
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from loguru import logger
@@ -62,7 +62,7 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
         "@context": "https://openvex.dev/ns/v0.2.0",
         "@id": f"urn:uuid:{uuid.uuid4()}",
         "author": "Surfactant plugin cvebintool2vex",
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="microseconds"),
         "version": 1,
         "tooling": "Surfactant (https://github.com/LLNL/Surfactant)",
         "statements": [],
