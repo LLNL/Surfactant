@@ -14,7 +14,11 @@ try:
     from extractcode import sevenzip
 
     EXTRACTCODE_AVAILABLE = True
-except (ImportError, AttributeError, NoMagicLibError) as e:
+# pylint: disable-next=broad-exception-caught
+except Exception as e:
+    # Catch NoMagicLibError and other library-specific errors during import
+    if type(e).__name__ != "NoMagicLibError" and not isinstance(e, ImportError) and not isinstance(e, AttributeError):
+        raise e
     logger.warning(f"extractcode library not available in file type identification: {e}")
     EXTRACTCODE_AVAILABLE = False
     ec_archive = None
