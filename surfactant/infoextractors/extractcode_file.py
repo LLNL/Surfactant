@@ -95,7 +95,9 @@ def decompress_to(filename: str, output_folder: str, handler: ec_archive.Handler
     if len(extractors) == 1:
         extractor = extractors[0]
     elif len(extractors) == 2:
-        extractor = lambda f, t: ec_archive.extract_twice(f, t, extractors[0], extractors[1])
+        def extract_twice(f: str, t: str) -> Any:
+            return ec_archive.extract_twice(f, t, extractors[0], extractors[1])
+        extractor = extract_twice
     else:
         logger.error(f"Unsupported number of extractors for {filename}: {len(extractors)}")
         return False
