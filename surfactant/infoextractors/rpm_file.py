@@ -16,6 +16,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype) -> bool:
+    logger.debug("Checks for RPM Package")
     return filetype == "RPM Package"
                 
 def get_files(directories: List[bytes], files: List[bytes], indicies: List[int]):
@@ -63,6 +64,11 @@ def extract_file_info(
     return rpm_info
 
 def extract_rpm_info(filename: str) -> Dict[str, Any]:
+    """
+    Extracts fields from the header of an RPM Package
+    
+    :param filename: Path to file to extract information from
+    """
     file_details: Dict[str, Any] = {}
     with rpmfile.open(filename) as rpm:
         header = rpm.headers
