@@ -271,15 +271,15 @@ def test_gha(
 
         if repo and current_run:
             run_href = f"https://github.com/{repo}/actions/runs/{current_run[1]}"
-            commit_href = f"https://github.com/{repo}/commit/{current_run[0]}"
-            summary += f"\n<sub>For commit <a href='{commit_href}'><code>{current_run[0][:7]}</code></a> (Run <a href='{run_href}'>{current_run[1]}</a>)</sub>"
+            # commit_href = f"https://github.com/{repo}/commit/{current_run[0]}"
+            summary += f"\n<sub>For commit {current_run[0][:7]} (Run <a href='{run_href}'>{current_run[1]}</a>)</sub>"
         if repo and last_run:
             run_href = f"https://github.com/{repo}/actions/runs/{last_run[1]}"
-            commit_href = f"https://github.com/{repo}/commit/{last_run[0]}"
-            summary += f"\n<sub>Compared against commit <a href='{commit_href}'><code>{last_run[0][:7]}</code></a> (Run <a href='{run_href}'>{last_run[1]}</a>)</sub>"
+            # commit_href = f"https://github.com/{repo}/commit/{last_run[0]}"
+            summary += f"\n<sub>Compared against commit {last_run[0][:7]} (Run <a href='{run_href}'>{last_run[1]}</a>)</sub>"
             if requested_last_sha and requested_last_sha != last_run[0]:
-                commit_href = f"https://github.com/{repo}/commit/{requested_last_sha}"
-                summary += f"\n<sub>⚠️ Requested SHA <a href='{commit_href}'><code>{requested_last_sha[:7]}</code></a> did not have a matching run. Used {last_run[0][:7]} instead.</sub>"
+                # commit_href = f"https://github.com/{repo}/commit/{requested_last_sha}"
+                summary += f"\n<sub>⚠️ Requested SHA {requested_last_sha[:7]} did not have a matching run. Used {last_run[0][:7]} instead.</sub>"
     return summary.rstrip(), new_folders
 
 
