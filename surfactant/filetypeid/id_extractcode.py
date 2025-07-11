@@ -11,6 +11,7 @@ import surfactant.plugin
 try:
     from extractcode import archive as ec_archive
     from extractcode import sevenzip
+
     EXTRACTCODE_AVAILABLE = True
 except (ImportError, AttributeError) as e:
     logger.warning(f"extractcode library not available in file type identification: {e}")
@@ -23,7 +24,7 @@ except (ImportError, AttributeError) as e:
 def identify_file_type(filepath: str) -> Optional[str]:
     if not EXTRACTCODE_AVAILABLE or ec_archive is None:
         return None
-        
+
     try:
         ec_handler = ec_archive.get_best_handler(filepath)
         if ec_handler:
@@ -45,6 +46,5 @@ def init_hook(command_name: Optional[str] = None) -> None:
             extractors=[sevenzip.extract],
             strict=True,
         )
-            
-        ec_archive.archive_handlers.append(WimHandler)
 
+        ec_archive.archive_handlers.append(WimHandler)

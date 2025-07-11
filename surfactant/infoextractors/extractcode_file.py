@@ -13,9 +13,9 @@ from loguru import logger
 
 import surfactant.plugin
 from surfactant import ContextEntry
+from surfactant.filetypeid.id_extractcode import EXTRACTCODE_AVAILABLE
 from surfactant.infoextractors.file_decompression import create_extraction
 from surfactant.sbomtypes import SBOM, Software
-from surfactant.filetypeid.id_extractcode import EXTRACTCODE_AVAILABLE
 
 if EXTRACTCODE_AVAILABLE:
     from extractcode import archive as ec_archive
@@ -52,10 +52,10 @@ ADDITIONAL_HANDLERS = {
 def get_handler(filename, filetype: str) -> Optional["ec_archive.Handler"]:
     if not EXTRACTCODE_AVAILABLE:
         return None
-    
+
     if not filetype:
         return None
-    
+
     # Check if the filetype is an EXTRACTCODE handler
     if filetype.startswith("EXTRACTCODE-"):
         name = filetype[len("EXTRACTCODE-") :]
@@ -63,7 +63,7 @@ def get_handler(filename, filetype: str) -> Optional["ec_archive.Handler"]:
             if handler.name == name:
                 return handler
         logger.error(f"Unknown EXTRACTCODE handler: {name}")
-        
+
     # Additionally handle some more file types that we can already identify from id_magic
     if filetype in ADDITIONAL_HANDLERS:
         handler = ec_archive.get_best_handler(filename)
@@ -101,8 +101,10 @@ def decompress_to(filename: str, output_folder: str, handler: "ec_archive.Handle
     if len(extractors) == 1:
         extractor = extractors[0]
     elif len(extractors) == 2:
+
         def extract_twice(f: str, t: str) -> Any:
             return ec_archive.extract_twice(f, t, extractors[0], extractors[1])
+
         extractor = extract_twice
     else:
         logger.error(f"Unsupported number of extractors for {filename}: {len(extractors)}")
