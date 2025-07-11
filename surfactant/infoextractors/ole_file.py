@@ -61,8 +61,8 @@ def replace_root_id(system_folder_id: str) -> Optional[str]:
     return path
 
 
-def supports_file(filetype) -> bool:
-    return filetype == "OLE"
+def supports_file(filetype: List[str]) -> bool:
+    return "OLE" in filetype
 
 
 # pylint: disable=too-many-positional-arguments
@@ -71,7 +71,7 @@ def extract_file_info(
     sbom: SBOM,
     software: Software,
     filename: str,
-    filetype: str,
+    filetype: List[str],
     software_field_hints: List[Tuple[str, object, int]],
     context_queue: "Queue[ContextEntry]",
     current_context: Optional[ContextEntry],
