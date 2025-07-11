@@ -59,6 +59,8 @@ dependencies = [
     "rarfile==4.2.*",
     # Pinned to specific version for potential breaking changes
     "python-msi==0.0.0a2",
+    # Pinned to specific version for potential breaking changes
+    "rpmfile==2.1.0",
 ]
 dynamic = ["version"]
 
