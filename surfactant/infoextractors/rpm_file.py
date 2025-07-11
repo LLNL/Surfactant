@@ -5,7 +5,7 @@
 # import struct
 # from pathlib import Path
 # from queue import Queue                       # Present for use in future extraction implementation
-from typing import Any, Dict, List#, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import rpmfile
 from loguru import logger
@@ -41,17 +41,32 @@ def extract_file_info(
     software: Software,
     filename: str,
     filetype: str,
+    software_field_hints: List[Tuple[str, object, int]],
     # context_queue: "Queue[ContextEntry]",     # Present for use in future extraction implementation
     # current_context: Optional[ContextEntry],
 ) -> object:
     if not supports_file(filetype):
         return None
-    return extract_rpm_info(filename)
+    rpm_info = extract_rpm_info(filename)
+    
+    if "name" in rpm_info["rpm"]:
+        software_field_hints.append(("name", rpm_info["rpm"]["name"], 80))
+    if "version" in rpm_info["rpm"]:
+        software_field_hints.append(("version", rpm_info["rpm"]["version"], 80))
+    if "summary" in rpm_info["rpm"]:
+        software_field_hints.append(("summary", rpm_info["rpm"]["summary"], 80))
+    if "description" in rpm_info["rpm"]:
+        software_field_hints.append(("description", rpm_info["rpm"]["description"], 80))
 
-def extract_rpm_info(filename: str) -> object:
+    for key in rpm_info["rpm"]:
+        software_field_hints.append((key, rpm_info["rpm"][key], 80))
+    return rpm_info
+
+def extract_rpm_info(filename: str) -> Dict[str, Any]:
+    file_details: Dict[str, Any] = {}
     with rpmfile.open(filename) as rpm:
         header = rpm.headers
-        file_details: Dict[str, Any] = {"MD5": header["md5"].decode()}
+        file_details["rpm"] = {}
         easy_keys = [
             "name",
             "sourcerpm",
@@ -66,27 +81,28 @@ def extract_rpm_info(filename: str) -> object:
             "archive_format",
             "archive_compression",
             "optflags",
-            "sha256"
+            "sha256",
+            "md5"
         ]
         for key in easy_keys:
             if key in header:
-                file_details[key] = header[key].decode()
+                file_details["rpm"][key] = header[key].decode()
         # Handle sections that aren't simple strings
         if "buildtime" in header:
-            file_details["buildtime"] = header["buildtime"]
+            file_details["rpm"]["buildtime"] = header["buildtime"]
         if "basenames" in header:
-            file_details["associated files"] = get_files(
+            file_details["rpm"]["associated files"] = get_files(
                 header["dirnames"],
                 header["basenames"],
                 header["dirindexes"]
             )
         if "requirename" in header:
-            file_details["requirename"] = []
+            file_details["rpm"]["requirename"] = []
             for item in header["requirename"]:
-                file_details["requirename"].append(item.decode())
+                file_details["rpm"]["requirename"].append(item.decode())
         if "provides" in header:
-            file_details["provides"] = []
+            file_details["rpm"]["provides"] = []
             for item in header["provides"]:
-                file_details["provides"].append(item.decode())
+                file_details["rpm"]["provides"].append(item.decode())
         return file_details
 
