@@ -188,6 +188,7 @@ def test_gha(
     repo: Optional[str],
     current_run: Optional[tuple[str, str]],
     last_run: Optional[tuple[str, str]],
+    requested_last_sha: Optional[str] = None,
 ) -> tuple[str, dict[str, dict[str, Optional[str]]]]:
     """
     Test function for CI/CD mode.
@@ -276,6 +277,9 @@ def test_gha(
             run_href = f"https://github.com/{repo}/actions/runs/{last_run[1]}"
             commit_href = f"https://github.com/{repo}/commit/{last_run[0]}"
             summary += f"\n<sub>Compared against commit <a href='{commit_href}'><code>{last_run[0][:7]}</code></a> (Run <a href='{run_href}'>{last_run[1]}</a>)</sub>"
+            if requested_last_sha and requested_last_sha != last_run[0]:
+                commit_href = f"https://github.com/{repo}/commit/{requested_last_sha}"
+                summary += f"\n<sub>⚠️ Requested SHA <a href='{commit_href}'><code>{requested_last_sha[:7]}</code></a> did not have a matching run. Used {last_run[0][:7]} instead.</sub>"
     return summary.rstrip(), new_folders
 
 
@@ -334,6 +338,7 @@ def main():
         current_id = os.environ.get("CURRENT_RUN_ID", None)
         last_sha = os.environ.get("LAST_RUN_SHA", None)
         last_id = os.environ.get("LAST_RUN_ID", None)
+        requested_last_sha = os.environ.get("REQUESTED_LAST_SHA", "")
         gh_summary = os.environ.get("GITHUB_STEP_SUMMARY", None)
         old_folders = {}
         if input_file:
@@ -344,6 +349,7 @@ def main():
             repo,
             (current_sha, current_id) if current_sha and current_id else None,
             (last_sha, last_id) if last_sha and last_id else None,
+            requested_last_sha
         )
 
         if summary_file:

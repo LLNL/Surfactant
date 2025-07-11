@@ -101,6 +101,9 @@ jobs:
               console.log("No previous successful run found");
               return;
             }
+            if (target.head_sha !== process.env.BASE_SHA) {
+                console.log(`::warning::Could not find exact SHA match for ${process.env.BASE_SHA}, using run ${target.head_sha} instead`);
+            }
             console.log(`Using run ${target.id} (${target.head_sha})`);
 
             // locate our artifact
@@ -137,6 +140,7 @@ jobs:
           CURRENT_RUN_ID: ${{ github.run_id }}
           LAST_RUN_ID: ${{ steps.fetch.outputs.target_id || '' }}
           LAST_RUN_SHA: ${{ steps.fetch.outputs.target_sha || '' }}
+          REQUESTED_LAST_SHA: ${{ steps.base.outputs.sha || '' }}
         run: |
           python scripts/regressions.py --gha
 
