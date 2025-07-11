@@ -5,7 +5,6 @@
 from typing import Optional
 
 from loguru import logger
-from typecode.magic2 import NoMagicLibError
 
 import surfactant.plugin
 
@@ -17,7 +16,11 @@ try:
 # pylint: disable-next=broad-exception-caught
 except Exception as e:
     # Catch NoMagicLibError and other library-specific errors during import
-    if type(e).__name__ != "NoMagicLibError" and not isinstance(e, ImportError) and not isinstance(e, AttributeError):
+    if (
+        type(e).__name__ != "NoMagicLibError"
+        and not isinstance(e, ImportError)
+        and not isinstance(e, AttributeError)
+    ):
         raise e
     logger.warning(f"extractcode library not available in file type identification: {e}")
     EXTRACTCODE_AVAILABLE = False
