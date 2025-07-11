@@ -2,10 +2,7 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-# Copyright 2025 Lawrence Livermore National Security, LLC
-# See the top-level LICENSE file for details.
-#
-# SPDX-License-Identifier: MIT
+
 from queue import Queue
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
@@ -51,7 +48,7 @@ ADDITIONAL_HANDLERS = {
 }
 
 
-def get_handler(filename, filetype: str) -> Optional[ec_archive.Handler]:
+def get_handler(filename, filetype: str) -> Optional["ec_archive.Handler"]:
     if not EXTRACTCODE_AVAILABLE or ec_archive is None:
         return None
 
@@ -97,7 +94,7 @@ def extract_file_info(
         )
 
 
-def decompress_to(filename: str, output_folder: str, handler: ec_archive.Handler) -> bool:
+def decompress_to(filename: str, output_folder: str, handler: "ec_archive.Handler") -> bool:
     extractors = handler.extractors
     extractor = None
     if len(extractors) == 1:
