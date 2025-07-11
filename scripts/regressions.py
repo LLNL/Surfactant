@@ -349,7 +349,7 @@ def main():
             repo,
             (current_sha, current_id) if current_sha and current_id else None,
             (last_sha, last_id) if last_sha and last_id else None,
-            requested_last_sha
+            requested_last_sha,
         )
 
         if summary_file:
