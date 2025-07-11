@@ -49,14 +49,22 @@ ADDITIONAL_HANDLERS = {
 def get_handler(filename, filetype: str) -> Optional[ec_archive.Handler]:
     if not filetype:
         return None
+    
+    # Check if the filetype is an EXTRACTCODE handler
     if filetype.startswith("EXTRACTCODE-"):
         name = filetype[len("EXTRACTCODE-") :]
         for handler in ec_archive.archive_handlers:
             if handler.name == name:
                 return handler
         logger.error(f"Unknown EXTRACTCODE handler: {name}")
-    handler = ec_archive.get_best_handler(filename)
-    return handler
+        
+    # Additionally handle some more file types that we can already identify from id_magic
+    if filetype in ADDITIONAL_HANDLERS:
+        handler = ec_archive.get_best_handler(filename)
+        if not handler:
+            logger.warning(f"No handler found for {filetype} ({filename}).")
+        return handler
+    return None
 
 
 # pylint: disable=too-many-positional-arguments
