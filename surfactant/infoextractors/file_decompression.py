@@ -23,11 +23,11 @@ from loguru import logger
 
 import surfactant.plugin
 from surfactant import ContextEntry
-from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
 
 # Global list to track temp dirs
 GLOBAL_TEMP_DIRS_LIST = []
+
 
 def supports_file(filetype: str) -> Optional[str]:
     if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"}:

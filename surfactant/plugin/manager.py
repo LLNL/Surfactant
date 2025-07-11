@@ -15,14 +15,14 @@ from surfactant.plugin import hookspecs
 def _register_plugins(pm: pluggy.PluginManager) -> None:
     # pylint: disable=import-outside-toplevel
     # don't want all these imports as part of the file-level scope
-    from surfactant.filetypeid import id_extension, id_hex, id_magic, id_extractcode
+    from surfactant.filetypeid import id_extension, id_extractcode, id_hex, id_magic
     from surfactant.infoextractors import (
         a_out_file,
         coff_file,
         docker_image,
         elf_file,
-        file_decompression,
         extractcode_file,
+        file_decompression,
         java_file,
         js_file,
         mach_o_file,

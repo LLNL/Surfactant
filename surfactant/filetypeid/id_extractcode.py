@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 from typing import Optional
+
 from extractcode import archive as ec_archive
 from extractcode import sevenzip
 
@@ -19,17 +20,19 @@ def identify_file_type(filepath: str) -> Optional[str]:
     except FileNotFoundError:
         return None
 
+
 @surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:
     ec_archive.archive_handlers.append(WimHandler)
 
+
 # Add WIM support to extractcode via 7zip
 WimHandler = ec_archive.Handler(
-    name='Microsoft wim',
-    filetypes=('Windows imaging (WIM) image'),
-    mimetypes=('application/x-ms-wim',),
-    extensions=('.wim',),
+    name="Microsoft wim",
+    filetypes=("Windows imaging (WIM) image"),
+    mimetypes=("application/x-ms-wim",),
+    extensions=(".wim",),
     kind=ec_archive.package,
     extractors=[sevenzip.extract],
-    strict=True
+    strict=True,
 )

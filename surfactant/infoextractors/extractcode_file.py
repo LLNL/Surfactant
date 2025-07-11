@@ -8,13 +8,13 @@
 # SPDX-License-Identifier: MIT
 from queue import Queue
 from typing import Any, Dict, Optional
-from extractcode import archive as ec_archive
 
+from extractcode import archive as ec_archive
 from loguru import logger
 
-from surfactant.infoextractors.file_decompression import create_extraction
 import surfactant.plugin
 from surfactant import ContextEntry
+from surfactant.infoextractors.file_decompression import create_extraction
 from surfactant.sbomtypes import SBOM, Software
 
 ADDITIONAL_HANDLERS = {
@@ -42,8 +42,9 @@ ADDITIONAL_HANDLERS = {
     "ZSTANDARD_DICTIONARY",
     "ISO_9660_CD",
     "MACOS_DMG",
-    "RPM Package"
+    "RPM Package",
 }
+
 
 def get_handler(filename, filetype: str) -> Optional[ec_archive.Handler]:
     if not filetype:
@@ -88,15 +89,13 @@ def decompress_to(filename: str, output_folder: str, handler: ec_archive.Handler
     elif len(extractors) == 2:
         extractor = lambda f, t: ec_archive.extract_twice(f, t, extractors[0], extractors[1])
     else:
-        logger.error(
-            f"Unsupported number of extractors for {filename}: {len(extractors)}"
-        )
+        logger.error(f"Unsupported number of extractors for {filename}: {len(extractors)}")
         return False
-    
+
     logger.info(f"Extracting {filename} ({handler.name}) to {output_folder} using extractcode")
     warnings = extractor(filename, output_folder)
     if warnings:
         for warning in warnings:
             logger.warning(f"Warning while extracting {filename}: {warning}")
-    
+
     return True
