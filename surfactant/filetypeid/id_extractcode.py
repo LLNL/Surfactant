@@ -5,10 +5,10 @@
 from typing import Optional
 
 from loguru import logger
+from typecode.magic2 import NoMagicLibError
 
 import surfactant.plugin
 
-from typecode.magic2 import NoMagicLibError
 try:
     from extractcode import archive as ec_archive
     from extractcode import sevenzip
