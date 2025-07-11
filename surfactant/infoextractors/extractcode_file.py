@@ -9,13 +9,16 @@
 from queue import Queue
 from typing import Any, Dict, Optional
 
-from extractcode import archive as ec_archive
 from loguru import logger
 
 import surfactant.plugin
 from surfactant import ContextEntry
 from surfactant.infoextractors.file_decompression import create_extraction
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.filetypeid.id_extractcode import EXTRACTCODE_AVAILABLE
+
+if EXTRACTCODE_AVAILABLE:
+    from extractcode import archive as ec_archive
 
 ADDITIONAL_HANDLERS = {
     "Linux Kernel Image",
@@ -46,7 +49,10 @@ ADDITIONAL_HANDLERS = {
 }
 
 
-def get_handler(filename, filetype: str) -> Optional[ec_archive.Handler]:
+def get_handler(filename, filetype: str) -> Optional["ec_archive.Handler"]:
+    if not EXTRACTCODE_AVAILABLE:
+        return None
+    
     if not filetype:
         return None
     
@@ -89,7 +95,7 @@ def extract_file_info(
         )
 
 
-def decompress_to(filename: str, output_folder: str, handler: ec_archive.Handler) -> bool:
+def decompress_to(filename: str, output_folder: str, handler: "ec_archive.Handler") -> bool:
     extractors = handler.extractors
     extractor = None
     if len(extractors) == 1:

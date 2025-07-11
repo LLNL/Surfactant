@@ -4,14 +4,26 @@
 # SPDX-License-Identifier: MIT
 from typing import Optional
 
-from extractcode import archive as ec_archive
-from extractcode import sevenzip
+from loguru import logger
 
 import surfactant.plugin
+
+try:
+    from extractcode import archive as ec_archive
+    from extractcode import sevenzip
+    EXTRACTCODE_AVAILABLE = True
+except (ImportError, AttributeError) as e:
+    logger.warning(f"extractcode library not available in file type identification: {e}")
+    EXTRACTCODE_AVAILABLE = False
+    ec_archive = None
+    sevenzip = None
 
 
 @surfactant.plugin.hookimpl
 def identify_file_type(filepath: str) -> Optional[str]:
+    if not EXTRACTCODE_AVAILABLE or ec_archive is None:
+        return None
+        
     try:
         ec_handler = ec_archive.get_best_handler(filepath)
         if ec_handler:
@@ -23,16 +35,16 @@ def identify_file_type(filepath: str) -> Optional[str]:
 
 @surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:
-    ec_archive.archive_handlers.append(WimHandler)
+    if EXTRACTCODE_AVAILABLE:
+        WimHandler = ec_archive.Handler(
+            name="Microsoft wim",
+            filetypes=("Windows imaging (WIM) image"),
+            mimetypes=("application/x-ms-wim",),
+            extensions=(".wim",),
+            kind=ec_archive.package,
+            extractors=[sevenzip.extract],
+            strict=True,
+        )
+            
+        ec_archive.archive_handlers.append(WimHandler)
 
-
-# Add WIM support to extractcode via 7zip
-WimHandler = ec_archive.Handler(
-    name="Microsoft wim",
-    filetypes=("Windows imaging (WIM) image"),
-    mimetypes=("application/x-ms-wim",),
-    extensions=(".wim",),
-    kind=ec_archive.package,
-    extractors=[sevenzip.extract],
-    strict=True,
-)
