@@ -8,12 +8,13 @@ from loguru import logger
 
 import surfactant.plugin
 
+from typecode.magic2 import NoMagicLibError
 try:
     from extractcode import archive as ec_archive
     from extractcode import sevenzip
 
     EXTRACTCODE_AVAILABLE = True
-except (ImportError, AttributeError) as e:
+except (ImportError, AttributeError, NoMagicLibError) as e:
     logger.warning(f"extractcode library not available in file type identification: {e}")
     EXTRACTCODE_AVAILABLE = False
     ec_archive = None

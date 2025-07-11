@@ -7,7 +7,7 @@
 #
 # SPDX-License-Identifier: MIT
 from queue import Queue
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from loguru import logger
 
@@ -17,8 +17,10 @@ from surfactant.filetypeid.id_extractcode import EXTRACTCODE_AVAILABLE
 from surfactant.infoextractors.file_decompression import create_extraction
 from surfactant.sbomtypes import SBOM, Software
 
-if EXTRACTCODE_AVAILABLE:
+if EXTRACTCODE_AVAILABLE or TYPE_CHECKING:
     from extractcode import archive as ec_archive
+else:
+    ec_archive = None
 
 ADDITIONAL_HANDLERS = {
     "Linux Kernel Image",
@@ -49,8 +51,8 @@ ADDITIONAL_HANDLERS = {
 }
 
 
-def get_handler(filename, filetype: str) -> Optional["ec_archive.Handler"]:
-    if not EXTRACTCODE_AVAILABLE:
+def get_handler(filename, filetype: str) -> Optional[ec_archive.Handler]:
+    if not EXTRACTCODE_AVAILABLE or ec_archive is None:
         return None
 
     if not filetype:
@@ -95,7 +97,7 @@ def extract_file_info(
         )
 
 
-def decompress_to(filename: str, output_folder: str, handler: "ec_archive.Handler") -> bool:
+def decompress_to(filename: str, output_folder: str, handler: ec_archive.Handler) -> bool:
     extractors = handler.extractors
     extractor = None
     if len(extractors) == 1:
