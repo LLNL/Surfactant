@@ -59,7 +59,6 @@ dependencies = [
     # Pinned to specific version for potential breaking changes
     "networkx>=2.6",
     "python-msi==0.0.0a2",
-    "extractcode>=31.0.0",
 ]
 
 dynamic = ["version"]
@@ -67,7 +66,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 macho = ["lief==0.16.6"]
 java = ["javatools>=1.6,==1.*"]
-extract-full = ["extractcode[full]"]
+extractcode = ["extractcode[full]>=31.0.0"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]
