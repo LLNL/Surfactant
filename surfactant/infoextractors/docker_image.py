@@ -2,6 +2,12 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+
+"""
+Config Options:
+    enable_docker_scout(bool): Enable Docker Scout, default is True.
+"""
+
 import gzip
 import json
 import subprocess
@@ -99,3 +105,7 @@ def extract_docker_info(filetype: str, filename: str) -> object:
 def init_hook(command_name: Optional[str] = None) -> None:
     if command_name != "update-db" and not dsManager.disable_docker_scout:
         dsManager.check_docker_scout_installed()
+
+@surfactant.plugin.hookimpl
+def settings_name() -> Optional[str]:
+    return "docker"

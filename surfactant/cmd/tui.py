@@ -9,25 +9,40 @@ import pathlib
 from typing import Optional
 
 import click
+import surfactant.configmanager
 import textual.app
 import textual.containers
 import textual.css.query
 import textual.events
 import textual.screen
-import textual.types
 import textual.widgets
 import textual.widgets.button
 
 import surfactant.cmd.generate
 import surfactant.cmd.merge
+import surfactant.utils.get_plugin_settings
 
+class InfoScreen(textual.screen.Screen[None]):
+    """Screen that shows text with an "OK" button"""
+
+    def __init__(self, text: str):
+        super().__init__()
+        self.text = text
+
+    def compose(self) -> textual.app.ComposeResult:
+        yield textual.widgets.Label(self.text)
+        yield textual.widgets.Button("OK", id="ok")
+
+    @textual.on(textual.widgets.Button.Pressed, "#ok")
+    def handle_ok(self) -> None:
+        self.dismiss()
 
 class YesNoScreen(textual.screen.Screen[bool]):
     """Screen that presents a yes/no question"""
 
     def __init__(self, question: str) -> None:
-        self.question = question
         super().__init__()
+        self.question = question
 
     def compose(self) -> textual.app.ComposeResult:
         yield textual.widgets.Label(self.question)
@@ -435,6 +450,76 @@ class ConfigTab(textual.widgets.Static):
             self.mount(entry, before="#add_config_entry")
 
 
+class PluginSetting(textual.widgets.Static):
+    __config_manager = surfactant.configmanager.ConfigManager()
+
+    def __init__(self, plugin_name: str, info: surfactant.utils.get_plugin_settings.PluginSetting):
+        super().__init__()
+        self.plugin_name = plugin_name
+        self.info = info
+        # TODO: What about defaults?
+        if self.info.type_ == "str":
+            self.input_field = textual.widgets.Input()
+            self.value = value=self.__config_manager.get(self.plugin_name, self.info.name, "")
+        elif self.info.type_ == "bool":
+            self.input_field = textual.widgets.Checkbox()
+            self.value = self.__config_manager.get(self.plugin_name, self.info.name, True)
+        else:
+            # TODO: An assert probably isn't the best here, but not sure what else to use
+            assert False, f"Invalid plugin setting of type \"{self.info.type_}\""
+    
+    def compose(self) -> textual.app.ComposeResult:
+        # Set the value now - setting the Input value during __init__ was causing errors...
+        self.input_field.value = self.value
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Button("?", id=f"help"),
+            textual.widgets.Static(self.info.name)
+        )
+        yield self.input_field
+        # To create extra spacing
+        yield textual.widgets.Static("")
+
+    @textual.on(textual.widgets.Button.Pressed, "#help")
+    def show_help(self):
+        self.app.push_screen(InfoScreen(self.info.description))
+
+
+class PluginSettingsTab(textual.widgets.Static):
+    __config_manager = surfactant.configmanager.ConfigManager()
+    # Core settings - I don't think there's a good way to automatically extract these
+    __setting = surfactant.utils.get_plugin_settings.PluginSetting
+    __core_settings = [
+        __setting("output_format", "str", "SBOM output format, see --list-output-formats for list of options; default is CyTRICS."),
+        __setting("recorded_institution", "str", "Name of user's institution."),
+        __setting("include_all_files", "bool", "Include all files in the SBOM (default). Set to false to only include files with types recognized by Surfactant; default is true."),
+    ]
+
+    def __init__(self):
+        super().__init__()
+        plugins = surfactant.utils.get_plugin_settings.extract_plugin_settings()
+        plugins["core"] = self.__core_settings
+        self.plugin_settings = {}
+        for name, settings in plugins.items():
+            self.plugin_settings[name] = []
+            for setting in settings:
+                self.plugin_settings[name].append(PluginSetting(name, setting))
+
+    def compose(self) -> textual.app.ComposeResult:
+        for name, settings in self.plugin_settings.items():
+            with textual.widgets.Collapsible(title=name, collapsed=True):
+                for setting in settings:
+                    yield setting
+
+        yield textual.widgets.Button("Save settings", id="save")
+
+    @textual.on(textual.widgets.Button.Pressed, "#save")
+    def save_settings(self):
+        for name, settings in self.plugin_settings.items():
+            for setting in settings:
+                self.__config_manager.set(name, setting.info.name, setting.input_field.value)
+        self.app.notify("Settings saved.")
+
+
 # TODO: Rewrite to use ContentSwitcher?
 class TUI(textual.app.App):
     """An app for running Surfactant commands"""
@@ -451,11 +536,11 @@ class TUI(textual.app.App):
         self.generate_tab = GenerateTab()
         self.merge_tab = MergeTab()
         self.config_tab = ConfigTab()
+        self.plugin_settings_tab = PluginSettingsTab()
 
     def compose(self) -> textual.app.ComposeResult:
         yield textual.widgets.Header()
         yield textual.widgets.Footer()
-        Tab = textual.widgets.Tab
         with textual.widgets.TabbedContent():
             with textual.widgets.TabPane("Generate"):
                 yield self.generate_tab
@@ -463,6 +548,8 @@ class TUI(textual.app.App):
                 yield self.merge_tab
             with textual.widgets.TabPane("Config"):
                 yield self.config_tab
+            with textual.widgets.TabPane("Plugin Settings"):
+                yield self.plugin_settings_tab
 
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""

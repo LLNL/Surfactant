@@ -150,3 +150,8 @@ def init_hook(command_name: Optional[str] = None) -> None:
         command_name (Optional[str]): The name of the command invoking the initialization,
                                       which can be used to conditionally initialize based on the context.
     """
+
+@hookspec
+def settings_name() -> Optional[str]:
+    """The setting base name to use for setting/retrieving settings
+    """

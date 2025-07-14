@@ -6,8 +6,14 @@
 # TODO: Ensure all the relevant information available is extracted from here
 # https://lief.re/doc/stable/api/python/macho.html
 
+"""
+Config Options:
+    include_bindings_exports(bool): Include bindings/exports information for Mach-O files.
+    include_signature_content(bool): Include signature content for Mach-O files.
+"""
+
 from sys import modules
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from loguru import logger
 
@@ -187,3 +193,7 @@ def get_bindings(bindings):
             info["segment"] = binding.segment.name
         bindings_info.append(info)
     return bindings_info
+
+@surfactant.plugin.hookimpl
+def settings_name() -> Optional[str]:
+    return "macho"

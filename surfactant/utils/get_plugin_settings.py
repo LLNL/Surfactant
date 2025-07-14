@@ -20,8 +20,8 @@ def extract_plugin_settings() -> Dict[str, List[PluginSetting]]:
     settings = {}
     pm = get_plugin_manager()
     for plugin in pm.get_plugins():
-        if plugin.__doc__ and plugin.__doc__.find("Config Options:") != -1:
-            settings[pm.get_name(plugin)] = extract_settings_from_docstring(plugin.__doc__)
+        if plugin.__doc__ and plugin.__doc__.find("Config Options:") != -1 and plugin.settings_name():
+            settings[plugin.settings_name()] = extract_settings_from_docstring(plugin.__doc__)
     return settings
 
 __option_re = re.compile(r"([^(:]+)\s*([(][^)]+[)])?:(.*)")
