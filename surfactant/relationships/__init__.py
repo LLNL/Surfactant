@@ -27,4 +27,5 @@ def parse_relationships(pluginmanager, sbom: SBOM):
                 if isinstance(relationships, Iterable):
                     for r in relationships:
                         if not sbom.find_relationship_object(r):
+                            logger.debug(f"Adding relationship {r}")
                             sbom.add_relationship(r)
