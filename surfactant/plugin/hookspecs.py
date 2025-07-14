@@ -151,7 +151,7 @@ def init_hook(command_name: Optional[str] = None) -> None:
                                       which can be used to conditionally initialize based on the context.
     """
 
+
 @hookspec
 def settings_name() -> Optional[str]:
-    """The setting base name to use for setting/retrieving settings
-    """
+    """The setting base name to use for setting/retrieving settings"""

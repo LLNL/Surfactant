@@ -5,6 +5,7 @@
 
 from surfactant.utils.get_plugin_settings import extract_settings_from_docstring
 
+
 def function_with_settings():
     """Function for testing: has a colon
 
@@ -16,15 +17,16 @@ def function_with_settings():
         test_function.option4: Some option missing a type: and with a colon
     """
 
+
 def test_extract_settings_from_docstring():
     assert function_with_settings.__doc__
-    
+
     settings = extract_settings_from_docstring(function_with_settings.__doc__)
     assert len(settings) == 4
 
     assert settings[0].name == "test_function.option1"
     assert settings[0].type_ == "str"
-    assert settings[0].description == "Some option. Defaults to \"123\""
+    assert settings[0].description == 'Some option. Defaults to "123"'
 
     assert settings[1].name == "test_function.option2"
     assert settings[1].type_ == "int"

@@ -194,6 +194,7 @@ def get_bindings(bindings):
         bindings_info.append(info)
     return bindings_info
 
+
 @surfactant.plugin.hookimpl
 def settings_name() -> Optional[str]:
     return "macho"

@@ -106,6 +106,7 @@ def init_hook(command_name: Optional[str] = None) -> None:
     if command_name != "update-db" and not dsManager.disable_docker_scout:
         dsManager.check_docker_scout_installed()
 
+
 @surfactant.plugin.hookimpl
 def settings_name() -> Optional[str]:
     return "docker"

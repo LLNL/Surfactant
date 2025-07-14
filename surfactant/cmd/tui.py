@@ -9,7 +9,6 @@ import pathlib
 from typing import Optional
 
 import click
-import surfactant.configmanager
 import textual.app
 import textual.containers
 import textual.css.query
@@ -20,7 +19,9 @@ import textual.widgets.button
 
 import surfactant.cmd.generate
 import surfactant.cmd.merge
+import surfactant.configmanager
 import surfactant.utils.get_plugin_settings
+
 
 class InfoScreen(textual.screen.Screen[None]):
     """Screen that shows text with an "OK" button"""
@@ -36,6 +37,7 @@ class InfoScreen(textual.screen.Screen[None]):
     @textual.on(textual.widgets.Button.Pressed, "#ok")
     def handle_ok(self) -> None:
         self.dismiss()
+
 
 class YesNoScreen(textual.screen.Screen[bool]):
     """Screen that presents a yes/no question"""
@@ -460,20 +462,19 @@ class PluginSetting(textual.widgets.Static):
         # TODO: What about defaults?
         if self.info.type_ == "str":
             self.input_field = textual.widgets.Input()
-            self.value = value=self.__config_manager.get(self.plugin_name, self.info.name, "")
+            self.value = value = self.__config_manager.get(self.plugin_name, self.info.name, "")
         elif self.info.type_ == "bool":
             self.input_field = textual.widgets.Checkbox()
             self.value = self.__config_manager.get(self.plugin_name, self.info.name, True)
         else:
             # TODO: An assert probably isn't the best here, but not sure what else to use
-            assert False, f"Invalid plugin setting of type \"{self.info.type_}\""
-    
+            assert False, f'Invalid plugin setting of type "{self.info.type_}"'
+
     def compose(self) -> textual.app.ComposeResult:
         # Set the value now - setting the Input value during __init__ was causing errors...
         self.input_field.value = self.value
         yield textual.containers.HorizontalGroup(
-            textual.widgets.Button("?", id=f"help"),
-            textual.widgets.Static(self.info.name)
+            textual.widgets.Button("?", id="help"), textual.widgets.Static(self.info.name)
         )
         yield self.input_field
         # To create extra spacing
@@ -489,9 +490,17 @@ class PluginSettingsTab(textual.widgets.Static):
     # Core settings - I don't think there's a good way to automatically extract these
     __setting = surfactant.utils.get_plugin_settings.PluginSetting
     __core_settings = [
-        __setting("output_format", "str", "SBOM output format, see --list-output-formats for list of options; default is CyTRICS."),
+        __setting(
+            "output_format",
+            "str",
+            "SBOM output format, see --list-output-formats for list of options; default is CyTRICS.",
+        ),
         __setting("recorded_institution", "str", "Name of user's institution."),
-        __setting("include_all_files", "bool", "Include all files in the SBOM (default). Set to false to only include files with types recognized by Surfactant; default is true."),
+        __setting(
+            "include_all_files",
+            "bool",
+            "Include all files in the SBOM (default). Set to false to only include files with types recognized by Surfactant; default is true.",
+        ),
     ]
 
     def __init__(self):

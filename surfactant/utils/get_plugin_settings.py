@@ -3,11 +3,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-from dataclasses import dataclass
-from typing import Optional, Dict, List
 import re
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 from surfactant.plugin.manager import get_plugin_manager
+
 
 @dataclass
 class PluginSetting:
@@ -15,16 +16,23 @@ class PluginSetting:
     type_: Optional[str]
     description: str
 
+
 def extract_plugin_settings() -> Dict[str, List[PluginSetting]]:
     """Extract settings information from plugin docstrings"""
     settings = {}
     pm = get_plugin_manager()
     for plugin in pm.get_plugins():
-        if plugin.__doc__ and plugin.__doc__.find("Config Options:") != -1 and plugin.settings_name():
+        if (
+            plugin.__doc__
+            and plugin.__doc__.find("Config Options:") != -1
+            and plugin.settings_name()
+        ):
             settings[plugin.settings_name()] = extract_settings_from_docstring(plugin.__doc__)
     return settings
 
+
 __option_re = re.compile(r"([^(:]+)\s*([(][^)]+[)])?:(.*)")
+
 
 def extract_settings_from_docstring(docstring: str) -> List[PluginSetting]:
     def count_leading_indentation(s: str) -> int:
@@ -47,9 +55,12 @@ def extract_settings_from_docstring(docstring: str) -> List[PluginSetting]:
     settings_lines = []
     while line_no < len(lines) and count_leading_indentation(lines[line_no]) == indentation_amount:
         cur_line = lines[line_no].strip()
-        while line_no + 1 < len(lines) and count_leading_indentation(lines[line_no + 1]) > indentation_amount:
+        while (
+            line_no + 1 < len(lines)
+            and count_leading_indentation(lines[line_no + 1]) > indentation_amount
+        ):
             line_no += 1
-            cur_line += ' ' + lines[line_no].strip()
+            cur_line += " " + lines[line_no].strip()
         line_no += 1
         settings_lines.append(cur_line)
 
