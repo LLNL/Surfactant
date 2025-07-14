@@ -19,7 +19,10 @@ def supports_file(filetype) -> bool:
     logger.debug("Checks for RPM Package")
     return filetype == "RPM Package"
                 
-def get_files(directories: List[bytes], files: List[bytes], indicies: List[int]):
+def get_files(directories: List[bytes], 
+              files: List[bytes], 
+              indicies: List[int], 
+              hashes: List[bytes]) -> Dict[Any, Any]:
     """
     Extracts files from the given directories and files list
     
@@ -28,11 +31,12 @@ def get_files(directories: List[bytes], files: List[bytes], indicies: List[int])
     :param indicies: Directory associated with current file
     :return: List of extracted file paths
     """
-    extracted_files = []
+    extracted_files = {}
     for i in range(len(indicies)):
         directory = directories[indicies[i]].decode()
         file_name = files[i].decode()
-        extracted_files.append(f"{directory}{file_name}")
+        file_hash = hashes[i].decode()
+        extracted_files[f"{directory}{file_name}"] = file_hash
     return extracted_files
 
 
@@ -73,6 +77,7 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
     with rpmfile.open(filename) as rpm:
         header = rpm.headers
         file_details["rpm"] = {}
+        # If any additional fields are desired that have values of single strings, just add the field to this list
         easy_keys = [
             "name",
             "sourcerpm",
@@ -84,6 +89,8 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             "copyright",
             "os",
             "arch",
+            "target",
+            "url",
             "archive_format",
             "archive_compression",
             "optflags",
@@ -97,10 +104,11 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
         if "buildtime" in header:
             file_details["rpm"]["buildtime"] = header["buildtime"]
         if "basenames" in header:
-            file_details["rpm"]["associated files"] = get_files(
+            file_details["rpm"]["associated_files"] = get_files(
                 header["dirnames"],
                 header["basenames"],
-                header["dirindexes"]
+                header["dirindexes"],
+                header["filemd5s"]
             )
         if "requirename" in header:
             file_details["rpm"]["requirename"] = []
