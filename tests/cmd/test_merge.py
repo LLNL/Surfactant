@@ -13,7 +13,7 @@ import pytest
 
 from surfactant.cmd.merge import merge
 from surfactant.plugin.manager import get_plugin_manager
-from surfactant.sbomtypes import SBOM, Relationship
+from surfactant.sbomtypes import SBOM
 
 # Generate Sample SBOMs
 sbom1_json = """{
@@ -163,16 +163,26 @@ def get_sbom4():
 def test_simple_merge_method():
     sbom1 = get_sbom1()
     sbom2 = get_sbom2()
+
+    # Capture each SBOM's original software entries
+    orig_sw1, orig_sw2 = list(sbom1.software), list(sbom2.software)
+
+    # Merge in place
     merged_sbom = sbom1
     merged_sbom.merge(sbom2)
-    softwares = sbom1.software
-    softwares.extend(sbom2.software)
-    assert merged_sbom.software.sort(key=lambda x: x.UUID) == softwares.sort(key=lambda x: x.UUID)
-    relations = sbom1.relationships
-    relations.update(sbom2.relationships)
-    assert sorted(merged_sbom.relationships, key=lambda x: x.xUUID) == sorted(
-        relations, key=lambda x: x.xUUID
+
+    # Expect the merged list to be the union of the two originals
+    expected_sw = orig_sw1 + orig_sw2
+    assert sorted(merged_sbom.software, key=lambda x: x.UUID) == sorted(
+        expected_sw, key=lambda x: x.UUID
     )
+
+    # Verify graph edges union: use edges(keys=True) to pull relationship key
+    def extract_edges(sbom):
+        return set(sbom.graph.edges(keys=True))
+
+    expected_edges = extract_edges(get_sbom1()) | extract_edges(get_sbom2())
+    assert extract_edges(merged_sbom) == expected_edges
 
 
 @pytest.mark.skip(reason="No way of validating this test yet")
@@ -180,12 +190,12 @@ def test_merge_with_circular_dependency():
     sbom1 = get_sbom1()
     sbom2 = get_sbom2()
     circular_dependency_sbom = sbom1
-    circular_dependency_sbom.relationships.add(
-        Relationship(
-            xUUID="a5db7e12-fe3d-490e-90b8-98a8bfaace09",
-            yUUID="dd6f7f6b-7c31-4a4a-afef-14678b9942bf",
-            relationship="Contains",
-        )
+
+    # inject a circular edge via the new graph API
+    circular_dependency_sbom.create_relationship(
+        "a5db7e12-fe3d-490e-90b8-98a8bfaace09",
+        "dd6f7f6b-7c31-4a4a-afef-14678b9942bf",
+        "Contains",
     )
 
     outfile_name = generate_filename("test_merge_with_circular_dependency")

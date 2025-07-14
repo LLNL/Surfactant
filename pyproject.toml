@@ -10,15 +10,17 @@ authors = [
     {name = "Micaela Gallegos", email = "gallegos31@llnl.gov"},
     {name = "Alexander Armstrong", email = "armstrong48@llnl.gov"},
     {name = "Shayna Kapadia", email = "kapadia2@llnl.gov"},
+    {name = "Asriel Margarian", email = "margarian1@llnl.gov"},
 ]
 maintainers = [
     {name = "Ryan Mast", email = "mast9@llnl.gov"},
 ]
 description = "Modular framework to gather file information, analyze dependencies, and generate an SBOM"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["sbom", "pe", "elf", "ole", "msi"]
-license = {text = "MIT License"}
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
@@ -36,7 +38,6 @@ classifiers = [
     "Topic :: Software Development",
     "Topic :: System",
     "Topic :: Utilities",
-    "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
     "dataclasses_json==0.6.*",
@@ -47,20 +48,25 @@ dependencies = [
     "olefile==0.47.*",
     "defusedxml==0.7.*",
     "spdx-tools==0.8.*",
-    "cyclonedx-python-lib==9.1.0",
+    # Pinned to specific version for potential breaking changes
+    "cyclonedx-python-lib==10.3.0",
     "pluggy==1.*",
     "click==8.*",
-    "javatools>=1.6,==1.*",
     "loguru==0.7.*",
-    "flask==3.*",
     "tomlkit==0.13.*",
     "textual==3.*",
     "requests>=2.32.3",
-]
+    "rarfile==4.2.*",
+    # Pinned to specific version for potential breaking changes
+    "networkx>=2.6",
+    "python-msi==0.0.0a2"
+    ]
+
 dynamic = ["version"]
 
 [project.optional-dependencies]
 macho = ["lief==0.16.6"]
+java = ["javatools>=1.6,==1.*"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]

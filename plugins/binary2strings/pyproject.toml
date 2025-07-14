@@ -9,16 +9,15 @@ authors = [
 ]
 description = "Surfactant File String Extractor"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["surfactant"]
-license = {text = "MIT License"}
+license = "MIT"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Environment :: Console",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
-    "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
     "binary2strings",
