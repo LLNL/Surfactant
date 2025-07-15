@@ -5,27 +5,28 @@
 # import struct
 # from pathlib import Path
 # from queue import Queue                       # Present for use in future extraction implementation
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import rpmfile
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
+
 # from surfactant.context import ContextEntry   # Present for use in future extraction implementation
 
 
 def supports_file(filetype) -> bool:
     logger.debug("Checks for RPM Package")
     return filetype == "RPM Package"
-                
-def get_files(directories: List[bytes], 
-              files: List[bytes], 
-              indicies: List[int], 
-              hashes: List[bytes]) -> Dict[Any, Any]:
+
+
+def get_files(
+    directories: List[bytes], files: List[bytes], indicies: List[int], hashes: List[bytes]
+) -> Dict[Any, Any]:
     """
     Extracts files from the given directories and files list
-    
+
     :param directories: List of directory paths in bytes
     :param files: List of file names in bytes
     :param indicies: Directory associated with current file
@@ -39,10 +40,11 @@ def get_files(directories: List[bytes],
         extracted_files[f"{directory}{file_name}"] = file_hash
     return extracted_files
 
+
 def combine_lists(name_info: List[bytes], version_info: List[bytes]) -> Dict:
     """
     Takes given lists and combines the associated data in each into a dictionary
-    
+
     :param name_info: List of name bytes
     :param version_info: List of version bytes
     :return: Dictionary with name and version
@@ -55,8 +57,6 @@ def combine_lists(name_info: List[bytes], version_info: List[bytes]) -> Dict:
         version = version_info[index].decode()
         result[name] = version
     return result
-        
-
 
 
 @surfactant.plugin.hookimpl
@@ -72,7 +72,7 @@ def extract_file_info(
     if not supports_file(filetype):
         return None
     rpm_info = extract_rpm_info(filename)
-    
+
     if "name" in rpm_info["rpm"]:
         software_field_hints.append(("name", rpm_info["rpm"]["name"], 80))
     if "version" in rpm_info["rpm"]:
@@ -86,10 +86,11 @@ def extract_file_info(
         software_field_hints.append((key, rpm_info["rpm"][key], 80))
     return rpm_info
 
+
 def extract_rpm_info(filename: str) -> Dict[str, Any]:
     """
     Extracts fields from the header of an RPM Package
-    
+
     :param filename: Path to file to extract information from
     """
     file_details: Dict[str, Any] = {}
@@ -114,7 +115,7 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             "archive_compression",
             "optflags",
             "sha256",
-            "md5"
+            "md5",
         ]
         for key in easy_keys:
             if key in header:
@@ -128,7 +129,7 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             "suggestname": "suggestversion",
             "recommendname": "recommendversion",
             "supplementname": "supplementversion",
-            "provides": "provideversion"
+            "provides": "provideversion",
         }
         for key in medium_keys:
             if key in header:
@@ -137,10 +138,6 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             file_details["rpm"]["buildtime"] = header["buildtime"]
         if "basenames" in header:
             file_details["rpm"]["associated_files"] = get_files(
-                header["dirnames"],
-                header["basenames"],
-                header["dirindexes"],
-                header["filemd5s"]
+                header["dirnames"], header["basenames"], header["dirindexes"], header["filemd5s"]
             )
         return file_details
-

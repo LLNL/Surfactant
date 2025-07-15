@@ -28,8 +28,8 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         native_lib_file,
         ole_file,
         pe_file,
-        uimage_file,
         rpm_file,
+        uimage_file,
     )
     from surfactant.input_readers import cytrics_reader
     from surfactant.output import (
