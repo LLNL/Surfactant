@@ -39,6 +39,25 @@ def get_files(directories: List[bytes],
         extracted_files[f"{directory}{file_name}"] = file_hash
     return extracted_files
 
+def combine_lists(name_info: List[bytes], version_info: List[bytes]) -> Dict:
+    """
+    Takes given lists and combines the associated data in each into a dictionary
+    
+    :param name_info: List of name bytes
+    :param version_info: List of version bytes
+    :return: Dictionary with name and version
+    """
+    result = {}
+    if not name_info or not version_info or len(name_info) != len(version_info):
+        return result
+    for index in range(len(name_info)):
+        name = name_info[index].decode()
+        version = version_info[index].decode()
+        result[name] = version
+    return result
+        
+
+
 
 @surfactant.plugin.hookimpl
 def extract_file_info(
@@ -101,6 +120,19 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             if key in header:
                 file_details["rpm"][key] = header[key].decode()
         # Handle sections that aren't simple strings
+        medium_keys = {
+            "requirename": "requireversion",
+            "conflict": "conflictversion",
+            "obsoletes": "obsoleteversion",
+            "enhancename": "enhanceversion",
+            "suggestname": "suggestversion",
+            "recommendname": "recommendversion",
+            "supplementname": "supplementversion",
+            "provides": "provideversion"
+        }
+        for key in medium_keys:
+            if key in header:
+                file_details["rpm"][key] = combine_lists(header[key], header[medium_keys[key]])
         if "buildtime" in header:
             file_details["rpm"]["buildtime"] = header["buildtime"]
         if "basenames" in header:
@@ -110,13 +142,5 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
                 header["dirindexes"],
                 header["filemd5s"]
             )
-        if "requirename" in header:
-            file_details["rpm"]["requirename"] = []
-            for item in header["requirename"]:
-                file_details["rpm"]["requirename"].append(item.decode())
-        if "provides" in header:
-            file_details["rpm"]["provides"] = []
-            for item in header["provides"]:
-                file_details["rpm"]["provides"].append(item.decode())
         return file_details
 
