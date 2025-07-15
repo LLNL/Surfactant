@@ -52,36 +52,36 @@ def generate_dependency_graph(
     enableCulling: bool = False,
     edgeType: EdgeType = EdgeType.FileRelationship,
 ) -> networkx.graph:
-    g = networkx.MultiDiGraph()
+    g = sbomDict["sbom"].graph
 
-    sbom = sbomDict["sbom"]
-    for i in sbom.software:
-        fileName = (i.fileName or [i.UUID])[0]
+    # Add attributes to nodes
+    for nodeID, attrib in g.nodes(data=True):
+        entry = next((e for e in sbomDict["sbom"].software if e.UUID == nodeID), None)
+        if entry is None:
+            logger.error("Malformed SBOM, can't find Software entry with UUID: {nodeID}")
+            sys.exit(-1)
+
+        fileName = (entry.fileName or [entry.UUID])[0]
         metadata = NodeMetadata(
             nodeFileName=fileName,  # Label and file name can differ
             SBOMFileName=sbomDict["sbomFileName"],
         )
-        g.add_node(
-            i.UUID,
-            label=fileName,
-            surfactantSoftwareStruct=dataclasses.asdict(i),
-            nodeMetadata=dataclasses.asdict(metadata),
-        )
 
-    if edgeType == EdgeType.FileRelationship:
-        for i in sbom.relationships:
-            if i.relationship == "Uses":
-                g.add_edge(i.yUUID, i.xUUID, container=False)
+        attrib["label"] = fileName
+        attrib["surfactantSoftwareStruct"] = dataclasses.asdict(entry)
+        attrib["nodeMetadata"] = dataclasses.asdict(metadata)
 
-            elif i.relationship == "Contains":
-                g.add_edge(i.xUUID, i.yUUID, container=True, dashes=True)
-                g.nodes[i.xUUID]["nodeMetadata"]["type"] = NodeType.Container
+    # Add attributes to edges
+    for u, _, key, attrib in g.edges(keys=True, data=True):
+        isContainer = key == "Contains"
 
-            else:
-                logger.warning(f"Unimplemented relationship: {i.relationship}")
+        if isContainer:
+            attrib["dashes"] = True
+            g.nodes[u]["nodeMetadata"]["type"] = NodeType.Container
 
-    elif edgeType == EdgeType.MetadataSimilarity:
-        pass
+        attrib["container"] = isContainer
+
+    g = g.reverse()  # Pyvis expects an inverted layout (edges inadvertently swap direction)
 
     if enableCulling:
         g.remove_nodes_from(list(networkx.isolates(g)))  # Cull nodes with no edges
@@ -128,7 +128,7 @@ def generate_pyvis_graph(
 
     if graph.number_of_nodes() > 600 and use_progress_bar:
         logger.info(
-            f"Large graph detected. Disabling physics to speed up loading time, this can be re-enabled by using the toggle on the left side of the page. Disable this behavior by re-running {__file__} with -pb/--use-progress-bar"
+            f"Large graph detected. Disabling physics to speed up loading time, this can be re-enabled by using the toggle on the left side of the page. Disable this behavior by re-running {Path(__file__).name} with -pb/--use-progress-bar"
         )
         pv.toggle_physics(False)
 
