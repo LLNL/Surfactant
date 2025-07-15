@@ -33,11 +33,13 @@ def get_files(
     :return: List of extracted file paths
     """
     extracted_files = {}
-    for i in range(len(indicies)):
-        directory = directories[indicies[i]].decode()
-        file_name = files[i].decode()
-        file_hash = hashes[i].decode()
+    index = 0
+    while index < len(indicies):
+        directory = directories[indicies[index]].decode()
+        file_name = files[index].decode()
+        file_hash = hashes[index].decode()
         extracted_files[f"{directory}{file_name}"] = file_hash
+        index += 1
     return extracted_files
 
 
@@ -52,10 +54,12 @@ def combine_lists(name_info: List[bytes], version_info: List[bytes]) -> Dict:
     result = {}
     if not name_info or not version_info or len(name_info) != len(version_info):
         return result
-    for index in range(len(name_info)):
+    index = 0
+    while index < len(name_info):
         name = name_info[index].decode()
         version = version_info[index].decode()
         result[name] = version
+        index += 1
     return result
 
 
@@ -131,9 +135,9 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             "supplementname": "supplementversion",
             "provides": "provideversion",
         }
-        for key in medium_keys:
+        for key, value in medium_keys.items():
             if key in header:
-                file_details["rpm"][key] = combine_lists(header[key], header[medium_keys[key]])
+                file_details["rpm"][key] = combine_lists(header[key], header[value])
         if "buildtime" in header:
             file_details["rpm"]["buildtime"] = header["buildtime"]
         if "basenames" in header:
