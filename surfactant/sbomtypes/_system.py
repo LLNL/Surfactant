@@ -23,7 +23,7 @@ class System:
     officialName: Optional[str] = None
     vendor: Optional[List[str]] = None
     description: Optional[str] = None
-    provenance: Optional[List[SystemProvenance]] = None
+    provenance: List[SystemProvenance] = field(default_factory=list)
 
     def merge(self, sy: System):
         if sy and self != sy:

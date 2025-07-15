@@ -252,6 +252,11 @@ def identify_file_type(filepath: str) -> Optional[str]:
             if magic_bytes[:4] == b"\xed\xab\xee\xdb":
                 return "RPM Package"
 
+            # rpm:
+            # https://rpm-software-management.github.io/rpm/manual/
+            if magic_bytes[:4] == b"\xed\xab\xee\xdb":
+                return "RPM Package"
+
             return None
     except FileNotFoundError:
         return None
