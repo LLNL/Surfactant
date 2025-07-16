@@ -34,11 +34,13 @@ from surfactant.utils import exit_hook
 EXTRACT_DIRS = {}
 EXTRACT_DIRS_PATH = pathlib.Path(tempfile.gettempdir()) / ".surfactant_extracted_dirs.json"
 
-HAS_RAR_SUPPORT = False
+RAR_SUPPORT = {"enabled": False}
 
 
 def supports_file(filetype: str) -> Optional[str]:
-    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"} or (filetype == "RAR" and HAS_RAR_SUPPORT):
+    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"} or (
+        filetype == "RAR" and RAR_SUPPORT["enabled"]
+    ):
         return filetype
     return None
 
@@ -296,20 +298,15 @@ def delete_temp_dirs():
                 logger.info(f"Cleaned up temporary directory: {temp_dir}")
             del EXTRACT_DIRS[key]
 
-
-@surfactant.plugin.hookimpl
-def init_hook(command_name: Optional[str] = None) -> None:
-    setup_extracted_dirs()
-
-    global HAS_RAR_SUPPORT
-    HAS_RAR_SUPPORT = False
-
+def setup_rar_support():
+    RAR_SUPPORT["enabled"] = False
+    
     should_enable_rar = ConfigManager().get("rar", "enabled", True)
     if should_enable_rar:
         try:
             result = rarfile.tool_setup()
             if result.setup["open_cmd"][0] in ("UNRAR_TOOL", "UNAR_TOOL"):
-                HAS_RAR_SUPPORT = True
+                RAR_SUPPORT["enabled"] = True
                 return
         except rarfile.RarCannotExec:
             pass
@@ -318,7 +315,14 @@ def init_hook(command_name: Optional[str] = None) -> None:
         )
 
 
+@surfactant.plugin.hookimpl
+def init_hook(command_name: Optional[str] = None):
+    """Initialize the file decompression plugin."""
+    setup_extracted_dirs()
+    setup_rar_support()
+        
 @atexit.register
 def cleanup_hook():
+    """Clean up temporary directories and store extraction cache on exit."""
     delete_temp_dirs()
     store_extracted_dirs()
