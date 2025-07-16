@@ -1,5 +1,5 @@
 import sys
-from typing import Callable, Any, Optional
+from typing import Any, Callable, Optional
 
 
 # https://stackoverflow.com/a/9741784

@@ -298,9 +298,10 @@ def delete_temp_dirs():
                 logger.info(f"Cleaned up temporary directory: {temp_dir}")
             del EXTRACT_DIRS[key]
 
+
 def setup_rar_support():
     RAR_SUPPORT["enabled"] = False
-    
+
     should_enable_rar = ConfigManager().get("rar", "enabled", True)
     if should_enable_rar:
         try:
@@ -320,7 +321,8 @@ def init_hook(command_name: Optional[str] = None):
     """Initialize the file decompression plugin."""
     setup_extracted_dirs()
     setup_rar_support()
-        
+
+
 @atexit.register
 def cleanup_hook():
     """Clean up temporary directories and store extraction cache on exit."""
