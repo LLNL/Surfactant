@@ -101,7 +101,7 @@ def create_extraction(
         # Inherit the context entry install prefix for the extracted files
         install_prefix = current_context.installPrefix
 
-    if software.sha256 in EXTRACT_DIRS and EXTRACT_DIRS[software.sha256]['result']:
+    if software.sha256 in EXTRACT_DIRS and EXTRACT_DIRS[software.sha256]['result'] and os.path.exists(EXTRACT_DIRS[software.sha256]['path']):
         entries = EXTRACT_DIRS[software.sha256]['result']
         logger.info(
             f"Using cached extraction entries for {filename}"
