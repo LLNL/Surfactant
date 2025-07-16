@@ -1,5 +1,5 @@
-
 import sys
+
 
 # https://stackoverflow.com/a/9741784
 class ExitHooks:
@@ -18,15 +18,19 @@ class ExitHooks:
 
     def exc_handler(self, exc_type, exc, *args):
         self.exception = exc
-        
+
+
 _HOOKS = ExitHooks()
 _HOOKS.hook()
+
 
 def get_exit_code():
     return _HOOKS.exit_code
 
+
 def get_exception():
     return _HOOKS.exception
+
 
 def has_exited_gracefully():
     """

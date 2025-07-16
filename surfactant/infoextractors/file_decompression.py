@@ -14,7 +14,6 @@ import lzma
 import os
 import pathlib
 import shutil
-import sys
 import tarfile
 import tempfile
 import zipfile
@@ -39,9 +38,7 @@ HAS_RAR_SUPPORT = False
 
 
 def supports_file(filetype: str) -> Optional[str]:
-    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"} or (
-        filetype == "RAR" and HAS_RAR_SUPPORT
-    ):
+    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"} or (filetype == "RAR" and HAS_RAR_SUPPORT):
         return filetype
     return None
 
@@ -101,16 +98,18 @@ def create_extraction(
         # Inherit the context entry install prefix for the extracted files
         install_prefix = current_context.installPrefix
 
-    if software.sha256 in EXTRACT_DIRS and EXTRACT_DIRS[software.sha256]['result'] and os.path.exists(EXTRACT_DIRS[software.sha256]['path']):
-        entries = EXTRACT_DIRS[software.sha256]['result']
-        logger.info(
-            f"Using cached extraction entries for {filename}"
-        )
+    if (
+        software.sha256 in EXTRACT_DIRS
+        and EXTRACT_DIRS[software.sha256]["result"]
+        and os.path.exists(EXTRACT_DIRS[software.sha256]["path"])
+    ):
+        entries = EXTRACT_DIRS[software.sha256]["result"]
+        logger.info(f"Using cached extraction entries for {filename}")
     else:
         # Create a temporary directory for extraction
         temp_folder = create_temp_dir()
-        EXTRACT_DIRS[software.sha256] = {'path': temp_folder, 'result': None}
-        
+        EXTRACT_DIRS[software.sha256] = {"path": temp_folder, "result": None}
+
         # Decompress the file
         entries = decompress(filename, temp_folder)
 
@@ -122,9 +121,9 @@ def create_extraction(
         if not entries:
             logger.error(f"Failed to decompress {filename}. No entries created.")
             return
-        
+
         # Store the result in the global EXTRACT_DIRS
-        EXTRACT_DIRS[software.sha256]['result'] = entries
+        EXTRACT_DIRS[software.sha256]["result"] = entries
 
     for entry_prefix, extract_path in entries:
         # Merges our install prefix with the entry's install prefix (where applicable)
@@ -262,7 +261,8 @@ def setup_extracted_dirs():
             GLOBAL_EXTRACT_DIRS = {}
     else:
         GLOBAL_EXTRACT_DIRS = {}
-        
+
+
 def store_extracted_dirs():
     """Store the current extracted directories to a JSON file."""
     should_cache_extractions = ConfigManager().get("decompression", "cache_extractions", True)
@@ -281,26 +281,29 @@ def create_temp_dir():
 def delete_temp_dirs():
     exited_gracefully = exit_hook.has_exited_gracefully()
     should_cache_extractions = ConfigManager().get("decompression", "cache_extractions", True)
-    should_persist_extractions = should_cache_extractions and ConfigManager().get("decompression", "persist_extractions", False)
+    should_persist_extractions = should_cache_extractions and ConfigManager().get(
+        "decompression", "persist_extractions", False
+    )
     keys = list(EXTRACT_DIRS.keys())
     for key in keys:
         # Extraction was in progress or failed; we have no reason to keep it
-        extraction_failed = not EXTRACT_DIRS[key]['result']
+        extraction_failed = not EXTRACT_DIRS[key]["result"]
         should_delete = extraction_failed or (not should_persist_extractions and exited_gracefully)
         if not should_cache_extractions or should_delete:
-            temp_dir = EXTRACT_DIRS[key]['path']
+            temp_dir = EXTRACT_DIRS[key]["path"]
             if temp_dir and os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
                 logger.info(f"Cleaned up temporary directory: {temp_dir}")
             del EXTRACT_DIRS[key]
 
+
 @surfactant.plugin.hookimpl
 def init_hook(command_name: Optional[str] = None) -> None:
     setup_extracted_dirs()
-    
+
     global HAS_RAR_SUPPORT
     HAS_RAR_SUPPORT = False
-    
+
     should_enable_rar = ConfigManager().get("rar", "enabled", True)
     if should_enable_rar:
         try:
@@ -313,7 +316,8 @@ def init_hook(command_name: Optional[str] = None) -> None:
         logger.warning(
             "Install 'Unrar' or 'unar' tool for RAR archive decompression. RAR decompression disabled until installed."
         )
-        
+
+
 @atexit.register
 def cleanup_hook():
     delete_temp_dirs()
