@@ -9,7 +9,7 @@ import string
 import sys
 import uuid
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 import spdx_tools.spdx.writer.json.json_writer as jsonwriter
@@ -42,129 +42,113 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         sbom (SBOM): The SBOM to write to the output file.
         outfile: The output file handle to write the SBOM to.
     """
-    # NOTE eventually outformat and many fields in SPDX document should be user settable (namespace, name)
     outformat = "json"
-
     spdx_doc = create_spdx_doc()
 
-    # NOTE CyTRICS SBOM format lumps all file names/container paths together into a single list; preserving
-    # a semblance of a file tree with nested filesystem/archive information would help some for establishing
-    # SPDX Relationships -- though in general SBOM format conversion isn't straightforward or lossless
-
-    # Create a map of UUIDs to SPDX IDs, for defining SPDX Relationships later
+    # Build UUID → SPDX ID map
     uuid_to_spdxid: Dict[str, List[str]] = {}
 
-    # Add SPDX packages for systems
+    # Add system packages
     for system in sbom.systems:
         system_uuid, pkg = convert_system_to_spdx_package(system)
-        spdx_doc.packages = spdx_doc.packages + [pkg]
-        if system_uuid not in uuid_to_spdxid:
-            uuid_to_spdxid[system_uuid] = []
-        uuid_to_spdxid[system_uuid].append(pkg.spdx_id)
+        spdx_doc.packages.append(pkg)
+        uuid_to_spdxid.setdefault(system_uuid, []).append(pkg.spdx_id)
 
-    # Create a map of SPDX IDs for Files that map directly to a known container UUID
-    # this gets used to avoid creating excessive relationships if a file is present
-    # due to being found within multiple different containers
-    container_path_relationships: Dict[Tuple[str, str]] = {}
+    # Track container paths for files
+    container_path_relationships: Dict[str, str] = {}
 
+    # Add software as packages or files
     for software in sbom.software:
-        # Add software entries that contain others as SPDX Packages
-        # anything containing other files can be a SPDX Package (directory, container, tarball, zip, etc)
-        # some could also be represented as a SPDX File
-        if sbom.has_relationship(xUUID=software.UUID, relationship="Contains"):
+        if sbom.get_children(software.UUID, rel_type="Contains"):
             software_uuid, pkgs = convert_software_to_spdx_packages(software)
             for pkg in pkgs:
-                spdx_doc.packages = spdx_doc.packages + [pkg]
-                if software_uuid not in uuid_to_spdxid:
-                    uuid_to_spdxid[software_uuid] = []
-                uuid_to_spdxid[software_uuid].append(pkg.spdx_id)
-        # Add all other software entries as SPDX Files
+                spdx_doc.packages.append(pkg)
+                uuid_to_spdxid.setdefault(software_uuid, []).append(pkg.spdx_id)
         else:
             for parent_uuid, software_uuid, file in convert_software_to_spdx_files(software):
-                spdx_doc.files = spdx_doc.files + [file]
+                spdx_doc.files.append(file)
                 if parent_uuid:
                     container_path_relationships[file.spdx_id] = parent_uuid
                 if software_uuid:
-                    if software_uuid not in uuid_to_spdxid:
-                        uuid_to_spdxid[software_uuid] = []
-                    uuid_to_spdxid[software_uuid].append(file.spdx_id)
+                    uuid_to_spdxid.setdefault(software_uuid, []).append(file.spdx_id)
 
-    # Add describes relationship between SPDX Document and Packages
-    for pkg in spdx_doc.packages:
-        spdx_rel = Relationship(
-            spdx_element_id=spdx_doc.creation_info.spdx_id,
-            relationship_type=RelationshipType.DESCRIBES,
-            related_spdx_element_id=pkg.spdx_id,
+    # Document DESCRIBES relationships
+    if spdx_doc.packages:
+        for pkg in spdx_doc.packages:
+            spdx_doc.relationships.append(
+                Relationship(
+                    spdx_element_id=spdx_doc.creation_info.spdx_id,
+                    relationship_type=RelationshipType.DESCRIBES,
+                    related_spdx_element_id=pkg.spdx_id,
+                )
+            )
+    else:
+        spdx_doc.relationships.append(
+            Relationship(
+                spdx_element_id=spdx_doc.creation_info.spdx_id,
+                relationship_type=RelationshipType.DESCRIBES,
+                related_spdx_element_id=SpdxNoAssertion(),
+            )
         )
-        spdx_doc.relationships = spdx_doc.relationships + [spdx_rel]
 
-    # No packages, don't make any assertions about what the SPDX Document describes
-    if not spdx_doc.relationships:
-        spdx_rel = Relationship(
-            spdx_element_id=spdx_doc.creation_info.spdx_id,
-            relationship_type=RelationshipType.DESCRIBES,
-            related_spdx_element_id=SpdxNoAssertion(),
-        )
-        spdx_doc.relationships = spdx_doc.relationships + [spdx_rel]
+    # Iterate with keys=True to get each distinct relationship key
+    for parent_uuid, child_uuid, rel_type in sbom.graph.edges(keys=True):
+        rel_type = rel_type.upper()
 
-    # Convert relationships into SPDX Relationships
-    for rel in sbom.relationships:
-        if (rel.xUUID in uuid_to_spdxid) and (rel.yUUID in uuid_to_spdxid):
-            # UUID to SPDX ID is (potentially) one-to-many mapping
-            for x_spdxid in uuid_to_spdxid[rel.xUUID]:
-                for y_spdxid in uuid_to_spdxid[rel.yUUID]:
-                    rel_type = rel.relationship.upper()  # Contains will map to SPDX "CONTAINS"
+        # skip duplicate CONTAINS for container-path dedupe
+        if (
+            rel_type == "CONTAINS"
+            and child_uuid in container_path_relationships
+            and parent_uuid != container_path_relationships[child_uuid]
+        ):
+            continue
 
-                    # Minimize duplicate contains relationships for files with multiple container paths
-                    if (
-                        (rel_type == "CONTAINS")
-                        and (y_spdxid in container_path_relationships)
-                        and (rel.xUUID != container_path_relationships[y_spdxid])
-                    ):
-                        continue
+        if parent_uuid not in uuid_to_spdxid or child_uuid not in uuid_to_spdxid:
+            continue
 
-                    rel_comment = None  # Default value is None
-                    try:
-                        # Check if rel_type is defined by SPDX; otherwise throws KeyError
-                        RelationshipType[rel_type]
-                    except KeyError:
-                        # Use type "OTHER" and a comment if SPDX doesn't define the relationship type
-                        rel_comment = f"Type: {rel_type}"
-                        rel_type = "OTHER"
-                    spdx_rel = Relationship(
+        for x_spdxid in uuid_to_spdxid[parent_uuid]:
+            for y_spdxid in uuid_to_spdxid[child_uuid]:
+                comment = None
+                try:
+                    rel_enum = RelationshipType[rel_type]
+                except KeyError:
+                    comment = f"Type: {rel_type}"
+                    rel_enum = RelationshipType.OTHER
+
+                spdx_doc.relationships.append(
+                    Relationship(
                         spdx_element_id=x_spdxid,
-                        relationship_type=RelationshipType[rel_type],
+                        relationship_type=rel_enum,
                         related_spdx_element_id=y_spdxid,
-                        comment=rel_comment,
+                        comment=comment,
                     )
-                    spdx_doc.relationships = spdx_doc.relationships + [spdx_rel]
+                )
 
-    # Add package verification codes
+    # Compute package verification codes
     for pkg in spdx_doc.packages:
-        files = []
-        for file in spdx_doc.files:
-            pkg_contains_relationships = {
-                relationship.related_spdx_element
-                for relationship in spdx_doc.relationships
-                if relationship.relationship_type == "CONTAINS"
-                and relationship.spdx_element_id == pkg.spdx_id
-            }
-            pkg_contained_by_relationships = {
-                relationship.spdx_element_id
-                for relationship in spdx_doc.relationships
-                if relationship.relationship_type == "CONTAINED_BY"
-                and relationship.related_spdx_element == pkg.spdx_id
-            }
-            if file.spdx_id in pkg_contains_relationships | pkg_contained_by_relationships:
-                files.append(file)
-        pkg.verification_code = calculate_package_verification_code(files)
+        # gather files that pkg contains or is contained by
+        related_ids = {
+            rel.related_spdx_element_id
+            for rel in spdx_doc.relationships
+            if rel.relationship_type == RelationshipType.CONTAINS
+            and rel.spdx_element_id == pkg.spdx_id
+        } | {
+            rel.spdx_element_id
+            for rel in spdx_doc.relationships
+            if rel.relationship_type == RelationshipType.CONTAINED_BY
+            and rel.related_spdx_element_id == pkg.spdx_id
+        }
 
+        files_for_verification = [f for f in spdx_doc.files if f.spdx_id in related_ids]
+        pkg.verification_code = calculate_package_verification_code(files_for_verification)
+
+    # Write out
     if outformat == "json":
         try:
             jsonwriter.write_document_to_stream(spdx_doc, outfile)
         except ValueError as e:
             sys.stderr.write(str(e))
-    elif outformat == "tagvalue":
+    else:  # tagvalue
         try:
             tvwriter.write_document_to_stream(spdx_doc, outfile)
         except ValueError as e:
@@ -300,7 +284,7 @@ def create_spdx_doc() -> Document:
         creators=[
             Actor(name=f"Surfactant-{surfactant_version}", actor_type=ActorType.TOOL)
         ],  # Organization or Person can also be added as creators (may use "anonymous")
-        created=datetime.utcnow().replace(microsecond=0),
+        created=datetime.now(timezone.utc).replace(microsecond=0),
         creator_comment="This SPDX document was created by using Surfactant.",
         document_comment="This is a DRAFT SPDX document, and is incomplete.",
     )

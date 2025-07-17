@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Surfactant Imported Function Extractor"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["surfactant"]
 license = {text = "MIT License"}
 classifiers = [

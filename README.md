@@ -36,7 +36,7 @@ For ease of use, we recommend using [pipx](https://github.com/pypa/pipx) since i
 pipx install surfactant
 ```
 
-> Note: Mach-O file support requires installing Surfactant with the `macho` optional dependencies (e.g. `pipx install surfactant[macho]`).
+> Note: Mach-O file support requires installing Surfactant with the `macho` optional dependencies, and Java file support requires installing with the `java` optional dependencies (e.g. `pipx install surfactant[macho,java]`).
 
 2. Install plugins using `pipx inject surfactant`. As an example, this is how the fuzzy hashing plugin could be installed from a git repository (PyPI package names, local source directories, or wheel files can also be used).
 
@@ -162,7 +162,7 @@ recorded_institution = "LLNL"
 
 ### Identify sample file
 
-In order to test out surfactant, you will need a sample file/folder. If you don't have one on hand, you can download and use the portable .zip file from <https://github.com/ShareX/ShareX/releases> or the Linux .tar.gz file from <https://github.com/GMLC-TDC/HELICS/releases>. Alternatively, you can pick a sample from https://lc.llnl.gov/gitlab/cir-software-assurance/unpacker-to-sbom-test-files
+In order to test out surfactant, you will need a sample file/folder. If you don't have one on hand, you can download and use the portable .zip file from <https://github.com/ShareX/ShareX/releases> or the Linux .tar.gz file from <https://github.com/GMLC-TDC/HELICS/releases>.
 
 ### Build configuration file for sample
 

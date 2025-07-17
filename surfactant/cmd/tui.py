@@ -384,7 +384,7 @@ class ConfigTab(textual.widgets.Static):
                 write_to["archive"] = archive
             install_prefix = entry.install_prefix.value
             if len(install_prefix) > 0:
-                write_to["install_prefix"] = install_prefix
+                write_to["installPrefix"] = install_prefix
             write_to["extractPaths"] = []
             for path in entry.extract_paths.input_paths:
                 if path.active:
