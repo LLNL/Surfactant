@@ -409,9 +409,7 @@ def sbom(
                     for sw in entries:
                         # Filename symlinks
                         for link in filename_symlinks.get(sw.sha256, []):
-                            logger.debug(
-                                f"Injecting filename symlink '{link}' for SHA {sw.sha256}"
-                            )
+                            logger.debug(f"Injecting filename symlink '{link}' for SHA {sw.sha256}")
                             sw.fileName.append(link)
                         # Install-path symlinks
                         for link in file_symlinks.get(sw.sha256, []):
@@ -541,9 +539,7 @@ def sbom(
                     for sw in entries:
                         # Filename symlinks
                         for link in filename_symlinks.get(sw.sha256, []):
-                            logger.debug(
-                                f"Injecting filename symlink '{link}' for SHA {sw.sha256}"
-                            )
+                            logger.debug(f"Injecting filename symlink '{link}' for SHA {sw.sha256}")
                             sw.fileName.append(link)
                         # Install-path symlinks
                         for link in file_symlinks.get(sw.sha256, []):
@@ -620,6 +616,7 @@ def sbom(
 
     # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
     output_writer.write_sbom(new_sbom, sbom_outfile)
+
 
 def resolve_link(
     path: str, cur_dir: str, extract_dir: str, install_prefix: Optional[str] = None

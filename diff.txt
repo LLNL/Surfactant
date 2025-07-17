@@ -26,7 +26,7 @@ index 064c368..872dbc8 100644
                      # epath was a file, no need to walk the directory tree
                      continue
 @@ -519,6 +535,22 @@ def sbom(
- 
+
                                  entries.append(sw_parent)
                                  entries.extend(sw_children if sw_children else [])
 +                    # ------------------------------------------------------------------------
@@ -46,12 +46,12 @@ index 064c368..872dbc8 100644
 +                            )
 +                            sw.installPath.append(link)
                      new_sbom.add_software_entries(entries, parent_entry=parent_entry)
- 
+
          # Add symlinks to install paths and file names
 @@ -589,7 +621,6 @@ def sbom(
      # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
      output_writer.write_sbom(new_sbom, sbom_outfile)
- 
+
 -
  def resolve_link(
      path: str, cur_dir: str, extract_dir: str, install_prefix: Optional[str] = None
@@ -70,14 +70,14 @@ index 4082732..08bf5b5 100644
 @@ -9,8 +9,6 @@ from typing import List, Optional
  import surfactant.plugin
  from surfactant.sbomtypes import SBOM, Relationship, Software
- 
+
 -from ._internal.windows_utils import find_installed_software
 -
- 
+
  def has_required_fields(metadata) -> bool:
      # dotnetAssemblyRef must present, otherwise we have no info on .NET imports
 @@ -26,9 +24,11 @@ def establish_relationships(
- 
+
      relationships: List[Relationship] = []
      dependent_uuid = software.UUID
 +
@@ -91,7 +91,7 @@ index 4082732..08bf5b5 100644
 @@ -38,16 +38,11 @@ def establish_relationships(
          if "Version" in dnAssembly:
              dnVersion = dnAssembly["Version"]
- 
+
 -    # get additional probing paths if they exist
 +    # Extract probing and dependent assembly info from appConfig if present
      dnProbingPaths = None
@@ -105,22 +105,22 @@ index 4082732..08bf5b5 100644
 -        windowsManifest = metadata["manifestFile"]
 +    windowsAppConfig = metadata.get("appConfigFile")
 +    windowsManifest = metadata.get("manifestFile")  # Currently unused
- 
+
      if windowsAppConfig:
          if "runtime" in windowsAppConfig:
 @@ -80,28 +75,39 @@ def establish_relationships(
      # 4. Run default unmanaged library probing logic by parsing *.deps.json probing properties
      #    - a. If the json file isn't present, assume the calling assembly's directory contains the library
      #    - b. https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing#unmanaged-native-library-probing
-+    
-+    
++
++
 +    # Handle unmanaged dependencies declared via [DllImport] or P/Invoke
      if "dotnetImplMap" in metadata:
          for asmRef in metadata["dotnetImplMap"]:
              if "Name" not in asmRef:
                  continue
              refName = asmRef["Name"]
- 
+
 -            # Check absolute path against entries in software
 +            # Absolute path: resolve directly using fs_tree
              if is_absolute_path(refName):
@@ -138,7 +138,7 @@ index 4082732..08bf5b5 100644
 +                if match:
 +                    relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
                  continue
- 
+
 +                # for e in sbom.software:
 +                #     if e.installPath is None:
 +                #         continue
@@ -179,7 +179,7 @@ index 4082732..08bf5b5 100644
 +            # for e in find_installed_software(sbom, probedirs, combinations):
 +            #     dependency_uuid = e.UUID
 +            #     relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
- 
+
      # https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies
      # 1. Determine correct assembly version using configuration files (binding redirects, code location, etc)
 @@ -134,63 +148,60 @@ def establish_relationships(
@@ -204,7 +204,7 @@ index 4082732..08bf5b5 100644
 +            if not refName:
 +                continue # no name means we have no assembly to search for
 +
- 
+
              # check if codeBase element exists for this assembly in appconfig
 -            if dnDependentAssemblies is not None:
 +            # Resolve from <codeBase href="..."> entries in app config
@@ -246,7 +246,7 @@ index 4082732..08bf5b5 100644
 -                                            )
 +                    if "codeBase" in depAsm and "href" in depAsm["codeBase"]:
 +                        href = depAsm["codeBase"]["href"]
-+                        
++
 +                        # strong named assembly can be anywhere on intranet or Internet
 +                        # Skip external URLs we cannot resolve locally
 +                        if (
@@ -265,7 +265,7 @@ index 4082732..08bf5b5 100644
 +                                match = sbom.get_software_by_path(cb_fullpath)
 +                                if match:
 +                                    relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
- 
+
              # continue on to probing even if codebase element was found, since we can't guarantee the assembly identity required by the codebase element
              # get the list of paths to probe based on locations software is installed, assembly culture, assembly name, and probing paths from appconfig file
 -            probedirs = get_dotnet_probedirs(software, refCulture, refName, dnProbingPaths)
@@ -287,10 +287,10 @@ index 4082732..08bf5b5 100644
 +                if match:
 +                    relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
                  # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
-+                
++
      return relationships
- 
- 
+
+
 @@ -211,7 +222,7 @@ def get_dotnet_probedirs(software: Software, refCulture, refName, dnProbingPaths
                  # [application base] / [assembly name] / [assembly name].dll
                  probedirs.append(pathlib.PureWindowsPath(install_basepath).as_posix())
@@ -318,13 +318,13 @@ index 5563574..b1b7f84 100644
  from collections.abc import Iterable
  from typing import List, Optional
 +from loguru import logger
- 
+
  import surfactant.plugin
  from surfactant.sbomtypes import SBOM, Relationship, Software
 -
  from ._internal.posix_utils import posix_normpath
- 
- 
+
+
 @@ -42,157 +42,277 @@ def has_required_fields(metadata) -> bool:
  def establish_relationships(
      sbom: SBOM, software: Software, metadata
@@ -350,7 +350,7 @@ index 5563574..b1b7f84 100644
 +    """
      if not has_required_fields(metadata):
          return None
- 
+
      relationships: List[Relationship] = []
      dependent_uuid = software.UUID
      default_search_paths = generate_search_paths(software, metadata)
@@ -462,8 +462,8 @@ index 5563574..b1b7f84 100644
 +
 +    logger.debug(f"Final relationships emitted: {relationships}")
      return relationships
- 
- 
+
+
  def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
 -    # 1. Search using directories in DT_RPATH if present and no DT_RUNPATH exists (use of DT_RPATH is deprecated)
 -    # 2. Use LD_LIBRARY_PATH environment variable; ignore if suid/sgid binary (nothing to do, we don't have this information w/o running on a live system)
@@ -497,15 +497,15 @@ index 5563574..b1b7f84 100644
 +            pathlib.PurePosixPath(p)
 +            for p in ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
 +        ])
- 
+
 -    return paths
 +    # Ensure all entries are PurePosixPath objects (in case runpaths included strings)
 +    return [
 +        p if isinstance(p, pathlib.PurePosixPath) else pathlib.PurePosixPath(p)
 +        for p in paths
 +    ]
- 
- 
+
+
  def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
 -    # rpath and runpath are lists of strings (just in case an ELF file has several, though that is probably an invalid ELF file)
 -    rp_to_use = []
@@ -564,12 +564,12 @@ index 5563574..b1b7f84 100644
 +    return [pathlib.PurePosixPath(r) for r in results]
 +
 +
- 
- 
+
+
  def replace_dst(origstr, dvar, newval) -> str:
      return origstr.replace("$" + dvar, newval).replace("${" + dvar + "}", newval)
- 
- 
+
+
 +# def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
 +#     # substitute any dynamic string tokens found; may result in multiple strings if different variants are possible
 +#     # replace $ORIGIN, ${ORIGIN}, $LIB, ${LIB}, $PLATFORM, ${PLATFORM} tokens
@@ -707,7 +707,7 @@ index 5563574..b1b7f84 100644
 +        # No way to resolve this reliably (varies by CPU/platform).
 +        # Returning empty disables unresolved PLATFORM paths.
          return []
- 
+
 -    # normalize paths after expanding tokens to avoid portions of the path involving  ../, ./, and // occurrences
 -    pathlist = [posix_normpath(p.as_posix()) for p in pathlist]
 -    return pathlist
@@ -731,12 +731,12 @@ index b96e465..672663a 100644
  from dataclasses import asdict, dataclass, field, fields
 -from typing import Dict, List, Optional, Set
 +from typing import Dict, List, Optional, Set, Tuple
- 
+
  import networkx as nx
  from dataclasses_json import config, dataclass_json
  from loguru import logger
 +import pathlib
- 
+
  from ._analysisdata import AnalysisData
  from ._file import File
 @@ -56,6 +57,11 @@ class SBOM:
@@ -754,7 +754,7 @@ index b96e465..672663a 100644
 @@ -127,10 +133,43 @@ class SBOM:
              k: v for k, v in self.__dataclass_fields__.items() if k not in INTERNAL_FIELDS
          }
- 
+
 -        # Build the NetworkX graph from systems/software and loaded relationships
 -        self.build_graph()
 +        # Build the Relationship graph from systems/software and loaded relationships
@@ -792,7 +792,7 @@ index b96e465..672663a 100644
 +        if node and "software_uuid" in node:
 +            return self._find_software_entry(uuid=node["software_uuid"])
 +        return None
- 
+
 -    def build_graph(self) -> None:
 +    def build_rel_graph(self) -> None:
          """Rebuild the directed graph from systems, software, and any loaded relationships."""
@@ -801,7 +801,7 @@ index b96e465..672663a 100644
 @@ -216,51 +255,162 @@ class SBOM:
          if not self.graph.has_node(sw.UUID):
              self.graph.add_node(sw.UUID, type="Software")
- 
+
 +        self._add_software_to_fs_tree(sw)
 +
 +
@@ -888,7 +888,7 @@ index b96e465..672663a 100644
 +        Add software entries to the SBOM graph, merging duplicates, preserving existing edges,
 +        attaching "Contains" relationships to an optional parent, and recording ANY
 +        file- or directory-level symlinks under each installPath.
- 
+
          Args:
 -            entries (Optional[List[Software]]): A list of Software entries to add to the SBOM.
 -            parent_entry (Optional[Software]): An optional parent software entry to add "Contains" relationships to.
@@ -897,7 +897,7 @@ index b96e465..672663a 100644
          """
          if not entries:
              return
-+        
++
          # if a software entry already exists with a matching file hash, augment the info in the existing entry
 -        for e in entries:
 -            existing = self.find_software(e.sha256)
@@ -928,14 +928,14 @@ index b96e465..672663a 100644
 +                # Redirect *incoming* edges to the kept node
                  for src, _, key, attrs in list(self.graph.in_edges(old_uuid, keys=True, data=True)):
                      self.graph.add_edge(src, kept_uuid, key=key, **attrs)
- 
+
 -                # redirect *outgoing* edges from the old node
 +                # Redirect *outgoing* edges from the old node
                  for _, dst, key, attrs in list(
                      self.graph.out_edges(old_uuid, keys=True, data=True)
                  ):
                      self.graph.add_edge(kept_uuid, dst, key=key, **attrs)
- 
+
 -                # remove the old UUID entirely
 +                # Remove the old UUID entirely
                  if self.graph.has_node(old_uuid):
@@ -943,13 +943,13 @@ index b96e465..672663a 100644
 -                entry_uuid = kept_uuid
 +                node_uuid = kept_uuid
 +
-+            else:                
++            else:
 +                # New software → add node
 +                self.add_software(sw)
 +                node_uuid = sw.UUID
 +                logger.debug(f"Added new software node {node_uuid}")
 +
- 
+
 -            # if a parent/package container was provided, attach a "Contains" edge
 +            # Attach a Contains edge from parent, if any
              if parent_entry:
@@ -981,16 +981,16 @@ index b96e465..672663a 100644
 +                            subtype = "file" if not child.is_dir() else "directory"
 +                            logger.debug(f"Found child symlink: {child} → {real} (subtype={subtype})")
 +                            self._record_symlink(str(child), str(real), subtype=subtype)
- 
+
      # pylint: disable=too-many-arguments
      def create_software(
 @@ -598,6 +748,7 @@ class SBOM:
- 
+
          # Remove fields we never want in JSON
          data.pop("graph", None)
 +        data.pop("fs_tree", None) # Prevent DiGraph from being serialized
          data.pop("_loaded_relationships", None)
- 
+
          # Turn any sets into lists for JSON
 diff --git a/tests/relationships/test_elf_relationship.py b/tests/relationships/test_elf_relationship.py
 new file mode 100644

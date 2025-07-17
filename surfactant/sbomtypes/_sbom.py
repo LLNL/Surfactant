@@ -5,14 +5,14 @@
 from __future__ import annotations
 
 import json
+import pathlib
 import uuid as uuid_module
 from dataclasses import asdict, dataclass, field, fields
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 import networkx as nx
 from dataclasses_json import config, dataclass_json
 from loguru import logger
-import pathlib
 
 from ._analysisdata import AnalysisData
 from ._file import File
@@ -143,7 +143,6 @@ class SBOM:
         for sw in self.software:
             self._add_software_to_fs_tree(sw)
 
-
     def _add_software_to_fs_tree(self, sw):
         if not sw.installPath:
             return
@@ -154,11 +153,10 @@ class SBOM:
 
             for i in range(1, len(parts)):
                 parent = pathlib.PurePosixPath(*parts[:i]).as_posix()
-                child = pathlib.PurePosixPath(*parts[:i+1]).as_posix()
+                child = pathlib.PurePosixPath(*parts[: i + 1]).as_posix()
                 self.fs_tree.add_edge(parent, child)
 
             self.fs_tree.nodes[norm_path]["software_uuid"] = sw.UUID
-
 
     def get_software_by_path(self, path: str):
         """
@@ -257,13 +255,8 @@ class SBOM:
 
         self._add_software_to_fs_tree(sw)
 
-
     def _record_symlink(
-        self,
-        link_path: str,
-        target_path: str,
-        *,
-        subtype: Optional[str] = None
+        self, link_path: str, target_path: str, *, subtype: Optional[str] = None
     ) -> None:
         """
         Record a filesystem symlink in both the SBOM’s relationship graph and its fs_tree.
@@ -319,19 +312,13 @@ class SBOM:
 
         if not seen:
             # record with both a fixed type and optional subtype
-            self.fs_tree.add_edge(
-                link_node,
-                target_node,
-                type="symlink",
-                subtype=subtype
-            )
+            self.fs_tree.add_edge(link_node, target_node, type="symlink", subtype=subtype)
             msg = f"[fs_tree] Recorded symlink edge: {link_node} → {target_node}"
             if subtype:
                 msg += f" [subtype={subtype}]"
             logger.debug(msg)
         else:
             logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
-
 
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
@@ -347,9 +334,9 @@ class SBOM:
         """
         if not entries:
             return
-        
+
         # if a software entry already exists with a matching file hash, augment the info in the existing entry
-        for sw  in entries:
+        for sw in entries:
             #  Merge duplicates by sha256 (or insert if new)
             existing = self.find_software(sw.sha256)
             if existing and Software.check_for_hash_collision(existing, sw):
@@ -376,12 +363,11 @@ class SBOM:
                     self.graph.remove_node(old_uuid)
                 node_uuid = kept_uuid
 
-            else:                
+            else:
                 # New software → add node
                 self.add_software(sw)
                 node_uuid = sw.UUID
                 logger.debug(f"Added new software node {node_uuid}")
-
 
             # Attach a Contains edge from parent, if any
             if parent_entry:
@@ -389,7 +375,6 @@ class SBOM:
                 if not self.graph.has_edge(parent_uuid, node_uuid, key="Contains"):
                     self.graph.add_edge(parent_uuid, node_uuid, key="Contains")
                     logger.debug(f"Attached Contains edge: {parent_uuid} → {node_uuid}")
-
 
             # Symlink capture under each installPath ---
             for raw in sw.installPath or []:
@@ -409,7 +394,9 @@ class SBOM:
                         if child.is_symlink():
                             real = child.resolve()
                             subtype = "file" if not child.is_dir() else "directory"
-                            logger.debug(f"Found child symlink: {child} → {real} (subtype={subtype})")
+                            logger.debug(
+                                f"Found child symlink: {child} → {real} (subtype={subtype})"
+                            )
                             self._record_symlink(str(child), str(real), subtype=subtype)
 
     # pylint: disable=too-many-arguments
@@ -748,7 +735,7 @@ class SBOM:
 
         # Remove fields we never want in JSON
         data.pop("graph", None)
-        data.pop("fs_tree", None) # Prevent DiGraph from being serialized
+        data.pop("fs_tree", None)  # Prevent DiGraph from being serialized
         data.pop("_loaded_relationships", None)
 
         # Turn any sets into lists for JSON

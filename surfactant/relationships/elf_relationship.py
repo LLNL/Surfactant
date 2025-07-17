@@ -5,10 +5,12 @@
 import pathlib
 from collections.abc import Iterable
 from typing import List, Optional
+
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
+
 from ._internal.posix_utils import posix_normpath
 
 
@@ -155,16 +157,12 @@ def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
 
     # If DF_1_NODEFLIB is not set, include default system paths
     if not nodeflib:
-        paths.extend([
-            pathlib.PurePosixPath(p)
-            for p in ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
-        ])
+        paths.extend(
+            [pathlib.PurePosixPath(p) for p in ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]]
+        )
 
     # Ensure all entries are PurePosixPath objects (in case runpaths included strings)
-    return [
-        p if isinstance(p, pathlib.PurePosixPath) else pathlib.PurePosixPath(p)
-        for p in paths
-    ]
+    return [p if isinstance(p, pathlib.PurePosixPath) else pathlib.PurePosixPath(p) for p in paths]
 
 
 def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
@@ -199,8 +197,6 @@ def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
 
     print("[DEBUG] expanded runpaths:", results)
     return [pathlib.PurePosixPath(r) for r in results]
-
-
 
 
 def replace_dst(origstr, dvar, newval) -> str:
@@ -254,6 +250,7 @@ def replace_dst(origstr, dvar, newval) -> str:
 #     # normalize paths after expanding tokens to avoid portions of the path involving  ../, ./, and // occurrences
 #     pathlist = [posix_normpath(p.as_posix()) for p in pathlist]
 #     return pathlist
+
 
 def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
     """

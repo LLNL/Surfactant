@@ -75,8 +75,7 @@ def establish_relationships(
     # 4. Run default unmanaged library probing logic by parsing *.deps.json probing properties
     #    - a. If the json file isn't present, assume the calling assembly's directory contains the library
     #    - b. https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing#unmanaged-native-library-probing
-    
-    
+
     # Handle unmanaged dependencies declared via [DllImport] or P/Invoke
     if "dotnetImplMap" in metadata:
         for asmRef in metadata["dotnetImplMap"]:
@@ -153,8 +152,7 @@ def establish_relationships(
             refName = asmRef.get("Name")
 
             if not refName:
-                continue # no name means we have no assembly to search for
-
+                continue  # no name means we have no assembly to search for
 
             # check if codeBase element exists for this assembly in appconfig
             # Resolve from <codeBase href="..."> entries in app config
@@ -164,7 +162,7 @@ def establish_relationships(
                     # representation could be used to also verify the right assembly is being found
                     if "codeBase" in depAsm and "href" in depAsm["codeBase"]:
                         href = depAsm["codeBase"]["href"]
-                        
+
                         # strong named assembly can be anywhere on intranet or Internet
                         # Skip external URLs we cannot resolve locally
                         if (
@@ -182,7 +180,9 @@ def establish_relationships(
                                 cb_fullpath = pathlib.PurePosixPath(base, href).as_posix()
                                 match = sbom.get_software_by_path(cb_fullpath)
                                 if match:
-                                    relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
+                                    relationships.append(
+                                        Relationship(dependent_uuid, match.UUID, "Uses")
+                                    )
 
             # continue on to probing even if codebase element was found, since we can't guarantee the assembly identity required by the codebase element
             # get the list of paths to probe based on locations software is installed, assembly culture, assembly name, and probing paths from appconfig file
@@ -201,7 +201,7 @@ def establish_relationships(
                 if match:
                     relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
                 # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
-                
+
     return relationships
 
 
