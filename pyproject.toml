@@ -11,6 +11,7 @@ authors = [
     {name = "Alexander Armstrong", email = "armstrong48@llnl.gov"},
     {name = "Shayna Kapadia", email = "kapadia2@llnl.gov"},
     {name = "Asriel Margarian", email = "margarian1@llnl.gov"},
+    {name = "Matthew Kelley", email = "kelley41@llnl.gov"},
 ]
 maintainers = [
     {name = "Ryan Mast", email = "mast9@llnl.gov"},
