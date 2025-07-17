@@ -403,6 +403,22 @@ def sbom(
                         raise RuntimeError(f"Unable to process: {filepath}") from e
                     entries.append(sw_parent)
                     entries.extend(sw_children if sw_children else [])
+                    # ------------------------------------------------------------------------
+                    # Inject symlink paths into each Software entry so SBOM helper handles them
+                    # ------------------------------------------------------------------------
+                    for sw in entries:
+                        # Filename symlinks
+                        for link in filename_symlinks.get(sw.sha256, []):
+                            logger.debug(
+                                f"Injecting filename symlink '{link}' for SHA {sw.sha256}"
+                            )
+                            sw.fileName.append(link)
+                        # Install-path symlinks
+                        for link in file_symlinks.get(sw.sha256, []):
+                            logger.debug(
+                                f"Injecting install-path symlink '{link}' for SHA {sw.sha256}"
+                            )
+                            sw.installPath.append(link)
                     new_sbom.add_software_entries(entries, parent_entry=parent_entry)
                     # epath was a file, no need to walk the directory tree
                     continue
@@ -519,6 +535,22 @@ def sbom(
 
                                 entries.append(sw_parent)
                                 entries.extend(sw_children if sw_children else [])
+                    # ------------------------------------------------------------------------
+                    # Inject symlink paths into each Software entry so SBOM helper handles them
+                    # ------------------------------------------------------------------------
+                    for sw in entries:
+                        # Filename symlinks
+                        for link in filename_symlinks.get(sw.sha256, []):
+                            logger.debug(
+                                f"Injecting filename symlink '{link}' for SHA {sw.sha256}"
+                            )
+                            sw.fileName.append(link)
+                        # Install-path symlinks
+                        for link in file_symlinks.get(sw.sha256, []):
+                            logger.debug(
+                                f"Injecting install-path symlink '{link}' for SHA {sw.sha256}"
+                            )
+                            sw.installPath.append(link)
                     new_sbom.add_software_entries(entries, parent_entry=parent_entry)
 
         # Add symlinks to install paths and file names
@@ -588,7 +620,6 @@ def sbom(
 
     # TODO should contents from different containers go in different SBOM files, so new portions can be added bit-by-bit with a final merge?
     output_writer.write_sbom(new_sbom, sbom_outfile)
-
 
 def resolve_link(
     path: str, cur_dir: str, extract_dir: str, install_prefix: Optional[str] = None

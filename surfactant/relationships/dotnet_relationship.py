@@ -9,8 +9,6 @@ from typing import List, Optional
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
-from ._internal.windows_utils import find_installed_software
-
 
 def has_required_fields(metadata) -> bool:
     # dotnetAssemblyRef must present, otherwise we have no info on .NET imports
@@ -26,9 +24,11 @@ def establish_relationships(
 
     relationships: List[Relationship] = []
     dependent_uuid = software.UUID
+
     dnName = None
     dnCulture = None
     dnVersion = None
+
     if "dotnetAssembly" in metadata:
         dnAssembly = metadata["dotnetAssembly"]
         if "Name" in dnAssembly:
@@ -38,16 +38,11 @@ def establish_relationships(
         if "Version" in dnAssembly:
             dnVersion = dnAssembly["Version"]
 
-    # get additional probing paths if they exist
+    # Extract probing and dependent assembly info from appConfig if present
     dnProbingPaths = None
     dnDependentAssemblies = None
-
-    windowsAppConfig = None
-    windowsManifest = None
-    if "appConfigFile" in metadata:
-        windowsAppConfig = metadata["appConfigFile"]
-    if "manifestFile" in metadata:
-        windowsManifest = metadata["manifestFile"]
+    windowsAppConfig = metadata.get("appConfigFile")
+    windowsManifest = metadata.get("manifestFile")  # Currently unused
 
     if windowsAppConfig:
         if "runtime" in windowsAppConfig:
@@ -80,28 +75,39 @@ def establish_relationships(
     # 4. Run default unmanaged library probing logic by parsing *.deps.json probing properties
     #    - a. If the json file isn't present, assume the calling assembly's directory contains the library
     #    - b. https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing#unmanaged-native-library-probing
+    
+    
+    # Handle unmanaged dependencies declared via [DllImport] or P/Invoke
     if "dotnetImplMap" in metadata:
         for asmRef in metadata["dotnetImplMap"]:
             if "Name" not in asmRef:
                 continue
             refName = asmRef["Name"]
 
-            # Check absolute path against entries in software
+            # Absolute path: resolve directly using fs_tree
             if is_absolute_path(refName):
-                ref_abspath = pathlib.PureWindowsPath(refName)
-                for e in sbom.software:
-                    if e.installPath is None:
-                        continue
-                    if isinstance(e.installPath, Iterable):
-                        for ifile in e.installPath:
-                            if ref_abspath == pathlib.PureWindowsPath(ifile):
-                                relationships.append(Relationship(dependent_uuid, e.UUID, "Uses"))
+                ref_abspath = pathlib.PureWindowsPath(refName).as_posix()
+                match = sbom.get_software_by_path(ref_abspath)
+
+                if match:
+                    relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
                 continue
 
+                # for e in sbom.software:
+                #     if e.installPath is None:
+                #         continue
+                #     if isinstance(e.installPath, Iterable):
+                #         for ifile in e.installPath:
+                #             if ref_abspath == pathlib.PureWindowsPath(ifile):
+                #                 relationships.append(Relationship(dependent_uuid, e.UUID, "Uses"))
+                # continue
+
+            # Construct candidate paths relative to installPath
             probedirs = []
             if isinstance(software.installPath, Iterable):
                 for ipath in software.installPath:
                     probedirs.append(pathlib.PureWindowsPath(ipath).parent.as_posix())
+
             # Construct a list of combinations specified in (2.a)
             # Refer to Issue #80 - Need to verify that this conforms with cross-platform behavior
             combinations = [refName]
@@ -116,11 +122,19 @@ def establish_relationships(
                     f"lib{refName}",
                 ]
             )
-            # On Linux, if the libname ends with .so or has .so. then version variations are tried
-            # Refer to Issue #79 - Need regex matching for version variations
-            for e in find_installed_software(sbom, probedirs, combinations):
-                dependency_uuid = e.UUID
-                relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
+
+            for directory in probedirs:
+                for candidate in combinations:
+                    path = pathlib.PurePosixPath(directory, candidate).as_posix()
+                    match = sbom.get_software_by_path(path)
+                    if match:
+                        relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
+
+            # # On Linux, if the libname ends with .so or has .so. then version variations are tried
+            # # Refer to Issue #79 - Need regex matching for version variations
+            # for e in find_installed_software(sbom, probedirs, combinations):
+            #     dependency_uuid = e.UUID
+            #     relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
 
     # https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies
     # 1. Determine correct assembly version using configuration files (binding redirects, code location, etc)
@@ -134,63 +148,60 @@ def establish_relationships(
     #    - the location of the calling assembly may be used as a hint for where to find the referenced assembly
     if "dotnetAssemblyRef" in metadata:
         for asmRef in metadata["dotnetAssemblyRef"]:
-            refName = None
-            refVersion = None
-            refCulture = None
-            if "Name" in asmRef:
-                refName = asmRef["Name"]
-            else:
-                continue  # no name means we have no assembly to search for
-            if "Culture" in asmRef:
-                refCulture = asmRef["Culture"]
-            if "Version" in asmRef:
-                refVersion = asmRef["Version"]
+            refVersion = asmRef.get("Version")
+            refCulture = asmRef.get("Culture")
+            refName = asmRef.get("Name")
+
+            if not refName:
+                continue # no name means we have no assembly to search for
+
 
             # check if codeBase element exists for this assembly in appconfig
-            if dnDependentAssemblies is not None:
+            # Resolve from <codeBase href="..."> entries in app config
+            if dnDependentAssemblies:
                 for depAsm in dnDependentAssemblies:
                     # dependent assembly object contains info on assembly id and binding redirects that with a better internal SBOM
                     # representation could be used to also verify the right assembly is being found
-                    if "codeBase" in depAsm:
-                        if "href" in depAsm["codeBase"]:
-                            codebase_href = depAsm["codeBase"]["href"]
-                            # strong named assembly can be anywhere on intranet or Internet
-                            if (
-                                codebase_href.startswith("http://")
-                                or codebase_href.startswith("https://")
-                                or codebase_href.startswith("file://")
-                            ):
-                                # codebase references a url; interesting for manual analysis/gathering additional files, but not supported by surfactant yet
-                                pass
-                            else:
-                                # most likely a private assembly, so path must be relative to application's directory
-                                if isinstance(software.installPath, Iterable):
-                                    for install_filepath in software.installPath:
-                                        install_basepath = pathlib.PureWindowsPath(
-                                            install_filepath
-                                        ).parent.as_posix()
-                                        cb_filepath = pathlib.PureWindowsPath(
-                                            install_basepath, codebase_href
-                                        )
-                                        cb_file = cb_filepath.name
-                                        cb_path = [cb_filepath.parent.as_posix()]
-                                        for e in find_installed_software(sbom, cb_path, cb_file):
-                                            dependency_uuid = e.UUID
-                                            relationships.append(
-                                                Relationship(
-                                                    dependent_uuid,
-                                                    dependency_uuid,
-                                                    "Uses",
-                                                )
-                                            )
+                    if "codeBase" in depAsm and "href" in depAsm["codeBase"]:
+                        href = depAsm["codeBase"]["href"]
+                        
+                        # strong named assembly can be anywhere on intranet or Internet
+                        # Skip external URLs we cannot resolve locally
+                        if (
+                            href.startswith("http://")
+                            or href.startswith("https://")
+                            or href.startswith("file://")
+                        ):
+                            # codebase references a url; interesting for manual analysis/gathering additional files, but not supported by surfactant yet
+                            continue
+
+                        # most likely a private assembly, so path must be relative to application's directory
+                        if isinstance(software.installPath, Iterable):
+                            for ipath in software.installPath:
+                                base = pathlib.PureWindowsPath(ipath).parent.as_posix()
+                                cb_fullpath = pathlib.PurePosixPath(base, href).as_posix()
+                                match = sbom.get_software_by_path(cb_fullpath)
+                                if match:
+                                    relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
 
             # continue on to probing even if codebase element was found, since we can't guarantee the assembly identity required by the codebase element
             # get the list of paths to probe based on locations software is installed, assembly culture, assembly name, and probing paths from appconfig file
-            probedirs = get_dotnet_probedirs(software, refCulture, refName, dnProbingPaths)
-            for e in find_installed_software(sbom, probedirs, refName + ".dll"):
-                dependency_uuid = e.UUID
-                relationships.append(Relationship(dependent_uuid, dependency_uuid, "Uses"))
+
+            # Probe using resolved directories and file name
+            probedirs = get_dotnet_probedirs(
+                software,
+                refCulture,
+                refName,
+                dnProbingPaths,
+            )
+
+            for directory in probedirs:
+                path = pathlib.PurePosixPath(directory, refName + ".dll").as_posix()
+                match = sbom.get_software_by_path(path)
+                if match:
+                    relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
                 # logging assemblies not found would be nice but is a lot of noise as it mostly just prints system/core .NET libraries
+                
     return relationships
 
 
@@ -211,7 +222,7 @@ def get_dotnet_probedirs(software: Software, refCulture, refName, dnProbingPaths
                 # [application base] / [assembly name] / [assembly name].dll
                 probedirs.append(pathlib.PureWindowsPath(install_basepath).as_posix())
                 probedirs.append(pathlib.PureWindowsPath(install_basepath, refName).as_posix())
-                if dnProbingPaths is not None:
+                if dnProbingPaths:
                     # add probing private paths
                     for path in dnProbingPaths:
                         # [application base] / [binpath] / [assembly name].dll
@@ -227,7 +238,7 @@ def get_dotnet_probedirs(software: Software, refCulture, refName, dnProbingPaths
                 probedirs.append(
                     pathlib.PureWindowsPath(install_basepath, refName, refCulture).as_posix()
                 )
-                if dnProbingPaths is not None:
+                if dnProbingPaths:
                     # add probing private paths
                     for path in dnProbingPaths:
                         # [application base] / [binpath] / [culture] / [assembly name].dll

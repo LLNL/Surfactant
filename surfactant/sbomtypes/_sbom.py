@@ -7,11 +7,12 @@ from __future__ import annotations
 import json
 import uuid as uuid_module
 from dataclasses import asdict, dataclass, field, fields
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 import networkx as nx
 from dataclasses_json import config, dataclass_json
 from loguru import logger
+import pathlib
 
 from ._analysisdata import AnalysisData
 from ._file import File
@@ -56,6 +57,11 @@ class SBOM:
     observations: List[Observation] = field(default_factory=list)
     starRelationships: Set[StarRelationship] = field(default_factory=set)
     software_lookup_by_sha256: Dict = field(default_factory=dict)
+    fs_tree: nx.DiGraph = field(
+        init=False,
+        repr=False,
+        metadata=config(exclude=lambda _: True),
+    )
     graph: nx.MultiDiGraph = field(
         init=False,
         repr=False,
@@ -127,10 +133,43 @@ class SBOM:
             k: v for k, v in self.__dataclass_fields__.items() if k not in INTERNAL_FIELDS
         }
 
-        # Build the NetworkX graph from systems/software and loaded relationships
-        self.build_graph()
+        # Build the Relationship graph from systems/software and loaded relationships
+        self.build_rel_graph()
 
-    def build_graph(self) -> None:
+        # Initialize fs_tree
+        self.fs_tree = nx.DiGraph()
+
+        # Populate from installPaths (if present)
+        for sw in self.software:
+            self._add_software_to_fs_tree(sw)
+
+
+    def _add_software_to_fs_tree(self, sw):
+        if not sw.installPath:
+            return
+
+        for path in sw.installPath:
+            norm_path = pathlib.PurePosixPath(path).as_posix()
+            parts = pathlib.PurePosixPath(norm_path).parts
+
+            for i in range(1, len(parts)):
+                parent = pathlib.PurePosixPath(*parts[:i]).as_posix()
+                child = pathlib.PurePosixPath(*parts[:i+1]).as_posix()
+                self.fs_tree.add_edge(parent, child)
+
+            self.fs_tree.nodes[norm_path]["software_uuid"] = sw.UUID
+
+
+    def get_software_by_path(self, path: str):
+        """
+        Retrieve a Software entry by exact install path, using the fs_tree.
+        """
+        node = self.fs_tree.nodes.get(path)
+        if node and "software_uuid" in node:
+            return self._find_software_entry(uuid=node["software_uuid"])
+        return None
+
+    def build_rel_graph(self) -> None:
         """Rebuild the directed graph from systems, software, and any loaded relationships."""
         self.graph = nx.MultiDiGraph()
         for sys in self.systems:
@@ -216,51 +255,162 @@ class SBOM:
         if not self.graph.has_node(sw.UUID):
             self.graph.add_node(sw.UUID, type="Software")
 
+        self._add_software_to_fs_tree(sw)
+
+
+    def _record_symlink(
+        self,
+        link_path: str,
+        target_path: str,
+        *,
+        subtype: Optional[str] = None
+    ) -> None:
+        """
+        Record a filesystem symlink in both the SBOM’s relationship graph and its fs_tree.
+
+        This does three things:
+        1. Normalizes both paths to POSIX style.
+        2. Ensures both link and target are present as nodes in:
+            • self.graph       (networkx.MultiDiGraph of software relationships)
+            • self.fs_tree     (networkx.DiGraph of file system paths)
+        3. Adds a directed edge link → target in both graphs with:
+            - type="symlink"
+            - subtype=<optional qualifier, e.g. "file" or "directory">
+
+        By capturing symlink edges in fs_tree you enable sbom.get_software_by_path()
+        to traverse through symlinks when resolving ELF dependencies.
+
+        Args:
+            link_path:   Path of the symlink itself (e.g. "/opt/app/lib/foo.so").
+            target_path: The resolved target path (e.g. "/usr/lib/foo.so").
+            subtype:     Optional kind of symlink, e.g. "file" or "directory".
+        """
+        # Normalize inputs to canonical POSIX strings
+        link_node = pathlib.PurePosixPath(link_path).as_posix()
+        target_node = pathlib.PurePosixPath(target_path).as_posix()
+
+        # -------------------------------------------------------------------------
+        # Ensure nodes exist in the SBOM’s main graph, then record the symlink
+        # -------------------------------------------------------------------------
+        for node in (link_node, target_node):
+            if not self.graph.has_node(node):
+                self.graph.add_node(node)
+                logger.debug(f"[graph] Added node for symlink tracking: {node}")
+
+        # Only add one 'symlink' edge per exact (link, target, key)
+        if not self.graph.has_edge(link_node, target_node, key="symlink"):
+            self.graph.add_edge(link_node, target_node, key="symlink")
+            logger.debug(f"[graph] Recorded symlink edge: {link_node} → {target_node}")
+
+        # -------------------------------------------------------------------------
+        # Mirror into fs_tree so dependency resolution can follow symlinks there
+        # -------------------------------------------------------------------------
+        for node in (link_node, target_node):
+            if not self.fs_tree.has_node(node):
+                self.fs_tree.add_node(node)
+                logger.debug(f"[fs_tree] Added symlink node: {node}")
+
+        # Check existing fs_tree edges from link → target
+        existing = self.fs_tree.get_edge_data(link_node, target_node, default={})
+        seen = any(
+            attrs.get("type") == "symlink" and attrs.get("subtype") == subtype
+            for attrs in existing.values()
+        )
+
+        if not seen:
+            # record with both a fixed type and optional subtype
+            self.fs_tree.add_edge(
+                link_node,
+                target_node,
+                type="symlink",
+                subtype=subtype
+            )
+            msg = f"[fs_tree] Recorded symlink edge: {link_node} → {target_node}"
+            if subtype:
+                msg += f" [subtype={subtype}]"
+            logger.debug(msg)
+        else:
+            logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
+
+
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
     ):
-        """Add software entries, merging duplicates and preserving all relationship edges.
+        """
+        Add software entries to the SBOM graph, merging duplicates, preserving existing edges,
+        attaching "Contains" relationships to an optional parent, and recording ANY
+        file- or directory-level symlinks under each installPath.
 
         Args:
-            entries (Optional[List[Software]]): A list of Software entries to add to the SBOM.
-            parent_entry (Optional[Software]): An optional parent software entry to add "Contains" relationships to.
+            entries:        list of Software instances to add.
+            parent_entry:   if provided, attach a "Contains" edge from this parent to each entry.
         """
         if not entries:
             return
+        
         # if a software entry already exists with a matching file hash, augment the info in the existing entry
-        for e in entries:
-            existing = self.find_software(e.sha256)
-            if existing and Software.check_for_hash_collision(existing, e):
-                logger.warning(f"Hash collision between {existing.name} and {e.name}")
+        for sw  in entries:
+            #  Merge duplicates by sha256 (or insert if new)
+            existing = self.find_software(sw.sha256)
+            if existing and Software.check_for_hash_collision(existing, sw):
+                logger.warning(f"Hash collision between {existing.name} and {sw.name}")
 
-            if not existing:
-                # new software → add node
-                self.add_software(e)
-                entry_uuid = e.UUID
-            else:
-                # duplicate → merge and redirect edges
-                kept_uuid, old_uuid = existing.merge(e)
+            if existing:
+                # Merge into existing node
+                # Duplicate → merge data & edges, drop the old UUID
+                kept_uuid, old_uuid = existing.merge(sw)
+                logger.debug(f"Merged {sw.UUID} into {kept_uuid}, removing {old_uuid}")
 
-                # redirect *incoming* edges to the kept node
+                # Redirect *incoming* edges to the kept node
                 for src, _, key, attrs in list(self.graph.in_edges(old_uuid, keys=True, data=True)):
                     self.graph.add_edge(src, kept_uuid, key=key, **attrs)
 
-                # redirect *outgoing* edges from the old node
+                # Redirect *outgoing* edges from the old node
                 for _, dst, key, attrs in list(
                     self.graph.out_edges(old_uuid, keys=True, data=True)
                 ):
                     self.graph.add_edge(kept_uuid, dst, key=key, **attrs)
 
-                # remove the old UUID entirely
+                # Remove the old UUID entirely
                 if self.graph.has_node(old_uuid):
                     self.graph.remove_node(old_uuid)
-                entry_uuid = kept_uuid
+                node_uuid = kept_uuid
 
-            # if a parent/package container was provided, attach a "Contains" edge
+            else:                
+                # New software → add node
+                self.add_software(sw)
+                node_uuid = sw.UUID
+                logger.debug(f"Added new software node {node_uuid}")
+
+
+            # Attach a Contains edge from parent, if any
             if parent_entry:
                 parent_uuid = parent_entry.UUID
-                if not self.graph.has_edge(parent_uuid, entry_uuid, key="Contains"):
-                    self.graph.add_edge(parent_uuid, entry_uuid, key="Contains")
+                if not self.graph.has_edge(parent_uuid, node_uuid, key="Contains"):
+                    self.graph.add_edge(parent_uuid, node_uuid, key="Contains")
+                    logger.debug(f"Attached Contains edge: {parent_uuid} → {node_uuid}")
+
+
+            # Symlink capture under each installPath ---
+            for raw in sw.installPath or []:
+                p = pathlib.Path(raw)
+
+                # If the installPath itself is a symlink (file or dir)
+                if p.is_symlink():
+                    real = p.resolve()
+                    subtype = "file" if not p.is_dir() else "directory"
+                    logger.debug(f"Found installPath symlink: {p} → {real} (subtype={subtype})")
+                    # Call the helper to record this symlink in fs_tree
+                    self._record_symlink(str(p), str(real), subtype=subtype)
+
+                # If it's a directory, scan immediate children for symlinks
+                if p.is_dir():
+                    for child in p.iterdir():
+                        if child.is_symlink():
+                            real = child.resolve()
+                            subtype = "file" if not child.is_dir() else "directory"
+                            logger.debug(f"Found child symlink: {child} → {real} (subtype={subtype})")
+                            self._record_symlink(str(child), str(real), subtype=subtype)
 
     # pylint: disable=too-many-arguments
     def create_software(
@@ -598,6 +748,7 @@ class SBOM:
 
         # Remove fields we never want in JSON
         data.pop("graph", None)
+        data.pop("fs_tree", None) # Prevent DiGraph from being serialized
         data.pop("_loaded_relationships", None)
 
         # Turn any sets into lists for JSON
