@@ -1,4 +1,5 @@
 import { zoomToView } from "#buttonEventHandlersModule";
+import { insert, isLeaf, resolvePath } from "#kvGraph";
 
 function createRow(
 	leftColumnValue,
@@ -367,39 +368,6 @@ export function insertSearchSidebar(id) {
 
 	rootNode.replaceChildren(fragment);
 
-	function generateSearchData() {
-		const options = []; // [ { 'UUID': <UUID>, 'data': [name, sha, ...] }, ... ]
-		for (const [nodeID, n] of Object.entries(network.body.nodes)) {
-			if (nodeID.includes("edgeId")) continue; // Skip edges
-
-			const sbom = n.options.surfactantSoftwareStruct;
-			const entry = {
-				UUID: nodeID,
-				data: [],
-				label: n.options.nodeMetadata.nodeFileName,
-			};
-
-			for (const [sbomK, sbomV] of Object.entries(sbom)) {
-				if (Array.isArray(sbomV))
-					entry.data.push(
-						...sbomV.filter(
-							(x) =>
-								typeof x !== "function" && typeof x !== "object" && x !== "",
-						),
-					);
-				if (
-					typeof sbomV !== "function" &&
-					typeof sbomV !== "object" &&
-					sbomV !== ""
-				)
-					entry.data.push(sbomV);
-			}
-
-			options.push(entry);
-		}
-		return options;
-	}
-
 	function setGraphColor(color) {
 		const nodesDataset = nodes.get({ returnType: "Object" });
 
@@ -415,15 +383,6 @@ export function insertSearchSidebar(id) {
 	}
 
 	function appendNodeToResults(nodeID, ...args) {
-		if (this.items.length === 1) {
-			const inactiveColor = getComputedStyle(document.body).getPropertyValue(
-				"--graphInactiveColor",
-			);
-			setGraphColor(inactiveColor);
-
-			network.unselectAll();
-		}
-
 		nodes.update({ id: nodeID, color: null }); // Use default graph color for highlight
 
 		const node = network.body.nodes[nodeID];
@@ -450,36 +409,175 @@ export function insertSearchSidebar(id) {
 		resultsCard.append(header);
 
 		document.getElementById("resultsSection").appendChild(resultsCard);
-
-		this.setTextboxValue("");
-		this.refreshOptions();
 	}
 
-	function removeNodes(nodes) {
+	function removeNodesFromResults(nodes) {
 		for (const nodeID of nodes) {
 			for (const c of document
 				.getElementById("resultsSection")
 				.querySelectorAll(".search-results-card")) {
 				const cardNodeID = c.getAttribute("nodeID");
 				if (cardNodeID === nodeID) {
-					if (this.items.length === 1) setGraphColor(null); // Revert to default
-
 					c.remove();
 				}
 			}
 		}
 	}
 
-	const searchData = generateSearchData();
+	const tagsGraph = [];
+	let matchedIDs = [];
+
+	for (const n of Object.values(network.body.nodes)) {
+		const softwareStruct = n.options.surfactantSoftwareStruct;
+		if (softwareStruct !== undefined) {
+			insert(softwareStruct, tagsGraph, softwareStruct.UUID);
+		}
+	}
+
+	TomSelect.define("remove_tag_on_backspace", function () {
+		const originalDelete = this.deleteSelection;
+
+		this.hook("instead", "deleteSelection", (evt) => {
+			const inputText = this.control_input.value;
+			const pos = this.control_input.selectionStart;
+			const cursorChar = inputText.charAt(pos - 1); // Character behind the cursor
+
+			if (cursorChar === ":" || cursorChar === ".") {
+				const slicePos = Math.max(
+					inputText.lastIndexOf(".", inputText.length - 2) + 2,
+					0,
+				); // Delete until the next .
+				this.setTextboxValue(inputText.slice(0, slicePos));
+				return;
+			}
+
+			return originalDelete.call(this, evt);
+		});
+	});
+
+	function onTypeHandler(str) {
+		const input = str.trim();
+
+		const dotSepIndex = input.lastIndexOf(".");
+		const colonSepIndex = input.lastIndexOf(":");
+
+		this.clearOptions();
+
+		const sepIndex = colonSepIndex !== -1 ? colonSepIndex : dotSepIndex;
+		const searchPath = sepIndex === -1 ? "" : input.slice(0, sepIndex); // Use root path if no '.'
+		const node = resolvePath(tagsGraph, searchPath);
+
+		const newOptions = Object.entries(node).map(([k, v]) => {
+			const isLeafNode = isLeaf(node);
+
+			const pathDelim = isLeafNode ? ":" : ".";
+			const optionPath = searchPath === "" ? "" : searchPath + pathDelim;
+
+			let suggestion = "";
+
+			if (isLeafNode) suggestion = k;
+			else suggestion = k + (isLeaf(v) ? ":" : ".");
+
+			return {
+				value: optionPath + suggestion,
+				label: optionPath + suggestion,
+			};
+		});
+
+		this.addOptions(newOptions);
+		this.refreshOptions();
+	}
+
+	function onAddHandler(value) {
+		const item = this.options[value];
+		const result = resolvePath(tagsGraph, item?.value);
+
+		// Path resolved to a node: autocomplete to selected option
+		if (!Array.isArray(result)) {
+			this.removeItem(value);
+
+			this.setTextboxValue(value); // Autocomplete value
+			onTypeHandler.call(this, value); // Regenerate suggestions
+		}
+
+		// Path & value got entered: add selected option & clear box
+		else {
+			this.setTextboxValue("");
+
+			this.clearOptions();
+			this.addOptions(generateRootNodeSuggestions.call(this));
+			this.refreshOptions();
+
+			// Add matching nodes to results div
+			if (matchedIDs.length === 0) {
+				matchedIDs.push(result);
+
+				// Set graph inactive
+				const inactiveColor = getComputedStyle(document.body).getPropertyValue(
+					"--graphInactiveColor",
+				);
+				setGraphColor(inactiveColor);
+				network.unselectAll();
+
+				for (const ID of result) appendNodeToResults(ID);
+			} else {
+				const oldMatches = matchedIDs.reduce((acc, arr) =>
+					acc.filter((ID) => arr.includes(ID)),
+				);
+				matchedIDs.push(result);
+				const newMatches = matchedIDs.reduce((acc, arr) =>
+					acc.filter((ID) => arr.includes(ID)),
+				); // Perform AND operation on incoming results
+
+				const IDsToRemove = oldMatches.filter((ID) => !newMatches.includes(ID));
+				removeNodesFromResults(IDsToRemove);
+			}
+		}
+	}
+
+	function onDeleteHandler(items) {
+		function isArrayEqual(a1, a2) {
+			if (a1.length !== a2.length) return false;
+			return a1.every((e, i) => e === a2[i]);
+		}
+
+		const oldMatches = matchedIDs.reduce((acc, arr) =>
+			acc.filter((ID) => arr.includes(ID)),
+		);
+		for (const path of items) {
+			const UUIDs = resolvePath(tagsGraph, path);
+			matchedIDs = matchedIDs.filter((IDs) => !isArrayEqual(IDs, UUIDs)); // Remove list of matched UUIDs from the search results
+		}
+
+		if (matchedIDs.length === 0) {
+			setGraphColor(null); // Revert to default
+			removeNodesFromResults(oldMatches);
+		} else {
+			const newMatches = matchedIDs.reduce((acc, arr) =>
+				acc.filter((ID) => arr.includes(ID)),
+			); // Perform AND operation on incoming results
+
+			const IDsToAdd = newMatches.filter((ID) => !oldMatches.includes(ID));
+
+			for (const ID of IDsToAdd) appendNodeToResults(ID);
+		}
+	}
+
+	function generateRootNodeSuggestions() {
+		return Object.keys(tagsGraph).map((key) => {
+			const newLabel = key + (isLeaf(tagsGraph[key]) ? ":" : ".");
+			return { label: newLabel, value: newLabel };
+		});
+	}
 
 	new TomSelect(searchBox, {
+		persist: false,
+		create: false,
 		maxItems: null,
-		maxOptions: 100,
-
-		valueField: "UUID",
+		options: generateRootNodeSuggestions(),
+		valueField: "value",
 		labelField: "label",
-		searchField: ["data"],
-
+		searchField: ["label"],
 		plugins: {
 			remove_button: {
 				title: "Remove",
@@ -488,10 +586,16 @@ export function insertSearchSidebar(id) {
 				title: "Remove all nodes",
 			},
 			caret_position: {},
+			remove_tag_on_backspace: {},
 		},
-		options: searchData,
 
-		onItemAdd: appendNodeToResults,
-		onDelete: removeNodes,
+		render: {
+			option: (data, esc) => `<div>${esc(data.label)}</div>`,
+			item: (data, esc) => `<div>${esc(data.label)}</div>`,
+		},
+
+		onType: onTypeHandler,
+		onItemAdd: onAddHandler,
+		onDelete: onDeleteHandler,
 	});
 }
