@@ -468,7 +468,7 @@ class PluginSetting(textual.widgets.Static):
             self.value = self.__config_manager.get(self.plugin_name, self.info.name, True)
         else:
             # TODO: An assert probably isn't the best here, but not sure what else to use
-            assert False, f'Invalid plugin setting of type "{self.info.type_}"'
+            raise TypeError(f'Invalid plugin setting of type "{self.info.type_}"')
 
     def compose(self) -> textual.app.ComposeResult:
         # Set the value now - setting the Input value during __init__ was causing errors...

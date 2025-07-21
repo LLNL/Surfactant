@@ -37,5 +37,5 @@ def test_extract_settings_from_docstring():
     assert settings[2].description == "Some long description that doesn't fit on a single line"
 
     assert settings[3].name == "test_function.option4"
-    assert settings[3].type_ == None
+    assert settings[3].type_ is None
     assert settings[3].description == "Some option missing a type: and with a colon"
