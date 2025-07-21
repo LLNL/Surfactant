@@ -516,8 +516,7 @@ class PluginSettingsTab(textual.widgets.Static):
     def compose(self) -> textual.app.ComposeResult:
         for name, settings in self.plugin_settings.items():
             with textual.widgets.Collapsible(title=name, collapsed=True):
-                for setting in settings:
-                    yield setting
+                yield from settings
 
         yield textual.widgets.Button("Save settings", id="save")
 
