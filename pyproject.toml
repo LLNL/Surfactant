@@ -54,7 +54,7 @@ dependencies = [
     "click==8.*",
     "loguru==0.7.*",
     "tomlkit==0.13.*",
-    "textual==3.*",
+    "textual==4.*",
     "requests>=2.32.3",
     "rarfile==4.2.*",
     # Pinned to specific version for potential breaking changes
