@@ -382,37 +382,50 @@ export function insertSearchSidebar(id) {
 		nodes.update(tmp);
 	}
 
-	function appendNodeToResults(nodeID, ...args) {
-		nodes.update({ id: nodeID, color: null }); // Use default graph color for highlight
+	function createResultsSection(nodeIDs) {
+		function createResultsCard(nodeID) {
+			const node = network.body.nodes[nodeID];
 
-		const node = network.body.nodes[nodeID];
+			const resultsCard = document.createElement("div");
+			resultsCard.className = "search-results-card";
 
-		const resultsCard = document.createElement("div");
-		resultsCard.className = "search-results-card";
+			resultsCard.setAttribute("nodeID", nodeID);
+			resultsCard.addEventListener("click", jumpToNodeOnClick);
 
-		resultsCard.setAttribute("nodeID", nodeID);
-		resultsCard.addEventListener("click", jumpToNodeOnClick);
+			const header = document.createElement("div");
+			header.classList = "section-header";
 
-		const header = document.createElement("div");
-		header.classList = "section-header";
+			const iconElement = document.createElement("i");
+			iconElement.classList = getIconClassForFileType(
+				node.options.nodeMetadata.type,
+			);
+			header.appendChild(iconElement);
 
-		const iconElement = document.createElement("i");
-		iconElement.classList = getIconClassForFileType(
-			node.options.nodeMetadata.type,
-		);
-		header.appendChild(iconElement);
+			const headerText = document.createElement("h5");
+			headerText.textContent = node.options.nodeMetadata.nodeFileName;
+			header.appendChild(headerText);
 
-		const headerText = document.createElement("h5");
-		headerText.textContent = node.options.nodeMetadata.nodeFileName;
-		header.appendChild(headerText);
+			resultsCard.append(header);
 
-		resultsCard.append(header);
+			return resultsCard;
+		}
 
-		document.getElementById("resultsSection").appendChild(resultsCard);
+		// Use default graph color for highlight
+		const updateArray = nodeIDs.map((ID) => ({ id: ID, color: null }));
+		nodes.update(updateArray);
+
+		const frag = document.createDocumentFragment();
+		for (const nodeID of nodeIDs) frag.appendChild(createResultsCard(nodeID));
+
+		document.getElementById("resultsSection").replaceChildren(frag);
 	}
 
-	function removeNodesFromResults(nodes) {
-		for (const nodeID of nodes) {
+	function removeNodesFromResults(nodeIDs) {
+		// Reset node color
+		const updateArray = nodeIDs.map((ID) => ({ id: ID, color: null }));
+		nodes.update(updateArray);
+
+		for (const nodeID of nodeIDs) {
 			for (const c of document
 				.getElementById("resultsSection")
 				.querySelectorAll(".search-results-card")) {
@@ -519,7 +532,8 @@ export function insertSearchSidebar(id) {
 				setGraphColor(inactiveColor);
 				network.unselectAll();
 
-				for (const ID of result) appendNodeToResults(ID);
+				console.log(result);
+				createResultsSection(result);
 			} else {
 				const oldMatches = matchedIDs.reduce((acc, arr) =>
 					acc.filter((ID) => arr.includes(ID)),
@@ -559,7 +573,7 @@ export function insertSearchSidebar(id) {
 
 			const IDsToAdd = newMatches.filter((ID) => !oldMatches.includes(ID));
 
-			for (const ID of IDsToAdd) appendNodeToResults(ID);
+			createResultsSection(IDsToAdd);
 		}
 	}
 
