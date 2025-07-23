@@ -56,17 +56,17 @@ dependencies = [
     "tomlkit==0.13.*",
     "textual==4.*",
     "requests>=2.32.3",
-    "rarfile==4.2.*",
     # Pinned to specific version for potential breaking changes
     "networkx>=2.6",
-    "python-msi==0.0.0a2"
-    ]
+    "python-msi==0.0.0a2",
+]
 
 dynamic = ["version"]
 
 [project.optional-dependencies]
 macho = ["lief==0.16.6"]
 java = ["javatools>=1.6,==1.*"]
+extractcode = ["extractcode[full]>=31.0.0"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]

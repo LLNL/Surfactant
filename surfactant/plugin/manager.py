@@ -15,12 +15,13 @@ from surfactant.plugin import hookspecs
 def _register_plugins(pm: pluggy.PluginManager) -> None:
     # pylint: disable=import-outside-toplevel
     # don't want all these imports as part of the file-level scope
-    from surfactant.filetypeid import id_extension, id_hex, id_magic
+    from surfactant.filetypeid import id_extension, id_extractcode, id_hex, id_magic
     from surfactant.infoextractors import (
         a_out_file,
         coff_file,
         docker_image,
         elf_file,
+        extractcode_file,
         file_decompression,
         java_file,
         js_file,
@@ -48,6 +49,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         id_magic,
         id_hex,
         id_extension,
+        id_extractcode,
         a_out_file,
         coff_file,
         docker_image,
@@ -69,6 +71,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         cytrics_reader,
         native_lib_file,
         file_decompression,
+        extractcode_file,
     )
     for plugin in internal_plugins:
         pm.register(plugin)
