@@ -137,7 +137,9 @@ def test_symlink_heuristic_match_edge(example_sbom, label):
 
     result = elf_relationship.establish_relationships(sbom, sw, metadata)
     assert result is not None
-    assert result == [Relationship(sw.UUID, expected_uuid, "Uses")], "Expected heuristic symlink match"
+    assert result == [Relationship(sw.UUID, expected_uuid, "Uses")], (
+        "Expected heuristic symlink match"
+    )
 
 
 def test_no_match_edge_case():
