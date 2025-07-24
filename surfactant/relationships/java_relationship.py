@@ -53,7 +53,7 @@ def establish_relationships(
 
     for import_class in imports:
         class_path = class_to_path(import_class)
-        fname = class_path.split("/")[-1]
+        fname = class_path.rsplit("/", maxsplit=1)[-1]
 
         matched_uuids = set()
         used_method = {}

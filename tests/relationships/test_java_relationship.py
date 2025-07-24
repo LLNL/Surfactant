@@ -44,14 +44,14 @@ def test_sbom():
     return sbom, jar_importer, jar_supplier
 
 
-def test_phase_1_fs_tree_match(test_sbom, java_class_path):
+def test_phase_1_fs_tree_match(sbom_fixture, class_path_fixture):
     """
     Phase 1: Check that sbom.get_software_by_path() resolves the dependency
     """
-    sbom, importer, supplier = test_sbom
+    sbom, importer, supplier = sbom_fixture
 
     # Inject into fs_tree
-    sbom.fs_tree.add_node(f"/app/lib/{java_class_path}", software_uuid=supplier.UUID)
+    sbom.fs_tree.add_node(f"/app/lib/{class_path_fixture}", software_uuid=supplier.UUID)
 
     metadata = importer.metadata[0]
     results = java_relationship.establish_relationships(sbom, importer, metadata)
