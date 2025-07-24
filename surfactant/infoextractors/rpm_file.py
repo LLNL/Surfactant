@@ -17,20 +17,24 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype) -> bool:
+    """Returns if filetype contains "RPM Package"
+    
+    """
     logger.debug("Checks for RPM Package")
-    return filetype == "RPM Package"
+    return "RPM Package" in filetype
 
 
 def get_files(
     directories: List[bytes], files: List[bytes], indicies: List[int], hashes: List[bytes]
 ) -> Dict[Any, Any]:
-    """
-    Extracts files from the given directories and files list
+    """Extracts files from the given directories and files list.
 
-    :param directories: List of directory paths in bytes
-    :param files: List of file names in bytes
-    :param indicies: Directory associated with current file
-    :return: List of extracted file paths
+    Args:
+        directories (List[bytes]): List of directory paths in bytes.
+        files (List[bytes]): List of file names in bytes.
+        indicies (List[bytes]): Directory associated with current file.
+    Returns:
+        List of extracted file paths.
     """
     extracted_files = {}
     index = 0
@@ -43,21 +47,22 @@ def get_files(
     return extracted_files
 
 
-def combine_lists(name_info: List[bytes], version_info: List[bytes]) -> Dict:
-    """
-    Takes given lists and combines the associated data in each into a dictionary
+def combine_lists(key_list: List[bytes], value_list: List[bytes]) -> Dict:
+    """Combines 2 lists into a single dictionary - matching on index.
 
-    :param name_info: List of name bytes
-    :param version_info: List of version bytes
-    :return: Dictionary with name and version
+    Args:
+        key_list (List[bytes]): List to use as key.
+        value_list (List[bytes]): List to use as value.
+    Returns:
+        Combined dictionary.
     """
     result = {}
-    if not name_info or not version_info or len(name_info) != len(version_info):
+    if not key_list or not value_list or len(key_list) != len(value_list):
         return result
     index = 0
-    while index < len(name_info):
-        name = name_info[index].decode()
-        version = version_info[index].decode()
+    while index < len(key_list):
+        name = key_list[index].decode()
+        version = value_list[index].decode()
         result[name] = version
         index += 1
     return result
@@ -77,32 +82,25 @@ def extract_file_info(
         return None
     rpm_info = extract_rpm_info(filename)
 
-    if "name" in rpm_info["rpm"]:
-        software_field_hints.append(("name", rpm_info["rpm"]["name"], 80))
-    if "version" in rpm_info["rpm"]:
-        software_field_hints.append(("version", rpm_info["rpm"]["version"], 80))
-    if "summary" in rpm_info["rpm"]:
-        software_field_hints.append(("summary", rpm_info["rpm"]["summary"], 80))
-    if "description" in rpm_info["rpm"]:
-        software_field_hints.append(("description", rpm_info["rpm"]["description"], 80))
-
     for key in rpm_info["rpm"]:
         software_field_hints.append((key, rpm_info["rpm"][key], 80))
     return rpm_info
 
 
 def extract_rpm_info(filename: str) -> Dict[str, Any]:
-    """
-    Extracts fields from the header of an RPM Package
+    """Extracts fields from the header of an RPM Package.
 
-    :param filename: Path to file to extract information from
+    Args:
+        filename: Path to file to extract information from.
+    Returns:
+        A dictionary of all fields found in the RPM header.
     """
     file_details: Dict[str, Any] = {}
     with rpmfile.open(filename) as rpm:
         header = rpm.headers
         file_details["rpm"] = {}
         # If any additional fields are desired that have values of single strings, just add the field to this list
-        easy_keys = [
+        simple_keys = [
             "name",
             "sourcerpm",
             "version",
@@ -121,11 +119,11 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             "sha256",
             "md5",
         ]
-        for key in easy_keys:
+        for key in simple_keys:
             if key in header:
                 file_details["rpm"][key] = header[key].decode()
         # Handle sections that aren't simple strings
-        medium_keys = {
+        complex_keys = {
             "requirename": "requireversion",
             "conflict": "conflictversion",
             "obsoletes": "obsoleteversion",
@@ -135,7 +133,7 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             "supplementname": "supplementversion",
             "provides": "provideversion",
         }
-        for key, value in medium_keys.items():
+        for key, value in complex_keys.items():
             if key in header:
                 file_details["rpm"][key] = combine_lists(header[key], header[value])
         if "buildtime" in header:
