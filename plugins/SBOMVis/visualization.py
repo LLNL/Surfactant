@@ -18,11 +18,6 @@ from loguru import logger
 from surfactant.sbomtypes import SBOM
 
 
-class EdgeType(Enum):
-    FileRelationship = (0,)
-    MetadataSimilarity = 1
-
-
 @dataclass
 class DisplaySettings:
     fg_color: str = "white"
@@ -31,6 +26,8 @@ class DisplaySettings:
 
     node_scale_factor: int = 4  # Increase node size by degree
     icon_scale_factor: int = 4
+
+    container_max_size: int = 400
 
 
 class NodeType(str, Enum):
@@ -50,7 +47,6 @@ class NodeMetadata:
 def generate_dependency_graph(
     sbomDict: SBOM,
     enableCulling: bool = False,
-    edgeType: EdgeType = EdgeType.FileRelationship,
 ) -> networkx.graph:
     g = sbomDict["sbom"].graph
 
@@ -98,6 +94,11 @@ def generate_dependency_graph(
             updatedValues[ID] = DisplaySettings.icon_scale_factor * max(2, g.in_degree(ID))
         elif fileType == NodeType.Container:
             updatedValues[ID] = DisplaySettings.icon_scale_factor * max(1, g.degree(ID))
+            if updatedValues[ID] > DisplaySettings.container_max_size:
+                updatedValues[ID] = DisplaySettings.container_max_size
+                logger.info(
+                    f"Container with UUID: {ID} exceeds max width, constraining to {DisplaySettings.container_max_size} to ensure graph legibility"
+                )
 
     networkx.set_node_attributes(g, updatedValues, "size")
 
