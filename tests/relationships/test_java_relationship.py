@@ -1,6 +1,7 @@
 import pytest
-from surfactant.sbomtypes import SBOM, Software, Relationship
+
 from surfactant.relationships import java_relationship
+from surfactant.sbomtypes import SBOM, Relationship, Software
 
 
 @pytest.fixture
@@ -17,12 +18,16 @@ def test_sbom():
         UUID="uuid-supplier",
         fileName=["HelloWorld.class"],
         installPath=["/app/lib/com/example/HelloWorld.class"],
-        metadata=[{"javaClasses": {
-            "com.example.HelloWorld": {
-                "javaExports": ["com.example.HelloWorld"],
-                "javaImports": []
+        metadata=[
+            {
+                "javaClasses": {
+                    "com.example.HelloWorld": {
+                        "javaExports": ["com.example.HelloWorld"],
+                        "javaImports": [],
+                    }
+                }
             }
-        }}]
+        ],
     )
 
     # Software importing that class (dependency)
@@ -30,12 +35,16 @@ def test_sbom():
         UUID="uuid-importer",
         fileName=["app.jar"],
         installPath=["/app/bin/app.jar"],
-        metadata=[{"javaClasses": {
-            "com.example.Main": {
-                "javaExports": ["com.example.Main"],
-                "javaImports": ["com.example.HelloWorld"]
+        metadata=[
+            {
+                "javaClasses": {
+                    "com.example.Main": {
+                        "javaExports": ["com.example.Main"],
+                        "javaImports": ["com.example.HelloWorld"],
+                    }
+                }
             }
-        }}]
+        ],
     )
 
     sbom.add_software(jar_supplier)
@@ -71,17 +80,17 @@ def test_phase_2_legacy_path_match():
         UUID="uuid-supplier",
         fileName=["HelloWorld.class"],
         installPath=["/app/classes/com/example/HelloWorld.class"],
-        metadata=[{"javaClasses": {
-            "com.example.HelloWorld": {"javaExports": ["com.example.HelloWorld"]}
-        }}]
+        metadata=[
+            {"javaClasses": {"com.example.HelloWorld": {"javaExports": ["com.example.HelloWorld"]}}}
+        ],
     )
 
     importer = Software(
         UUID="uuid-importer",
         installPath=["/other/bin/app.jar"],
-        metadata=[{"javaClasses": {
-            "com.example.Main": {"javaImports": ["com.example.HelloWorld"]}
-        }}]
+        metadata=[
+            {"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}
+        ],
     )
 
     sbom.add_software(supplier)
@@ -102,15 +111,15 @@ def test_phase_3_heuristic_match():
     supplier = Software(
         UUID="uuid-supplier",
         fileName=["HelloWorld.class"],
-        installPath=["/shared/lib/HelloWorld.class"]
+        installPath=["/shared/lib/HelloWorld.class"],
     )
 
     importer = Software(
         UUID="uuid-importer",
         installPath=["/shared/bin/app.jar"],
-        metadata=[{"javaClasses": {
-            "com.example.Main": {"javaImports": ["com.example.HelloWorld"]}
-        }}]
+        metadata=[
+            {"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}
+        ],
     )
 
     # place them in same directory /shared
@@ -130,17 +139,15 @@ def test_no_match_returns_empty():
     sbom = SBOM()
 
     supplier = Software(
-        UUID="uuid-supplier",
-        fileName=["Other.class"],
-        installPath=["/somewhere/Other.class"]
+        UUID="uuid-supplier", fileName=["Other.class"], installPath=["/somewhere/Other.class"]
     )
 
     importer = Software(
         UUID="uuid-importer",
         installPath=["/bin/app.jar"],
-        metadata=[{"javaClasses": {
-            "com.example.Main": {"javaImports": ["com.example.HelloWorld"]}
-        }}]
+        metadata=[
+            {"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}
+        ],
     )
 
     sbom.add_software(supplier)
