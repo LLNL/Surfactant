@@ -49,6 +49,9 @@ def example_sbom():
         metadata=[{"elfDependencies": ["libalias.so"], "elfRunpath": ["/opt/alt/lib"]}],
     )
 
+    # add symlink mapping for sw8
+    sbom._record_symlink(sbom, "/opt/alt/lib/libalias.so", "/opt/alt/lib/libreal.so", subtype="file")
+
     for sw in [sw1, sw2, sw3a, sw3b, sw4, sw5, sw6, sw7, sw8, sw9]:
         sbom.add_software(sw)
 
@@ -120,6 +123,21 @@ def test_symlink_heuristic_match(symlink_heuristic_sbom):
     assert results is not None, "Expected relationship from symlink heuristic"
     assert len(results) == 1
     assert results[0] == Relationship("bin-uuid", "lib-uuid", "Uses")
+
+
+@pytest.mark.parametrize("label", ["symlink"])
+def test_symlink_heuristic_match_edge(example_sbom, label):
+    sbom, case_map = example_sbom
+    sw, expected_uuid = case_map[label]
+    metadata = sw.metadata[0]
+
+    # Clear fs_tree matches to force heuristic
+    sbom.fs_tree.remove_edge("/opt/alt/lib/libalias.so", "/opt/alt/lib/libalias.so")
+    sbom.fs_tree.remove_node("/opt/alt/lib/libalias.so")
+
+    result = elf_relationship.establish_relationships(sbom, sw, metadata)
+    assert result is not None
+    assert result == [Relationship(sw.UUID, expected_uuid, "Uses")], "Expected heuristic symlink match"
 
 
 def test_no_match_edge_case():
