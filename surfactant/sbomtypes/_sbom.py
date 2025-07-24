@@ -143,7 +143,6 @@ class SBOM:
         for sw in self.software:
             self._add_software_to_fs_tree(sw)
 
-
     def _add_software_to_fs_tree(self, sw: "Software") -> None:
         """
         Adds the install paths of a Software object to the SBOM's filesystem tree (fs_tree).
@@ -153,13 +152,13 @@ class SBOM:
 
         Args:
             sw (Software): The software object whose install paths are to be added.
-        
+
         Side Effects:
             Modifies self.fs_tree (a NetworkX DiGraph) by:
                 - Creating parent-child edges for each path segment.
                 - Ensuring the full install path node exists.
                 - Tagging the final node with the software's UUID.
-        
+
         Example:
             For installPath = ["C:\\app\\bin"], this will create:
                 - Nodes: "C:", "C:/app", "C:/app/bin"
@@ -187,7 +186,6 @@ class SBOM:
             # Associate this path node with the software UUID
             self.fs_tree.nodes[norm_path]["software_uuid"] = sw.UUID
 
-
     def get_software_by_path(self, path: str):
         """
         Retrieve a Software entry by exact install path, using the fs_tree.
@@ -196,7 +194,6 @@ class SBOM:
         if node and "software_uuid" in node:
             return self._find_software_entry(uuid=node["software_uuid"])
         return None
-
 
     def build_rel_graph(self) -> None:
         """Rebuild the directed graph from systems, software, and any loaded relationships."""
@@ -209,7 +206,6 @@ class SBOM:
         for rel in self._loaded_relationships:
             self.graph.add_edge(rel.xUUID, rel.yUUID, key=rel.relationship)
 
-
     def add_relationship(self, rel: Relationship) -> None:
         # The Relationship object get wired into the graph key=…
         if not self.graph.has_node(rel.xUUID):
@@ -219,7 +215,6 @@ class SBOM:
 
         # the edge key is the relationship type
         self.graph.add_edge(rel.xUUID, rel.yUUID, key=rel.relationship)
-
 
     def create_relationship(self, xUUID: str, yUUID: str, relationship: str) -> Relationship:
         # ensure nodes exist
@@ -234,7 +229,6 @@ class SBOM:
         # return a Relationship object for backwards-compat
         return Relationship(xUUID, yUUID, relationship)
 
-
     def find_relationship_object(self, r: Relationship) -> bool:
         """
         Return True if an exact edge (r.xUUID → r.yUUID) exists
@@ -242,13 +236,11 @@ class SBOM:
         """
         return self.graph.has_edge(r.xUUID, r.yUUID, key=r.relationship)
 
-
     def find_relationship(self, xUUID: str, yUUID: str, relationship: str) -> bool:
         """
         Same as find_relationship_object, but takes raw args.
         """
         return self.graph.has_edge(xUUID, yUUID, key=relationship)
-
 
     def has_relationship(
         self,
@@ -275,12 +267,10 @@ class SBOM:
             return True
         return False
 
-
     def find_software(self, sha256: Optional[str]) -> Optional[Software]:
         if sha256 in self.software_lookup_by_sha256:
             return self.software_lookup_by_sha256[sha256]
         return None
-
 
     def add_software(self, sw: Software) -> None:
         if sw.sha256 is not None:
@@ -292,7 +282,6 @@ class SBOM:
             self.graph.add_node(sw.UUID, type="Software")
 
         self._add_software_to_fs_tree(sw)
-
 
     def _record_symlink(
         self, link_path: str, target_path: str, *, subtype: Optional[str] = None
@@ -358,7 +347,6 @@ class SBOM:
             logger.debug(msg)
         else:
             logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
-
 
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
@@ -488,7 +476,6 @@ class SBOM:
         self.software.append(sw)
         return sw
 
-
     def merge(self, sbom_m: SBOM):
         # merged/old to new UUID map
         uuid_updates: Dict[str, str] = {}
@@ -603,7 +590,6 @@ class SBOM:
             else:
                 self.starRelationships.add(star_rel)
 
-
     def _find_systems_entry(
         self, uuid: Optional[str] = None, name: Optional[str] = None
     ) -> Optional[System]:
@@ -626,7 +612,6 @@ class SBOM:
                     continue
             return system
         return None
-
 
     def _find_software_entry(
         self,
@@ -669,7 +654,6 @@ class SBOM:
                 return sw
         return None
 
-
     def _find_relationship_entry(
         self,
         xUUID: Optional[str] = None,
@@ -701,7 +685,6 @@ class SBOM:
             return Relationship(xUUID=u, yUUID=v, relationship=key)
         return None
 
-
     def _find_star_relationship_entry(
         self,
         xUUID: Optional[str] = None,
@@ -732,7 +715,6 @@ class SBOM:
             return rel
         return None
 
-
     def is_valid_uuid4(self, u: str) -> bool:
         """Merge helper function to check if a uuid is valid.
 
@@ -748,7 +730,6 @@ class SBOM:
             return False
         return str(u_test) == u
 
-
     def get_children(self, xUUID: str, rel_type: Optional[str] = None) -> List[str]:
         """
         Return all v such that there is an edge xUUID → v,
@@ -760,7 +741,6 @@ class SBOM:
                 children.append(v)
         return children
 
-
     def get_parents(self, yUUID: str, rel_type: Optional[str] = None) -> List[str]:
         """
         Return all u such that there is an edge u → yUUID,
@@ -771,7 +751,6 @@ class SBOM:
             if rel_type is None or key.upper() == rel_type.upper():
                 parents.append(u)
         return parents
-
 
     def to_dict_override(self) -> dict:
         """
@@ -799,7 +778,6 @@ class SBOM:
         ]
 
         return data
-
 
     def to_json_override(self, *args, **kwargs) -> str:
         """
