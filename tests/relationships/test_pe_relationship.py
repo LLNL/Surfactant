@@ -1,6 +1,7 @@
 import pytest
+
 from surfactant.relationships import pe_relationship
-from surfactant.sbomtypes import SBOM, Software, Relationship
+from surfactant.sbomtypes import SBOM, Relationship, Software
 
 
 @pytest.fixture
