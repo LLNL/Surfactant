@@ -22,6 +22,7 @@ from ._provenance import SoftwareProvenance
 from ._relationship import Relationship, StarRelationship
 from ._software import Software, SoftwareComponent
 from ._system import System
+from surfactant.utils.paths import normalize_path
 
 INTERNAL_FIELDS = {"software_lookup_by_sha256"}
 
@@ -170,13 +171,13 @@ class SBOM:
 
         for path in sw.installPath:
             # Normalize Windows or Unix paths to a consistent POSIX string
-            norm_path = pathlib.PurePosixPath(path).as_posix()
+            norm_path = normalize_path(path)
             parts = pathlib.PurePosixPath(norm_path).parts
 
             # Build parent-child relationships for all intermediate directories
             for i in range(1, len(parts)):
-                parent = pathlib.PurePosixPath(*parts[:i]).as_posix()
-                child = pathlib.PurePosixPath(*parts[: i + 1]).as_posix()
+                parent = normalize_path(*parts[:i])
+                child = normalize_path(*parts[: i + 1])
                 self.fs_tree.add_edge(parent, child)
 
             # Ensure the final node exists before assigning attributes
@@ -186,14 +187,29 @@ class SBOM:
             # Associate this path node with the software UUID
             self.fs_tree.nodes[norm_path]["software_uuid"] = sw.UUID
 
-    def get_software_by_path(self, path: str):
+    def get_software_by_path(self, path: str) -> Optional[Software]:
         """
-        Retrieve a Software entry by exact install path, using the fs_tree.
+        Retrieve a Software entry by normalized install path, using the fs_tree.
+
+        Args:
+            path (str): Raw input path (can be Windows or POSIX format).
+
+        Returns:
+            Software | None: The matching software object if found.
         """
-        node = self.fs_tree.nodes.get(path)
+        # Normalize the input path to POSIX format to match internal fs_tree representation
+        norm_path = normalize_path(path)
+
+        # Attempt to retrieve the node from the filesystem tree using the normalized path
+        node = self.fs_tree.nodes.get(norm_path)
+
+        # If the node exists and contains a reference to a software UUID, retrieve the Software object
         if node and "software_uuid" in node:
             return self._find_software_entry(uuid=node["software_uuid"])
+
+        # No match found for this path
         return None
+
 
     def build_rel_graph(self) -> None:
         """Rebuild the directed graph from systems, software, and any loaded relationships."""
@@ -307,8 +323,8 @@ class SBOM:
             subtype:     Optional kind of symlink, e.g. "file" or "directory".
         """
         # Normalize inputs to canonical POSIX strings
-        link_node = pathlib.PurePosixPath(link_path).as_posix()
-        target_node = pathlib.PurePosixPath(target_path).as_posix()
+        link_node = normalize_path(link_path)
+        target_node = normalize_path(target_path)
 
         # -------------------------------------------------------------------------
         # Ensure nodes exist in the SBOM’s main graph, then record the symlink

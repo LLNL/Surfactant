@@ -8,6 +8,7 @@ from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
+from surfactant.utils.paths import normalize_path
 
 
 def has_required_fields(metadata) -> bool:
@@ -85,7 +86,7 @@ def establish_relationships(
 
             # Absolute path: resolve directly using fs_tree
             if is_absolute_path(refName):
-                ref_abspath = pathlib.PureWindowsPath(refName).as_posix()
+                ref_abspath = normalize_path(refName)
                 match = sbom.get_software_by_path(ref_abspath)
 
                 if match:
