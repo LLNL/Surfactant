@@ -20,8 +20,8 @@ import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
 
-def supports_file(filetype) -> bool:
-    return filetype == "PE"
+def supports_file(filetype: List[str]) -> bool:
+    return "PE" in filetype
 
 
 @surfactant.plugin.hookimpl
@@ -29,7 +29,7 @@ def extract_file_info(
     sbom: SBOM,
     software: Software,
     filename: str,
-    filetype: str,
+    filetype: List[str],
     software_field_hints: List[Tuple[str, object, int]],
 ) -> object:
     if not supports_file(filetype):
@@ -282,6 +282,7 @@ def get_assemblyref_info(asmref_info) -> Dict[str, Any]:
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
     # HeapItemBinary value is the bytes following the compressed int (indicating the length)
     # raw_data attribute has the compressed int indicating length included
+
     asmref["HashValue"] = asmref_info.HashValue.value.hex()
     add_assembly_flags_info(asmref, asmref_info)
     return asmref
