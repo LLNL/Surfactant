@@ -67,7 +67,9 @@ def establish_relationships(
             base_dir = pathlib.PurePath(ipath).parent.as_posix()
             full_path = f"{base_dir}/{class_path}"
             match = sbom.get_software_by_path(full_path)
-            logger.debug(f"[Java][fs_tree] lookup {full_path} → {'found' if match else 'not found'}")
+            logger.debug(
+                f"[Java][fs_tree] lookup {full_path} → {'found' if match else 'not found'}"
+            )
             if match:
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"
