@@ -1,7 +1,13 @@
+<<<<<<< HEAD
 # pylint: disable=redefined-outer-name
 import networkx as nx
+=======
+>>>>>>> 5b60e7bf709f51985bbcd5471e2e364189c87ef4
 import pytest
+
 from surfactant.sbomtypes import SBOM, Software
+
+
 @pytest.fixture
 def software_entries():
     return [
@@ -9,6 +15,7 @@ def software_entries():
         Software(UUID="uuid-2", installPath=["/usr/lib/libc.so"]),
         Software(UUID="uuid-3", installPath=["/opt/tools/bin/run"]),
     ]
+
 
 def test_fs_tree_population(software_entries):
     sbom = SBOM()
@@ -31,6 +38,7 @@ def test_fs_tree_population(software_entries):
     assert fs.nodes["/usr/bin/ls"]["software_uuid"] == "uuid-1"
     assert fs.nodes["/usr/lib/libc.so"]["software_uuid"] == "uuid-2"
     assert fs.nodes["/opt/tools/bin/run"]["software_uuid"] == "uuid-3"
+
 
 def test_get_software_by_path(software_entries):
     sbom = SBOM()
