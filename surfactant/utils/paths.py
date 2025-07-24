@@ -11,9 +11,6 @@ def normalize_path(*path_parts: Union[str, pathlib.PurePosixPath]) -> str:
     Returns:
         str: POSIX-style normalized path (e.g., 'C:/Program Files/App')
     """
-    # Defensive check: support single call like normalize_path("C:\\App") or multiple parts
-    if len(path_parts) == 1 and isinstance(path_parts[0], (str, pathlib.PurePosixPath)):
-        return pathlib.PurePosixPath(str(path_parts[0])).as_posix()
-
-    # Join and normalize all parts
-    return pathlib.PurePosixPath(*[str(p) for p in path_parts]).as_posix()
+    # Replace backslashes in each part before joining
+    cleaned_parts = [str(p).replace("\\", "/") for p in path_parts]
+    return pathlib.PurePosixPath(*cleaned_parts).as_posix()
