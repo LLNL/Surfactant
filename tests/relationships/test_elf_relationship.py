@@ -145,7 +145,7 @@ def test_symlink_heuristic_match_edge(example_sbom, label):
     assert result == [Relationship(sw.UUID, expected_uuid, "Uses")], (
         "Expected heuristic symlink match"
     )
-    
+
 
 def test_no_match_edge_case():
     """
