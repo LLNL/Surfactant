@@ -125,7 +125,7 @@ def establish_relationships(
 
             for directory in probedirs:
                 for candidate in combinations:
-                    path = pathlib.PurePosixPath(directory, candidate).as_posix()
+                    path = normalize_path(directory, candidate)
                     match = sbom.get_software_by_path(path)
                     if match:
                         relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
@@ -177,8 +177,8 @@ def establish_relationships(
                         # most likely a private assembly, so path must be relative to application's directory
                         if isinstance(software.installPath, Iterable):
                             for ipath in software.installPath:
-                                base = pathlib.PureWindowsPath(ipath).parent.as_posix()
-                                cb_fullpath = pathlib.PurePosixPath(base, href).as_posix()
+                                base_path = pathlib.PureWindowsPath(ipath).parent
+                                cb_fullpath = normalize_path(base_path, href)
                                 match = sbom.get_software_by_path(cb_fullpath)
                                 if match:
                                     relationships.append(
@@ -197,7 +197,7 @@ def establish_relationships(
             )
 
             for directory in probedirs:
-                path = pathlib.PurePosixPath(directory, refName + ".dll").as_posix()
+                path = normalize_path(directory, refName + ".dll")
                 match = sbom.get_software_by_path(path)
                 if match:
                     relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
@@ -211,45 +211,44 @@ def is_absolute_path(fname: str) -> bool:
     return givenpath.is_absolute()
 
 
-# construct a list of directories to probe for establishing dotnet relationships
 def get_dotnet_probedirs(software: Software, refCulture, refName, dnProbingPaths):
+    """
+    Construct a list of normalized directories to probe for .NET assembly resolution.
+
+    Args:
+        software (Software): The software object to base search paths from.
+        refCulture (str | None): Culture value from AssemblyRef metadata.
+        refName (str): Name of the referenced assembly.
+        dnProbingPaths (list[str] | None): Optional private probing paths from app config.
+
+    Returns:
+        list[str]: List of normalized POSIX-style probe directories.
+    """
     probedirs = []
-    # probe for the referenced assemblies
-    if isinstance(software.installPath, Iterable):
-        for install_filepath in software.installPath:
-            install_basepath = pathlib.PureWindowsPath(install_filepath).parent.as_posix()
-            if refCulture is None or refCulture == "":
-                # [application base] / [assembly name].dll
-                # [application base] / [assembly name] / [assembly name].dll
-                probedirs.append(pathlib.PureWindowsPath(install_basepath).as_posix())
-                probedirs.append(pathlib.PureWindowsPath(install_basepath, refName).as_posix())
-                if dnProbingPaths:
-                    # add probing private paths
-                    for path in dnProbingPaths:
-                        # [application base] / [binpath] / [assembly name].dll
-                        # [application base] / [binpath] / [assembly name] / [assembly name].dll
-                        probedirs.append(pathlib.PureWindowsPath(install_basepath, path).as_posix())
-                        probedirs.append(
-                            pathlib.PureWindowsPath(install_basepath, path, refName).as_posix()
-                        )
-            else:
-                # [application base] / [culture] / [assembly name].dll
-                # [application base] / [culture] / [assembly name] / [assembly name].dll
-                probedirs.append(pathlib.PureWindowsPath(install_basepath, refCulture).as_posix())
-                probedirs.append(
-                    pathlib.PureWindowsPath(install_basepath, refName, refCulture).as_posix()
-                )
-                if dnProbingPaths:
-                    # add probing private paths
-                    for path in dnProbingPaths:
-                        # [application base] / [binpath] / [culture] / [assembly name].dll
-                        # [application base] / [binpath] / [culture] / [assembly name] / [assembly name].dll
-                        probedirs.append(
-                            pathlib.PureWindowsPath(install_basepath, path, refCulture).as_posix()
-                        )
-                        probedirs.append(
-                            pathlib.PureWindowsPath(
-                                install_basepath, path, refName, refCulture
-                            ).as_posix()
-                        )
+
+    if not isinstance(software.installPath, Iterable):
+        return probedirs
+
+    for install_filepath in software.installPath:
+        install_basepath = pathlib.PureWindowsPath(install_filepath).parent
+
+        if not refCulture:
+            # e.g. C:/app → C:/app, C:/app/samedirlib
+            probedirs.append(normalize_path(install_basepath))
+            probedirs.append(normalize_path(install_basepath, refName))
+
+            if dnProbingPaths:
+                for path in dnProbingPaths:
+                    probedirs.append(normalize_path(install_basepath, path))
+                    probedirs.append(normalize_path(install_basepath, path, refName))
+        else:
+            # e.g. C:/app → C:/app/culture, C:/app/lib/culture
+            probedirs.append(normalize_path(install_basepath, refCulture))
+            probedirs.append(normalize_path(install_basepath, refName, refCulture))
+
+            if dnProbingPaths:
+                for path in dnProbingPaths:
+                    probedirs.append(normalize_path(install_basepath, path, refCulture))
+                    probedirs.append(normalize_path(install_basepath, path, refName, refCulture))
+
     return probedirs
