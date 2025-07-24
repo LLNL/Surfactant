@@ -14,6 +14,8 @@ import networkx as nx
 from dataclasses_json import config, dataclass_json
 from loguru import logger
 
+from surfactant.utils.paths import normalize_path
+
 from ._analysisdata import AnalysisData
 from ._file import File
 from ._hardware import Hardware
@@ -22,7 +24,6 @@ from ._provenance import SoftwareProvenance
 from ._relationship import Relationship, StarRelationship
 from ._software import Software, SoftwareComponent
 from ._system import System
-from surfactant.utils.paths import normalize_path
 
 INTERNAL_FIELDS = {"software_lookup_by_sha256"}
 
@@ -209,7 +210,6 @@ class SBOM:
 
         # No match found for this path
         return None
-
 
     def build_rel_graph(self) -> None:
         """Rebuild the directed graph from systems, software, and any loaded relationships."""

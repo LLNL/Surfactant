@@ -1,6 +1,7 @@
 import pathlib
 from typing import Union
 
+
 def normalize_path(*path_parts: Union[str, pathlib.PurePosixPath]) -> str:
     """
     Normalize one or more path parts into a single POSIX-style path string.
