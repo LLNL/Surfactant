@@ -50,7 +50,9 @@ def example_sbom():
     )
 
     # add symlink mapping for sw8
-    sbom._record_symlink(sbom, "/opt/alt/lib/libalias.so", "/opt/alt/lib/libreal.so", subtype="file")
+    sbom._record_symlink(
+        sbom, "/opt/alt/lib/libalias.so", "/opt/alt/lib/libreal.so", subtype="file"
+    )
 
     for sw in [sw1, sw2, sw3a, sw3b, sw4, sw5, sw6, sw7, sw8, sw9]:
         sbom.add_software(sw)
@@ -137,7 +139,9 @@ def test_symlink_heuristic_match_edge(example_sbom, label):
 
     result = elf_relationship.establish_relationships(sbom, sw, metadata)
     assert result is not None
-    assert result == [Relationship(sw.UUID, expected_uuid, "Uses")], "Expected heuristic symlink match"
+    assert result == [Relationship(sw.UUID, expected_uuid, "Uses")], (
+        "Expected heuristic symlink match"
+    )
 
 
 def test_no_match_edge_case():
