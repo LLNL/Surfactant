@@ -96,7 +96,7 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
             full_path = normalize_path(directory, fname)
             match = sbom.get_software_by_path(full_path)
             logger.debug(f"[PE][fs_tree] Looking for {full_path} → Match: {bool(match)}")
-            if match:
+            if match and match.UUID != dependent_uuid:
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"
 
@@ -112,8 +112,9 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
                         ip_dir = pathlib.PurePosixPath(ipath).parent.as_posix()
                         if ip_dir in probedirs:
                             logger.debug(f"[PE][legacy] Matched {fname} in installPath {ipath}")
-                            matched_uuids.add(item.UUID)
-                            used_method[item.UUID] = "legacy_installPath"
+                            if item.UUID != dependent_uuid:
+                                matched_uuids.add(item.UUID)
+                                used_method[item.UUID] = "legacy_installPath"
 
         # ---------------------------------------------------------
         # Phase 3: Symlink-aware heuristic (same fileName + folder)
@@ -129,13 +130,16 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
                                     logger.debug(
                                         f"[PE][heuristic] Matched '{fname}' via symlink-aware path: {ipath}"
                                     )
-                                    matched_uuids.add(item.UUID)
-                                    used_method[item.UUID] = "symlink_heuristic"
+                                    if item.UUID != dependent_uuid:
+                                        matched_uuids.add(item.UUID)
+                                        used_method[item.UUID] = "symlink_heuristic"
 
         # ----------------------------------------
         # Emit final relationships (if any found)
         # ----------------------------------------
         for uuid in matched_uuids:
+            if uuid == dependent_uuid:
+                continue
             rel = Relationship(dependent_uuid, uuid, "Uses")
             if rel not in relationships:
                 logger.debug(

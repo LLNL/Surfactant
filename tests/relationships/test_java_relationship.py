@@ -53,14 +53,14 @@ def test_sbom():
     return sbom, jar_importer, jar_supplier
 
 
-def test_phase_1_fs_tree_match(sbom_fixture, class_path_fixture):
+def test_phase_1_fs_tree_match(test_sbom, java_class_path):
     """
     Phase 1: Check that sbom.get_software_by_path() resolves the dependency
     """
-    sbom, importer, supplier = sbom_fixture
+    sbom, importer, supplier = test_sbom
 
     # Inject into fs_tree
-    sbom.fs_tree.add_node(f"/app/lib/{class_path_fixture}", software_uuid=supplier.UUID)
+    sbom.fs_tree.add_node(f"/app/lib/{java_class_path}", software_uuid=supplier.UUID)
 
     metadata = importer.metadata[0]
     results = java_relationship.establish_relationships(sbom, importer, metadata)
@@ -111,12 +111,12 @@ def test_phase_3_heuristic_match():
     supplier = Software(
         UUID="uuid-supplier",
         fileName=["HelloWorld.class"],
-        installPath=["/shared/lib/HelloWorld.class"],
+        installPath=["/shared/com/example/HelloWorld.class"],
     )
 
     importer = Software(
         UUID="uuid-importer",
-        installPath=["/shared/bin/app.jar"],
+        installPath=["/shared/app.jar"],
         metadata=[
             {"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}
         ],
