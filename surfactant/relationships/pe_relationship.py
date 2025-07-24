@@ -4,14 +4,13 @@
 # SPDX-License-Identifier: MIT
 import pathlib
 from collections.abc import Iterable
-from typing import List, Optional, Any
+from typing import Any, List, Optional
+
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 from surfactant.utils.paths import normalize_path
-
-from ._internal.windows_utils import find_installed_software
 
 
 def has_required_fields(metadata: dict[str, Any]) -> bool:
@@ -148,7 +147,6 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
             logger.debug(f"[PE] No matches found for import '{fname}'")
 
     return relationships
-
 
 
 # def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Relationship]:
