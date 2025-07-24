@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 import pathlib
 import pytest
 from surfactant.sbomtypes import SBOM, Software, Relationship
