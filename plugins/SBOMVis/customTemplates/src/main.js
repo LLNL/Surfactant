@@ -99,7 +99,7 @@ function drawGraph() {
 			if (network.isCluster(nodeID)) network.openCluster(nodeID);
 			else {
 				if (clickedNode.nodeMetadata.type === "Container") {
-					const childNodes = network.getConnectedNodes(nodeID, "to");
+					const childNodes = network.getConnectedNodes(nodeID, "from");
 
 					const clusterOptions = {
 						joinCondition: (parentNodeOptions, childNodeOptions) => {

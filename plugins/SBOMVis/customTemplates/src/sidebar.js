@@ -321,7 +321,9 @@ export function buildNodeSelectionSidebar(nodeID) {
 			title: "Relationships",
 			body: [
 				createFoldableSectionInfoTable(
-					`Uses (${usesNodeIDs.length})`,
+					clickedNode.nodeMetadata.type !== "Container"
+						? `Uses (${usesNodeIDs.length})`
+						: `Contains (${usesNodeIDs.length})`,
 					convertNodeIDsToFileNames(usesNodeIDs),
 				),
 				createFoldableSectionInfoTable(
