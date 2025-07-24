@@ -49,7 +49,7 @@ export function createPopupElement(nodeID) {
 				insertOrUpdateInfoTable([
 					[
 						"Contains",
-						`${network.getConnectedNodes(nodeID, "to").length} Nodes`,
+						`${network.getConnectedNodes(nodeID, "from").length} Nodes`,
 					],
 				]);
 
