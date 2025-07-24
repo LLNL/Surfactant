@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 # pylint: disable=redefined-outer-name
 import networkx as nx
-=======
->>>>>>> 5b60e7bf709f51985bbcd5471e2e364189c87ef4
 import pytest
 
 from surfactant.sbomtypes import SBOM, Software
