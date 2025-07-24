@@ -131,16 +131,21 @@ def test_symlink_heuristic_match_edge(example_sbom, label):
     sw, expected_uuid = case_map[label]
     metadata = sw.metadata[0]
 
-    # Clear fs_tree matches to force heuristic
-    sbom.fs_tree.remove_edge("/opt/alt/lib/libalias.so", "/opt/alt/lib/libalias.so")
-    sbom.fs_tree.remove_node("/opt/alt/lib/libalias.so")
+    # Defensive edge removal to avoid NetworkXError
+    edge_u = "/opt/alt/lib/libalias.so"
+    edge_v = "/opt/alt/lib/libreal.so"
+    if sbom.fs_tree.has_edge(edge_u, edge_v):
+        sbom.fs_tree.remove_edge(edge_u, edge_v)
+
+    if sbom.fs_tree.has_node(edge_u):
+        sbom.fs_tree.remove_node(edge_u)
 
     result = elf_relationship.establish_relationships(sbom, sw, metadata)
     assert result is not None
     assert result == [Relationship(sw.UUID, expected_uuid, "Uses")], (
         "Expected heuristic symlink match"
     )
-
+    
 
 def test_no_match_edge_case():
     """
