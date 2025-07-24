@@ -73,7 +73,7 @@ def extract_file_info(
     sbom: SBOM,
     software: Software,
     filename: str,
-    filetype: str,
+    filetype: List[str],
     software_field_hints: List[Tuple[str, object, int]],
     # context_queue: "Queue[ContextEntry]",     # Present for use in future extraction implementation
     # current_context: Optional[ContextEntry],
