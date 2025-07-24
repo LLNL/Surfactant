@@ -17,9 +17,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 def supports_file(filetype) -> bool:
-    """Returns if filetype contains "RPM Package"
-    
-    """
+    """Returns if filetype contains "RPM Package" """
     logger.debug("Checks for RPM Package")
     return "RPM Package" in filetype
 
