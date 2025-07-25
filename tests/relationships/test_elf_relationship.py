@@ -29,7 +29,7 @@ def example_sbom():
         UUID="uuid-4-consumer",
         installPath=["/bin/testbin"],
         metadata=[{"elfDependencies": ["libxyz.so"]}],
-    )    
+    )
     sw4 = Software(
         UUID="uuid-4",
         fileName=["libxyz.so"],
