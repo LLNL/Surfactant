@@ -1,6 +1,7 @@
 # pylint: disable=redefined-outer-name
-import pytest
 import pathlib
+
+import pytest
 
 from surfactant.relationships import pe_relationship
 from surfactant.sbomtypes import SBOM, Relationship, Software
