@@ -25,6 +25,11 @@ def example_sbom():
         installPath=["/opt/myapp/bin/myapp"],
         metadata=[{"elfDependencies": ["libbar.so"], "elfRunpath": ["$ORIGIN/../lib"]}],
     )
+    sw4_consumer = Software(
+        UUID="uuid-4-consumer",
+        installPath=["/bin/testbin"],
+        metadata=[{"elfDependencies": ["libxyz.so"]}],
+    )    
     sw4 = Software(
         UUID="uuid-4",
         fileName=["libxyz.so"],
@@ -52,13 +57,13 @@ def example_sbom():
     # add symlink mapping for sw8
     sbom._record_symlink("/opt/alt/lib/libalias.so", "/opt/alt/lib/libreal.so", subtype="file")  # pylint: disable=protected-access
 
-    for sw in [sw1, sw2, sw3a, sw3b, sw4, sw5, sw6, sw7, sw8, sw9]:
+    for sw in [sw1, sw2, sw3a, sw3b, sw4, sw4_consumer, sw5, sw6, sw7, sw8, sw9]:
         sbom.add_software(sw)
 
     return sbom, {
         "absolute": (sw3a, "uuid-1"),
         "relative": (sw3b, "uuid-2"),
-        "system": (sw4, "uuid-4"),
+        "system": (sw4_consumer, "uuid-4"),
         "origin": (sw6, "uuid-5"),
         "rpath": (sw7, "uuid-2"),
         "symlink": (sw9, "uuid-8"),
