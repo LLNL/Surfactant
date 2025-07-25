@@ -22,7 +22,7 @@ def basic_pe_sbom():
     dll = Software(
         UUID="uuid-dll",
         fileName=["foo.dll"],
-        installPath=["C:/libs/foo.dll"],
+        installPath=["C:/bin/foo.dll"],
     )
 
     binary = Software(
