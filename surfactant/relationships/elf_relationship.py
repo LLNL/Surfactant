@@ -97,6 +97,8 @@ def establish_relationships(
 
         for path in fpaths:
             match = sbom.get_software_by_path(path)
+            if match and match.UUID != software.UUID:
+                matched_uuids.add(match.UUID)
             print(f"[elf_relationship] Trying fs_tree lookup: {path} -> {match}")
             if match:
                 matched_uuids.add(match.UUID)
@@ -109,8 +111,9 @@ def establish_relationships(
                     continue
                 for fp in fpaths:
                     if isinstance(item.installPath, Iterable) and fp in item.installPath:
-                        matched_uuids.add(item.UUID)
-                        used_method[item.UUID] = "legacy_installPath"
+                        if item.UUID != software.UUID:
+                            matched_uuids.add(item.UUID)
+                            used_method[item.UUID] = "legacy_installPath"
 
         # Phase 3: Symlink-aware heuristic
         # If path-based and legacy matching failed, fall back to checking:
@@ -124,12 +127,15 @@ def establish_relationships(
                             ip_dir = pathlib.PurePosixPath(ipath).parent
                             for fp in fpaths:
                                 if pathlib.PurePosixPath(fp).parent == ip_dir:
-                                    matched_uuids.add(item.UUID)
-                                    used_method[item.UUID] = "symlink_heuristic"
-                                    logger.debug(f"Symlink heuristic matched: {fp} ~ {ipath}")
+                                    if item.UUID != software.UUID:
+                                        matched_uuids.add(item.UUID)
+                                        used_method[item.UUID] = "symlink_heuristic"
+                                        logger.debug(f"Symlink heuristic matched: {fp} ~ {ipath}")
 
         # Emit final relationships
         for dependency_uuid in matched_uuids:
+            if dependency_uuid == software.UUID:
+                continue
             rel = Relationship(dependent_uuid, dependency_uuid, "Uses")
             if rel not in relationships:
                 relationships.append(rel)

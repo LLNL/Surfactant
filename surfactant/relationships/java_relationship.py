@@ -70,7 +70,7 @@ def establish_relationships(
             logger.debug(
                 f"[Java][fs_tree] lookup {full_path} → {'found' if match else 'not found'}"
             )
-            if match:
+            if match and match.UUID != dependent_uuid:
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"
 
@@ -113,6 +113,8 @@ def establish_relationships(
         # Emit 'Uses' relationships
         # -----------------------------
         for uuid in matched_uuids:
+            if uuid == dependent_uuid:
+                continue
             rel = Relationship(dependent_uuid, uuid, "Uses")
             if rel not in relationships:
                 logger.debug(
