@@ -10,69 +10,90 @@ from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.model.contact import OrganizationalEntity
 from cyclonedx.model.dependency import Dependency
 from cyclonedx.model.tool import Tool
+from cyclonedx.model import ExternalReference, ExternalReferenceType
 
 import surfactant.plugin
 from surfactant import __version__ as surfactant_version
 from surfactant.sbomtypes import SBOM, Software, System
+from loguru import logger
 
 
 @surfactant.plugin.hookimpl
 def write_sbom(sbom: SBOM, outfile) -> None:
-    """Writes the contents of the SBOM to a CycloneDX file.
+    """
+    Generate a CycloneDX SBOM file from the internal SBOM representation.
 
-    The write_sbom hook for the cyclonedx_writer makes a best-effort attempt
-    to map the information gathered from the internal SBOM representation
-    to a valid CycloneDX file.
+    This implementation uses Surfactant's internal SBOM structure, converts it into
+    CycloneDX components, adds dependency edges, and resolves symlinked install paths
+    as external references. The result is written to the specified output file.
 
     Args:
-        sbom (SBOM): The SBOM to write to the output file.
-        outfile: The output file handle to write the SBOM to.
+        sbom (SBOM): The internal SBOM to convert.
+        outfile: File-like object to write the CycloneDX-formatted SBOM.
     """
     outformat = "json"
 
-    # Initialize BOM and metadata
+    logger.debug("Initializing CycloneDX BOM metadata")
     surfactant_tool = Tool(name="Surfactant", version=f"{surfactant_version}")
     bom_metadata = BomMetaData(tools=[surfactant_tool])
     bom = Bom(metadata=bom_metadata)
 
-    # Add CycloneDX Components for systems
+    # Convert systems to CycloneDX components
     for system in sbom.systems:
         _, comp = convert_system_to_cyclonedx_component(system)
         bom.components.add(comp)
+        logger.debug(f"Added system component: {comp.name} ({comp.bom_ref})")
 
-    # Build container-path lookup for software
     container_path_relationships: Dict[Tuple[str, str]] = {}
     for software in sbom.software:
-        if sbom.get_children(software.UUID, rel_type="Contains"):
+        children = sbom.get_children(software.UUID, rel_type="Contains")
+        if children:
+            # This software is a container
             _, container_list = convert_software_to_cyclonedx_container_components(software)
             for container in container_list:
                 bom.components.add(container)
+                logger.debug(f"Added container component: {container.name} ({container.bom_ref})")
         else:
+            # This is a leaf software component (file-level)
             for parent_uuid, _, file in convert_software_to_cyclonedx_file_components(software):
                 bom.components.add(file)
+                logger.debug(f"Added file component: {file.name} ({file.bom_ref})")
                 if parent_uuid:
                     container_path_relationships[file.bom_ref.value] = parent_uuid
 
-    # Build a map of Dependency objects keyed by UUID
-    cdx_rels: Dict[str, Dependency] = {}
+                # Add external references for symlinked paths
+                if software.installPath:
+                    for ip in software.installPath:
+                        sw = sbom.get_software_by_path(ip)
+                        if sw and sw.UUID == software.UUID and ip != str(file.name):
+                            logger.debug(f"Injecting symlink external reference: {ip} for {sw.UUID}")
+                            file.external_references.add(
+                                ExternalReference(
+                                    type=ExternalReferenceType.VCS,
+                                    url=f"file://{ip}",
+                                    comment="Symlinked path",
+                                )
+                            )
 
-    # Walk every edge, pulling the relationship out of the key
+    # Construct dependency relationships
+    cdx_rels: Dict[str, Dependency] = {}
     for parent_uuid, child_uuid, rel_type in sbom.graph.edges(keys=True):
         rel_type = rel_type.upper()
 
-        # skip duplicate CONTAINS if we've already mapped a container path
+        # Avoid duplicate CONTAINS edges if already handled via containerPath
         if (
             rel_type == "CONTAINS"
             and child_uuid in container_path_relationships
             and parent_uuid != container_path_relationships[child_uuid]
         ):
+            logger.debug(f"Skipping duplicate CONTAINS relationship: {parent_uuid} → {child_uuid}")
             continue
 
-        # ensure we have a Dependency entry for the parent
         if parent_uuid not in cdx_rels:
             cdx_rels[parent_uuid] = Dependency(ref=BomRef(parent_uuid))
         parent_dep = cdx_rels[parent_uuid]
 
+        logger.debug(f"Recording relationship {rel_type}: {parent_uuid} → {child_uuid}")
         if rel_type == "CONTAINS":
             parent_dep.dependencies.add(Dependency(ref=BomRef(child_uuid)))
         elif rel_type in ("USES", "DEPENDS_ON", "REQUIRES"):
@@ -83,6 +104,8 @@ def write_sbom(sbom: SBOM, outfile) -> None:
     # Attach all built dependencies to the BOM
     for dep in cdx_rels.values():
         bom.dependencies.add(dep)
+        logger.debug(f"Added dependency block for: {dep.ref}")
+
 
     # Output the BOM in the requested format
     output_fmt = (
@@ -93,9 +116,10 @@ def write_sbom(sbom: SBOM, outfile) -> None:
     outputter: cyclonedx.output.BaseOutput = cyclonedx.output.make_outputter(
         bom=bom, output_format=output_fmt, schema_version=cyclonedx.schema.SchemaVersion.V1_5
     )
+    logger.debug("Writing CycloneDX SBOM output")
     outfile.write(outputter.output_as_string())
 
-
+    
 @surfactant.plugin.hookimpl
 def short_name() -> Optional[str]:
     return "cyclonedx"
