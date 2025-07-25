@@ -6,7 +6,7 @@ from surfactant.sbomtypes import SBOM, Relationship, Software
 
 
 @pytest.fixture
-def base_sbom():
+def sbom_fixture():
     """
     Fixture: returns a basic SBOM with a .NET supplier and consumer.
     - Supplier exports SomeLibrary.dll with version and culture metadata.
@@ -105,7 +105,12 @@ def test_dotnet_implmap_unmanaged_match():
     consumer = Software(
         UUID="uuid-consumer",
         installPath=["/app/main.exe"],
-        metadata=[{"dotnetImplMap": [{"Name": "native"}]}],
+        metadata=[
+            {
+                "dotnetImplMap": [{"Name": "native"}],
+                "dotnetAssemblyRef": []
+            }
+        ],
     )
 
     sbom.add_software(supplier)
