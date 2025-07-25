@@ -3,19 +3,18 @@ from collections.abc import Iterable
 from typing import Dict, List, Optional, Tuple
 
 import cyclonedx.output
-from cyclonedx.model import HashAlgorithm, HashType
+from cyclonedx.model import ExternalReference, ExternalReferenceType, HashAlgorithm, HashType
 from cyclonedx.model.bom import Bom, BomMetaData
 from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.model.contact import OrganizationalEntity
 from cyclonedx.model.dependency import Dependency
 from cyclonedx.model.tool import Tool
-from cyclonedx.model import ExternalReference, ExternalReferenceType
+from loguru import logger
 
 import surfactant.plugin
 from surfactant import __version__ as surfactant_version
 from surfactant.sbomtypes import SBOM, Software, System
-from loguru import logger
 
 
 @surfactant.plugin.hookimpl
@@ -66,7 +65,9 @@ def write_sbom(sbom: SBOM, outfile) -> None:
                     for ip in software.installPath:
                         sw = sbom.get_software_by_path(ip)
                         if sw and sw.UUID == software.UUID and ip != str(file.name):
-                            logger.debug(f"Injecting symlink external reference: {ip} for {sw.UUID}")
+                            logger.debug(
+                                f"Injecting symlink external reference: {ip} for {sw.UUID}"
+                            )
                             file.external_references.add(
                                 ExternalReference(
                                     type=ExternalReferenceType.VCS,
@@ -106,7 +107,6 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         bom.dependencies.add(dep)
         logger.debug(f"Added dependency block for: {dep.ref}")
 
-
     # Output the BOM in the requested format
     output_fmt = (
         cyclonedx.output.OutputFormat.JSON
@@ -119,7 +119,7 @@ def write_sbom(sbom: SBOM, outfile) -> None:
     logger.debug("Writing CycloneDX SBOM output")
     outfile.write(outputter.output_as_string())
 
-    
+
 @surfactant.plugin.hookimpl
 def short_name() -> Optional[str]:
     return "cyclonedx"
