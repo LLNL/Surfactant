@@ -105,12 +105,7 @@ def test_dotnet_implmap_unmanaged_match():
     consumer = Software(
         UUID="uuid-consumer",
         installPath=["/app/main.exe"],
-        metadata=[
-            {
-                "dotnetImplMap": [{"Name": "native"}],
-                "dotnetAssemblyRef": []
-            }
-        ],
+        metadata=[{"dotnetImplMap": [{"Name": "native"}], "dotnetAssemblyRef": []}],
     )
 
     sbom.add_software(supplier)
