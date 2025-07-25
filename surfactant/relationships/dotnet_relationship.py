@@ -60,10 +60,9 @@ def establish_relationships(
             combinations = [ref]
             if not (ref.endswith(".dll") or ref.endswith(".exe")):
                 combinations.append(f"{ref}.dll")
-            combinations.extend([
-                f"{ref}.so", f"lib{ref}.so",
-                f"{ref}.dylib", f"lib{ref}.dylib", f"lib{ref}"
-            ])
+            combinations.extend(
+                [f"{ref}.so", f"lib{ref}.so", f"{ref}.dylib", f"lib{ref}.dylib", f"lib{ref}"]
+            )
 
             probedirs = []
             if isinstance(software.installPath, Iterable):
@@ -100,7 +99,9 @@ def establish_relationships(
         if not refName:
             continue
 
-        logger.debug(f"[.NET] Resolving assembly: {refName} (version={refVersion}, culture={refCulture})")
+        logger.debug(
+            f"[.NET] Resolving assembly: {refName} (version={refVersion}, culture={refCulture})"
+        )
         fname_variants = [refName]
         if not (refName.endswith(".dll") or refName.endswith(".exe")):
             fname_variants.append(f"{refName}.dll")
@@ -136,10 +137,14 @@ def establish_relationships(
                     sw_version = asm.get("Version")
                     sw_culture = asm.get("Culture")
                     if refVersion and sw_version and sw_version != refVersion:
-                        logger.debug(f"[.NET] Skipping {sw.UUID}: version {sw_version} ≠ {refVersion}")
+                        logger.debug(
+                            f"[.NET] Skipping {sw.UUID}: version {sw_version} ≠ {refVersion}"
+                        )
                         return False
                     if refCulture and sw_culture and sw_culture != refCulture:
-                        logger.debug(f"[.NET] Skipping {sw.UUID}: culture {sw_culture} ≠ {refCulture}")
+                        logger.debug(
+                            f"[.NET] Skipping {sw.UUID}: culture {sw_culture} ≠ {refCulture}"
+                        )
                         return False
             return True
 
@@ -158,7 +163,9 @@ def establish_relationships(
             for sw in sbom.software:
                 if not is_valid_match(sw):
                     continue
-                if isinstance(sw.fileName, Iterable) and any(fn in sw.fileName for fn in fname_variants):
+                if isinstance(sw.fileName, Iterable) and any(
+                    fn in sw.fileName for fn in fname_variants
+                ):
                     if isinstance(sw.installPath, Iterable):
                         for ip in sw.installPath:
                             if any(ip.endswith(fn) for fn in fname_variants):
@@ -171,20 +178,26 @@ def establish_relationships(
             for sw in sbom.software:
                 if not is_valid_match(sw):
                     continue
-                if isinstance(sw.fileName, Iterable) and any(fn in sw.fileName for fn in fname_variants):
+                if isinstance(sw.fileName, Iterable) and any(
+                    fn in sw.fileName for fn in fname_variants
+                ):
                     if isinstance(sw.installPath, Iterable):
                         for sw_path in sw.installPath:
                             sw_dir = pathlib.PurePath(sw_path).parent
                             for refdir in probedirs:
                                 if sw_dir == pathlib.PurePath(refdir):
-                                    logger.debug(f"[.NET][heuristic] {refName} matched via {sw_path}")
+                                    logger.debug(
+                                        f"[.NET][heuristic] {refName} matched via {sw_path}"
+                                    )
                                     matched_uuids.add(sw.UUID)
                                     used_method[sw.UUID] = "heuristic"
 
         for uuid in matched_uuids:
             rel = Relationship(dependent_uuid, uuid, "Uses")
             if rel not in relationships:
-                logger.debug(f"[.NET] Final relationship: {dependent_uuid} → {uuid} [{used_method[uuid]}]")
+                logger.debug(
+                    f"[.NET] Final relationship: {dependent_uuid} → {uuid} [{used_method[uuid]}]"
+                )
                 relationships.append(rel)
 
         if not matched_uuids:
