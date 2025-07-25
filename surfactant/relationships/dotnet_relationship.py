@@ -5,9 +5,9 @@ from typing import List, Optional
 from loguru import logger
 
 import surfactant.plugin
+from surfactant.relationships._internal.windows_utils import find_installed_software
 from surfactant.sbomtypes import SBOM, Relationship, Software
 from surfactant.utils.paths import normalize_path
-from surfactant.relationships._internal.windows_utils import find_installed_software
 
 
 def has_required_fields(metadata) -> bool:

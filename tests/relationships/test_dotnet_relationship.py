@@ -1,6 +1,4 @@
 # pylint: disable=redefined-outer-name
-from surfactant.sbomtypes import SBOM, Software, Relationship
-from surfactant.relationships import dotnet_relationship
 import pytest
 
 from surfactant.relationships import dotnet_relationship
