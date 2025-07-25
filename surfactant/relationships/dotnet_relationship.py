@@ -7,47 +7,14 @@ from loguru import logger
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 from surfactant.utils.paths import normalize_path
-
-def has_required_fields(metadata) -> bool:
-    """
-    Check whether the metadata includes .NET assembly references.
-    """
-    return "dotnetAssemblyRef" in metadata
-
-
-import pathlib
-from collections.abc import Iterable
-from typing import List, Optional
-
-from loguru import logger
-
-import surfactant.plugin
-from surfactant.sbomtypes import SBOM, Relationship, Software
-from surfactant.utils.paths import normalize_path
-
-def has_required_fields(metadata) -> bool:
-    """
-    Check whether the metadata includes .NET assembly references.
-    """
-    return "dotnetAssemblyRef" in metadata
-
-
-import pathlib
-from collections.abc import Iterable
-from typing import List, Optional
-
-from loguru import logger
-
-import surfactant.plugin
-from surfactant.sbomtypes import SBOM, Relationship, Software
-from surfactant.utils.paths import normalize_path
 from surfactant.relationships._internal.windows_utils import find_installed_software
 
+
 def has_required_fields(metadata) -> bool:
     """
     Check whether the metadata includes .NET assembly references.
     """
-    return "dotnetAssemblyRef" in metadata or "dotnetImplMap" in metadata
+    return "dotnetAssemblyRef" in metadata
 
 
 @surfactant.plugin.hookimpl
@@ -160,7 +127,7 @@ def establish_relationships(
         matched_uuids = set()
         used_method = {}
 
-        def is_valid_match(sw: Software) -> bool:
+        def is_valid_match(sw: Software, refVersion=refVersion, refCulture=refCulture) -> bool:
             if sw.UUID == dependent_uuid:
                 return False
             for md in sw.metadata or []:
@@ -177,9 +144,9 @@ def establish_relationships(
             return True
 
         # Phase 1: fs_tree lookup
-        for dir in probedirs:
+        for probe_dir in probedirs:
             for fname in fname_variants:
-                path = normalize_path(dir, fname)
+                path = normalize_path(probe_dir, fname)
                 match = sbom.get_software_by_path(path)
                 if match and is_valid_match(match):
                     logger.debug(f"[.NET][fs_tree] {path} → {match.UUID}")

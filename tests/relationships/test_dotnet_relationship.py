@@ -1,4 +1,4 @@
-import pathlib
+# pylint: disable=redefined-outer-name
 from surfactant.sbomtypes import SBOM, Software, Relationship
 from surfactant.relationships import dotnet_relationship
 import pytest
@@ -44,12 +44,12 @@ def base_sbom():
     return sbom, consumer, supplier
 
 
-def test_dotnet_fs_tree_match(base_sbom):
+def test_dotnet_fs_tree_match(sbom_fixture):
     """
     Test Phase 1: fs_tree resolution using get_software_by_path.
     Ensures the plugin emits a relationship if the path is indexed.
     """
-    sbom, consumer, supplier = base_sbom
+    sbom, consumer, supplier = sbom_fixture
 
     # Simulate the DLL being located in fs_tree
     sbom.fs_tree.add_node("/app/bin/SomeLibrary.dll", software_uuid=supplier.UUID)
