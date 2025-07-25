@@ -1,5 +1,6 @@
 # pylint: disable=redefined-outer-name
 import pytest
+import pathlib
 
 from surfactant.relationships import pe_relationship
 from surfactant.sbomtypes import SBOM, Relationship, Software
@@ -93,7 +94,7 @@ def test_pe_symlink_heuristic():
     dll = Software(
         UUID="uuid-dll",
         fileName=["common.dll"],
-        installPath=["E:/bin/alt/common.dll"],
+        installPath=["E:/bin/common.dll"],  # <== change this
     )
 
     binary = Software(
@@ -108,6 +109,7 @@ def test_pe_symlink_heuristic():
 
     results = pe_relationship.establish_relationships(sbom, binary, binary.metadata[0])
 
+    assert pathlib.PurePosixPath("E:/bin/common.dll").parent.as_posix() == "E:/bin"
     assert results is not None
     assert results == [Relationship("uuid-bin", "uuid-dll", "Uses")]
 
