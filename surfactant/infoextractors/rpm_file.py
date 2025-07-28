@@ -37,7 +37,7 @@ def get_files(
     extracted_files = {}
     index = 0
     # If there is only one index, return as an integer, not a list of integers
-    if (isinstance(indicies, int)):
+    if isinstance(indicies, int):
         directory = directories[indicies].decode()
         file_name = files[index].decode()
         file_hash = hashes[index].decode()
