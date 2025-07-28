@@ -223,20 +223,24 @@ def extract_pe_info(filename: str) -> object:
     return file_details
 
 
+def check_attribute_exists(obj):
+    # Checks to see if obj has .value attribute.
+    if hasattr(obj, "value") and obj.value:
+        return obj.value
+    if hasattr(obj, "raw_data") and obj.raw_data is not None:
+        return obj.raw_data.hex()
+    if isinstance(obj, bytes):
+        return obj.hex()
+    # In this case, obj is most likely a string
+    return obj
+
+
 def add_core_assembly_info(asm_dict: Dict[str, Any], asm_info):
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
     # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
-    if hasattr(asm_info.Name, "value"):
-        asm_dict["Name"] = asm_info.Name.value if asm_info.Name.value else asm_info.raw_data.hex()
-    else:
-        asm_dict["Name"] = asm_info.Name
 
-    if hasattr(asm_info.Culture, "value"):
-        asm_dict["Culture"] = (
-            asm_info.Culture.value if asm_info.Culture.value else asm_info.Culture.raw_data.hex()
-        )
-    else:
-        asm_dict["Culture"] = asm_info.Culture
+    asm_dict["Name"] = check_attribute_exists(asm_info.Name)
+    asm_dict["Culture"] = check_attribute_exists(asm_info.Culture)
 
     asm_dict["Version"] = (
         f"{asm_info.MajorVersion}.{asm_info.MinorVersion}.{asm_info.BuildNumber}.{asm_info.RevisionNumber}"
@@ -245,11 +249,8 @@ def add_core_assembly_info(asm_dict: Dict[str, Any], asm_info):
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
     # HeapItemBinary value is the bytes following the compressed int (indicating the length)
     if asm_info.PublicKey is not None:
-        if hasattr(asm_info.PublicKey, "value"):
-            # raw_data attribute of PublicKey includes leading byte with length of data, value attr removes it
-            asm_dict["PublicKey"] = asm_info.PublicKey.value.hex()
-        else:
-            asm_dict["PublicKey"] = asm_info.PublicKey.hex()
+        # PublicKey format is bytes
+        asm_dict["PublicKey"] = check_attribute_exists(asm_info.PublicKey)
 
 
 def add_assembly_flags_info(asm_dict, asm_info):
@@ -292,11 +293,9 @@ def get_assemblyref_info(asmref_info) -> Dict[str, Any]:
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L62-L66
     # HeapItemBinary value is the bytes following the compressed int (indicating the length)
     # raw_data attribute has the compressed int indicating length included
-    if hasattr(asmref_info.HashValue, "value"):
-        asmref["HashValue"] = asmref_info.HashValue.value.hex()
-    else:
-        # HashValue is bytes
-        asmref["HashValue"] = asmref_info.HashValue.hex()
+
+    # HashValue format is bytes
+    asmref["HashValue"] = check_attribute_exists(asmref_info.HashValue)
     add_assembly_flags_info(asmref, asmref_info)
     return asmref
 
