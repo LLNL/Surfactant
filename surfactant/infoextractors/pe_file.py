@@ -225,7 +225,9 @@ def extract_pe_info(filename: str) -> object:
 
 def check_attribute_exists(obj):
     # Checks to see if obj has .value attribute.
-    if hasattr(obj, "value") and obj.value:
+    if hasattr(obj, "value") and obj.value is not None:
+        if isinstance(obj.value, bytes):
+            return obj.value.hex()
         return obj.value
     if hasattr(obj, "raw_data") and obj.raw_data is not None:
         return obj.raw_data.hex()
