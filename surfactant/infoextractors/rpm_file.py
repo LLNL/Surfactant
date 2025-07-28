@@ -36,12 +36,19 @@ def get_files(
     """
     extracted_files = {}
     index = 0
-    while index < len(indicies):
-        directory = directories[indicies[index]].decode()
+    # If there is only one index, return as an integer, not a list of integers
+    if (isinstance(indicies, int)):
+        directory = directories[indicies].decode()
         file_name = files[index].decode()
         file_hash = hashes[index].decode()
         extracted_files[f"{directory}{file_name}"] = file_hash
-        index += 1
+    else:
+        while index < len(indicies):
+            directory = directories[indicies[index]].decode()
+            file_name = files[index].decode()
+            file_hash = hashes[index].decode()
+            extracted_files[f"{directory}{file_name}"] = file_hash
+            index += 1
     return extracted_files
 
 
