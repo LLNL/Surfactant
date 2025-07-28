@@ -304,7 +304,6 @@ def insert_implmap_info(im_info, imp_modules: List[Dict[str, Any]]):
     # REFERENCE: https://github.com/malwarefrank/dnfile/blob/096de1b3/src/dnfile/stream.py#L36-L39
     # HeapItemString value will be decoded string, or None if there was a UnicodeDecodeError
     dllName = check_attribute_exists(im_info.ImportScope.row.Name)
-
     methodName = check_attribute_exists(im_info.ImportName)
 
     if dllName:
