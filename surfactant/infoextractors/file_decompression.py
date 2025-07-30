@@ -29,10 +29,14 @@ from surfactant.configmanager import ConfigManager
 from surfactant.sbomtypes import SBOM, Software
 from surfactant.utils import exit_hook
 
+EXTRACT_DIR = pathlib.Path(ConfigManager().get("decompression", "extract-dir", tempfile.gettempdir()))
+EXTRACT_DIRS_PREFIX = ConfigManager().get("decompression", "extract-prefix", "surfactant-temp")
+EXTRACT_DIR.mkdir(parents=True, exist_ok=True)
+
 # Global list to track extracted dirs
 # Hash -> Path to extracted directory & Result of array of 2-tuples (install_prefix, extract_path)
 EXTRACT_DIRS = {}
-EXTRACT_DIRS_PATH = pathlib.Path(tempfile.gettempdir()) / ".surfactant_extracted_dirs.json"
+EXTRACT_DIRS_PATH = EXTRACT_DIR / ".surfactant_extracted_dirs.json"
 
 RAR_SUPPORT = {"enabled": False}
 
@@ -109,7 +113,7 @@ def create_extraction(
         logger.info(f"Using cached extraction entries for {filename}")
     else:
         # Create a temporary directory for extraction
-        temp_folder = create_temp_dir()
+        temp_folder = create_extract_dir()
         EXTRACT_DIRS[software.sha256] = {"path": temp_folder, "result": None}
 
         # Decompress the file
@@ -276,11 +280,11 @@ def store_extracted_dirs():
             logger.error(f"Failed to write extracted directories to {EXTRACT_DIRS_PATH}: {e}")
 
 
-def create_temp_dir():
-    return tempfile.mkdtemp(prefix="surfactant-temp")
+def create_extract_dir():
+    return tempfile.mkdtemp(prefix=EXTRACT_DIRS_PREFIX, dir=EXTRACT_DIR)
 
 
-def delete_temp_dirs():
+def delete_extract_dirs():
     exited_gracefully = exit_hook.has_exited_gracefully()
     should_cache_extractions = ConfigManager().get("decompression", "cache_extractions", True)
     should_persist_extractions = should_cache_extractions and ConfigManager().get(
@@ -326,5 +330,5 @@ def init_hook(command_name: Optional[str] = None):
 @atexit.register
 def cleanup_hook():
     """Clean up temporary directories and store extraction cache on exit."""
-    delete_temp_dirs()
+    delete_extract_dirs()
     store_extracted_dirs()
