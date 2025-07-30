@@ -80,7 +80,7 @@ def extract_file_info(
                 software,
                 context_queue,
                 current_context,
-                lambda f, t: decompress_to(f, t, fmt),
+                lambda f, t, format=fmt: decompress_to(f, t, format),
             )
 
 
