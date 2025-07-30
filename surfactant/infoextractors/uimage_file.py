@@ -218,8 +218,8 @@ def _parse_uimage_header(fname: str) -> dict:
     }
 
 
-def supports_file(filetype) -> bool:
-    return filetype == "UIMAGE"
+def supports_file(filetype: List[str]) -> bool:
+    return "UIMAGE" in filetype
 
 
 @surfactant.plugin.hookimpl
@@ -227,7 +227,7 @@ def extract_file_info(
     sbom: SBOM,
     software: Software,
     filename: str,
-    filetype: str,
+    filetype: List[str],
     software_field_hints: List[Tuple[str, object, int]],
 ) -> object:
     if not supports_file(filetype):

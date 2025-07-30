@@ -87,9 +87,9 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 elif check_intel(curr):
                     percent_intel += 1
             if percent_intel > percent_motorola:
-                return "INTEL_HEX"
+                return ["INTEL_HEX"]
             if percent_motorola > percent_intel:
-                return "MOTOROLA_SREC"
+                return ["MOTOROLA_SREC"]
             return None
 
     except (FileNotFoundError, UnicodeDecodeError):

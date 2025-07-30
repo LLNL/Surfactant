@@ -42,18 +42,18 @@ def identify_file_type(filepath: str) -> Optional[str]:
         with open(filepath, "rb") as f:
             head = f.read(256)
             if head.startswith(b"<!DOCTYPE html>"):
-                return "HTML"
+                return ["HTML"]
             if head.startswith(b"#!") and b"\n" in head:
                 end_line = head.index(b"\n")
                 head = head[:end_line]
                 for interpreter, filetype in _interpreters.items():
                     if re.search(interpreter, head):
-                        return filetype
-                return "SHEBANG"
+                        return [filetype]
+                return ["SHEBANG"]
     except FileNotFoundError:
         logger.warning(f"File not found: {filepath}")
         return None
     suffix = pathlib.Path(filepath).suffix.lower()
     if suffix in _filetype_extensions:
-        return _filetype_extensions[suffix]
+        return [_filetype_extensions[suffix]]
     return None

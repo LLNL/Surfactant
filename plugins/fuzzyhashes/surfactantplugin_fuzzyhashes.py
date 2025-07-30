@@ -6,6 +6,7 @@
 
 import logging
 from pathlib import Path
+from typing import List
 
 try:
     import ssdeep
@@ -29,13 +30,13 @@ def do_ssdeep(bin_data: bytes):
 
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
-def fuzzyhashes(sbom: SBOM, software: Software, filename: str, filetype: str):
+def fuzzyhashes(sbom: SBOM, software: Software, filename: str, filetype: List[str]):
     """
     Generate TLSH and potentially SSDEEP fuzzy hashes for the provided files.
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
     :param software(Software): The software entry associated with the file to extract information from.
     :param filename (str): The full path to the file to extract information from.
-    :param filetype (str): File type information based on magic bytes.
+    :param filetype (List[str]): File type information based on magic bytes.
     """
 
     hashdata = [(do_tlsh, "tlsh")]
