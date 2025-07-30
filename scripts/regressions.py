@@ -32,6 +32,16 @@ def deterministic_uuid4():
 def deterministic_time():
     return 1609459200  # Friday, January 1, 2021 12:00:00 AM UTC
 
+_json_dumps = json.dumps
+def deterministic_json_dumps(*args, **kwargs):
+    kwargs['sort_keys'] = True
+    return _json_dumps(*args, **kwargs)
+
+_json_dump = json.dump
+def deterministic_json_dump(*args, **kwargs):
+    kwargs['sort_keys'] = True
+    return _json_dump(*args, **kwargs)
+
 
 class FixedDateTime(datetime.datetime):
     @classmethod
@@ -55,6 +65,8 @@ def deterministic_context(enabled: bool = True):
             patch("uuid.uuid4", side_effect=deterministic_uuid4),
             patch("datetime.datetime", FixedDateTime),
             patch("time.time", side_effect=deterministic_time),
+            patch("json.dumps", side_effect=deterministic_json_dumps),
+            patch("json.dump", side_effect=deterministic_json_dump),
         ):
             # Set the random seed for deterministic random number generation
             random.seed(0xDEADBEEF)
