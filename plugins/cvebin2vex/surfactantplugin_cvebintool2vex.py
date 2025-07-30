@@ -2,8 +2,9 @@ import json
 import subprocess
 import sys
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import List
 
 from loguru import logger
 
@@ -62,7 +63,7 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
         "@context": "https://openvex.dev/ns/v0.2.0",
         "@id": f"urn:uuid:{uuid.uuid4()}",
         "author": "Surfactant plugin cvebintool2vex",
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="microseconds"),
         "version": 1,
         "tooling": "Surfactant (https://github.com/LLNL/Surfactant)",
         "statements": [],
@@ -139,16 +140,16 @@ def delete_extra_files(*file_paths):
 
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
-def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: str):
+def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: List[str]):
     """
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
     :param software(Software): The software entry associated with the file to extract information from.
     :param filename (str): The full path to the file to extract information from.
-    :param filetype (str): File type information based on magic bytes.
+    :param filetype (List[str]): File type information based on magic bytes.
     """
     # Only parsing executable files
-    if filetype not in ["ELF", "PE"]:
-        pass
+    if not ("ELF" in filetype or "PE" in filetype):
+        return
 
     shaHash = str(software.sha256)
     filename = Path(filename)

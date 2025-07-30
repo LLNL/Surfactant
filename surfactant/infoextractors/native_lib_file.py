@@ -131,13 +131,17 @@ class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
 native_lib_manager = EmbaNativeLibDatabaseManager()
 
 
-def supports_file(filetype: str) -> bool:
-    return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64", "UIMAGE")
+def supports_file(filetype: List[str]) -> bool:
+    supported_types = ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64", "UIMAGE")
+    for ft in filetype:
+        if ft in supported_types:
+            return True
+    return False
 
 
 @surfactant.plugin.hookimpl
 def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str
+    sbom: SBOM, software: Software, filename: str, filetype: List[str]
 ) -> Optional[Dict[str, Any]]:
     if not supports_file(filetype):
         return None

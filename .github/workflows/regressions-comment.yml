@@ -1,0 +1,62 @@
+name: Test Regressions (Comment)
+
+on:
+  workflow_run:
+    workflows: ["Test Regressions"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  upload:
+    name: Upload Comment
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+
+    steps:
+      - name: Download Comment
+        uses: actions/download-artifact@v4
+        with:
+          name: pr
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Create/Update Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const issue_number = Number(fs.readFileSync('issue_number.txt', 'utf-8').trim());
+            const summary = fs.readFileSync('summary.txt', 'utf-8');
+
+            // Find existing comment from github-actions[bot]
+            const existingComment = (await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue_number,
+            })).data.find(comment =>
+              comment.user.login === 'github-actions[bot]'
+            );
+
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: summary
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue_number,
+                body: summary
+              });
+            }

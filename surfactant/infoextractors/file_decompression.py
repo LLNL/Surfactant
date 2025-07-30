@@ -41,11 +41,20 @@ EXTRACT_DIRS_PATH = EXTRACT_DIR / ".surfactant_extracted_dirs.json"
 RAR_SUPPORT = {"enabled": False}
 
 
-def supports_file(filetype: str) -> Optional[str]:
-    if filetype in {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"} or (
-        filetype == "RAR" and RAR_SUPPORT["enabled"]
-    ):
-        return filetype
+def supports_file(filetype: list[str]) -> Optional[list[str]]:
+    if filetype is None:
+        return None
+    supported_types = {"TAR", "GZIP", "ZIP", "BZIP2", "XZ"}
+    supported = []
+    # Filter out non-archive types
+    for ft in filetype:
+        if ft in supported_types:
+            supported.append(ft)
+        elif ft == "RAR" and RAR_SUPPORT["enabled"]:
+            supported.append(ft)
+    if supported:
+        return supported
+
     return None
 
 
@@ -55,7 +64,7 @@ def extract_file_info(
     sbom: SBOM,
     software: Software,
     filename: str,
-    filetype: str,
+    filetype: List[str],
     context_queue: "Queue[ContextEntry]",
     current_context: Optional[ContextEntry],
 ) -> Optional[Dict[str, Any]]:
@@ -63,13 +72,14 @@ def extract_file_info(
     compression_format = supports_file(filetype)
 
     if compression_format:
-        create_extraction(
-            filename,
-            software,
-            context_queue,
-            current_context,
-            lambda f, t: decompress_to(f, t, compression_format),
-        )
+        for fmt in compression_format:
+            create_extraction(
+                filename,
+                software,
+                context_queue,
+                current_context,
+                lambda f, t: decompress_to(f, t, fmt),
+            )
 
 
 def create_extraction(

@@ -11,6 +11,7 @@ authors = [
     {name = "Alexander Armstrong", email = "armstrong48@llnl.gov"},
     {name = "Shayna Kapadia", email = "kapadia2@llnl.gov"},
     {name = "Asriel Margarian", email = "margarian1@llnl.gov"},
+    {name = "Matthew Kelley", email = "kelley41@llnl.gov"},
 ]
 maintainers = [
     {name = "Ryan Mast", email = "mast9@llnl.gov"},
@@ -44,24 +45,25 @@ dependencies = [
     "pyelftools==0.32.*",
     # This isn't semver so fix it to a specific release
     "pefile==2024.8.26",
-    "dnfile==0.15.*",
+    "dnfile==0.16.*",
     "olefile==0.47.*",
     "defusedxml==0.7.*",
     "spdx-tools==0.8.*",
     # Pinned to specific version for potential breaking changes
-    "cyclonedx-python-lib==10.4.1",
+    "cyclonedx-python-lib==11.0.0",
     "pluggy==1.*",
     "click==8.*",
     "loguru==0.7.*",
     "tomlkit==0.13.*",
-    "textual==3.*",
+    "textual==4.*",
     "requests>=2.32.3",
     "rarfile==4.2.*",
-    # Pinned to specific version for potential breaking changes
     "networkx>=2.6",
-    "python-msi==0.0.0a2"
-    ]
-
+    # Pinned to specific version for potential breaking changes
+    "python-msi==0.0.0a2",
+    # Pinned to specific version for potential breaking changes
+    "rpmfile==2.1.0",
+  ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
