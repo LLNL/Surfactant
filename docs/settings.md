@@ -46,3 +46,14 @@ Surfactant supports overriding database source URLs via the sources section in t
         ```bash
         surfactant config sources.js_library_patterns.retirejs https://new-url.com
         ```
+
+## decompression
+
+- extract_dir
+    - Directory where files are extracted when decompressing files. Default is the system's temporary directory.
+- extract_prefix
+    - Prefix for extract directories created when decompressing files. Default is `surfactant-temp`.
+- cache_extractions
+    - Controls whether to cache decompressed/extracted files. If Surfactant fails to exit successfully, the cache will be used to prevent re-extractions. If set to `true`, decompressed files will be cached in the `extract_dir` directory. Default is `true`.
+- persist_extractions
+    - Controls whether to persist decompressed files after Surfactant exits successfully. If set to `true`, decompressed files will be kept in the `extract_dir` directory. Default is `false`.

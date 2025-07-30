@@ -30,9 +30,9 @@ from surfactant.sbomtypes import SBOM, Software
 from surfactant.utils import exit_hook
 
 EXTRACT_DIR = pathlib.Path(
-    ConfigManager().get("decompression", "extract-dir", tempfile.gettempdir())
+    ConfigManager().get("decompression", "extract_dir", tempfile.gettempdir())
 )
-EXTRACT_DIRS_PREFIX = ConfigManager().get("decompression", "extract-prefix", "surfactant-temp")
+EXTRACT_DIRS_PREFIX = ConfigManager().get("decompression", "extract_prefix", "surfactant-temp")
 EXTRACT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Global list to track extracted dirs
