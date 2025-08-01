@@ -6,6 +6,7 @@ from surfactant.sbomtypes import SBOM
 @click.command("stat")
 @click.argument("input_sbom", type=click.File("r"), required=True)
 def stat(input_sbom):
+    """Print simple statistics about a SBOM."""
     data = SBOM.from_json(input_sbom.read())
     elfIsLib = 0
     elfIsExe = 0
