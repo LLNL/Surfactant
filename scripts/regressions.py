@@ -113,8 +113,8 @@ def generate_sbom_string(
     if install_prefix is None:
         install_prefix = folder_path.as_posix() + "/"
 
-    # Create specimen config for the single folder
-    specimen_config = [{"extractPaths": [folder_path.as_posix()], "installPrefix": install_prefix}]
+    # Create specimen context for the single folder
+    specimen_context = [{"extractPaths": [folder_path.as_posix()], "installPrefix": install_prefix}]
 
     # Create an in-memory file-like object to capture output
     output_buffer = io.StringIO()
@@ -126,7 +126,7 @@ def generate_sbom_string(
                 # Use Click's invoke to call the command with the context
                 ctx.invoke(
                     sbom,
-                    specimen_config=specimen_config,
+                    specimen_context=specimen_context,
                     sbom_outfile=output_buffer,
                 )
             except Exception as e:
