@@ -61,8 +61,8 @@ def replace_root_id(system_folder_id: str) -> Optional[str]:
     return path
 
 
-def supports_file(filetype) -> bool:
-    return filetype == "OLE"
+def supports_file(filetype: List[str]) -> bool:
+    return "OLE" in filetype
 
 
 # pylint: disable=too-many-positional-arguments
@@ -71,7 +71,7 @@ def extract_file_info(
     sbom: SBOM,
     software: Software,
     filename: str,
-    filetype: str,
+    filetype: List[str],
     software_field_hints: List[Tuple[str, object, int]],
     context_queue: "Queue[ContextEntry]",
     current_context: Optional[ContextEntry],
@@ -91,13 +91,13 @@ def extract_file_info(
 
         if ole_info["ole"].get("clsid_type") == "MSI":
             file_decompression.create_extraction(
-                filename, context_queue, current_context, extract_msi
+                filename, software, context_queue, current_context, extract_msi
             )
 
     return ole_info
 
 
-def extract_ole_info(filename: str) -> object:
+def extract_ole_info(filename: str) -> Dict[str, Any]:
     file_details: Dict[str, Any] = {}
 
     with olefile.OleFileIO(filename) as ole:

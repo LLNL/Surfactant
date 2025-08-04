@@ -36,7 +36,7 @@ def test_uimage_files():
     for file_name, expected_values in _uimage_files.items():
         file_path = os.path.join(data_dir, file_name)
         file_type = identify_file_type(file_path)
-        assert file_type == "UIMAGE"
+        assert file_type == ["UIMAGE"]
         sw_field_hints = []
         file_info = extract_file_info(SBOM(), Software(), file_path, file_type, sw_field_hints)
         assert sw_field_hints == [("name", "Test uImage", 40)]
@@ -53,7 +53,7 @@ def test_bad_uimage_file():
     base_path = pathlib.Path(__file__).parent.absolute()
     file_path = os.path.join(base_path, "..", "data", "uimage_files", "bad1.img")
     file_type = identify_file_type(file_path)
-    assert file_type == "UIMAGE"
+    assert file_type == ["UIMAGE"]
     sw_field_hints = []
     file_info = extract_file_info(SBOM(), Software(), file_path, file_type, sw_field_hints)
     assert file_info is None
