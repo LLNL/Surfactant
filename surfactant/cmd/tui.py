@@ -31,7 +31,7 @@ class InfoScreen(textual.screen.Screen[None]):
         self.text = text
 
     def compose(self) -> textual.app.ComposeResult:
-        yield textual.widgets.Label(self.text)
+        yield textual.widgets.Static(self.text)
         yield textual.widgets.Button("OK", id="ok")
 
     @textual.on(textual.widgets.Button.Pressed, "#ok")
@@ -47,7 +47,7 @@ class YesNoScreen(textual.screen.Screen[bool]):
         self.question = question
 
     def compose(self) -> textual.app.ComposeResult:
-        yield textual.widgets.Label(self.question)
+        yield textual.widgets.Static(self.question)
         yield textual.widgets.Button("Yes", id="yes", variant="success")
         yield textual.widgets.Button("No", id="no")
 
@@ -459,15 +459,22 @@ class PluginSetting(textual.widgets.Static):
         super().__init__()
         self.plugin_name = plugin_name
         self.info = info
-        # TODO: What about defaults?
         if self.info.type_ == "str":
             self.input_field = textual.widgets.Input()
-            self.value = value = self.__config_manager.get(self.plugin_name, self.info.name, "")
+            default_value = self.info.default
+            if default_value is None:
+                default_value = ""
+            self.value = self.__config_manager.get(self.plugin_name, self.info.name, default_value)
         elif self.info.type_ == "bool":
             self.input_field = textual.widgets.Checkbox()
-            self.value = self.__config_manager.get(self.plugin_name, self.info.name, True)
+            default_value = self.info.default
+            if default_value is None:
+                default_value = True
+            else:
+                # Have to convert from string to Boolean
+                default_value = default_value.lower() == "true"
+            self.value = self.__config_manager.get(self.plugin_name, self.info.name, default_value)
         else:
-            # TODO: An assert probably isn't the best here, but not sure what else to use
             raise TypeError(f'Invalid plugin setting of type "{self.info.type_}"')
 
     def compose(self) -> textual.app.ComposeResult:
@@ -493,13 +500,15 @@ class PluginSettingsTab(textual.widgets.Static):
         __setting(
             "output_format",
             "str",
-            "SBOM output format, see --list-output-formats for list of options; default is CyTRICS.",
+            "SBOM output format, see --list-output-formats for list of options",
+            "CyTRICS"
         ),
-        __setting("recorded_institution", "str", "Name of user's institution."),
+        __setting("recorded_institution", "str", "Name of user's institution.", "LLNL"),
         __setting(
             "include_all_files",
             "bool",
-            "Include all files in the SBOM (default). Set to false to only include files with types recognized by Surfactant; default is true.",
+            "Include all files in the SBOM (default). Set to false to only include files with types recognized by Surfactant",
+            "True"
         ),
     ]
 

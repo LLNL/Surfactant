@@ -15,6 +15,7 @@ class PluginSetting:
     name: str
     type_: Optional[str]
     description: str
+    default: Optional[str]
 
 
 def extract_plugin_settings() -> Dict[str, List[PluginSetting]]:
@@ -32,7 +33,6 @@ def extract_plugin_settings() -> Dict[str, List[PluginSetting]]:
 
 
 __option_re = re.compile(r"([^(:]+)\s*([(][^)]+[)])?:(.*)")
-
 
 def extract_settings_from_docstring(docstring: str) -> List[PluginSetting]:
     def count_leading_indentation(s: str) -> int:
@@ -72,6 +72,13 @@ def extract_settings_from_docstring(docstring: str) -> List[PluginSetting]:
             # Remove the parentheses if a type was matched
             if type_:
                 type_ = type_.strip()[1:][:-1].strip()
-            settings.append(PluginSetting(name.strip(), type_, desc.strip()))
+            default_value = None
+            # Search for the start of the default string
+            loc = desc.rfind('[default=')
+            if loc != -1:
+                end_loc = desc.rfind(']')
+                default_value = desc[loc+9:end_loc].strip()
+                desc = desc[:loc].strip()
+            settings.append(PluginSetting(name.strip(), type_, desc.strip(), default_value))
 
     return settings
