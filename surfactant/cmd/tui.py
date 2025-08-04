@@ -503,14 +503,14 @@ class PluginSettingsTab(textual.widgets.Static):
             "output_format",
             "str",
             "SBOM output format, see --list-output-formats for list of options",
-            "CyTRICS"
+            "CyTRICS",
         ),
         __setting("recorded_institution", "str", "Name of user's institution.", "LLNL"),
         __setting(
             "include_all_files",
             "bool",
             "Include all files in the SBOM (default). Set to false to only include files with types recognized by Surfactant",
-            "True"
+            "True",
         ),
     ]
 

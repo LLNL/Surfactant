@@ -26,7 +26,7 @@ def test_extract_settings_from_docstring():
 
     assert settings[0].name == "test_function.option1"
     assert settings[0].type_ == "str"
-    assert settings[0].description == 'Some option.'
+    assert settings[0].description == "Some option."
     assert settings[0].default == '"123"'
 
     assert settings[1].name == "test_function.option2"
