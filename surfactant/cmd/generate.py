@@ -323,7 +323,7 @@ def sbom(
                     pm,
                     new_sbom,
                     entry.archive,
-                    filetype=pm.hook.identify_file_type(filepath=entry.archive),
+                    filetype=pm.hook.identify_file_type(filepath=entry.archive) or [],
                     user_institution_name=recorded_institution,
                     skip_extraction=entry.skipProcessingArchive,
                     container_prefix=entry.containerPrefix,
@@ -384,7 +384,6 @@ def sbom(
                 if epath.is_file():
                     entries = []
                     filepath = epath.as_posix()
-                    # breakpoint()
                     try:
                         sw_parent, sw_children = get_software_entry(
                             contextQ,
@@ -392,7 +391,7 @@ def sbom(
                             pm,
                             new_sbom,
                             filepath,
-                            filetype=pm.hook.identify_file_type(filepath=filepath),
+                            filetype=pm.hook.identify_file_type(filepath=filepath) or [],
                             root_path=epath.parent.as_posix() if len(epath.parts) > 1 else "",
                             container_uuid=parent_uuid,
                             install_path=install_prefix,
@@ -505,7 +504,7 @@ def sbom(
                                         pm,
                                         new_sbom,
                                         filepath,
-                                        filetype=ftype,
+                                        filetype=ftype or [],
                                         root_path=epath.as_posix(),
                                         container_uuid=parent_uuid,
                                         install_path=install_prefix,
