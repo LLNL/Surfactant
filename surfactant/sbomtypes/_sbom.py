@@ -145,6 +145,9 @@ class SBOM:
         for sw in self.software:
             self._add_software_to_fs_tree(sw)
 
+        # Re-record symlink edges from installPath entries and scan children for directory symlinks
+        self._rebuild_symlink_edges()
+
     def _add_software_to_fs_tree(self, sw: "Software") -> None:
         """
         Adds the install paths of a Software object to the SBOM's filesystem tree (fs_tree).
@@ -388,6 +391,31 @@ class SBOM:
             logger.debug(msg)
         else:
             logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
+
+
+    def _rebuild_symlink_edges(self) -> None:
+        """
+        Re-register symlink edges into fs_tree and graph based on current installPath entries.
+
+        This enables path-based lookup (get_software_by_path) and relationship traversal
+        after deserialization from a raw SBOM.
+        """
+        for sw in self.software:
+            for raw_path in sw.installPath or []:
+                p = pathlib.Path(raw_path)
+                if p.is_symlink():
+                    real = p.resolve()
+                    subtype = "file" if not p.is_dir() else "directory"
+                    logger.debug(f"[fs_tree] Rebuilding symlink: {p} → {real} (subtype={subtype})")
+                    self._record_symlink(str(p), str(real), subtype=subtype)
+
+                if p.is_dir():
+                    for child in p.iterdir():
+                        if child.is_symlink():
+                            real = child.resolve()
+                            subtype = "file" if not child.is_dir() else "directory"
+                            logger.debug(f"[fs_tree] Rebuilding symlink: {child} → {real} (subtype={subtype})")
+                            self._record_symlink(str(child), str(real), subtype=subtype)
 
 
     def add_software_entries(
