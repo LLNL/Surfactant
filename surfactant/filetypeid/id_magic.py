@@ -1,4 +1,4 @@
-# Copyright 2023 Lawrence Livermore National Security, LLC
+# Copyright 2025 Lawrence Livermore National Security, LLC
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
@@ -11,6 +11,7 @@ from typing import Optional
 
 import surfactant.plugin
 from surfactant.infoextractors.coff_file import COFF_MAGIC_TARGET_NAME
+from surfactant import ContextEntry
 
 
 class ExeType(Enum):
@@ -50,7 +51,7 @@ def is_docker_archive(filepath: str) -> bool:
 
 
 @surfactant.plugin.hookimpl(tryfirst=True)
-def identify_file_type(filepath: str) -> Optional[str]:
+def identify_file_type(filepath: str, context: ContextEntry|None=None) -> Optional[str]:
     filetype_matches = []
     try:
         with open(filepath, "rb") as f:
