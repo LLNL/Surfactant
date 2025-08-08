@@ -392,7 +392,6 @@ class SBOM:
         else:
             logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
 
-
     def _rebuild_symlink_edges(self) -> None:
         """
         Re-register symlink edges into fs_tree and graph based on current installPath entries.
@@ -414,9 +413,10 @@ class SBOM:
                         if child.is_symlink():
                             real = child.resolve()
                             subtype = "file" if not child.is_dir() else "directory"
-                            logger.debug(f"[fs_tree] Rebuilding symlink: {child} → {real} (subtype={subtype})")
+                            logger.debug(
+                                f"[fs_tree] Rebuilding symlink: {child} → {real} (subtype={subtype})"
+                            )
                             self._record_symlink(str(child), str(real), subtype=subtype)
-
 
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
