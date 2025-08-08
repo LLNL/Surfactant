@@ -45,7 +45,7 @@ YesNoScreen > Label {
    width: 1fr;
 }
 
-Config #config_entries {
+Context #context_entries {
    width: 100%;
 }
 
@@ -66,6 +66,6 @@ ExtractPathSelector {
    layout: horizontal;
 }
 
-ConfigEntry {
+ContextEntry {
    border: solid white;
 }

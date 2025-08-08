@@ -91,13 +91,13 @@ def extract_file_info(
 
         if ole_info["ole"].get("clsid_type") == "MSI":
             file_decompression.create_extraction(
-                filename, context_queue, current_context, extract_msi
+                filename, software, context_queue, current_context, extract_msi
             )
 
     return ole_info
 
 
-def extract_ole_info(filename: str) -> object:
+def extract_ole_info(filename: str) -> Dict[str, Any]:
     file_details: Dict[str, Any] = {}
 
     with olefile.OleFileIO(filename) as ole:
