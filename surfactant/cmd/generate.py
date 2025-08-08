@@ -323,7 +323,15 @@ def sbom(
                     pm,
                     new_sbom,
                     entry.archive,
+<<<<<<< Updated upstream
                     filetype=pm.hook.identify_file_type(filepath=entry.archive, context=entry),
+=======
+<<<<<<< HEAD
+                    filetype=pm.hook.identify_file_type(filepath=entry.archive) or [],
+=======
+                    filetype=pm.hook.identify_file_type(filepath=entry.archive, context=entry),
+>>>>>>> 4a746b6 (Changed identify_file_type to optionally allow calling with context)
+>>>>>>> Stashed changes
                     user_institution_name=recorded_institution,
                     skip_extraction=entry.skipProcessingArchive,
                     container_prefix=entry.containerPrefix,
@@ -392,7 +400,15 @@ def sbom(
                             pm,
                             new_sbom,
                             filepath,
+<<<<<<< Updated upstream
                             filetype=pm.hook.identify_file_type(filepath=filepath, context=entry),
+=======
+<<<<<<< HEAD
+                            filetype=pm.hook.identify_file_type(filepath=filepath) or [],
+=======
+                            filetype=pm.hook.identify_file_type(filepath=filepath, context=entry),
+>>>>>>> 4a746b6 (Changed identify_file_type to optionally allow calling with context)
+>>>>>>> Stashed changes
                             root_path=epath.parent.as_posix() if len(epath.parts) > 1 else "",
                             container_uuid=parent_uuid,
                             install_path=install_prefix,
