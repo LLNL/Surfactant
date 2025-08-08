@@ -331,57 +331,56 @@ class SBOM:
         """
         Record a filesystem symlink in both the SBOM’s relationship graph and its fs_tree.
 
-        This does three things:
-        1. Normalizes both paths to POSIX style.
+        This method does the following:
+        1. Normalizes both paths to POSIX format.
         2. Ensures both link and target are present as nodes in:
-            • self.graph       (networkx.MultiDiGraph of software relationships)
-            • self.fs_tree     (networkx.DiGraph of file system paths)
+            • self.graph       (networkx.MultiDiGraph of logical relationships)
+            • self.fs_tree     (networkx.DiGraph of filesystem layout)
+        Nodes are labeled with type="Path" to distinguish them from Software UUIDs.
         3. Adds a directed edge link → target in both graphs with:
-            - type="symlink"
+            - key/type="symlink"
             - subtype=<optional qualifier, e.g. "file" or "directory">
 
-        By capturing symlink edges in fs_tree you enable sbom.get_software_by_path()
-        to traverse through symlinks when resolving ELF dependencies.
+        Capturing these symlink edges enables `get_software_by_path()` to resolve real software
+        targets from symlinked paths, such as common `/lib` → `/usr/lib` scenarios.
 
         Args:
-            link_path:   Path of the symlink itself (e.g. "/opt/app/lib/foo.so").
-            target_path: The resolved target path (e.g. "/usr/lib/foo.so").
-            subtype:     Optional kind of symlink, e.g. "file" or "directory".
+            link_path (str): Path of the symlink itself (e.g. "/opt/app/lib/foo.so").
+            target_path (str): Resolved absolute path of the symlink target (e.g. "/usr/lib/foo.so").
+            subtype (Optional[str]): Optional category for the link (e.g. "file" or "directory").
         """
-        # Normalize inputs to canonical POSIX strings
+        from surfactant.utils.paths import normalize_path
+
+        # Normalize inputs to consistent POSIX-style paths
         link_node = normalize_path(link_path)
         target_node = normalize_path(target_path)
 
-        # -------------------------------------------------------------------------
-        # Ensure nodes exist in the SBOM’s main graph, then record the symlink
-        # -------------------------------------------------------------------------
+        # Ensure both nodes exist in the relationship graph with type="Path"
         for node in (link_node, target_node):
             if not self.graph.has_node(node):
-                self.graph.add_node(node)
-                logger.debug(f"[graph] Added node for symlink tracking: {node}")
+                self.graph.add_node(node, type="Path")
+                logger.debug(f"[graph] Added symlink node: {node}")
+            elif "type" not in self.graph.nodes[node]:
+                self.graph.nodes[node]["type"] = "Path"
 
-        # Only add one 'symlink' edge per exact (link, target, key)
+        # Add symlink edge in the main graph if not already present
         if not self.graph.has_edge(link_node, target_node, key="symlink"):
             self.graph.add_edge(link_node, target_node, key="symlink")
             logger.debug(f"[graph] Recorded symlink edge: {link_node} → {target_node}")
 
-        # -------------------------------------------------------------------------
-        # Mirror into fs_tree so dependency resolution can follow symlinks there
-        # -------------------------------------------------------------------------
+        # Ensure both nodes exist in the fs_tree as well
         for node in (link_node, target_node):
             if not self.fs_tree.has_node(node):
                 self.fs_tree.add_node(node)
                 logger.debug(f"[fs_tree] Added symlink node: {node}")
 
-        # Check existing fs_tree edges from link → target
-        existing = self.fs_tree.get_edge_data(link_node, target_node, default={})
+        # Check for existing identical symlink in fs_tree
+        existing_edges = self.fs_tree.get_edge_data(link_node, target_node, default={})
         seen = any(
             attrs.get("type") == "symlink" and attrs.get("subtype") == subtype
-            for attrs in existing.values()
+            for attrs in existing_edges.values()
         )
-
         if not seen:
-            # record with both a fixed type and optional subtype
             self.fs_tree.add_edge(link_node, target_node, type="symlink", subtype=subtype)
             msg = f"[fs_tree] Recorded symlink edge: {link_node} → {target_node}"
             if subtype:
@@ -389,6 +388,7 @@ class SBOM:
             logger.debug(msg)
         else:
             logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
+
 
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
