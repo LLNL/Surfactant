@@ -12,7 +12,7 @@ import click
 from loguru import logger
 
 from surfactant import ContextEntry
-from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
+from surfactant.cmd.internal.generate_utils import SpecimenContextParamType
 from surfactant.configmanager import ConfigManager
 from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
@@ -195,9 +195,9 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 
 @click.command("generate")
 @click.argument(
-    "specimen_config",
-    envvar="SPECIMEN_CONFIG",
-    type=SpecimenConfigParamType(),
+    "specimen_context",
+    envvar="SPECIMEN_CONTEXT",
+    type=SpecimenContextParamType(),
     required=True,
 )
 @click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
@@ -267,7 +267,7 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 # Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
 # pylint: disable-next=too-many-positional-arguments
 def sbom(
-    specimen_config: list,
+    specimen_context: list,
     sbom_outfile: click.File,
     input_sbom: click.File,
     skip_gather: bool,
@@ -278,7 +278,7 @@ def sbom(
     input_format: str,
     omit_unrecognized_types: bool,
 ):
-    """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
+    """Generate a sbom based on SPECIMEN_CONTEXT and output to SBOM_OUTPUT.
 
     An optional INPUT_SBOM can be supplied to use as a base for subsequent operations.
     """
@@ -292,7 +292,7 @@ def sbom(
 
     contextQ: queue.Queue[ContextEntry] = queue.Queue()
 
-    for cfg_entry in specimen_config:
+    for cfg_entry in specimen_context:
         contextQ.put(ContextEntry(**cfg_entry))
 
     # define the new_sbom variable type
@@ -323,15 +323,7 @@ def sbom(
                     pm,
                     new_sbom,
                     entry.archive,
-<<<<<<< Updated upstream
-                    filetype=pm.hook.identify_file_type(filepath=entry.archive, context=entry),
-=======
-<<<<<<< HEAD
-                    filetype=pm.hook.identify_file_type(filepath=entry.archive) or [],
-=======
-                    filetype=pm.hook.identify_file_type(filepath=entry.archive, context=entry),
->>>>>>> 4a746b6 (Changed identify_file_type to optionally allow calling with context)
->>>>>>> Stashed changes
+                    filetype=pm.hook.identify_file_type(filepath=entry.archive, context=entry) or [],
                     user_institution_name=recorded_institution,
                     skip_extraction=entry.skipProcessingArchive,
                     container_prefix=entry.containerPrefix,
@@ -392,7 +384,6 @@ def sbom(
                 if epath.is_file():
                     entries = []
                     filepath = epath.as_posix()
-                    # breakpoint()
                     try:
                         sw_parent, sw_children = get_software_entry(
                             contextQ,
@@ -400,15 +391,7 @@ def sbom(
                             pm,
                             new_sbom,
                             filepath,
-<<<<<<< Updated upstream
-                            filetype=pm.hook.identify_file_type(filepath=filepath, context=entry),
-=======
-<<<<<<< HEAD
-                            filetype=pm.hook.identify_file_type(filepath=filepath) or [],
-=======
-                            filetype=pm.hook.identify_file_type(filepath=filepath, context=entry),
->>>>>>> 4a746b6 (Changed identify_file_type to optionally allow calling with context)
->>>>>>> Stashed changes
+                            filetype=pm.hook.identify_file_type(filepath=filepath, context=entry) or [],
                             root_path=epath.parent.as_posix() if len(epath.parts) > 1 else "",
                             container_uuid=parent_uuid,
                             install_path=install_prefix,
@@ -521,7 +504,7 @@ def sbom(
                                         pm,
                                         new_sbom,
                                         filepath,
-                                        filetype=ftype,
+                                        filetype=ftype or [],
                                         root_path=epath.as_posix(),
                                         container_uuid=parent_uuid,
                                         install_path=install_prefix,

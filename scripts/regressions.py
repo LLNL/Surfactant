@@ -33,6 +33,22 @@ def deterministic_time():
     return 1609459200  # Friday, January 1, 2021 12:00:00 AM UTC
 
 
+_json_dumps = json.dumps
+
+
+def deterministic_json_dumps(*args, **kwargs):
+    kwargs["sort_keys"] = True
+    return _json_dumps(*args, **kwargs)
+
+
+_json_dump = json.dump
+
+
+def deterministic_json_dump(*args, **kwargs):
+    kwargs["sort_keys"] = True
+    return _json_dump(*args, **kwargs)
+
+
 class FixedDateTime(datetime.datetime):
     @classmethod
     def now(cls, tz=None):
@@ -55,6 +71,8 @@ def deterministic_context(enabled: bool = True):
             patch("uuid.uuid4", side_effect=deterministic_uuid4),
             patch("datetime.datetime", FixedDateTime),
             patch("time.time", side_effect=deterministic_time),
+            patch("json.dumps", side_effect=deterministic_json_dumps),
+            patch("json.dump", side_effect=deterministic_json_dump),
         ):
             # Set the random seed for deterministic random number generation
             random.seed(0xDEADBEEF)
@@ -95,8 +113,8 @@ def generate_sbom_string(
     if install_prefix is None:
         install_prefix = folder_path.as_posix() + "/"
 
-    # Create specimen config for the single folder
-    specimen_config = [{"extractPaths": [folder_path.as_posix()], "installPrefix": install_prefix}]
+    # Create specimen context for the single folder
+    specimen_context = [{"extractPaths": [folder_path.as_posix()], "installPrefix": install_prefix}]
 
     # Create an in-memory file-like object to capture output
     output_buffer = io.StringIO()
@@ -108,7 +126,7 @@ def generate_sbom_string(
                 # Use Click's invoke to call the command with the context
                 ctx.invoke(
                     sbom,
-                    specimen_config=specimen_config,
+                    specimen_context=specimen_context,
                     sbom_outfile=output_buffer,
                 )
             except Exception as e:

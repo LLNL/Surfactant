@@ -252,4 +252,4 @@ def identify_file_type(filepath: str, context: ContextEntry|None=None) -> Option
     except FileNotFoundError:
         return None
 
-    return filetype_matches
+    return filetype_matches if filetype_matches else None
