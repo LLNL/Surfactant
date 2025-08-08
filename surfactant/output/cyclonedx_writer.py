@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from typing import Dict, List, Optional, Tuple
 
 import cyclonedx.output
-from cyclonedx.model import HashAlgorithm, HashType
+from cyclonedx.model import ExternalReference, ExternalReferenceType, HashAlgorithm, HashType
 from cyclonedx.model.bom import Bom, BomMetaData
 from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType

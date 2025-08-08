@@ -44,17 +44,17 @@ dependencies = [
     "pyelftools==0.32.*",
     # This isn't semver so fix it to a specific release
     "pefile==2024.8.26",
-    "dnfile==0.15.*",
+    "dnfile==0.16.*",
     "olefile==0.47.*",
     "defusedxml==0.7.*",
     "spdx-tools==0.8.*",
     # Pinned to specific version for potential breaking changes
-    "cyclonedx-python-lib==10.3.0",
+    "cyclonedx-python-lib==11.0.0",
     "pluggy==1.*",
     "click==8.*",
     "loguru==0.7.*",
     "tomlkit==0.13.*",
-    "textual==3.*",
+    "textual==4.*",
     "requests>=2.32.3",
     "rarfile==4.2.*",
     # Pinned to specific version for potential breaking changes
