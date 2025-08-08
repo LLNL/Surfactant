@@ -190,25 +190,51 @@ class SBOM:
 
     def get_software_by_path(self, path: str) -> Optional[Software]:
         """
-        Retrieve a Software entry by normalized install path, using the fs_tree.
+        Retrieve a Software entry by normalized install path, using the fs_tree (with symlink traversal).
+
+        This function first normalizes the provided path to POSIX format and attempts a direct lookup
+        in the fs_tree. If no node is found or the node lacks a software UUID, the function will
+        traverse outgoing symlink edges to locate a valid software reference.
 
         Args:
             path (str): Raw input path (can be Windows or POSIX format).
 
         Returns:
-            Software | None: The matching software object if found.
+            Optional[Software]: The matching software object if found, otherwise None.
+
+        Behavior:
+            - Follows symlink edges (type="symlink") in fs_tree if no direct match exists.
+            - Traverses depth-first with cycle prevention.
+            - Returns the first resolved node containing a software UUID.
         """
         # Normalize the input path to POSIX format to match internal fs_tree representation
         norm_path = normalize_path(path)
 
-        # Attempt to retrieve the node from the filesystem tree using the normalized path
+        # Attempt direct node lookup
         node = self.fs_tree.nodes.get(norm_path)
-
-        # If the node exists and contains a reference to a software UUID, retrieve the Software object
         if node and "software_uuid" in node:
             return self._find_software_entry(uuid=node["software_uuid"])
 
-        # No match found for this path
+        # Attempt to resolve via symlink traversal
+        visited = set()
+        queue = [norm_path]
+
+        while queue:
+            current = queue.pop(0)
+            if current in visited:
+                continue
+            visited.add(current)
+
+            # Check each symlink edge from current node
+            for _, target, attrs in self.fs_tree.out_edges(current, data=True):
+                if attrs.get("type") == "symlink":
+                    target_node = self.fs_tree.nodes.get(target, {})
+                    if "software_uuid" in target_node:
+                        logger.debug(f"[fs_tree] Resolved {path} via symlink: {current} → {target}")
+                        return self._find_software_entry(uuid=target_node["software_uuid"])
+                    queue.append(target)
+
+        # No match found after traversal
         return None
 
     def build_rel_graph(self) -> None:
