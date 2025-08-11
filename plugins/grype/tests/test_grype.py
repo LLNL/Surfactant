@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+from shutil import which
 
 import docker
 import pytest
@@ -46,37 +47,47 @@ def check_dependency_availability():
 
 
 def install_grype() -> None:
-    """Install Grype if not already installed."""
+    """
+    Install Grype if not already present on PATH.
+    Always pulls the latest release.
+    """
+    # If grype already on PATH and --version succeeds, skip install
+    if which("grype"):
+        try:
+            out = subprocess.run(
+                ["grype", "--version"],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+            logging.info("Grype already installed: %s", out)
+            return
+        except subprocess.CalledProcessError:
+            logging.warning("Found grype binary, but version check failed; reinstalling.")
+
+    logging.info("Installing Grype via get.anchore.io…")
+    # Use the official Anchore installer to fetch and install the latest Grype
+    cmd = (
+        "curl -sSfL https://get.anchore.io/grype"
+        " | sudo sh -s -- -b /usr/local/bin"
+    )
+    subprocess.run(cmd, shell=True, check=True)
+
+    # Verify installation
     try:
-        # Try to use an existing Grype installation
-        output = subprocess.run(
-            ["grype", "--version"], capture_output=True, text=True, check=True
-        ).stdout.strip()
-        logging.info("Grype is already installed: '%s'", output)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        logging.info("Installing Grype...")
-        # Use the official installer script but with subprocess list syntax instead of shell=True
-        subprocess.run(
-            [
-                "curl",
-                "-sSfL",
-                "https://raw.githubusercontent.com/anchore/grype/main/install.sh",
-                "-o",
-                "grype-installer.sh",
-            ],
+        out = subprocess.run(
+            ["grype", "--version"],
+            capture_output=True,
+            text=True,
             check=True,
+        ).stdout.strip()
+        logging.info("Grype installed successfully: %s", out)
+    except subprocess.CalledProcessError as e:
+        logging.error(
+            "Installation seemed to succeed but version check failed: %s", e
         )
+        raise
 
-        # Make the installer executable
-        os.chmod("grype-installer.sh", 0o755)
-
-        # Run the installer
-        subprocess.run(["./grype-installer.sh", "-b", "/usr/local/bin"], check=True)
-
-        # Clean up
-        os.remove("grype-installer.sh")
-
-        logging.info("Grype installed successfully.")
 
 
 def enable_plugin(plugin_name):
