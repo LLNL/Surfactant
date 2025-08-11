@@ -67,10 +67,7 @@ def install_grype() -> None:
 
     logging.info("Installing Grype via get.anchore.io…")
     # Use the official Anchore installer to fetch and install the latest Grype
-    cmd = (
-        "curl -sSfL https://get.anchore.io/grype"
-        " | sudo sh -s -- -b /usr/local/bin"
-    )
+    cmd = "curl -sSfL https://get.anchore.io/grype | sudo sh -s -- -b /usr/local/bin"
     subprocess.run(cmd, shell=True, check=True)
 
     # Verify installation
@@ -83,11 +80,8 @@ def install_grype() -> None:
         ).stdout.strip()
         logging.info("Grype installed successfully: %s", out)
     except subprocess.CalledProcessError as e:
-        logging.error(
-            "Installation seemed to succeed but version check failed: %s", e
-        )
+        logging.error("Installation seemed to succeed but version check failed: %s", e)
         raise
-
 
 
 def enable_plugin(plugin_name):
