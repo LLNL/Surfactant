@@ -389,7 +389,6 @@ class SBOM:
         else:
             logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
 
-
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
     ):
