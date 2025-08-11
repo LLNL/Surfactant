@@ -349,7 +349,6 @@ class SBOM:
             target_path (str): Resolved absolute path of the symlink target (e.g. "/usr/lib/foo.so").
             subtype (Optional[str]): Optional category for the link (e.g. "file" or "directory").
         """
-        from surfactant.utils.paths import normalize_path
 
         # Normalize inputs to consistent POSIX-style paths
         link_node = normalize_path(link_path)
