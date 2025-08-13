@@ -21,7 +21,6 @@ from surfactant.sbomtypes import SBOM, Software
 from surfactant.utils.paths import normalize_path
 
 
-
 # Converts from a true path to an install path
 def real_path_to_install_path(root_path: str, install_path: str, filepath: str) -> str:
     # appending a "/" to root_path can cause problems if it is "" or already ends with "/"
@@ -636,7 +635,7 @@ def sbom(
 
             for target in target_nodes:
                 # Normalize *again* defensively in case a tagged node wasn't normalized for some reason
-                ntarget = normalize_path(target) 
+                ntarget = normalize_path(target)
                 if not new_sbom.fs_tree.has_node(ntarget):
                     continue
 
