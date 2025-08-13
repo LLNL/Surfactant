@@ -18,6 +18,8 @@ from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.utils.paths import normalize_path
+
 
 
 # Converts from a true path to an install path
@@ -633,20 +635,25 @@ def sbom(
             filename_symlink_set = set()
 
             for target in target_nodes:
-                for src, dst, data in new_sbom.fs_tree.in_edges(target, data=True):
+                # Normalize *again* defensively in case a tagged node wasn't normalized for some reason
+                ntarget = normalize_path(target) 
+                if not new_sbom.fs_tree.has_node(ntarget):
+                    continue
+
+                for src, dst, data in new_sbom.fs_tree.in_edges(ntarget, data=True):
                     if data.get("type") == "symlink":
                         install_symlink_set.add(src)
                         # Derive filename alias when basename differs
                         try:
-                            main_name = pathlib.PurePosixPath(target).name
+                            main_name = pathlib.PurePosixPath(ntarget).name
                             link_name = pathlib.PurePosixPath(src).name
                         except Exception:
-                            main_name = target.rsplit("/", 1)[-1]
+                            main_name = ntarget.rsplit("/", 1)[-1]
                             link_name = src.rsplit("/", 1)[-1]
                         if link_name and link_name != main_name:
                             filename_symlink_set.add(link_name)
                         logger.debug(
-                            f"[fs_tree] symlink edge {src} -> {target} (main={main_name}, link={link_name})"
+                            f"[fs_tree] symlink edge {src} -> {ntarget} (main={main_name}, link={link_name})"
                         )
 
             # (3) Ensure lists contain these aliases (deduped)
