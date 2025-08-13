@@ -404,7 +404,7 @@ def sbom(
                     entries.append(sw_parent)
                     entries.extend(sw_children if sw_children else [])
                     # ------------------------------------------------------------------------
-                    # (Optional) Inject symlink paths into each Software entry so SBOM helper handles them
+                    # (Optional - Early Injection) Inject symlink paths into each Software entry so SBOM helper handles them
                     # ------------------------------------------------------------------------
                     # Early injection: add symlinks gathered so far so fs_tree sees them
                     # for sw in entries:
@@ -555,7 +555,7 @@ def sbom(
                                 entries.append(sw_parent)
                                 entries.extend(sw_children if sw_children else [])
                     # ------------------------------------------------------------------------
-                    # (Optional) Inject symlink paths into each Software entry so SBOM helper handles them
+                    # (Optional - Early Injection) Inject symlink paths into each Software entry so SBOM helper handles them
                     # ------------------------------------------------------------------------
                     # Early injection for batch (so fs_tree captures aliases)
                     # for sw in entries:
@@ -577,40 +577,66 @@ def sbom(
                     #             sw.installPath.append(link)
                     new_sbom.add_software_entries(entries, parent_entry=parent_entry)
 
-        # Restore symlink metadata using fs_tree
+        # === Restore symlink metadata using fs_tree (single source of truth) ===
+        # For each Software, gather incoming symlink edges into any fs_tree nodes that represent it.
         for software in new_sbom.software:
             # Ensure lists exist
             software.fileName = software.fileName or []
             software.installPath = software.installPath or []
             software.metadata = software.metadata or []
 
-            # Aggregate target paths we consider "the real thing"
-            target_paths: List[str] = []
-            for paths in (software.installPath, software.containerPath):
-                if paths:
-                    target_paths.extend(paths)
+            # (1) Identify all fs_tree target nodes for this software:
+            #     (a) nodes explicitly tagged with software_uuid
+            #     (b) normalized install/container paths that are present as nodes
+            tagged_targets = {
+                node
+                for node, attrs in new_sbom.fs_tree.nodes(data=True)
+                if attrs.get("software_uuid") == software.UUID
+            }
 
+            path_targets = set()
+            for p in (software.installPath or []):
+                np = normalize_path(p)
+                if new_sbom.fs_tree.has_node(np):
+                    path_targets.add(np)
+            for p in (software.containerPath or []):
+                np = normalize_path(p)
+                if new_sbom.fs_tree.has_node(np):
+                    path_targets.add(np)
+
+            target_nodes = sorted(tagged_targets | path_targets)
+            logger.debug(
+                "[fs_tree] Symlink metadata synthesis for UUID={uuid}: "
+                "tagged_targets={tt} path_targets={pt} merged_targets={mt}".format(
+                    uuid=software.UUID,
+                    tt=sorted(tagged_targets),
+                    pt=sorted(path_targets),
+                    mt=target_nodes,
+                )
+            )
+
+            # (2) Mine fs_tree for symlink edges that point *to* any target node
             install_symlink_set = set()
             filename_symlink_set = set()
 
-            # Mine fs_tree for symlink edges that point *to* any target path
-            for tpath in target_paths:
-                norm_target = tpath  # _record_symlink already normalizes on insert
-                if not hasattr(new_sbom, "fs_tree") or not new_sbom.fs_tree.has_node(norm_target):
-                    continue
-                for src, dst, data in new_sbom.fs_tree.in_edges(norm_target, data=True):
+            for target in target_nodes:
+                for src, dst, data in new_sbom.fs_tree.in_edges(target, data=True):
                     if data.get("type") == "symlink":
                         install_symlink_set.add(src)
+                        # Derive filename alias when basename differs
                         try:
-                            main_name = pathlib.PurePosixPath(norm_target).name
+                            main_name = pathlib.PurePosixPath(target).name
                             link_name = pathlib.PurePosixPath(src).name
                         except Exception:
-                            main_name = norm_target.rsplit("/", 1)[-1]
+                            main_name = target.rsplit("/", 1)[-1]
                             link_name = src.rsplit("/", 1)[-1]
                         if link_name and link_name != main_name:
                             filename_symlink_set.add(link_name)
+                        logger.debug(
+                            f"[fs_tree] symlink edge {src} -> {target} (main={main_name}, link={link_name})"
+                        )
 
-            # Ensure the symlink paths/names are present (idempotent)
+            # (3) Ensure lists contain these aliases (deduped)
             for ipath in sorted(install_symlink_set):
                 if ipath not in software.installPath:
                     software.installPath.append(ipath)
@@ -618,11 +644,10 @@ def sbom(
                 if fname not in software.fileName:
                     software.fileName.append(fname)
 
-            # Write metadata UNCONDITIONALLY from the computed sets
-            def _merge_md(key: str, values: List[str]):
+            # (4) Merge/append metadata entries without duplication
+            def _merge_md(key: str, values: List[str]) -> None:
                 if not values:
                     return
-                # try to find existing metadata entry
                 for md in software.metadata:
                     if isinstance(md, dict) and key in md:
                         md[key] = sorted(set(md[key]) | set(values))
@@ -632,8 +657,9 @@ def sbom(
                     software.metadata.append({key: sorted(set(values))})
                     logger.debug(f"[fs_tree] appended metadata {key}: {values}")
 
-            _merge_md("fileNameSymlinks", list(filename_symlink_set))
             _merge_md("installPathSymlinks", list(install_symlink_set))
+            _merge_md("fileNameSymlinks", list(filename_symlink_set))
+
             logger.debug(
                 f"[fs_tree] Metadata for {software.sha256[:12]}: "
                 f"{len(install_symlink_set)} installPathSymlinks, "
