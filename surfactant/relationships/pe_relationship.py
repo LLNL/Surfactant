@@ -26,9 +26,13 @@ def establish_relationships(
     SurfActant plugin: establish 'Uses' relationships based on PE import metadata.
 
     Handles peImport, peBoundImport, and peDelayImport using a Windows-specific resolver.
+    Phases:
+      1. [fs_tree] Exact path match via sbom.get_software_by_path()
+      2. [legacy]  installPath + fileName matching
+      3. [heuristic] fileName match + shared directory (symlink-aware)
     """
     if not has_required_fields(metadata):
-        logger.debug(f"[PE] No PE import metadata for UUID={software.UUID} ({software.name})")
+        logger.debug(f"[PE][skip] No PE import metadata for UUID={software.UUID} ({software.name})")
         return None
 
     relationships: List[Relationship] = []
@@ -40,12 +44,13 @@ def establish_relationships(
 
     for field, label in field_map.items():
         if field in metadata:
+            entries = metadata[field] or []
             logger.debug(
-                f"[PE] Processing {label} imports for {software.name} ({software.UUID}): "
-                f"{len(metadata[field])} entries"
+                f"[PE][import] {label} imports for {software.name} ({software.UUID}): {len(entries)}"
             )
-            relationships.extend(get_windows_pe_dependencies(sbom, software, metadata[field]))
+            relationships.extend(get_windows_pe_dependencies(sbom, software, entries))
 
+    logger.debug(f"[PE][final] emitted {len(relationships)} relationships")
     return relationships
 
 
@@ -69,7 +74,7 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
     relationships: List[Relationship] = []
 
     if sw.installPath is None:
-        logger.debug(f"[PE] No installPath for {sw.name}; skipping PE dependency resolution.")
+        logger.debug(f"[PE][skip] No installPath for {sw.name} ({sw.UUID}); skipping resolution")
         return relationships
 
     dependent_uuid = sw.UUID
@@ -78,25 +83,27 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
         if not fname:
             continue
 
-        logger.debug(f"[PE] Resolving import: '{fname}' for UUID={dependent_uuid}")
+        logger.debug(f"[PE][import] resolving '{fname}' for UUID={dependent_uuid}")
 
         matched_uuids = set()
-        used_method = {}
+        used_method: dict[str, str] = {}
 
         # -----------------------------------
         # Phase 1: Direct fs_tree resolution
         # -----------------------------------
         probedirs = []
         if isinstance(sw.installPath, Iterable):
-            for ipath in sw.installPath:
+            for ipath in sw.installPath or []:
                 parent_dir = pathlib.PureWindowsPath(ipath).parent.as_posix()
                 probedirs.append(parent_dir)
+        logger.debug(f"[PE][import] probedirs for '{fname}': {probedirs}")
 
         for directory in probedirs:
             full_path = normalize_path(directory, fname)
             match = sbom.get_software_by_path(full_path)
-            logger.debug(f"[PE][fs_tree] Looking for {full_path} → Match: {bool(match)}")
-            if match and match.UUID != dependent_uuid:
+            ok = bool(match and match.UUID != dependent_uuid)
+            logger.debug(f"[PE][fs_tree] {full_path} → {'UUID='+match.UUID if ok else 'no match'}")
+            if ok:
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"
 
@@ -105,14 +112,18 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
         # ----------------------------------------
         if not matched_uuids:
             for item in sbom.software:
-                if isinstance(item.fileName, Iterable) and fname not in item.fileName:
+                # Need a name match first
+                has_name = isinstance(item.fileName, Iterable) and fname in (item.fileName or [])
+                if not has_name:
                     continue
+
+                # Then ensure any of the item's install paths share a probedir dir
                 if isinstance(item.installPath, Iterable):
-                    for ipath in item.installPath:
+                    for ipath in item.installPath or []:
                         ip_dir = pathlib.PurePosixPath(ipath).parent.as_posix()
                         if ip_dir in probedirs:
-                            logger.debug(f"[PE][legacy] Matched {fname} in installPath {ipath}")
                             if item.UUID != dependent_uuid:
+                                logger.debug(f"[PE][legacy] {fname} in {ipath} → UUID={item.UUID}")
                                 matched_uuids.add(item.UUID)
                                 used_method[item.UUID] = "legacy_installPath"
 
@@ -121,34 +132,32 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
         # ---------------------------------------------------------
         if not matched_uuids:
             for item in sbom.software:
-                if isinstance(item.fileName, Iterable) and fname in item.fileName:
-                    if isinstance(item.installPath, Iterable):
-                        for ipath in item.installPath:
-                            ip_dir = pathlib.PurePosixPath(ipath).parent
-                            for refdir in probedirs:
-                                if ip_dir == pathlib.PurePosixPath(refdir):
-                                    logger.debug(
-                                        f"[PE][heuristic] Matched '{fname}' via symlink-aware path: {ipath}"
-                                    )
-                                    if item.UUID != dependent_uuid:
-                                        matched_uuids.add(item.UUID)
-                                        used_method[item.UUID] = "symlink_heuristic"
+                has_name = isinstance(item.fileName, Iterable) and fname in (item.fileName or [])
+                if not has_name or not isinstance(item.installPath, Iterable):
+                    continue
+                for ipath in item.installPath or []:
+                    ip_dir = pathlib.PurePosixPath(ipath).parent
+                    for refdir in probedirs:
+                        if ip_dir == pathlib.PurePosixPath(refdir):
+                            if item.UUID != dependent_uuid:
+                                logger.debug(f"[PE][heuristic] {fname} via {ipath} → UUID={item.UUID}")
+                                matched_uuids.add(item.UUID)
+                                used_method[item.UUID] = "heuristic"
 
         # ----------------------------------------
         # Emit final relationships (if any found)
         # ----------------------------------------
-        for uuid in matched_uuids:
-            if uuid == dependent_uuid:
-                continue
-            rel = Relationship(dependent_uuid, uuid, "Uses")
-            if rel not in relationships:
-                logger.debug(
-                    f"[PE] Emitting relationship: {dependent_uuid} → {uuid} [method={used_method.get(uuid)}]"
-                )
-                relationships.append(rel)
-
-        if not matched_uuids:
-            logger.debug(f"[PE] No matches found for import '{fname}'")
+        if matched_uuids:
+            for uuid in matched_uuids:
+                if uuid == dependent_uuid:
+                    continue
+                rel = Relationship(dependent_uuid, uuid, "Uses")
+                if rel not in relationships:
+                    method = used_method.get(uuid, "unknown")
+                    logger.debug(f"[PE][final] {dependent_uuid} Uses {fname} → UUID={uuid} [{method}]")
+                    relationships.append(rel)
+        else:
+            logger.debug(f"[PE][final] {dependent_uuid} Uses {fname} → no match")
 
     return relationships
 
