@@ -608,11 +608,11 @@ def sbom(
             }
 
             path_targets = set()
-            for p in (software.installPath or []):
+            for p in software.installPath or []:
                 np = normalize_path(p)
                 if new_sbom.fs_tree.has_node(np):
                     path_targets.add(np)
-            for p in (software.containerPath or []):
+            for p in software.containerPath or []:
                 np = normalize_path(p)
                 if new_sbom.fs_tree.has_node(np):
                     path_targets.add(np)
