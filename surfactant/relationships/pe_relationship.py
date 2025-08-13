@@ -102,7 +102,9 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
             full_path = normalize_path(directory, fname)
             match = sbom.get_software_by_path(full_path)
             ok = bool(match and match.UUID != dependent_uuid)
-            logger.debug(f"[PE][fs_tree] {full_path} → {'UUID='+match.UUID if ok else 'no match'}")
+            logger.debug(
+                f"[PE][fs_tree] {full_path} → {'UUID=' + match.UUID if ok else 'no match'}"
+            )
             if ok:
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"
@@ -140,7 +142,9 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
                     for refdir in probedirs:
                         if ip_dir == pathlib.PurePosixPath(refdir):
                             if item.UUID != dependent_uuid:
-                                logger.debug(f"[PE][heuristic] {fname} via {ipath} → UUID={item.UUID}")
+                                logger.debug(
+                                    f"[PE][heuristic] {fname} via {ipath} → UUID={item.UUID}"
+                                )
                                 matched_uuids.add(item.UUID)
                                 used_method[item.UUID] = "heuristic"
 
@@ -154,7 +158,9 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
                 rel = Relationship(dependent_uuid, uuid, "Uses")
                 if rel not in relationships:
                     method = used_method.get(uuid, "unknown")
-                    logger.debug(f"[PE][final] {dependent_uuid} Uses {fname} → UUID={uuid} [{method}]")
+                    logger.debug(
+                        f"[PE][final] {dependent_uuid} Uses {fname} → UUID={uuid} [{method}]"
+                    )
                     relationships.append(rel)
         else:
             logger.debug(f"[PE][final] {dependent_uuid} Uses {fname} → no match")

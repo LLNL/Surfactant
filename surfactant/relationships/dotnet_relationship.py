@@ -83,7 +83,6 @@ def establish_relationships(
             if not found:
                 logger.debug(f"[.NET][unmanaged] {ref} → no match")
 
-
     # --- Extract appConfig metadata ---
     probing_paths = []
     dependent_assemblies = []
@@ -161,14 +160,15 @@ def establish_relationships(
                         return False
             return True
 
-
         # Phase 1: fs_tree lookup
         for probe_dir in probedirs:
             for fname in fname_variants:
                 path = normalize_path(probe_dir, fname)
                 match = sbom.get_software_by_path(path)
                 ok = bool(match and is_valid_match(match))
-                logger.debug(f"[.NET][fs_tree] {path} → {'UUID=' + match.UUID if ok else 'no match'}")
+                logger.debug(
+                    f"[.NET][fs_tree] {path} → {'UUID=' + match.UUID if ok else 'no match'}"
+                )
                 if ok:
                     matched_uuids.add(match.UUID)
                     used_method[match.UUID] = "fs_tree"
@@ -191,7 +191,6 @@ def establish_relationships(
                         matched_uuids.add(sw.UUID)
                         used_method[sw.UUID] = "legacy_installPath"
 
-
         # Phase 3: Heuristic matching by shared directory
         if not matched_uuids:
             for sw in sbom.software:
@@ -208,7 +207,9 @@ def establish_relationships(
                     sw_dir = pathlib.PurePath(sw_path).parent
                     for refdir in probedirs:
                         if sw_dir == pathlib.PurePath(refdir):
-                            logger.debug(f"[.NET][heuristic] {refName} via {sw_path} → UUID={sw.UUID}")
+                            logger.debug(
+                                f"[.NET][heuristic] {refName} via {sw_path} → UUID={sw.UUID}"
+                            )
                             matched_uuids.add(sw.UUID)
                             used_method[sw.UUID] = "heuristic"
 
@@ -217,7 +218,9 @@ def establish_relationships(
             rel = Relationship(dependent_uuid, uuid, "Uses")
             if rel not in relationships:
                 method = used_method.get(uuid, "unknown")
-                logger.debug(f"[.NET][final] {dependent_uuid} Uses {refName} → UUID={uuid} [{method}]")
+                logger.debug(
+                    f"[.NET][final] {dependent_uuid} Uses {refName} → UUID={uuid} [{method}]"
+                )
                 relationships.append(rel)
 
         if not matched_uuids:

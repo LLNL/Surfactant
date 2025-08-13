@@ -47,7 +47,6 @@ def establish_relationships(
     imports = {imp for cls in java_classes.values() for imp in cls.get("javaImports", [])}
     logger.debug(f"[Java][import] {software.UUID} importing {len(imports)} classes")
 
-
     for import_class in imports:
         class_path = class_to_path(import_class)
         fname = class_path.rsplit("/", maxsplit=1)[-1]
@@ -64,7 +63,9 @@ def establish_relationships(
             full_path = f"{base_dir}/{class_path}"
             match = sbom.get_software_by_path(full_path)
             ok = bool(match and match.UUID != dependent_uuid)
-            logger.debug(f"[Java][fs_tree] {full_path} → {'UUID=' + match.UUID if ok else 'no match'}")
+            logger.debug(
+                f"[Java][fs_tree] {full_path} → {'UUID=' + match.UUID if ok else 'no match'}"
+            )
             if ok:
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"
@@ -96,7 +97,9 @@ def establish_relationships(
                         for sip in software.installPath or []:
                             search_dir = pathlib.PurePosixPath(sip).parent.as_posix()
                             if ip_dir == search_dir:
-                                logger.debug(f"[Java][heuristic] {fname} in shared dir {ip_dir} → UUID={sw.UUID}")
+                                logger.debug(
+                                    f"[Java][heuristic] {fname} in shared dir {ip_dir} → UUID={sw.UUID}"
+                                )
                                 matched_uuids.add(sw.UUID)
                                 used_method[sw.UUID] = "heuristic"
 
@@ -110,7 +113,9 @@ def establish_relationships(
                 rel = Relationship(dependent_uuid, uuid, "Uses")
                 if rel not in relationships:
                     method = used_method.get(uuid, "unknown")
-                    logger.debug(f"[Java][final] {dependent_uuid} Uses {import_class} → UUID={uuid} [{method}]")
+                    logger.debug(
+                        f"[Java][final] {dependent_uuid} Uses {import_class} → UUID={uuid} [{method}]"
+                    )
                     relationships.append(rel)
         else:
             logger.debug(f"[Java][final] {dependent_uuid} Uses {import_class} → no match")

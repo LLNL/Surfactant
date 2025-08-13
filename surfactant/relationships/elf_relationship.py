@@ -98,7 +98,7 @@ def establish_relationships(
         for path in fpaths:
             match = sbom.get_software_by_path(path)
             ok = bool(match and match.UUID != software.UUID)
-            logger.debug(f"[ELF][fs_tree] {path} → {'UUID='+match.UUID if ok else 'no match'}")
+            logger.debug(f"[ELF][fs_tree] {path} → {'UUID=' + match.UUID if ok else 'no match'}")
             if ok:
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"
@@ -130,7 +130,9 @@ def establish_relationships(
                     for fp in fpaths:
                         if pathlib.PurePosixPath(fp).parent == ip_dir:
                             if item.UUID != software.UUID:
-                                logger.debug(f"[ELF][heuristic] {fname} via {ipath} ~ {fp} → UUID={item.UUID}")
+                                logger.debug(
+                                    f"[ELF][heuristic] {fname} via {ipath} ~ {fp} → UUID={item.UUID}"
+                                )
                                 matched_uuids.add(item.UUID)
                                 used_method[item.UUID] = "heuristic"
 
@@ -143,7 +145,9 @@ def establish_relationships(
                 if rel not in relationships:
                     relationships.append(rel)
                     method = used_method.get(dependency_uuid, "unknown")
-                    logger.debug(f"[ELF][final] {dependent_uuid} Uses {fname} → UUID={dependency_uuid} [{method}]")
+                    logger.debug(
+                        f"[ELF][final] {dependent_uuid} Uses {fname} → UUID={dependency_uuid} [{method}]"
+                    )
         else:
             logger.debug(f"[ELF][final] {dependent_uuid} Uses {fname} → no match")
 
