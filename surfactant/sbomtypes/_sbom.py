@@ -852,7 +852,6 @@ class SBOM:
 
         return data
 
-
     def to_json_override(self, *args, **kwargs) -> str:
         """
         Serialize via our to_dict_override, passing through any json.dumps kwargs.

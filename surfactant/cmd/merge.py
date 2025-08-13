@@ -99,9 +99,10 @@ def merge(
 
     # Find root nodes: those with zero incoming edges
     roots = [
-        n for n, deg in merged_sbom.graph.in_degree()
+        n
+        for n, deg in merged_sbom.graph.in_degree()
         if deg == 0 and merged_sbom.graph.nodes.get(n, {}).get("type") != "Path"
-        ]
+    ]
     logger.info(f"ROOT NODES: {roots}")
 
     # Detect any directed cycles

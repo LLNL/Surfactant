@@ -6,7 +6,7 @@ import os
 import pathlib
 import queue
 import re
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
@@ -18,7 +18,6 @@ from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
-from surfactant.utils.paths import normalize_path
 
 
 # Converts from a true path to an install path
@@ -449,10 +448,16 @@ def sbom(
                                     dir_symlinks.append((install_source, install_dest))
                                     # Reflect in fs_tree immediately
                                     try:
-                                        new_sbom._record_symlink(install_source, install_dest, subtype="directory")
-                                        logger.debug(f"[fs_tree] (dir) {install_source} → {install_dest}")
+                                        new_sbom._record_symlink(
+                                            install_source, install_dest, subtype="directory"
+                                        )
+                                        logger.debug(
+                                            f"[fs_tree] (dir) {install_source} → {install_dest}"
+                                        )
                                     except Exception as e:
-                                        logger.warning(f"Failed to record directory symlink in fs_tree: {install_source} → {install_dest}: {e}")
+                                        logger.warning(
+                                            f"Failed to record directory symlink in fs_tree: {install_source} → {install_dest}: {e}"
+                                        )
 
                     entries: List[Software] = []
                     for file in files:
@@ -505,11 +510,19 @@ def sbom(
 
                                 # Reflect this symlink in fs_tree immediately
                                 try:
-                                    subtype = "file" if os.path.isfile(true_filepath) else "directory"
-                                    new_sbom._record_symlink(install_filepath, install_dest, subtype=subtype)
-                                    logger.debug(f"[fs_tree] ({subtype}) {install_filepath} → {install_dest}")
+                                    subtype = (
+                                        "file" if os.path.isfile(true_filepath) else "directory"
+                                    )
+                                    new_sbom._record_symlink(
+                                        install_filepath, install_dest, subtype=subtype
+                                    )
+                                    logger.debug(
+                                        f"[fs_tree] ({subtype}) {install_filepath} → {install_dest}"
+                                    )
                                 except Exception as e:
-                                    logger.warning(f"Failed to record symlink in fs_tree: {install_filepath} → {install_dest}: {e}")
+                                    logger.warning(
+                                        f"Failed to record symlink in fs_tree: {install_filepath} → {install_dest}: {e}"
+                                    )
                             # NOTE Two cases that don't get recorded (but maybe should?) are:
                             # 1. If the file pointed to is outside the extract paths, it won't
                             # appear in the SBOM at all -- is that desirable? If it were included,
