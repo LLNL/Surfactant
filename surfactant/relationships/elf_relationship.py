@@ -69,7 +69,7 @@ def establish_relationships(
     relationships: List[Relationship] = []
     dependent_uuid = software.UUID
     default_search_paths = generate_search_paths(software, metadata)
-    logger.debug(f"Default search paths: {[p.as_posix() for p in default_search_paths]}")
+    logger.debug(f"[ELF][search] default paths: {[p.as_posix() for p in default_search_paths]}")
 
     for dep in metadata["elfDependencies"]:
         fpaths = []
@@ -97,21 +97,22 @@ def establish_relationships(
 
         for path in fpaths:
             match = sbom.get_software_by_path(path)
-            if match and match.UUID != software.UUID:
-                matched_uuids.add(match.UUID)
-            logger.debug(f"[elf_relationship] Trying fs_tree lookup: {path} -> {match}")
-            if match:
+            ok = bool(match and match.UUID != software.UUID)
+            logger.debug(f"[ELF][fs_tree] {path} → {'UUID='+match.UUID if ok else 'no match'}")
+            if ok:
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"
 
         # Phase 2: Legacy installPath fallback
         if not matched_uuids:
             for item in sbom.software:
-                if isinstance(item.fileName, Iterable) and fname not in item.fileName:
+                has_name = isinstance(item.fileName, Iterable) and fname in (item.fileName or [])
+                if not has_name:
                     continue
                 for fp in fpaths:
-                    if isinstance(item.installPath, Iterable) and fp in item.installPath:
+                    if isinstance(item.installPath, Iterable) and fp in (item.installPath or []):
                         if item.UUID != software.UUID:
+                            logger.debug(f"[ELF][legacy] {fname} in {fp} → UUID={item.UUID}")
                             matched_uuids.add(item.UUID)
                             used_method[item.UUID] = "legacy_installPath"
 
@@ -121,28 +122,32 @@ def establish_relationships(
         # - Located in the same directory as any search path
         if not matched_uuids and fname:
             for item in sbom.software:
-                if isinstance(item.fileName, Iterable) and fname in item.fileName:
-                    if isinstance(item.installPath, Iterable):
-                        for ipath in item.installPath:
-                            ip_dir = pathlib.PurePosixPath(ipath).parent
-                            for fp in fpaths:
-                                if pathlib.PurePosixPath(fp).parent == ip_dir:
-                                    if item.UUID != software.UUID:
-                                        matched_uuids.add(item.UUID)
-                                        used_method[item.UUID] = "symlink_heuristic"
-                                        logger.debug(f"Symlink heuristic matched: {fp} ~ {ipath}")
+                has_name = isinstance(item.fileName, Iterable) and fname in (item.fileName or [])
+                if not has_name or not isinstance(item.installPath, Iterable):
+                    continue
+                for ipath in item.installPath or []:
+                    ip_dir = pathlib.PurePosixPath(ipath).parent
+                    for fp in fpaths:
+                        if pathlib.PurePosixPath(fp).parent == ip_dir:
+                            if item.UUID != software.UUID:
+                                logger.debug(f"[ELF][heuristic] {fname} via {ipath} ~ {fp} → UUID={item.UUID}")
+                                matched_uuids.add(item.UUID)
+                                used_method[item.UUID] = "heuristic"
 
         # Emit final relationships
-        for dependency_uuid in matched_uuids:
-            if dependency_uuid == software.UUID:
-                continue
-            rel = Relationship(dependent_uuid, dependency_uuid, "Uses")
-            if rel not in relationships:
-                relationships.append(rel)
-                method = used_method.get(dependency_uuid, "unknown")
-                logger.debug(f"Added relationship: {rel} via {method}")
+        if matched_uuids:
+            for dependency_uuid in matched_uuids:
+                if dependency_uuid == software.UUID:
+                    continue
+                rel = Relationship(dependent_uuid, dependency_uuid, "Uses")
+                if rel not in relationships:
+                    relationships.append(rel)
+                    method = used_method.get(dependency_uuid, "unknown")
+                    logger.debug(f"[ELF][final] {dependent_uuid} Uses {fname} → UUID={dependency_uuid} [{method}]")
+        else:
+            logger.debug(f"[ELF][final] {dependent_uuid} Uses {fname} → no match")
 
-    logger.debug(f"Final relationships emitted: {relationships}")
+    logger.debug(f"[ELF][final] emitted {len(relationships)} relationships")
     return relationships
 
 
@@ -157,15 +162,14 @@ def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
 
     # Check for the DF_1_NODEFLIB dynamic flag: disables default library search
     nodeflib = False
-    if "elfDynamicFlags1" in md:
-        if "DF_1_NODEFLIB" in md["elfDynamicFlags1"]:
-            nodeflib = md["elfDynamicFlags1"]["DF_1_NODEFLIB"]
+    if "elfDynamicFlags1" in md and "DF_1_NODEFLIB" in md["elfDynamicFlags1"]:
+        nodeflib = md["elfDynamicFlags1"]["DF_1_NODEFLIB"]
 
     # If DF_1_NODEFLIB is not set, include default system paths
     if not nodeflib:
-        paths.extend(
-            [pathlib.PurePosixPath(p) for p in ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]]
-        )
+        defaults = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
+        logger.debug(f"[ELF][runpath] DF_1_NODEFLIB not set; adding defaults: {defaults}")
+        paths.extend([pathlib.PurePosixPath(p) for p in defaults])
 
     # Ensure all entries are PurePosixPath objects (in case runpaths included strings)
     return [p if isinstance(p, pathlib.PurePosixPath) else pathlib.PurePosixPath(p) for p in paths]
@@ -201,7 +205,7 @@ def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
             if p.strip():
                 results.extend(substitute_all_dst(sw, md, p))
 
-    print("[DEBUG] expanded runpaths:", results)
+    logger.debug(f"[ELF][runpath] expanded: {results}")
     return [pathlib.PurePosixPath(r) for r in results]
 
 
