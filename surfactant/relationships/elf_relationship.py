@@ -99,7 +99,7 @@ def establish_relationships(
             match = sbom.get_software_by_path(path)
             if match and match.UUID != software.UUID:
                 matched_uuids.add(match.UUID)
-            print(f"[elf_relationship] Trying fs_tree lookup: {path} -> {match}")
+            logger.debug(f"[elf_relationship] Trying fs_tree lookup: {path} -> {match}")
             if match:
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"

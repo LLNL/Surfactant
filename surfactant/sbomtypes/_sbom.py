@@ -584,6 +584,14 @@ class SBOM:
 
         # 3) Merge relationships from the incoming SBOM’s MultiDiGraph
         for src, dst, rel_type in sbom_m.graph.edges(keys=True):
+            # Skip path/symlink edges during merge as well
+            if str(rel_type).lower() == "symlink":
+                continue
+            if sbom_m.graph.nodes.get(src, {}).get("type") == "Path":
+                continue
+            if sbom_m.graph.nodes.get(dst, {}).get("type") == "Path":
+                continue
+
             # apply any UUID remaps from merged systems/software
             xUUID = uuid_updates.get(src, src)
             yUUID = uuid_updates.get(dst, dst)
@@ -794,30 +802,56 @@ class SBOM:
 
     def to_dict_override(self) -> dict:
         """
-        Dump all SBOM dataclass fields (via asdict), strip out internal-only
-        fields, convert sets→lists, and then build a fresh
-        'relationships' list by iterating every edge key in the MultiDiGraph.
-        """
-        # Grab everything as a dict
-        data = asdict(self)
+        Convert the SBOM object into a serializable dictionary for JSON output,
+        excluding internal graph structures and filtering out non-logical
+        (filesystem-related) relationships.
 
-        # Remove fields we never want in JSON
+        This method performs the following steps:
+        1. Creates a dictionary from the SBOM dataclass fields using `asdict()`.
+        2. Removes internal-only attributes that should not be serialized
+        (`graph`, `fs_tree`, `_loaded_relationships`).
+        3. Converts any `set` values in the remaining fields to `list` so the
+        output is JSON-compatible.
+        4. Builds a filtered `relationships` list from the SBOM's main `graph`:
+        - Skips any edges where the key (relationship type) is `"symlink"`.
+        - Skips edges where either endpoint node has `type="Path"`, indicating
+            the node represents a filesystem path rather than a logical software
+            entity.
+        - Keeps only logical relationships between software UUIDs or other
+            non-path entities.
+
+        Returns:
+            dict: A JSON-serializable representation of the SBOM, with only
+                logical relationships included in the `relationships` list.
+        """
+        # Start with the dataclass dump and strip internals
+        data = asdict(self)
         data.pop("graph", None)
-        data.pop("fs_tree", None)  # Prevent DiGraph from being serialized
+        data.pop("fs_tree", None)
         data.pop("_loaded_relationships", None)
 
-        # Turn any sets into lists for JSON
+        # Convert sets → lists for JSON
         for k, v in list(data.items()):
             if isinstance(v, set):
                 data[k] = list(v)
 
-        # Rebuild 'relationships' from the graph's edge keys
-        data["relationships"] = [
-            {"xUUID": u, "yUUID": v, "relationship": key}
-            for u, v, key in self.graph.edges(keys=True)
-        ]
+        # Only emit logical relationships (exclude filesystem/path symlinks)
+        rels = []
+        for u, v, key in self.graph.edges(keys=True):
+            # Skip symlink edges
+            if str(key).lower() == "symlink":
+                continue
+            # Skip any edge where either endpoint is a filesystem Path node
+            utype = self.graph.nodes.get(u, {}).get("type")
+            vtype = self.graph.nodes.get(v, {}).get("type")
+            if utype == "Path" or vtype == "Path":
+                continue
+            rels.append({"xUUID": u, "yUUID": v, "relationship": key})
+
+        data["relationships"] = rels
 
         return data
+
 
     def to_json_override(self, *args, **kwargs) -> str:
         """
