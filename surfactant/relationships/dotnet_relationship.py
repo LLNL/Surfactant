@@ -56,23 +56,33 @@ def establish_relationships(
             if not ref:
                 continue
 
-            logger.debug(f"[.NET] Resolving unmanaged import: {ref}")
+            # Build candidate filenames for unmanaged imports
+            logger.debug(f"[.NET][unmanaged] resolving import: {ref}")
             combinations = [ref]
             if not (ref.endswith(".dll") or ref.endswith(".exe")):
                 combinations.append(f"{ref}.dll")
             combinations.extend(
                 [f"{ref}.so", f"lib{ref}.so", f"{ref}.dylib", f"lib{ref}.dylib", f"lib{ref}"]
             )
+            logger.debug(f"[.NET][unmanaged] candidates for {ref}: {combinations}")
 
+            # Probe directories from this software's installPath
             probedirs = []
             if isinstance(software.installPath, Iterable):
-                for ip in software.installPath:
+                for ip in software.installPath or []:
                     probedirs.append(pathlib.PureWindowsPath(ip).parent.as_posix())
+            logger.debug(f"[.NET][unmanaged] probedirs for {ref}: {probedirs}")
 
+            found = False
             for match in find_installed_software(sbom, probedirs, combinations):
-                if match.UUID != dependent_uuid:
-                    logger.debug(f"[.NET] Unmanaged DLL resolved: {ref} → {match.UUID}")
+                if match and match.UUID != dependent_uuid:
+                    logger.debug(f"[.NET][unmanaged] {ref} → UUID={match.UUID}")
                     relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
+                    found = True
+
+            if not found:
+                logger.debug(f"[.NET][unmanaged] {ref} → no match")
+
 
     # --- Extract appConfig metadata ---
     probing_paths = []
@@ -90,7 +100,7 @@ def establish_relationships(
                         probing_paths.append(pathlib.PureWindowsPath(path).as_posix())
 
     imports = metadata.get("dotnetAssemblyRef", [])
-    logger.debug(f"[.NET] {software.UUID} importing {len(imports)} assemblies")
+    logger.debug(f"[.NET][import] {software.UUID} importing {len(imports)} assemblies")
 
     for asmRef in imports:
         refName = asmRef.get("Name")
@@ -100,7 +110,7 @@ def establish_relationships(
             continue
 
         logger.debug(
-            f"[.NET] Resolving assembly: {refName} (version={refVersion}, culture={refCulture})"
+            f"[.NET][import] resolving {refName} (version={refVersion}, culture={refCulture})"
         )
         fname_variants = [refName]
         if not (refName.endswith(".dll") or refName.endswith(".exe")):
@@ -114,8 +124,10 @@ def establish_relationships(
                     cb_path = normalize_path(pathlib.PurePath(ip).parent, href)
                     match = sbom.get_software_by_path(cb_path)
                     if match and match.UUID != dependent_uuid:
-                        logger.debug(f"[.NET][codeBase] Matched {href} → {match.UUID}")
+                        logger.debug(f"[.NET][codeBase] {href} → UUID={match.UUID}")
                         relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
+                    elif not match:
+                        logger.debug(f"[.NET][codeBase] {href} → no match")
 
         # --- Build probing dirs (installPath + privatePath) ---
         probedirs = []
@@ -124,6 +136,7 @@ def establish_relationships(
                 base = pathlib.PurePath(ip).parent
                 probedirs.append(base.as_posix())
                 probedirs.extend([normalize_path(base, p) for p in probing_paths])
+        logger.debug(f"[.NET][import] probing dirs for {refName}: {probedirs}")
 
         matched_uuids = set()
         used_method = {}
@@ -138,23 +151,25 @@ def establish_relationships(
                     sw_culture = asm.get("Culture")
                     if refVersion and sw_version and sw_version != refVersion:
                         logger.debug(
-                            f"[.NET] Skipping {sw.UUID}: version {sw_version} ≠ {refVersion}"
+                            f"[.NET][filter] skipping {sw.UUID}: version {sw_version} ≠ {refVersion}"
                         )
                         return False
                     if refCulture and sw_culture and sw_culture != refCulture:
                         logger.debug(
-                            f"[.NET] Skipping {sw.UUID}: culture {sw_culture} ≠ {refCulture}"
+                            f"[.NET][filter] skipping {sw.UUID}: culture {sw_culture} ≠ {refCulture}"
                         )
                         return False
             return True
+
 
         # Phase 1: fs_tree lookup
         for probe_dir in probedirs:
             for fname in fname_variants:
                 path = normalize_path(probe_dir, fname)
                 match = sbom.get_software_by_path(path)
-                if match and is_valid_match(match):
-                    logger.debug(f"[.NET][fs_tree] {path} → {match.UUID}")
+                ok = bool(match and is_valid_match(match))
+                logger.debug(f"[.NET][fs_tree] {path} → {'UUID=' + match.UUID if ok else 'no match'}")
+                if ok:
                     matched_uuids.add(match.UUID)
                     used_method[match.UUID] = "fs_tree"
 
@@ -163,44 +178,49 @@ def establish_relationships(
             for sw in sbom.software:
                 if not is_valid_match(sw):
                     continue
-                if isinstance(sw.fileName, Iterable) and any(
-                    fn in sw.fileName for fn in fname_variants
-                ):
-                    if isinstance(sw.installPath, Iterable):
-                        for ip in sw.installPath:
-                            if any(ip.endswith(fn) for fn in fname_variants):
-                                logger.debug(f"[.NET][legacy] Matched {refName} in {ip}")
-                                matched_uuids.add(sw.UUID)
-                                used_method[sw.UUID] = "legacy_installPath"
+
+                has_ref_name = isinstance(sw.fileName, Iterable) and any(
+                    fn in (sw.fileName or []) for fn in fname_variants
+                )
+                if not has_ref_name or not isinstance(sw.installPath, Iterable):
+                    continue
+
+                for ip in sw.installPath:
+                    if any(ip.endswith(fn) for fn in fname_variants):
+                        logger.debug(f"[.NET][legacy] {refName} in {ip} → UUID={sw.UUID}")
+                        matched_uuids.add(sw.UUID)
+                        used_method[sw.UUID] = "legacy_installPath"
+
 
         # Phase 3: Heuristic matching by shared directory
         if not matched_uuids:
             for sw in sbom.software:
                 if not is_valid_match(sw):
                     continue
-                if isinstance(sw.fileName, Iterable) and any(
-                    fn in sw.fileName for fn in fname_variants
-                ):
-                    if isinstance(sw.installPath, Iterable):
-                        for sw_path in sw.installPath:
-                            sw_dir = pathlib.PurePath(sw_path).parent
-                            for refdir in probedirs:
-                                if sw_dir == pathlib.PurePath(refdir):
-                                    logger.debug(
-                                        f"[.NET][heuristic] {refName} matched via {sw_path}"
-                                    )
-                                    matched_uuids.add(sw.UUID)
-                                    used_method[sw.UUID] = "heuristic"
 
+                has_ref_name = isinstance(sw.fileName, Iterable) and any(
+                    fn in (sw.fileName or []) for fn in fname_variants
+                )
+                if not has_ref_name or not isinstance(sw.installPath, Iterable):
+                    continue
+
+                for sw_path in sw.installPath:
+                    sw_dir = pathlib.PurePath(sw_path).parent
+                    for refdir in probedirs:
+                        if sw_dir == pathlib.PurePath(refdir):
+                            logger.debug(f"[.NET][heuristic] {refName} via {sw_path} → UUID={sw.UUID}")
+                            matched_uuids.add(sw.UUID)
+                            used_method[sw.UUID] = "heuristic"
+
+        # Phase 4: Finalize relationships
         for uuid in matched_uuids:
             rel = Relationship(dependent_uuid, uuid, "Uses")
             if rel not in relationships:
-                logger.debug(
-                    f"[.NET] Final relationship: {dependent_uuid} → {uuid} [{used_method[uuid]}]"
-                )
+                method = used_method.get(uuid, "unknown")
+                logger.debug(f"[.NET][final] {dependent_uuid} Uses {refName} → UUID={uuid} [{method}]")
                 relationships.append(rel)
 
         if not matched_uuids:
-            logger.debug(f"[.NET] No match found for {refName}")
+            logger.debug(f"[.NET][final] {dependent_uuid} Uses {refName} → no match")
 
     return relationships
