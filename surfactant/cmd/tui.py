@@ -130,7 +130,7 @@ class FileInput(textual.widgets.Static):
 class GenerateTab(textual.widgets.Static):
     def __init__(self):
         super().__init__()
-        self.file_input = FileInput("Input file:", True, None)
+        self.specimen_context = FileInput("Specimen context:", True, None)
         self.output_name = textual.widgets.Input(placeholder="Output Filename")
         self.output_dir = FileInput("Output directory:", True, self.output_name)
         self.input_sbom = FileInput("Input SBOM:", False, None)
@@ -144,7 +144,7 @@ class GenerateTab(textual.widgets.Static):
         )
 
     def compose(self) -> textual.app.ComposeResult:
-        yield self.file_input
+        yield self.specimen_context
         yield self.output_dir
         yield textual.containers.HorizontalGroup(
             textual.widgets.Label("Output Filename: "), self.output_name
@@ -168,7 +168,7 @@ class GenerateTab(textual.widgets.Static):
 
     @textual.on(textual.widgets.Button.Pressed, "#run")
     def handle_run(self) -> None:
-        if len(self.file_input.input_path) == 0:
+        if len(self.specimen_context.input_path) == 0:
             self.app.notify("No input file selected")
             return
         if len(self.output_dir.input_path) == 0:
@@ -179,7 +179,7 @@ class GenerateTab(textual.widgets.Static):
             return
         with self.app.suspend():
             args = [
-                self.file_input.input_path,
+                self.specimen_context.input_path,
                 f"{self.output_dir.input_path}/{self.output_name.value}",
             ]
             if len(self.input_sbom.input_path) > 0:
@@ -231,8 +231,10 @@ class InputPathsHolder(textual.widgets.Static):
     def compose(self) -> textual.app.ComposeResult:
         for m_path in self.input_paths:
             if m_path.active:
-                yield m_path
-        yield textual.widgets.Button("+", id="add_input_path")
+                yield textual.containers.HorizontalGroup(textual.widgets.Label("   "), m_path)
+        yield textual.containers.HorizontalGroup(
+            textual.widgets.Label("   "), textual.widgets.Button("+", id="add_input_path")
+        )
 
     @textual.on(textual.widgets.Button.Pressed, "#add_input_path")
     def add_input_path(self):
@@ -311,7 +313,7 @@ class MergeTab(textual.widgets.Static):
         self.app.refresh()
 
 
-class ConfigEntry(textual.widgets.Static):
+class ContextEntry(textual.widgets.Static):
     def __init__(self, header_num):
         super().__init__()
         self.active = True
@@ -345,18 +347,18 @@ class ConfigEntry(textual.widgets.Static):
         )
 
 
-class ConfigTab(textual.widgets.Static):
+class ContextTab(textual.widgets.Static):
     def __init__(self):
         super().__init__()
-        self.config_name = textual.widgets.Input(placeholder="Config filename")
-        self.config_input = FileInput("Config directory:", True, self.config_name)
-        self.config_entries: list[ConfigEntry] = []
-        self.config_number = 1
+        self.context_name = textual.widgets.Input(placeholder="Context filename")
+        self.context_input = FileInput("Context file directory:", True, self.context_name)
+        self.context_entries: list[ContextEntry] = []
+        self.context_count = 1
 
     def compose(self) -> textual.app.ComposeResult:
-        yield self.config_input
+        yield self.context_input
         yield textual.containers.HorizontalGroup(
-            textual.widgets.Label("Config filename: "), self.config_name
+            textual.widgets.Label("Context filename: "), self.context_name
         )
         yield textual.containers.HorizontalGroup(
             textual.widgets.Button("Save", id="save"),
@@ -364,19 +366,19 @@ class ConfigTab(textual.widgets.Static):
             textual.widgets.Button("Load", id="load"),
         )
         yield textual.widgets.Rule()
-        yield from self.config_entries
-        yield textual.widgets.Button("+", id="add_config_entry")
+        yield from self.context_entries
+        yield textual.widgets.Button("+", id="add_context_entry")
 
-    @textual.on(textual.widgets.Button.Pressed, "#add_config_entry")
-    def add_config_entry(self):
-        self.config_entries.append(ConfigEntry(self.config_number))
-        self.mount(self.config_entries[-1], before="#add_config_entry")
-        self.config_number += 1
+    @textual.on(textual.widgets.Button.Pressed, "#add_context_entry")
+    def add_context_entry(self):
+        self.context_entries.append(ContextEntry(self.context_count))
+        self.mount(self.context_entries[-1], before="#add_context_entry")
+        self.context_count += 1
 
     @textual.on(textual.widgets.Button.Pressed, "#save")
     def save(self):
         to_save = []
-        for entry in self.config_entries:
+        for entry in self.context_entries:
             to_save.append({})
             write_to = to_save[-1]
             archive = entry.archive.input_path
@@ -384,7 +386,7 @@ class ConfigTab(textual.widgets.Static):
                 write_to["archive"] = archive
             install_prefix = entry.install_prefix.value
             if len(install_prefix) > 0:
-                write_to["install_prefix"] = install_prefix
+                write_to["installPrefix"] = install_prefix
             write_to["extractPaths"] = []
             for path in entry.extract_paths.input_paths:
                 if path.active:
@@ -392,7 +394,7 @@ class ConfigTab(textual.widgets.Static):
             container_prefix = entry.container_prefix.value
             if len(container_prefix) > 0:
                 write_to["containerPrefix"] = container_prefix
-        file_to_save = self.config_input.input_path + "/" + self.config_name.value
+        file_to_save = self.context_input.input_path + "/" + self.context_name.value
         try:
             with open(file_to_save, "w") as f:
                 f.write(json.dumps(to_save, indent=2))
@@ -403,7 +405,7 @@ class ConfigTab(textual.widgets.Static):
 
     @textual.on(textual.widgets.Button.Pressed, "#load")
     def load(self):
-        file_to_load = self.config_input.input_path + "/" + self.config_name.value
+        file_to_load = self.context_input.input_path + "/" + self.context_name.value
         try:
             with open(file_to_load, "r") as config_file:
                 js = json.load(config_file)
@@ -414,14 +416,14 @@ class ConfigTab(textual.widgets.Static):
             self.app.notify(f"Error when parsing JSON in {file_to_load}")
             return
         # Delete all other entries
-        for ce in self.config_entries:
+        for ce in self.context_entries:
             ce.remove()
-        self.config_entries = []
-        self.config_number = 1
+        self.context_entries = []
+        self.context_count = 1
         for entry in js:
-            self.config_entries.append(ConfigEntry(self.config_number))
-            self.config_number += 1
-            cur_entry = self.config_entries[-1]
+            self.context_entries.append(ContextEntry(self.context_count))
+            self.context_count += 1
+            cur_entry = self.context_entries[-1]
             if "archive" in entry:
                 cur_entry.archive.input_path = entry["archive"]
             if "extractPaths" in entry:
@@ -431,8 +433,8 @@ class ConfigTab(textual.widgets.Static):
                 cur_entry.install_prefix.value = entry["installPrefix"]
             if "containerPrefix" in entry:
                 cur_entry.container_prefix.value = entry["containerPrefix"]
-        for entry in self.config_entries:
-            self.mount(entry, before="#add_config_entry")
+        for entry in self.context_entries:
+            self.mount(entry, before="#add_context_entry")
 
 
 # TODO: Rewrite to use ContentSwitcher?
@@ -450,7 +452,7 @@ class TUI(textual.app.App):
         super().__init__()
         self.generate_tab = GenerateTab()
         self.merge_tab = MergeTab()
-        self.config_tab = ConfigTab()
+        self.context_tab = ContextTab()
 
     def compose(self) -> textual.app.ComposeResult:
         yield textual.widgets.Header()
@@ -461,8 +463,8 @@ class TUI(textual.app.App):
                 yield self.generate_tab
             with textual.widgets.TabPane("Merge"):
                 yield self.merge_tab
-            with textual.widgets.TabPane("Config"):
-                yield self.config_tab
+            with textual.widgets.TabPane("Context"):
+                yield self.context_tab
 
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""
@@ -475,6 +477,6 @@ class TUI(textual.app.App):
 
 @click.command("tui")
 def tui():
-    """Create a configuration input file with a TUI"""
+    """Run the Surfactant TUI for generating and merging SBOMs."""
     app = TUI()
     app.run()
