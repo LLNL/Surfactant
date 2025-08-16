@@ -6,8 +6,8 @@ import { createPopupElement } from "#popupModule";
 import {
 	buildNodeSelectionSidebar,
 	buildSBOMOverviewSidebar,
-	insertSearchSidebar,
 } from "#sidebarModule";
+import { setGraphColor } from "#utilsModule";
 
 // This method is responsible for drawing the graph, returns the drawn network
 function drawGraph() {
@@ -74,10 +74,14 @@ function drawGraph() {
 	function onClick(params) {
 		const nodeID = params.nodes[0];
 
-		if (params.nodes.length !== 0)
+		if (params.nodes.length !== 0) {
+			// Reset selection highlight
+			setGraphColor(null);
+
 			document
 				.getElementById("sidebar")
 				.replaceChildren(buildNodeSelectionSidebar(nodeID));
+		}
 
 		const sidebar = document.getElementById("sidebar");
 		if (params.nodes.length !== 0 && !sidebar.classList.contains("open"))
@@ -87,8 +91,6 @@ function drawGraph() {
 		if (params.nodes.length === 0 && sidebar.classList.contains("open"))
 			// Click on canvas to close sidebar
 			toggleSidebar();
-
-		//neighbourhoodHighlight(params);
 	}
 	function onDoubleClick(params) {
 		if (params.nodes.length > 0) {
