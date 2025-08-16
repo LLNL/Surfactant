@@ -2,7 +2,10 @@ export function setGraphColor(color) {
 	const nodesDataset = nodes.get({ returnType: "Object" });
 
 	for (const nID in nodesDataset) {
-		nodesDataset[nID].color = color;
+		if (color !== undefined) nodesDataset[nID].color = color;
+		else {
+			nodesDataset[nID].color = nodesDataset[nID].originalColor;
+		}
 	}
 
 	const tmp = [];

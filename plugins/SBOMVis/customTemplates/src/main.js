@@ -18,6 +18,13 @@ function drawGraph() {
 		nodes.update({ id: nodeID, title: document.getElementById("tooltip") });
 	}
 
+	// Record original color
+	for (const [nodeID, nodeEntry] of Object.entries(
+		nodes.get({ returnType: "Object" }),
+	)) {
+		nodes.update({ id: nodeID, originalColor: nodeEntry.color });
+	}
+
 	const data = { nodes: nodes, edges: edges };
 
 	options.interaction.hover = true;
@@ -75,8 +82,11 @@ function drawGraph() {
 		const nodeID = params.nodes[0];
 
 		if (params.nodes.length !== 0) {
-			// Reset selection highlight
-			setGraphColor(null);
+			// Reset selection highlight if use clicks away from search results
+			const searchIsActive = !!document
+				.getElementById("sidebar")
+				.querySelector("#resultsSection");
+			if (searchIsActive) setGraphColor();
 
 			document
 				.getElementById("sidebar")

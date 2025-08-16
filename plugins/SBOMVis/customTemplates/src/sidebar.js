@@ -399,9 +399,9 @@ export function insertSearchSidebar(id) {
 			return resultsCard;
 		}
 
-		// Use default graph color for highlight
-		const updateArray = nodeIDs.map((ID) => ({ id: ID, color: null }));
-		nodes.update(updateArray);
+		// // Use default graph color for highlight
+		// const updateArray = nodeIDs.map((ID) => ({ id: ID, color: null }));
+		// nodes.update(updateArray);
 
 		const frag = document.createDocumentFragment();
 		for (const nodeID of nodeIDs) frag.appendChild(createResultsCard(nodeID));
@@ -411,7 +411,10 @@ export function insertSearchSidebar(id) {
 
 	function removeNodesFromResults(nodeIDs) {
 		// Reset node color
-		const updateArray = nodeIDs.map((ID) => ({ id: ID, color: null }));
+		const updateArray = nodeIDs.map((ID) => ({
+			id: ID,
+			color: nodes.get(ID).originalColor,
+		}));
 		nodes.update(updateArray);
 
 		for (const nodeID of nodeIDs) {
