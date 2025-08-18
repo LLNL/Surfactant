@@ -399,10 +399,6 @@ export function insertSearchSidebar(id) {
 			return resultsCard;
 		}
 
-		// // Use default graph color for highlight
-		// const updateArray = nodeIDs.map((ID) => ({ id: ID, color: null }));
-		// nodes.update(updateArray);
-
 		const frag = document.createDocumentFragment();
 		for (const nodeID of nodeIDs) frag.appendChild(createResultsCard(nodeID));
 
@@ -410,13 +406,6 @@ export function insertSearchSidebar(id) {
 	}
 
 	function removeNodesFromResults(nodeIDs) {
-		// Reset node color
-		const updateArray = nodeIDs.map((ID) => ({
-			id: ID,
-			color: nodes.get(ID).originalColor,
-		}));
-		nodes.update(updateArray);
-
 		for (const nodeID of nodeIDs) {
 			for (const c of document
 				.getElementById("resultsSection")
@@ -522,9 +511,17 @@ export function insertSearchSidebar(id) {
 					"--graphInactiveColor",
 				);
 				setGraphColor(inactiveColor);
+
+				// Highlight selected nodes
+				const nodeLookup = nodes.get({ returnType: "Object" });
+				const updateArray = result.map((ID) => ({
+					id: ID,
+					color: nodeLookup[ID].originalColor,
+				}));
+				nodes.update(updateArray);
+
 				network.unselectAll();
 
-				console.log(result);
 				createResultsSection(result);
 			} else {
 				const oldMatches = matchedIDs.reduce((acc, arr) =>
@@ -556,8 +553,8 @@ export function insertSearchSidebar(id) {
 		}
 
 		if (matchedIDs.length === 0) {
-			setGraphColor(null); // Revert to default
 			removeNodesFromResults(oldMatches);
+			setGraphColor(); // Revert to default
 		} else {
 			const newMatches = matchedIDs.reduce((acc, arr) =>
 				acc.filter((ID) => arr.includes(ID)),
