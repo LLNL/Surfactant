@@ -502,32 +502,31 @@ export function insertSearchSidebar(id) {
 			this.addOptions(generateRootNodeSuggestions.call(this));
 			this.refreshOptions();
 
-			// Add matching nodes to results div
+			// First time creating/adding results
 			if (matchedIDs.length === 0) {
 				matchedIDs.push(result);
 
-				// Set graph inactive
+				// Gray out all non-matched nodes
 				const inactiveColor = getComputedStyle(document.body).getPropertyValue(
 					"--graphInactiveColor",
 				);
 				setNodeColors(nodes.getIds(), inactiveColor);
 
-				// Highlight selected nodes
-				const nodeLookup = nodes.get({ returnType: "Object" });
-				const updateArray = result.map((ID) => ({
-					id: ID,
-					color: nodeLookup[ID].originalColor,
-				}));
-				nodes.update(updateArray);
+				// Highlight selected nodes w/ default color
+				setNodeColors(result);
 
 				network.unselectAll();
 
 				createResultsSection(result);
 			} else {
+				// The more filter criteria that gets added the more restrictive the search is -> Adding more terms should reduce how many results show up
+
 				const oldMatches = matchedIDs.reduce((acc, arr) =>
 					acc.filter((ID) => arr.includes(ID)),
 				);
+
 				matchedIDs.push(result);
+
 				const newMatches = matchedIDs.reduce((acc, arr) =>
 					acc.filter((ID) => arr.includes(ID)),
 				); // Perform AND operation on incoming results
@@ -561,7 +560,6 @@ export function insertSearchSidebar(id) {
 			); // Perform AND operation on incoming results
 
 			const IDsToAdd = newMatches.filter((ID) => !oldMatches.includes(ID));
-
 			createResultsSection(IDsToAdd);
 		}
 	}
