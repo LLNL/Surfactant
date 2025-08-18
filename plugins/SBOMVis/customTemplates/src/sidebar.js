@@ -572,6 +572,16 @@ export function insertSearchSidebar(id) {
 		this.addOptions(generateRootNodeSuggestions.call(this));
 	}
 
+	function onClearHandler() {
+		document.getElementById("resultsSection").replaceChildren(); // Remove search result cards
+		matchedIDs = [];
+
+		setNodeColors(nodes.getIds()); // Reset graph color
+
+		this.clearOptions();
+		this.addOptions(generateRootNodeSuggestions.call(this));
+	}
+
 	function generateRootNodeSuggestions() {
 		return Object.keys(tagsGraph).map((key) => {
 			const newLabel = key + (isLeaf(tagsGraph[key]) ? ":" : ".");
@@ -606,7 +616,7 @@ export function insertSearchSidebar(id) {
 		onType: onTypeHandler,
 		onItemAdd: onAddHandler,
 		onDelete: onDeleteHandler,
-		onClear: onDeleteHandler,
+		onClear: onClearHandler,
 		onBlur: onTextboxLooseFocus,
 	});
 }
