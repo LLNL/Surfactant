@@ -558,8 +558,8 @@ export function insertSearchSidebar(id) {
 				acc.filter((ID) => arr.includes(ID)),
 			); // Perform AND operation on incoming results
 
-			const IDsToAdd = newMatches.filter((ID) => !oldMatches.includes(ID));
-			createResultsSection(IDsToAdd);
+			setNodeColors(newMatches);
+			createResultsSection(newMatches);
 		}
 	}
 
