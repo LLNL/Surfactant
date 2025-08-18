@@ -85,7 +85,7 @@ function createSectionInfoTable(infoItems) {
 			i.value,
 			i.attributes,
 			i.onClick,
-			"fa-solid fa-copy",
+			i.value !== "" ? "fa-solid fa-copy" : "", // Don't show a copy icon if the value is blank
 		);
 		newInfoTable.appendChild(newRow);
 	}
