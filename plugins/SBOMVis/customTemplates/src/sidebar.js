@@ -506,14 +506,13 @@ export function insertSearchSidebar(id) {
 			if (matchedIDs.length === 0) {
 				matchedIDs.push(result);
 
-				// Gray out all non-matched nodes
+				// Gray out all nodes
 				const inactiveColor = getComputedStyle(document.body).getPropertyValue(
 					"--graphInactiveColor",
 				);
 				setNodeColors(nodes.getIds(), inactiveColor);
 
-				// Highlight selected nodes w/ default color
-				setNodeColors(result);
+				setNodeColors(result); // Highlight selected nodes w/ default color
 
 				network.unselectAll();
 
@@ -598,5 +597,6 @@ export function insertSearchSidebar(id) {
 		onType: onTypeHandler,
 		onItemAdd: onAddHandler,
 		onDelete: onDeleteHandler,
+		onClear: onDeleteHandler,
 	});
 }
