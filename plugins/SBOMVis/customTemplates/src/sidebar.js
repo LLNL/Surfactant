@@ -563,6 +563,15 @@ export function insertSearchSidebar(id) {
 		}
 	}
 
+	function onTextboxLooseFocus() {
+		/*
+		Tom-select clears the textbox when it looses focus (there doesn't seem to be an easy way to change this),
+		but it doesn't remove the previously suggested results
+		*/
+		this.clearOptions();
+		this.addOptions(generateRootNodeSuggestions.call(this));
+	}
+
 	function generateRootNodeSuggestions() {
 		return Object.keys(tagsGraph).map((key) => {
 			const newLabel = key + (isLeaf(tagsGraph[key]) ? ":" : ".");
@@ -598,5 +607,6 @@ export function insertSearchSidebar(id) {
 		onItemAdd: onAddHandler,
 		onDelete: onDeleteHandler,
 		onClear: onDeleteHandler,
+		onBlur: onTextboxLooseFocus,
 	});
 }
