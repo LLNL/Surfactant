@@ -1,5 +1,10 @@
-export function setGraphColor(color) {
-	const nodesDataset = nodes.get({ returnType: "Object" });
+/**
+ * Sets the nodes with the given array of IDs with `color` or it's default color if left undefined
+ * @param {Array} nodeIDs
+ * @param {(String|undefined)} color
+ */
+export function setNodeColors(nodeIDs, color) {
+	const nodesDataset = nodes.get(nodeIDs, { returnType: "Object" });
 
 	for (const nID in nodesDataset) {
 		if (color !== undefined) nodesDataset[nID].color = color;

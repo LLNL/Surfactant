@@ -1,6 +1,6 @@
 import { zoomToView } from "#buttonEventHandlersModule";
 import { insert, isLeaf, resolvePath } from "#kvGraph";
-import { setGraphColor } from "#utilsModule";
+import { setNodeColors } from "#utilsModule";
 
 function createRow(
 	leftColumnValue,
@@ -510,7 +510,7 @@ export function insertSearchSidebar(id) {
 				const inactiveColor = getComputedStyle(document.body).getPropertyValue(
 					"--graphInactiveColor",
 				);
-				setGraphColor(inactiveColor);
+				setNodeColors(nodes.getIds(), inactiveColor);
 
 				// Highlight selected nodes
 				const nodeLookup = nodes.get({ returnType: "Object" });
@@ -554,7 +554,7 @@ export function insertSearchSidebar(id) {
 
 		if (matchedIDs.length === 0) {
 			removeNodesFromResults(oldMatches);
-			setGraphColor(); // Revert to default
+			setNodeColors(nodes.getIds()); // Revert graph to default colors
 		} else {
 			const newMatches = matchedIDs.reduce((acc, arr) =>
 				acc.filter((ID) => arr.includes(ID)),

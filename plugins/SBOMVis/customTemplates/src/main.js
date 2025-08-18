@@ -7,7 +7,7 @@ import {
 	buildNodeSelectionSidebar,
 	buildSBOMOverviewSidebar,
 } from "#sidebarModule";
-import { setGraphColor } from "#utilsModule";
+import { setNodeColors } from "#utilsModule";
 
 // This method is responsible for drawing the graph, returns the drawn network
 function drawGraph() {
@@ -86,7 +86,7 @@ function drawGraph() {
 			const searchIsActive = !!document
 				.getElementById("sidebar")
 				.querySelector("#resultsSection");
-			if (searchIsActive) setGraphColor();
+			if (searchIsActive) setNodeColors(nodes.getIds());
 
 			document
 				.getElementById("sidebar")
