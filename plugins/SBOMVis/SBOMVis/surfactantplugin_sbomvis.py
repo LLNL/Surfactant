@@ -1,11 +1,12 @@
 from pathlib import Path
 from typing import Optional
 
-import visualization as vis
 from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM
+
+from . import visualization as vis
 
 
 @surfactant.plugin.hookimpl
