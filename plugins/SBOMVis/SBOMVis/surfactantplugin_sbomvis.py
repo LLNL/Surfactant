@@ -11,9 +11,10 @@ from . import visualization as vis
 
 @surfactant.plugin.hookimpl
 def write_sbom(sbom: SBOM, outfile) -> None:
-    g = vis.generate_dependency_graph({"sbom": sbom, "sbomFileName": outfile.name})
-
     htmlName = Path(outfile.name).stem + ".html"
+
+    logger.info(f"Generating visualization: {htmlName}")
+    g = vis.generate_dependency_graph({"sbom": sbom, "sbomFileName": outfile.name})
     vis.generate_pyvis_graph(g, htmlName)
 
     logger.info("Writing CyTRICS format")

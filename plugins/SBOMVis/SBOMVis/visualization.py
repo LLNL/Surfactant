@@ -83,7 +83,7 @@ def generate_dependency_graph(
         g.remove_nodes_from(list(networkx.isolates(g)))  # Cull nodes with no edges
     elif networkx.number_of_isolates(g) > 500:
         logger.info(
-            f"Large number of isolate nodes (nodes without any edges) detected. Consider re-running {Path(__file__).name} with --cull to improve performance"
+            "Large number of isolate nodes (nodes without any edges) detected. Consider re-running with --cull to improve performance"
         )
 
     # Set node size based on connected edges
