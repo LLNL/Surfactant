@@ -127,7 +127,7 @@ def generate_pyvis_graph(
 
     pv.options.interaction.selectConnectedEdges = True
 
-    if graph.number_of_nodes() > 600 and use_progress_bar:
+    if graph.number_of_nodes() > 600 and not use_progress_bar:
         logger.info(
             f"Large graph detected. Disabling physics to speed up loading time, this can be re-enabled by using the toggle on the left side of the page. Disable this behavior by re-running {Path(__file__).name} with -pb/--use-progress-bar"
         )
@@ -171,7 +171,7 @@ def main():
         "-c",
         "--cull",
         default=False,
-        nargs="?",
+        action="store_true",
         help="Enable culling of isolated nodes (may improve performance on large graphs at the cost of node completeness)",
     )
 
@@ -179,7 +179,7 @@ def main():
         "-pb",
         "--use-progress-bar",
         default=False,
-        nargs="?",
+        action="store_true",
         help="Display progress bar while waiting for large graphs to load instead of disabling physics",
     )
 
@@ -193,10 +193,10 @@ def main():
         with open(path, "r") as f:
             sboms.append({"sbom": SBOM.from_json(f.read()), "sbomFileName": Path(path).name})
 
-    g = generate_dependency_graph(sboms[0], (args.cull is None))
+    g = generate_dependency_graph(sboms[0], args.cull)
 
     filename = Path(args.path[0]).stem + ".html"
-    generate_pyvis_graph(g, filename, (args.use_progress_bar is not None))
+    generate_pyvis_graph(g, filename, args.use_progress_bar)
 
 
 if __name__ == "__main__":
