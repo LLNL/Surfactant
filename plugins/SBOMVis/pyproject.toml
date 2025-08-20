@@ -37,4 +37,4 @@ dynamic = ["version"]
 py-modules=["surfactantplugin_sbomvis", "visualization"]
 
 [project.scripts]
-sbomvis = "visualization:main"
+surfactant-sbomvis = "visualization:main"

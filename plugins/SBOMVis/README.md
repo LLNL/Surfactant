@@ -3,28 +3,30 @@ A plugin for Surfactant that generates interactive visualizations of CyTRICS-for
 ![Example Output](./Example.jpeg)
 
 ## Installation
-1. Create a virtual environment
+SBOMVis can be installed as a Surfactant plugin or standalone
+### As a Surfactant plugin (pipx recommended)
 ```bash
-$ python -m venv venv && . ./venv/bin/activate
+$ pipx inject surfactant git+https://github.com/LLNL/Surfactant#subdirectory=plugins/SBOMVis
 ```
-2. Install dependencies
+
+### Standalone
 ```bash
-$ pip install .
+$ pipx install git+https://github.com/LLNL/Surfactant#subdirectory=plugins/SBOMVis
 ```
 
 ## Usage
-The plugin can generate visualizations when running Surfactant's `generate` command or as a standalone script.
+The plugin can generate visualizations when running Surfactant's `generate` command or from an existing SBOM.
 
-### Generating with Surfactant
+### Generating visualizations during a Surfactant run
 Passing in `sbomvis` as the output format will cause Surfactant to generate an HTML file with the same name as the SBOM containing the visualization. The original JSON SBOM will also be saved to the same directory.
 ```bash
 $ surfactant generate --output_format=sbomvis SPECIMEN_CONFIG SBOM_OUTFILE
 ```
 
-### Generating standalone
-Visualizations can be created from an existing SBOM file by passing in the path with `-p`.
+### Generating visualizations from an existing SBOM
+Visualizations can be created from an existing Surfactant SBOM by running `surfactant-sbomvis` and passing in it's path with `-p`.
 ```
-usage: visualization.py [-h] -p PATH [PATH ...] [-c [CULL]] [-pb [USE_PROGRESS_BAR]]
+usage: surfactant-sbomvis [-h] -p PATH [PATH ...] [-c] [-pb]
 
 Surfactant SBOM Visualization
 
@@ -32,9 +34,8 @@ options:
   -h, --help            show this help message and exit
   -p PATH [PATH ...], --path PATH [PATH ...]
                         Path(s) to JSON SBOMs
-  -c [CULL], --cull [CULL]
-                        Enable culling of isolated nodes (may improve performance on large graphs at the cost of node completeness)
-  -pb [USE_PROGRESS_BAR], --use-progress-bar [USE_PROGRESS_BAR]
+  -c, --cull            Enable culling of isolated nodes (may improve performance on large graphs at the cost of completeness)
+  -pb, --use-progress-bar
                         Display progress bar while waiting for large graphs to load instead of disabling physics
 ```
 
