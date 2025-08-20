@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sbomvisualization"
+name = "SBOMVis"
 authors = [
     {name = "Joseph Hand", email = "hand8@llnl.gov"},
 ]
@@ -31,7 +31,10 @@ dependencies = [
 dynamic = ["version"]
 
 [project.entry-points."surfactant"]
-"surfactantplugin_sbomvisualization" = "surfactantplugin_sbomvisualization"
+"surfactantplugin_sbomvis" = "surfactantplugin_sbomvis"
 
 [tool.setuptools]
-py-modules=["surfactantplugin_sbomvisualization", "visualization"]
+py-modules=["surfactantplugin_sbomvis", "visualization"]
+
+[project.scripts]
+sbomvis = "visualization:main"

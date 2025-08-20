@@ -16,9 +16,9 @@ $ pip install .
 The plugin can generate visualizations when running Surfactant's `generate` command or as a standalone script.
 
 ### Generating with Surfactant
-Passing in `sbom_vis` as the output format will cause Surfactant to generate an HTML file with the same name as the SBOM containing the visualization. The original JSON SBOM will also be saved to the same directory.
+Passing in `sbomvis` as the output format will cause Surfactant to generate an HTML file with the same name as the SBOM containing the visualization. The original JSON SBOM will also be saved to the same directory.
 ```bash
-$ surfactant generate --output_format=sbom_vis SPECIMEN_CONFIG SBOM_OUTFILE
+$ surfactant generate --output_format=sbomvis SPECIMEN_CONFIG SBOM_OUTFILE
 ```
 
 ### Generating standalone

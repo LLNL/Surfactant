@@ -21,4 +21,4 @@ def write_sbom(sbom: SBOM, outfile) -> None:
 
 @surfactant.plugin.hookimpl
 def short_name() -> Optional[str]:
-    return "sbom_vis"
+    return "sbomvis"
