@@ -22,8 +22,6 @@ from surfactant.sbomtypes import SBOM, Software
 from surfactant.utils.paths import normalize_path, basename_posix
 
 
-
-
 # Converts from a true path to an install path
 def real_path_to_install_path(root_path: str, install_path: str, filepath: str) -> str:
     # appending a "/" to root_path can cause problems if it is "" or already ends with "/"
