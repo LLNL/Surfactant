@@ -23,9 +23,9 @@ def basename_posix(path: Union[str, pathlib.PurePath]) -> str:
     - Uses normalize_path for consistent slash handling.
     - Strips trailing slash for non-root paths so 'dir/' -> 'dir'.
     """
-    s = normalize_path(path)          # ensures a POSIX string
+    s = normalize_path(path)  # ensures a POSIX string
     if s and s != "/":
-        s = s.rstrip("/")             # keep '/' as-is; makes 'dir/' -> 'dir'
+        s = s.rstrip("/")  # keep '/' as-is; makes 'dir/' -> 'dir'
     # For strings, PurePosixPath(...).name returns:
     #   '' for '' / '.' / '/' ; 'dir' for 'dir' or 'dir/'
     return pathlib.PurePosixPath(s).name

@@ -19,7 +19,7 @@ from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
-from surfactant.utils.paths import normalize_path, basename_posix
+from surfactant.utils.paths import basename_posix, normalize_path
 
 
 # Converts from a true path to an install path
@@ -642,7 +642,7 @@ def sbom(
                         install_symlink_set.add(src)
 
                         # Derive filename alias when basename differs — no broad exceptions
-                        main_name = basename_posix(ntarget) # harmless re-normalization
+                        main_name = basename_posix(ntarget)  # harmless re-normalization
                         link_name = basename_posix(src)
 
                         if link_name and link_name != main_name:
