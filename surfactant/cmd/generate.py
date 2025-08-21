@@ -399,7 +399,7 @@ def sbom(
                             user_institution_name=recorded_institution,
                             container_prefix=entry.containerPrefix,
                         )
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-exception-caught
                         raise RuntimeError(f"Unable to process: {filepath}") from e
                     entries.append(sw_parent)
                     entries.extend(sw_children if sw_children else [])
@@ -455,7 +455,7 @@ def sbom(
                                         logger.debug(
                                             f"[fs_tree] (dir) {install_source} → {install_dest}"
                                         )
-                                    except Exception as e:
+                                    except Exception as e:  # pylint: disable=broad-exception-caught
                                         logger.warning(
                                             f"Failed to record directory symlink in fs_tree: {install_source} → {install_dest}: {e}"
                                         )
@@ -514,6 +514,7 @@ def sbom(
                                     subtype = (
                                         "file" if os.path.isfile(true_filepath) else "directory"
                                     )
+                                    # pylint: disable=protected-access
                                     new_sbom._record_symlink(
                                         install_filepath, install_dest, subtype=subtype
                                     )
@@ -620,13 +621,10 @@ def sbom(
 
             target_nodes = sorted(tagged_targets | path_targets)
             logger.debug(
-                "[fs_tree] Symlink metadata synthesis for UUID={uuid}: "
-                "tagged_targets={tt} path_targets={pt} merged_targets={mt}".format(
-                    uuid=software.UUID,
-                    tt=sorted(tagged_targets),
-                    pt=sorted(path_targets),
-                    mt=target_nodes,
-                )
+                f"[fs_tree] Symlink metadata synthesis for UUID={software.UUID}: "
+                f"tagged_targets={sorted(tagged_targets)} "
+                f"path_targets={sorted(path_targets)} "
+                f"merged_targets={target_nodes}"
             )
 
             # (2) Mine fs_tree for symlink edges that point *to* any target node
@@ -639,7 +637,7 @@ def sbom(
                 if not new_sbom.fs_tree.has_node(ntarget):
                     continue
 
-                for src, dst, data in new_sbom.fs_tree.in_edges(ntarget, data=True):
+                for src, _dst, data in new_sbom.fs_tree.in_edges(ntarget, data=True):
                     if data.get("type") == "symlink":
                         install_symlink_set.add(src)
                         # Derive filename alias when basename differs
@@ -664,16 +662,16 @@ def sbom(
                     software.fileName.append(fname)
 
             # (4) Merge/append metadata entries without duplication
-            def _merge_md(key: str, values: List[str]) -> None:
+            def _merge_md(key: str, values: List[str], *, _sw: Software = software) -> None:
                 if not values:
                     return
-                for md in software.metadata:
+                for md in _sw.metadata:
                     if isinstance(md, dict) and key in md:
                         md[key] = sorted(set(md[key]) | set(values))
                         logger.debug(f"[fs_tree] merged metadata {key}: {md[key]}")
                         break
                 else:
-                    software.metadata.append({key: sorted(set(values))})
+                    _sw.metadata.append({key: sorted(set(values))})
                     logger.debug(f"[fs_tree] appended metadata {key}: {values}")
 
             _merge_md("installPathSymlinks", list(install_symlink_set))
