@@ -388,6 +388,26 @@ class SBOM:
         else:
             logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
 
+    def record_symlink(self, link_path: str, target_path: str, *, subtype: Optional[str] = None) -> None:
+        """Public, stable API to record a filesystem symlink in the SBOM graphs.
+
+        Validates inputs and delegates to the internal ``_record_symlink`` which
+        handles normalization, node/edge creation, and deduplication.
+
+        Args:
+            link_path: Path of the symlink itself (install path).
+            target_path: Resolved absolute path of the symlink target.
+            subtype: Optional qualifier (e.g., "file" or "directory").
+        """
+        if not isinstance(link_path, str) or not isinstance(target_path, str):
+            raise TypeError("link_path and target_path must be strings")
+        if not link_path or not target_path:
+            raise ValueError("link_path and target_path must be non-empty")
+
+        # Delegate to internal implementation (already normalizes & dedupes)
+        self._record_symlink(link_path, target_path, subtype=subtype)
+
+
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
     ):

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
+from networkx.exception import NetworkXError
 
 from surfactant import ContextEntry
 from surfactant.cmd.internal.generate_utils import SpecimenContextParamType
@@ -19,6 +20,8 @@ from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugi
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
 from surfactant.utils.paths import normalize_path
+
+
 
 
 # Converts from a true path to an install path
@@ -449,13 +452,13 @@ def sbom(
                                     dir_symlinks.append((install_source, install_dest))
                                     # Reflect in fs_tree immediately
                                     try:
-                                        new_sbom._record_symlink(
+                                        new_sbom.record_symlink(
                                             install_source, install_dest, subtype="directory"
                                         )
                                         logger.debug(
                                             f"[fs_tree] (dir) {install_source} → {install_dest}"
                                         )
-                                    except Exception as e:  # pylint: disable=broad-exception-caught
+                                    except (NetworkXError, ValueError) as e:
                                         logger.warning(
                                             f"Failed to record directory symlink in fs_tree: {install_source} → {install_dest}: {e}"
                                         )
@@ -514,14 +517,13 @@ def sbom(
                                     subtype = (
                                         "file" if os.path.isfile(true_filepath) else "directory"
                                     )
-                                    # pylint: disable=protected-access
-                                    new_sbom._record_symlink(
+                                    new_sbom.record_symlink(
                                         install_filepath, install_dest, subtype=subtype
                                     )
                                     logger.debug(
                                         f"[fs_tree] ({subtype}) {install_filepath} → {install_dest}"
                                     )
-                                except Exception as e:
+                                except (NetworkXError, ValueError) as e:
                                     logger.warning(
                                         f"Failed to record symlink in fs_tree: {install_filepath} → {install_dest}: {e}"
                                     )
