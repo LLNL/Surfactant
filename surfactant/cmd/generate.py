@@ -19,7 +19,7 @@ from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
-from surfactant.utils.paths import normalize_path
+from surfactant.utils.paths import normalize_path, basename_posix
 
 
 
@@ -642,15 +642,14 @@ def sbom(
                 for src, _dst, data in new_sbom.fs_tree.in_edges(ntarget, data=True):
                     if data.get("type") == "symlink":
                         install_symlink_set.add(src)
-                        # Derive filename alias when basename differs
-                        try:
-                            main_name = pathlib.PurePosixPath(ntarget).name
-                            link_name = pathlib.PurePosixPath(src).name
-                        except Exception:
-                            main_name = ntarget.rsplit("/", 1)[-1]
-                            link_name = src.rsplit("/", 1)[-1]
+
+                        # Derive filename alias when basename differs — no broad exceptions
+                        main_name = basename_posix(ntarget) # harmless re-normalization
+                        link_name = basename_posix(src)
+
                         if link_name and link_name != main_name:
                             filename_symlink_set.add(link_name)
+
                         logger.debug(
                             f"[fs_tree] symlink edge {src} -> {ntarget} (main={main_name}, link={link_name})"
                         )
