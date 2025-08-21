@@ -388,7 +388,9 @@ class SBOM:
         else:
             logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
 
-    def record_symlink(self, link_path: str, target_path: str, *, subtype: Optional[str] = None) -> None:
+    def record_symlink(
+        self, link_path: str, target_path: str, *, subtype: Optional[str] = None
+    ) -> None:
         """Public, stable API to record a filesystem symlink in the SBOM graphs.
 
         Validates inputs and delegates to the internal ``_record_symlink`` which
@@ -406,7 +408,6 @@ class SBOM:
 
         # Delegate to internal implementation (already normalizes & dedupes)
         self._record_symlink(link_path, target_path, subtype=subtype)
-
 
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
