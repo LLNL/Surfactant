@@ -29,6 +29,8 @@ function drawGraph() {
 
 	options.interaction.hover = true;
 
+	options.physics.forceAtlas2Based.avoidOverlap = 0.1; // Used to discourage node overlap
+
 	network = new vis.Network(container, data, options);
 
 	if (options.physics.enabled === false)
