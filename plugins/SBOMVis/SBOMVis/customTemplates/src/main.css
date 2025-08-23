@@ -75,7 +75,7 @@ div.vis-tooltip {
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	margin-left: 5px;
+	padding-left: 5px;
 
 	transition: 0.4s;
 	transform: translateX(0);
