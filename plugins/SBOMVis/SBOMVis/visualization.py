@@ -40,6 +40,7 @@ class NodeType(str, Enum):
 @dataclass
 class NodeMetadata:
     type: NodeType = NodeType.File
+    hidden: bool = False
     nodeFileName: str = ""
     SBOMFileName: str = ""
 

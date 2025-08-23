@@ -55,6 +55,29 @@ export function handleSearch() {
 		toggleSidebar();
 }
 
+export function toggleIsolates() {
+	const toggle = document.getElementById("isolatesToggle");
+	const icon = toggle.querySelector("i");
+
+	const shouldBeHidden = icon.className === "fa-solid fa-eye";
+
+	const selectedNodes = [];
+	for (const n of nodes.get()) {
+		// Has no edges (an isolate) and isn't hidden by user choice
+		if (
+			network.getConnectedNodes(n.id).length === 0 &&
+			n.nodeMetadata.hidden === false
+		) {
+			n.hidden = !n.hidden;
+			selectedNodes.push(n);
+		}
+	}
+
+	nodes.update(selectedNodes);
+
+	icon.className = shouldBeHidden ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+}
+
 export function setButtonEventHandlers() {
 	document
 		.getElementById("sidebarToggle")
@@ -66,5 +89,8 @@ export function setButtonEventHandlers() {
 		.getElementById("searchButton")
 		.addEventListener("click", handleSearch);
 	document.getElementById("zoomToView").addEventListener("click", zoomToView);
+	document
+		.getElementById("isolatesToggle")
+		.addEventListener("click", toggleIsolates);
 	document.getElementById("exportImage").addEventListener("click", exportImage);
 }
