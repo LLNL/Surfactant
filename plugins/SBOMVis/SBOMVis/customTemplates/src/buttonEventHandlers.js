@@ -59,7 +59,7 @@ export function toggleIsolates() {
 	const toggle = document.getElementById("isolatesToggle");
 	const icon = toggle.querySelector("i");
 
-	const shouldBeHidden = icon.className === "fa-solid fa-eye";
+	const shouldBeHidden = icon.classList.contains("fa-eye");
 
 	const selectedNodes = [];
 	for (const n of nodes.get()) {
@@ -75,7 +75,8 @@ export function toggleIsolates() {
 
 	nodes.update(selectedNodes);
 
-	icon.className = shouldBeHidden ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+	if (shouldBeHidden) icon.classList.replace("fa-eye", "fa-eye-slash");
+	else icon.classList.replace("fa-eye-slash", "fa-eye");
 }
 
 export function setButtonEventHandlers() {
