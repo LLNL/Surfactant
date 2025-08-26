@@ -70,7 +70,7 @@ hex_file_extensions = [
 
 
 @surfactant.plugin.hookimpl
-def identify_file_type(filepath: str, context: ContextEntry | None = None) -> Optional[str]:
+def identify_file_type(filepath: str, context: Optional[ContextEntry] = None) -> Optional[str]:
     file_suffix = pathlib.Path(filepath).suffix.lower()
     # quick exit based on file extension
     if file_suffix not in hex_file_extensions:

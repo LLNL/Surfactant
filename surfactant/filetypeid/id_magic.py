@@ -51,7 +51,7 @@ def is_docker_archive(filepath: str) -> bool:
 
 
 @surfactant.plugin.hookimpl(tryfirst=True)
-def identify_file_type(filepath: str, context: ContextEntry | None = None) -> Optional[str]:
+def identify_file_type(filepath: str, context: Optional[ContextEntry] = None) -> Optional[str]:
     filetype_matches = []
     try:
         with open(filepath, "rb") as f:

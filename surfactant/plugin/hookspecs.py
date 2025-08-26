@@ -15,7 +15,7 @@ hookspec = HookspecMarker("surfactant")
 
 
 @hookspec(firstresult=True)
-def identify_file_type(filepath: str, context: ContextEntry | None) -> Optional[str]:
+def identify_file_type(filepath: str, context: Optional[ContextEntry]) -> Optional[str]:
     """Determine the type of file located at filepath, and return a string identifying the type
     that will be passed to file extraction plugins. Return `None` to indicate that the type was
     unable to be determined.

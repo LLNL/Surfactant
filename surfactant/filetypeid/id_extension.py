@@ -13,7 +13,7 @@ from surfactant import ContextEntry
 
 
 @surfactant.plugin.hookimpl
-def identify_file_type(filepath: str, context: ContextEntry | None = None) -> Optional[str]:
+def identify_file_type(filepath: str, context: Optional[ContextEntry] = None) -> Optional[str]:
     # pylint: disable=too-many-return-statements
     _filetype_extensions = {
         ".sh": "SHELL",
