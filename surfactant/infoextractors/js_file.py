@@ -8,86 +8,100 @@
 # SPDX-License-Identifier: MIT
 import json
 import re
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+# from pluggy import get_plugin_manager, get_plugin
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.configmanager import ConfigManager
-from surfactant.database_manager.database_utils import (
-    calculate_hash,
-    download_database,
-    load_hash_and_timestamp,
-    save_hash_and_timestamp,
-)
+from surfactant.database_manager.database_utils import BaseDatabaseManager, DatabaseConfig
 from surfactant.sbomtypes import SBOM, Software
 
 # Global configuration
-DATABASE_URL = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
-
-
-class JSDatabaseManager:
-    def __init__(self):
-        self._js_lib_database: Optional[Dict[str, Any]] = None  # Use the private attribute
-        self.database_version_file_path = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "js_library_patterns"
-            / "js_library_patterns.toml"
-        )
-        self.pattern_key = "js_library_patterns"
-        self.pattern_file = "js_library_patterns.json"
-        self.source = "jsfile.retirejs"
-        self.new_hash: Optional[str] = None
-        self.download_timestamp: Optional[datetime] = None
-
-    @property
-    def js_lib_database(self) -> Optional[Dict[str, Any]]:
-        if self._js_lib_database is None:
-            self.load_db()
-        return self._js_lib_database
-
-    @property
-    def pattern_info(self) -> Dict[str, Any]:
-        return {
-            "pattern_key": self.pattern_key,
-            "pattern_file": self.pattern_file,
-            "source": self.source,
-            "hash_value": self.new_hash,
-            "timestamp": self.download_timestamp,
-        }
-
-    def load_db(self) -> None:
-        js_lib_file = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "js_library_patterns"
-            / self.pattern_file
-        )
-
-        try:
-            with open(js_lib_file, "r") as regex:
-                self._js_lib_database = json.load(regex)
-        except FileNotFoundError:
-            logger.warning(
-                "Javascript library pattern database could not be loaded. Run `surfactant plugin update-db js_file` to fetch the pattern database."
-            )
-            self._js_lib_database = None
-
-    def get_database(self) -> Optional[Dict[str, Any]]:
-        return self._js_lib_database
-
-
-js_db_manager = JSDatabaseManager()
-
-
-def supports_file(filetype) -> bool:
-    return filetype == "JAVASCRIPT"
+DATABASE_URL_RETIRE_JS = "https://raw.githubusercontent.com/RetireJS/retire.js/master/repository/jsrepository-master.json"
+JS_DB_DIR = "js_library_patterns"  # The directory name to store the database toml file and database json files for this module
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def short_name() -> str:
+    return "js_file"
+
+
+class RetireJSDatabaseManager(BaseDatabaseManager):
+    """Manages the retirejs library database."""
+
+    def __init__(self):
+        name = (
+            short_name()
+        )  # Set to '__name__' (without quotation marks), if short_name is not implemented
+
+        config = DatabaseConfig(
+            database_dir=JS_DB_DIR,  # The directory name to store the database toml file and database json files for this module.
+            database_key="retirejs",  # The key for this classes database in the version_info toml file.
+            database_file="retirejs_db.json",  # The json file name for the database.
+            source=DATABASE_URL_RETIRE_JS,  # The source of the database (put "file" or the source url)
+            plugin_name=name,
+        )
+
+        super().__init__(config)
+
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Dict[str, List[str]]]:
+        """
+        Parses a RetireJS JSON dump into a nested dict:
+        { library_name: { 'filename': [regex...], 'filecontent': [...], 'hashes': [...] } }
+        Invalid JSON or invalid regex entries are logged and skipped.
+        """
+
+        try:
+            db = json.loads(raw_data)
+        except json.JSONDecodeError as err:
+            logger.error(f"Failed to parse downloaded database JSON: {err}")
+
+        if not isinstance(db, dict):
+            logger.error("Expected top-level JSON object for RetireJS data")
+            return {}
+
+        VERSION_PLACEHOLDER = "\u00a7\u00a7version\u00a7\u00a7"
+        VERSION_NUMBER_PATTERN = r"\d+(?:\.\d+)*"
+
+        clean_db: Dict[str, Dict[str, List[str]]] = {}
+
+        for library, lib_entry in db.items():
+            if "extractors" in lib_entry:
+                clean_db[library] = {}
+                for entry in ["filename", "filecontent", "hashes"]:
+                    if entry in lib_entry["extractors"]:
+                        # Initialize the list in clean_db
+                        clean_db[library][entry] = []
+
+                        # Iterate through each pattern, do the replacement, and append
+                        for reg in lib_entry["extractors"][entry]:
+                            replaced = reg.replace(VERSION_PLACEHOLDER, VERSION_NUMBER_PATTERN)
+
+                            try:
+                                re.compile(replaced.encode("utf-8"))  # Validate regex
+                                clean_db[library][entry].append(replaced)
+                            except re.error as rex:
+                                logger.error(
+                                    "Invalid regex for %s[%s]: %r — %s",
+                                    library,
+                                    entry,
+                                    replaced,
+                                    rex,
+                                )
+
+        return clean_db
+
+
+js_db_manager = RetireJSDatabaseManager()
+
+
+def supports_file(filetype: List[str]) -> bool:
+    return "JAVASCRIPT" in filetype
+
+
+@surfactant.plugin.hookimpl
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
     if not supports_file(filetype):
         return None
     return extract_js_info(filename)
@@ -113,9 +127,9 @@ def extract_js_info(filename: str) -> object:
         libs = match_by_attribute("filecontent", filecontent, js_lib_database)
         js_info["jsLibraries"] = libs
     except FileNotFoundError:
-        logger.warning(f"File not found: {filename}")
+        logger.warning("File not found: %s", filename)
     except UnicodeDecodeError:
-        logger.warning(f"File does not appear to be UTF-8: {filename}")
+        logger.warning("File does not appear to be UTF-8: %s", filename)
     return js_info
 
 
@@ -157,52 +171,9 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
-    raw_data = download_database(DATABASE_URL)
-    if raw_data is not None:
-        js_db_manager.new_hash = calculate_hash(raw_data)
-        current_data = load_hash_and_timestamp(
-            js_db_manager.database_version_file_path,
-            js_db_manager.pattern_key,
-            js_db_manager.pattern_file,
-        )
-        if current_data and js_db_manager.new_hash == current_data.get("hash"):
-            return "No update occurred. Database is up-to-date."
-
-        retirejs = json.loads(raw_data)
-        cleaned = strip_irrelevant_data(retirejs)
-        js_db_manager.download_timestamp = datetime.now(timezone.utc)
-
-        path = ConfigManager().get_data_dir_path() / "infoextractors" / "js_library_patterns"
-        path.mkdir(parents=True, exist_ok=True)
-        json_file_path = path / js_db_manager.pattern_file
-        with open(json_file_path, "w") as f:
-            json.dump(cleaned, f, indent=4)
-
-        save_hash_and_timestamp(
-            js_db_manager.database_version_file_path, js_db_manager.pattern_info
-        )
-        return "Update complete."
-    return "No update occurred."
+    return js_db_manager.download_and_update_database()
 
 
 @surfactant.plugin.hookimpl
-def short_name() -> str:
-    return "js_file"
-
-
-@surfactant.plugin.hookimpl
-def init_hook(command_name: Optional[str] = None):
-    """
-    Initialization hook to load the JavaScript library database.
-
-    Args:
-        command_name (Optional[str], optional): The name of the command invoking the initialization.
-            If set to "update-db", the database will not be loaded.
-
-    Returns:
-        None
-    """
-    if command_name != "update-db":  # Do not load the database if only updating the database.
-        logger.info("Initializing js_file...")
-        js_db_manager.load_db()
-        logger.info("Initializing js_file complete.")
+def init_hook(command_name: Optional[str] = None) -> None:
+    js_db_manager.initialize_database(command_name)

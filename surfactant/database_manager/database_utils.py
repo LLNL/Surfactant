@@ -6,151 +6,184 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-
-import hashlib
+import json
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
-import requests
-import tomlkit
 from loguru import logger
-from requests.exceptions import RequestException
+
+from surfactant.configmanager import ConfigManager
+from surfactant.database_manager.utils import (
+    calculate_hash,
+    download_content,
+    get_source_for,
+    load_db_version_metadata,
+    save_db_version_metadata,
+)
 
 
-def download_database(url: str) -> Optional[str]:
+@dataclass
+class DatabaseConfig:
     """
-    Downloads the content of a database from the given URL.
+    Represents the configuration for a database used by a plugin.
 
-    Args:
-        url (str): The URL of the database to download.
-    Returns:
-        Optional[str]: The content of the database as a string if the request is successful,
-                       or None if an error occurs.
+    Attributes:
+        database_dir (str): The database directory name for the class of databases (e.g., "js_library", "native_library").
+        database_key (str): The key identifying the database (e.g., "retirejs").
+        database_file (str): The file name of the database (e.g., "js_library_patterns_retirejs.json").
+        source (str): The source URL of the database, or "file" if it's a local file.
+        plugin_name (Optional[str]): The canonical name or short name of the plugin handling the database.
     """
-    try:
-        # Perform the HTTP GET request with a timeout
-        response = requests.get(url, timeout=10)
 
-        # Handle HTTP status codes
-        if response.status_code == 200:
-            logger.info(f"Request successful! URL: {url}")
-            return response.text
+    database_dir: str
+    database_key: str
+    database_file: str
+    source: str
+    plugin_name: Optional[str] = None
 
-        if response.status_code == 404:
-            logger.error(f"Resource not found. URL: {url}")
+    def __post_init__(self) -> None:
+        # Validate that source is either a URL or "file"
+        if self.source != "file":
+            parsed_url = urlparse(self.source)
+            # Check that the scheme is valid (http or https)
+            if parsed_url.scheme not in {"http", "https"}:
+                raise ValueError(
+                    f"Invalid URL scheme: {parsed_url.scheme}. Expected 'http' or 'https'."
+                )
+            # Check that netloc is present
+            if not parsed_url.netloc:
+                raise ValueError(
+                    f"Invalid URL for source: {self.source}",
+                )
+
+        # Ensure database_file ends with .json
+        if not self.database_file.endswith(".json"):
+            raise ValueError(
+                f"database_file '{self.database_file}' must end with '.json'.",
+            )
+
+
+class BaseDatabaseManager(ABC):
+    """Abstract base class for managing databases."""
+
+    def __init__(self, config: DatabaseConfig) -> None:
+        self.config = config
+
+        # Attempt to retrieve an override URL using the database_dir (e.g., "js_library_patterns")
+        # and the database_key (e.g., "retirejs").
+        override_url = get_source_for(self.config.database_dir, self.config.database_key)
+        if override_url:
+            self.config.source = override_url
+            logger.debug(
+                "Using external URL override for {}: {}", self.config.database_key, override_url
+            )
         else:
-            logger.warning(f"Unexpected status code {response.status_code} for URL: {url}")
-    except RequestException as e:
-        # Handle network-related errors
-        logger.error(f"An error occurred while trying to fetch the URL: {url}. Error: {e}")
+            logger.debug("Using hard-coded URL for {}", self.config.database_key)
 
-    # Return None in case of any failure
-    return None
+        self.new_hash: Optional[str] = None
+        self.download_timestamp: Optional[str] = None
+        self._database: Optional[Dict[str, Any]] = None
 
+        # Ensure the parent directory exists
+        path = self.database_version_file_path
+        path.parent.mkdir(parents=True, exist_ok=True)
 
-def calculate_hash(data: str) -> str:
-    """
-    Calculate the SHA-256 hash of the given data.
+    @property
+    def data_dir(self) -> Path:
+        """Returns the base directory for storing database (.json) and version tracking (TOML) files."""
+        return ConfigManager().get_data_dir_path() / "databases"
 
-    Args:
-        data (str): The input string to hash.
+    @property
+    def database_version_file_path(self) -> Path:
+        """Path to the database version file (e.g., TOML file)."""
+        return self.data_dir / f"{self.config.database_dir}" / "version_info.toml"
 
-    Returns:
-        str: The SHA-256 hash of the input string.
-    """
-    return hashlib.sha256(data.encode("utf-8")).hexdigest()
+    @property
+    def database_file_path(self) -> Path:
+        """Path to the JSON database file."""
+        return self.data_dir / f"{self.config.database_dir}" / f"{self.config.database_file}"
 
-
-def _read_toml_file(file_path: str) -> Optional[Dict[str, Any]]:
-    """
-    Read and parse a TOML file.
-
-    Args:
-        file_path (str): The path to the TOML file.
-
-    Returns:
-        Optional[Dict[str, Any]]: The parsed TOML data, or None if the file does not exist.
-    """
-    try:
-        with open(file_path, "r") as f:
-            return tomlkit.load(f)
-    except FileNotFoundError:
-        return None
-    except tomlkit.exceptions.TOMLKitError as e:
-        raise ValueError(f"Error parsing TOML file at {file_path}: {e}") from e
-
-
-def _write_toml_file(file_path: str, data: Dict[str, Any]) -> None:
-    """
-    Write data to a TOML file.
-
-    Args:
-        file_path (str): The path to the TOML file.
-        data (Dict[str, Any]): The data to write to the file.
-    """
-    with open(file_path, "w") as f:
-        tomlkit.dump(data, f)
-
-
-def load_hash_and_timestamp(
-    hash_file_path: str, pattern_key: str, pattern_file: str
-) -> Optional[Dict[str, str]]:
-    """
-    Load the hash and timestamp for a specific pattern from the specified TOML file.
-
-    Args:
-        hash_file_path (str): The path to the TOML file.
-        pattern_key (str): The key identifying the pattern group.
-        pattern_file (str): The key identifying the specific pattern file.
-
-    Returns:
-        Optional[Dict[str, str]]: The hash and timestamp data, or None if not found.
-    """
-    hash_data = _read_toml_file(hash_file_path)
-    if hash_data is None:
-        return None
-
-    # Access the specific structure using the provided keys
-    return hash_data.get(pattern_key, {}).get(pattern_file)
-
-
-def save_hash_and_timestamp(hash_file_path: str, pattern_info: Dict[str, str]) -> None:
-    """
-    Save the hash and timestamp for a specific pattern to the specified TOML file.
-
-    Args:
-        hash_file_path (str): The path to the TOML file.
-        pattern_info (Dict[str, str]): A dictionary containing the following keys:
-            - "pattern_key": The key identifying the pattern group.
-            - "pattern_file": The key identifying the specific pattern file.
-            - "source": The source of the pattern.
-            - "hash_value": The hash value of the pattern.
-            - "timestamp": The timestamp of the pattern.
-
-    Raises:
-        ValueError: If required keys are missing from `pattern_info`.
-    """
-    required_keys = {"pattern_key", "pattern_file", "source", "hash_value", "timestamp"}
-    if not required_keys.issubset(pattern_info):
-        raise ValueError(f"pattern_info must contain the keys: {required_keys}")
-
-    hash_data = _read_toml_file(hash_file_path) or {}
-
-    # Define the new data structure
-    new_data = {
-        pattern_info["pattern_key"]: {
-            pattern_info["pattern_file"]: {
-                "source": pattern_info["source"],
-                "hash": pattern_info["hash_value"],
-                "timestamp": pattern_info["timestamp"],
-            }
+    @property
+    def database_info(self) -> Dict[str, Any]:
+        """Returns metadata about the database patterns."""
+        return {
+            "database_key": self.config.database_key,
+            "database_file": self.config.database_file,
+            "source": self.config.source,
+            "hash_value": self.new_hash,
+            "timestamp": self.download_timestamp,
         }
-    }
 
-    # Update the existing data with the new data
-    if pattern_info["pattern_key"] in hash_data:
-        hash_data[pattern_info["pattern_key"]].update(new_data[pattern_info["pattern_key"]])
-    else:
-        hash_data.update(new_data)
+    def initialize_database(self, command_name: Optional[str] = None) -> None:
+        """
+        Initialization hook to load the pattern database.
 
-    # Write the updated data back to the TOML file
-    _write_toml_file(hash_file_path, hash_data)
+        Args:
+            command_name (Optional[str], optional): The name of the command invoking the initialization.
+                If set to "update-db", the database will not be loaded.
+
+        Returns:
+            None
+        """
+        if command_name != "update-db":
+            logger.debug("Initializing {}...", self.config.plugin_name)
+            self.load_db()
+            logger.debug("Initializing {} complete.", self.config.plugin_name)
+
+    def load_db(self) -> None:
+        """Loads the database from a JSON file."""
+        try:
+            with self.database_file_path.open("r") as db_file:
+                self._database = json.load(db_file)
+        except FileNotFoundError:
+            logger.warning(
+                "{} database could not be loaded. Run `surfactant plugin update-db {}` to fetch the database.",
+                self.config.database_key,
+                self.config.plugin_name,
+            )
+            self._database = None
+
+    def get_database(self) -> Optional[Dict[str, Any]]:
+        """Returns the loaded database."""
+        if self._database is None:
+            self.load_db()
+        return self._database
+
+    def save_database(self, data: Dict[str, Any]) -> None:
+        """Saves the database to a JSON file."""
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        with self.database_file_path.open("w") as db_file:
+            json.dump(data, db_file, indent=4)
+        logger.info("{} database saved successfully.", self.config.database_key)
+
+    @abstractmethod
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Any]:
+        """Parses raw database data into a structured format."""
+        # No implementation needed for abstract methods.
+
+    def download_and_update_database(self) -> str:
+        raw_data = download_content(self.config.source)
+        if not raw_data:
+            return "No update occurred. Failed to download database."
+
+        new_hash = calculate_hash(raw_data)
+        current_data = load_db_version_metadata(
+            self.database_version_file_path, self.config.database_key
+        )
+
+        if current_data and new_hash == current_data.get("hash"):
+            return "No update occurred. Database is up-to-date."
+
+        parsed_data = self.parse_raw_data(raw_data)
+        if parsed_data is None:
+            return "No update occurred. Failed to parse raw data."
+
+        self.save_database(parsed_data)
+        self.new_hash = new_hash
+        self.download_timestamp = datetime.now(timezone.utc).isoformat()
+        save_db_version_metadata(self.database_version_file_path, self.database_info)
+        return "Update complete."

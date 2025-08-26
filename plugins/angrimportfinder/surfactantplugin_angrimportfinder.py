@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 import json
 from pathlib import Path
+from typing import List
 
 import angr
 from cle import CLECompatibilityError
@@ -16,17 +17,17 @@ from surfactant.sbomtypes import SBOM, Software
 @surfactant.plugin.hookimpl(specname="extract_file_info")
 # extract_strings(sbom: SBOM, software: Software, filename: str, filetype: str):
 # def angrimport_finder(filename: str, filetype: str, filehash: str):
-def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: str):
+def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: List[str]):
     """
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
     :param software(Software): The software entry associated with the file to extract information from.
     :param filename (str): The full path to the file to extract information from.
-    :param filetype (str): File type information based on magic bytes.
+    :param filetype (List[str]): File type information based on magic bytes.
     """
 
     # Only parsing executable files
-    if filetype not in ["ELF", "PE"]:
-        pass
+    if not ("ELF" in filetype or "PE" in filetype):
+        return
     filehash = str(software.sha256)
     filename = Path(filename)
     flist = []
@@ -43,24 +44,30 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
     if existing_json:
         with open(existing_json, "r") as json_file:
             existing_data = json.load(json_file)
-        if "imported function names" in existing_data:
+        if (
+            "imported function names" in existing_data
+            and "exported function names" in existing_data
+        ):
             logger.info(f"Already extracted {filename.name}")
         else:
             try:
                 logger.info(
-                    f"Found existing JSON file for {filename.name} but without 'imported functions' key. Proceeding with extraction."
+                    f"Found existing JSON file for {filename.name} but without 'imported function names' or 'exported function names' keys. Proceeding with extraction."
                 )
                 # Add your extraction code here.
                 if filename.name not in existing_data["filename"]:
                     existing_data["filename"].append(filename.name)
                 existing_data["imported function names"] = []
+                existing_data["exported function names"] = []
                 # Create an angr project
                 project = angr.Project(filename, auto_load_libs=False)
 
                 # Get the imported functions using symbol information
                 for symbol in project.loader.main_object.symbols:
-                    if symbol.is_function:
+                    if symbol.is_import:
                         existing_data["imported function names"].append(symbol.name)
+                    elif symbol.is_export:
+                        existing_data["exported function names"].append(symbol.name)
 
                 # Write the string_dict to the output JSON file
                 with open(output_name, "w") as json_file:
@@ -79,12 +86,15 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: s
             metadata["sha256hash"] = filehash
             metadata["filename"] = [filename.name]
             metadata["imported function names"] = []
+            metadata["exported function names"] = []
             # Create an angr project
             project = angr.Project(filename.as_posix(), auto_load_libs=False)
-            # Get the imported functions using symbol information
+            # Get the functions using symbol information
             for symbol in project.loader.main_object.symbols:
-                if symbol.is_function:
+                if symbol.is_import:
                     metadata["imported function names"].append(symbol.name)
+                elif symbol.is_export:
+                    metadata["exported function names"].append(symbol.name)
 
             # Write the string_dict to the output JSON file
             with open(output_path, "w") as json_file:

@@ -30,13 +30,13 @@ or decompilation.
 
 For ease of use, we recommend using [pipx](https://github.com/pypa/pipx) since it transparently handles creating and using Python virtual environments, which helps avoid dependency conflicts with other installed Python apps. Install `pipx` by following [their installation instructions](https://github.com/pypa/pipx#install-pipx).
 
-1. Install Surfactant using `pipx install` (with python >= 3.8)
+1. Install Surfactant using `pipx install` (with python >= 3.9)
 
 ```bash
 pipx install surfactant
 ```
 
-> Note: Mach-O file support requires installing Surfactant with the `macho` optional dependencies (e.g. `pipx install surfactant[macho]`).
+> Note: Mach-O file support requires installing Surfactant with the `macho` optional dependencies, and Java file support requires installing with the `java` optional dependencies (e.g. `pipx install surfactant[macho,java]`).
 
 2. Install plugins using `pipx inject surfactant`. As an example, this is how the fuzzy hashing plugin could be installed from a git repository (PyPI package names, local source directories, or wheel files can also be used).
 
@@ -46,7 +46,7 @@ pipx inject surfactant git+https://github.com/LLNL/Surfactant#subdirectory=plugi
 
 If for some reason manually managing virtual environments is desired, the following steps can be used instead:
 
-1. Create a virtual environment with python >= 3.8 and activate it [Optional, but highly recommended over a global install]
+1. Create a virtual environment with python >= 3.9 and activate it [Optional, but highly recommended over a global install]
 
 ```bash
 python -m venv venv
@@ -67,7 +67,7 @@ pip install git+https://github.com/LLNL/Surfactant#subdirectory=plugins/fuzzyhas
 
 ### For Developers:
 
-1. Create a virtual environment with python >= 3.8 [Optional, but recommended]
+1. Create a virtual environment with python >= 3.9 [Optional, but recommended]
 
 ```bash
 python -m venv venv
@@ -103,10 +103,10 @@ pip install -e plugins/fuzzyhashes
 Surfactant supports several subcommands that can be shown using `surfactant --help`. The main one for creating an SBOM is the `generate` subcommand, which takes the following arguments:
 
 ```bash
-surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
+surfactant generate [OPTIONS] SPECIMEN_CONTEXT SBOM_OUTFILE [INPUT_SBOM]
 ```
 
-The two required arguments are a specimen configuration, and the output SBOM file name. For a simple case of generating an SBOM for a single directory or file, it is enough to just use the path to the directory or file for the specimen configuration. For example, the following command will generate an SBOM file called `output.json` with software entries for all files found in the folder `mysoftware`:
+The two required arguments are a specimen context, and the output SBOM file name. For a simple case of generating an SBOM for a single directory or file, it is enough to just use the path to the directory or file for the specimen configuration. For example, the following command will generate an SBOM file called `output.json` with software entries for all files found in the folder `mysoftware`:
 
 ```bash
 surfactant generate /usr/local/mysoftware output.json
@@ -114,9 +114,9 @@ surfactant generate /usr/local/mysoftware output.json
 
 In the generated SBOM, there will be software entries for each file. The install paths captured will say where individual files are located within `/usr/local/mysoftware` -- if instead a relative path had been given such as `surfactant generate local/mysoftware output.json`, all of the install paths for files would appear to be under the relative path `local/mysoftware` instead of an absolute path.
 
-For more control over the options used to create software entries and relationships, or for capturing information from multiple directories, see the following section on how to write a [Surfactant specimen config file](#build-configuration-file-for-sample). This configuration file is a JSON file can then be given to Surfactant for the `SPECIMEN_CONFIG` argument.
+For more control over the options used to create software entries and relationships, or for capturing information from multiple directories, see the following section on how to write a [Surfactant specimen context file](#build-context-file-for-sample). This context file is a JSON file can then be given to Surfactant for the `SPECIMEN_CONTEXT` argument.
 
-NOTE: When using a Surfactant speciment configuration file, it is recommended that it end in a `.json` file extension; otherwise, you'll have to use a special prefix for the `SPECIMEN_CONFIG` argument to tell Surfactant that it should interpret the given file that doesn't end in `.json` as a specimen configuration file rather than to generate an SBOM that only contains details on that one file.
+NOTE: When using a Surfactant speciment context JSON file, it is recommended that it end in a `.json` file extension; otherwise, you'll have to use a special prefix (`context:`) for the `SPECIMEN_CONTEXT` argument to tell Surfactant that it should interpret the given file that doesn't end in `.json` as a specimen configuration file rather than to generate an SBOM that only contains details on that one file.
 
 ## Settings
 
@@ -162,40 +162,31 @@ recorded_institution = "LLNL"
 
 ### Identify sample file
 
-In order to test out surfactant, you will need a sample file/folder. If you don't have one on hand, you can download and use the portable .zip file from <https://github.com/ShareX/ShareX/releases> or the Linux .tar.gz file from <https://github.com/GMLC-TDC/HELICS/releases>. Alternatively, you can pick a sample from https://lc.llnl.gov/gitlab/cir-software-assurance/unpacker-to-sbom-test-files
+In order to test out surfactant, you will need a sample file/folder to generate an SBOM for. If you don't have one on hand, you can download and use the portable .zip file from <https://github.com/ShareX/ShareX/releases> or the Linux .tar.gz file from <https://github.com/GMLC-TDC/HELICS/releases>.
 
-### Build configuration file for sample
+### Build context file for sample
 
-A configuration file for a sample contains the information about the sample to gather information from. Example JSON sample configuration files can be found in the examples folder of this repository.
+A JSON context file for a sample contains the information about the sample to gather information from. Example JSON context files can be found in the examples folder of this repository.
 
-- **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file. Note that even on Windows, Unix style `/` directory separators should be used in paths.
-- **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in `extractPaths` were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various `extractPaths`.
-- **installPrefix**: (optional) where the files in `extractPaths` would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc. Note that even on Windows, Unix style `/` directory separators should be used in the path. If not given then the `extractPaths` will be used as the install paths.
-- **omitUnrecognizedTypes**: (optional) Omit files with unrecognized types from the generated SBOM.
-- **includeFileExts**: (optional) A list of file extensions to include, even if not recognized by Surfactant.
+- **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the files or folders to gather information on. Note that even on Windows, Unix style `/` directory separators should be used in paths.
+- **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the files or folders in `extractPaths` were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various `extractPaths`.
+- **installPrefix**: (optional) where the files in `extractPaths` would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc. Note that even on Windows, Unix style `/` directory separators should be used in the path. If not given then the `extractPaths` will be used as the install prefixes.
+- **omitUnrecognizedTypes**: (optional) If set to True, files with unrecognized types will be omitted from the generated SBOM.
+- **includeFileExts**: (optional) A list of file extensions to include, even if not recognized by Surfactant. `omitUnrecognizedTypes` must be set to True for this to take effect.
 - **excludeFileExts**: (optional) A list of file extensions to exclude, even if recognized by Surfactant. Note that if both `omitUnrecognizedTypes` and `includeFileExts` are set, the specified extensions in `includeFileExts` will still be included.
+- **skipProcessingArchive**: (optional) Skip processing the given archive file with info extractors. Software entry for the archive file will only contain basic information such as hashes. Default setting is False.
 
-#### Create config command
+#### Create context file using the TUI
 
-A basic configuration file can be easily built using the `create-config` command. This will take a path as a command line argument and will save a file with the default name of the end directory passed to it as a json file. i.e., `/home/user/Desktop/myfolder` will create `myfolder.json`.
+The Surfactant TUI has a "Context" tab that can be used to create a context file. Launch the TUI with `surfactant tui` and then navigate to the TUI tab to get to the editor for creating and modifying context files. This is the easiest way for new users to create a context file from scratch. The following sections will walkthrough what the context files look like, and the resulting SBOM with different options set in the context file entries.
 
-```bash
-$  surfactant create-config [INPUT_PATH]
-```
-
-The --output flag can be used to specify the configuration output name. The --install-prefix can be used to specify the install prefix, the default is '/'.
-
-```bash
-$  surfactant create-config [INPUT_PATH] --output new_output.json --install-prefix 'C:/'
-```
-
-#### Example configuration file
+#### Example context file
 
 Let's say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is `/home/samples/helics.tar.gz`. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
 
-##### Example 1: Simple Configuration File
+##### Example 1: Simple Context File
 
-If we want to include only the folders that contain binary files to analyze, our most basic configuration would be:
+If we want to include only the folders that contain binary files to analyze, our most basic context file would be:
 
 ```json
 [
@@ -233,9 +224,9 @@ The resulting SBOM would be structured like this:
 }
 ```
 
-##### Example 2: Detailed Configuration File
+##### Example 2: Detailed Context File
 
-A more detailed configuration file might look like the example below. The resulting SBOM would have a software entry for the helics.tar.gz with a "Contains" relationship to all binaries found to in the extractPaths. Providing the install prefix of `/` and an extractPaths as `/home/samples/helics` will allow to surfactant correctly assign the install paths in the SBOM for binaries in the subfolders as `/bin` and `/lib64`.
+A more detailed context file might look like the example below. The resulting SBOM would have a software entry for the helics.tar.gz with a "Contains" relationship to all binaries found to in the extractPaths. Providing the install prefix of `/` and an extractPaths as `/home/samples/helics` will allow to surfactant correctly assign the install paths in the SBOM for binaries in the subfolders as `/bin` and `/lib64`.
 
 ```json
 [
@@ -293,7 +284,7 @@ The resulting SBOM would be structured like this:
 
 ##### Example 3: Adding Related Binaries
 
-If our sample helics tar.gz file came with a related tar.gz file to install a plugin extension module (extracted into a helics_plugin folder that contains bin and lib64 subfolders), we could add that into the configuration file as well:
+If our sample helics tar.gz file came with a related tar.gz file to install a plugin extension module (extracted into a helics_plugin folder that contains bin and lib64 subfolders), we could add that information to the context file as well:
 
 ```json
 [
@@ -392,15 +383,23 @@ The resulting SBOM would be structured like this:
 }
 ```
 
-NOTE: These examples have been simplified to show differences in output based on configuration.
+NOTE: These examples have been simplified to show differences in output based on the context file provided.
 
-### Run surfactant
+### Run Surfactant
+
+The Surfactant TUI for generating and merging SBOMs, as well as working with specimen context files, can be launched with the following command:
 
 ```bash
-$  surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
+$  surfactant tui
 ```
 
-**SPECIMEN_CONFIG**: (required) the config file created earlier that contains the information on specimens to include in an SBOM, or the path to a specific file/directory to generate an SBOM for with some implied default configuration options\
+While the TUI provides access to most of the options for generating SBOMs, there are times when it may be necessary to run the generate command directly to access certain extra command line options, or in environments where a TUI can't be used:
+
+```bash
+$  surfactant generate [OPTIONS] SPECIMEN_CONTEXT SBOM_OUTFILE [INPUT_SBOM]
+```
+
+**SPECIMEN_CONTEXT**: (required) the context file created earlier that contains the information on specimens to include in an SBOM, or the path to a specific file/directory to generate an SBOM for with some implied default context options\
 **SBOM OUTPUT**: (required) the desired name of the output file\
 **INPUT_SBOM**: (optional) a base sbom, should be used with care as relationships could be messed up when files are installed on different systems\
 **--skip_gather**: (optional) skips the gathering of information on files and adding software entires\
@@ -435,7 +434,7 @@ A folder containing multiple separate SBOM JSON files can be combined using merg
 
 `ls -d ~/Folder_With_SBOMs/Surfactant-* | xargs -d '\n' surfactant merge --config_file=merge_config.json --sbom_outfile combined_sbom.json`
 
-If the config file option is given, a top-level system entry will be created that all other software entries are tied to (directly or indirectly based on other relationships). Specifying an empty UUID will make a random UUID get generated for the new system entry, otherwise it will use the one provided.
+If the merge config file option is given, a top-level system entry will be created that all other software entries are tied to (directly or indirectly based on other relationships). Specifying an empty UUID will make a random UUID get generated for the new system entry, otherwise it will use the one provided.
 
 Details on the merge command can be found in the docs page [here](./docs/basic_usage.md#merging-sboms).
 

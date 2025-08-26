@@ -2,18 +2,22 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-from typing import Union
+from typing import List, Union
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
 
 
-def supports_file(filetype: str) -> bool:
-    return filetype in ("A.OUT little", "A.OUT big")
+def supports_file(filetype: List[str]) -> bool:
+    supported_types = ("A.OUT little", "A.OUT big")
+    for ft in filetype:
+        if ft in supported_types:
+            return True
+    return False
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
     if not supports_file(filetype):
         return None
     return extract_a_out_info(filetype, filename)
@@ -68,7 +72,7 @@ _A_OUT_TARGET_NAME = {
 }
 
 
-def extract_a_out_info(filetype: str, filename: str) -> object:
+def extract_a_out_info(filetype: List[str], filename: str) -> object:
     try:
         with open(filename, "rb") as f:
             magic_bytes = f.read(4)
@@ -80,14 +84,14 @@ def extract_a_out_info(filetype: str, filename: str) -> object:
         return None
 
 
-def get_target_type(filetype: str, magic_bytes: bytes) -> Union[str, None]:
-    if filetype == "A.OUT big":
+def get_target_type(filetype: List[str], magic_bytes: bytes) -> Union[str, None]:
+    if "A.OUT big" in filetype:
         big_endian_magic = (
             int.from_bytes(magic_bytes[:4], byteorder="big", signed=False) >> 16
         ) & 0xFF
         if big_endian_magic in _A_OUT_TARGET_NAME:
             return _A_OUT_TARGET_NAME[big_endian_magic]
-    if filetype == "A.OUT little":
+    if "A.OUT little" in filetype:
         little_endian_magic = (
             int.from_bytes(magic_bytes[:4], byteorder="little", signed=False) >> 16
         ) & 0xFF

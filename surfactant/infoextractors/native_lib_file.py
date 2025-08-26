@@ -6,90 +6,142 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import json
 import os
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.configmanager import ConfigManager
-from surfactant.database_manager.database_utils import (
-    calculate_hash,
-    download_database,
-    load_hash_and_timestamp,
-    save_hash_and_timestamp,
-)
+from surfactant.database_manager.database_utils import BaseDatabaseManager, DatabaseConfig
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.utils.ahocorasick import build_regex_literal_matcher
 
 # Global configuration
-DATABASE_URL = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
+DATABASE_URL_EMBA = "https://raw.githubusercontent.com/e-m-b-a/emba/11d6c281189c3a14fc56f243859b0bccccce8b9a/config/bin_version_strings.cfg"
+NATIVE_DB_DIR = "native_library_patterns"  # The directory name to store the database toml file and database json files for this module
 
 
-class NativeLibDatabaseManager:
-    def __init__(self) -> None:
-        self._native_lib_database: Optional[Dict[str, Any]] = None
-        self.database_version_file_path = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "native_lib_patterns"
-            / "native_lib_patterns.toml"
-        )
-        self.pattern_key = "native_lib_patterns"
-        self.pattern_file = "native_lib_patterns.json"
-        self.source = "nativefile.emba"
-        self.new_hash: Optional[str] = None
-        self.download_timestamp: Optional[datetime] = None
+@surfactant.plugin.hookimpl
+def short_name() -> Optional[str]:
+    return "native_lib_file"
 
-    @property
-    def native_lib_database(self) -> Optional[Dict[str, Any]]:
-        if self._native_lib_database is None:
-            self.load_db()
-        return self._native_lib_database
 
-    @property
-    def pattern_info(self) -> Dict[str, Any]:
-        return {
-            "pattern_key": self.pattern_key,
-            "pattern_file": self.pattern_file,
-            "source": self.source,
-            "hash_value": self.new_hash,
-            "timestamp": self.download_timestamp,
-        }
+class EmbaNativeLibDatabaseManager(BaseDatabaseManager):
+    """Manages the EMBA Native Library database."""
 
-    def load_db(self) -> None:
-        native_lib_file = (
-            ConfigManager().get_data_dir_path()
-            / "infoextractors"
-            / "native_lib_patterns"
-            / self.pattern_file
+    def __init__(self):
+        name = (
+            short_name()
+        )  # Set to '__name__' (without quotation marks), if short_name is not implemented
+
+        config = DatabaseConfig(
+            database_dir=NATIVE_DB_DIR,  # The directory name to store the database toml file and database json files for this module.
+            database_key="emba",  # The key for this classes database in the version_info toml file.
+            database_file="emba_db.json",  # The json file name for the database.
+            source=DATABASE_URL_EMBA,  # The source of the database (put "file" or the source url)
+            plugin_name=name,
         )
 
-        try:
-            with open(native_lib_file, "r") as regex:
-                self._native_lib_database = json.load(regex)
-        except FileNotFoundError:
-            logger.warning(
-                "Native library pattern could not be loaded. Run `surfactant plugin update-db native_lib_patterns` to fetch the pattern database."
-            )
-            self._native_lib_database = None
+        super().__init__(config)
+        self.ac_filename = None
+        self.ac_filecontent = None
 
-    def get_database(self) -> Optional[Dict[str, Any]]:
-        return self._native_lib_database
+    def parse_raw_data(self, raw_data: str) -> Dict[str, Dict[str, List[str]]]:
+        database: Dict[str, Dict[str, List[str]]] = {}
+        lines = raw_data.splitlines()
+        filtered_lines: List[str] = []
+
+        for line in lines:
+            if not line.startswith("#"):
+                filtered_lines.append(line)
+
+        for line in filtered_lines:
+            line = line.strip()
+
+            fields = line.split(";")
+
+            lib_name = fields[0]
+
+            name_patterns: List[str] = []
+
+            if fields[3].startswith('"') and fields[3].endswith('""'):
+                filecontent = fields[3][1:-1]
+            elif fields[3].endswith('""'):
+                filecontent = fields[3][:-1]
+            else:
+                filecontent = fields[3].strip('"')
+
+            if fields[1] == "" or fields[1] == "strict":
+                if fields[1] == "strict":
+                    if lib_name not in database:
+                        database[lib_name] = {
+                            "filename": [lib_name],
+                            "filecontent": [],
+                        }
+                    else:
+                        if lib_name not in database[lib_name]["filename"]:
+                            database[lib_name]["filename"].append(lib_name)
+                else:
+                    try:
+                        re.compile(filecontent.encode("utf-8"))  # Validate regex
+                        if lib_name not in database:
+                            database[lib_name] = {
+                                "filename": name_patterns,
+                                "filecontent": [filecontent],
+                            }
+                        else:
+                            database[lib_name]["filecontent"].append(filecontent)
+
+                    except re.error as rex:
+                        logger.error("Error parsing file content regexp %s: %s", filecontent, rex)
+        return database
+
+    def load_db(self) -> Optional[Dict[str, Any]]:
+        """Load the database and build the Aho-Corasick automaton for pattern matching."""
+        super().load_db()
+        if self._database:
+            # Build the Aho-Corasick automaton for filename patterns
+            filename_patterns = {}
+            filecontent_patterns = {}
+
+            for lib_name, lib_data in self._database.items():
+                if "filename" in lib_data:
+                    for pattern in lib_data["filename"]:
+                        pattern_id = (lib_name, "filename", pattern)
+                        filename_patterns[pattern_id] = pattern
+
+                if "filecontent" in lib_data:
+                    for pattern in lib_data["filecontent"]:
+                        pattern_id = (lib_name, "filecontent", pattern)
+                        filecontent_patterns[pattern_id] = pattern.encode("utf-8").decode(
+                            "unicode_escape"
+                        )
+
+            if filename_patterns:
+                self.ac_filename = build_regex_literal_matcher(filename_patterns, is_literal=True)
+
+            if filecontent_patterns:
+                self.ac_filecontent = build_regex_literal_matcher(
+                    filecontent_patterns, is_bytes=True
+                )
+        return self._database
 
 
-native_lib_manager = NativeLibDatabaseManager()
+native_lib_manager = EmbaNativeLibDatabaseManager()
 
 
-def supports_file(filetype: str) -> bool:
-    return filetype in ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64")
+def supports_file(filetype: List[str]) -> bool:
+    supported_types = ("PE", "ELF", "MACHOFAT", "MACHOFAT64", "MACHO32", "MACHO64", "UIMAGE")
+    for ft in filetype:
+        if ft in supported_types:
+            return True
+    return False
 
 
 @surfactant.plugin.hookimpl
 def extract_file_info(
-    sbom: SBOM, software: Software, filename: str, filetype: str
+    sbom: SBOM, software: Software, filename: str, filetype: List[str]
 ) -> Optional[Dict[str, Any]]:
     if not supports_file(filetype):
         return None
@@ -128,7 +180,7 @@ def extract_native_lib_info(filename: str) -> Optional[Dict[str, Any]]:
                 found_libraries.add(library_name)
 
     except FileNotFoundError:
-        logger.warning(f"File not found: {filename}")
+        logger.warning("File not found: %s", filename)
 
     if library_names:
         native_lib_info["nativeLibraries"].append({"isLibrary": library_names})
@@ -143,113 +195,82 @@ def match_by_attribute(
     attribute: str, content: Union[str, bytes], patterns_database: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     libs: List[Dict[str, str]] = []
-    for lib_name, lib_info in patterns_database.items():
-        if attribute in lib_info:
-            for pattern in lib_info[attribute]:
-                if attribute == "filename":
-                    if pattern.lower() == content.lower():
-                        libs.append({"isLibrary": lib_name})
 
-                elif attribute == "filecontent":
-                    matches = re.search(pattern.encode("utf-8"), content)
-                    if matches:
-                        libs.append({"containsLibrary": lib_name})
+    # Get the appropriate automaton
+    if attribute == "filename":
+        ac = native_lib_manager.ac_filename
+    elif attribute == "filecontent":
+        ac = native_lib_manager.ac_filecontent
+    else:
+        return libs
+
+    # If no automaton available, fall back to old method
+    if not ac:
+        for lib_name, lib_info in patterns_database.items():
+            if attribute in lib_info:
+                for pattern in lib_info[attribute]:
+                    if attribute == "filename":
+                        if pattern.lower() == content.lower():
+                            libs.append({"isLibrary": lib_name})
+
+                    elif attribute == "filecontent":
+                        matches = re.search(pattern.encode("utf-8"), content)
+                        if matches:
+                            libs.append({"containsLibrary": lib_name})
+        return libs
+
+    # Use Aho-Corasick for prefix matching
+    matched_libraries: Set[str] = set()
+
+    # For filename we can just do direct string matching
+    if attribute == "filename":
+        if isinstance(content, str):
+            potential_matches = ac.search(content)
+            for pattern_id, _positions in potential_matches.items():
+                lib_name, attr, pattern = pattern_id
+                if (
+                    attr == attribute
+                    and pattern.lower() == content.lower()
+                    and lib_name not in matched_libraries
+                ):
+                    libs.append({"isLibrary": lib_name})
+                    matched_libraries.add(lib_name)
+
+    # For file content, we need to search in binary data
+    elif attribute == "filecontent":
+        if isinstance(content, bytes):
+            # Window size for context around matches
+            window_size = 4096  # Adjustable based on expected pattern size
+            content_length = len(content)
+            potential_matches = ac.search(content)
+            for pattern_id, positions in potential_matches.items():
+                lib_name, attr, pattern = pattern_id
+                if attr == attribute and lib_name not in matched_libraries:
+                    try:
+                        encoded_pattern = pattern.encode("utf-8")
+
+                        # Check each position where the prefix was found
+                        for pos in positions:
+                            # Calculate start and end for a slice of content around the match position
+                            slice_start = max(0, pos - 50)  # Allow some context before match
+                            slice_end = min(content_length, pos + window_size)
+                            content_slice = content[slice_start:slice_end]
+
+                            # Search only in the slice
+                            matches = re.search(encoded_pattern, content_slice)
+                            if matches:
+                                libs.append({"containsLibrary": lib_name})
+                                matched_libraries.add(lib_name)
+                                break  # Found one match for this library, no need to check more positions
+                    except re.error as e:
+                        logger.error(f"Error with regex pattern {pattern}: {e}")
+
     return libs
-
-
-def parse_emba_cfg_file(content: str) -> Dict[str, Dict[str, List[str]]]:
-    database: Dict[str, Dict[str, List[str]]] = {}
-    lines = content.splitlines()
-    filtered_lines: List[str] = []
-
-    for line in lines:
-        if not (line.startswith("#") or line.startswith("identifier")):
-            filtered_lines.append(line)
-
-    for line in filtered_lines:
-        line = line.strip()
-
-        fields = line.split(";")
-
-        lib_name = fields[0]
-
-        name_patterns: List[str] = []
-
-        if fields[3].startswith('"') and fields[3].endswith('""'):
-            filecontent = fields[3][1:-1]
-        elif fields[3].endswith('""'):
-            filecontent = fields[3][:-1]
-        else:
-            filecontent = fields[3].strip('"')
-
-        if fields[1] == "" or fields[1] == "strict":
-            if fields[1] == "strict":
-                if lib_name not in database:
-                    database[lib_name] = {
-                        "filename": [lib_name],
-                        "filecontent": [],
-                    }
-                else:
-                    if lib_name not in database[lib_name]["filename"]:
-                        database[lib_name]["filename"].append(lib_name)
-            else:
-                try:
-                    re.search(filecontent.encode("utf-8"), b"")
-                    if lib_name not in database:
-                        database[lib_name] = {
-                            "filename": name_patterns,
-                            "filecontent": [filecontent],
-                        }
-                    else:
-                        database[lib_name]["filecontent"].append(filecontent)
-                except re.error as e:
-                    logger.error(f"Error parsing file content regexp {filecontent}: {e}")
-
-    return database
 
 
 @surfactant.plugin.hookimpl
 def update_db() -> str:
-    file_content = download_database(DATABASE_URL)
-    if file_content is not None:
-        native_lib_manager.new_hash = calculate_hash(file_content)
-        current_data = load_hash_and_timestamp(
-            native_lib_manager.database_version_file_path,
-            native_lib_manager.pattern_key,
-            native_lib_manager.pattern_file,
-        )
-        if current_data and native_lib_manager.new_hash == current_data.get("hash"):
-            return "No update occurred. Database is up-to-date."
-
-        parsed_data = parse_emba_cfg_file(file_content)
-        for _, value in parsed_data.items():
-            filecontent_list = value["filecontent"]
-
-            for i, pattern in enumerate(filecontent_list):
-                if pattern.startswith("^"):
-                    filecontent_list[i] = pattern[1:]
-
-                if not pattern.endswith("\\$"):
-                    if pattern.endswith("$"):
-                        filecontent_list[i] = pattern[:-1]
-
-        path = ConfigManager().get_data_dir_path() / "infoextractors" / "native_lib_patterns"
-        path.mkdir(parents=True, exist_ok=True)
-        native_lib_file = path / native_lib_manager.pattern_file
-        with open(native_lib_file, "w") as json_file:
-            json.dump(parsed_data, json_file, indent=4)
-
-        native_lib_manager.download_timestamp = datetime.now(timezone.utc)
-        save_hash_and_timestamp(
-            native_lib_manager.database_version_file_path, native_lib_manager.pattern_info
-        )
-        return "Update complete."
-    return "No update occurred."
-
-
-@surfactant.plugin.hookimpl
-def short_name() -> Optional[str]:
-    return "native_lib_patterns"
+    return native_lib_manager.download_and_update_database()
 
 
 @surfactant.plugin.hookimpl

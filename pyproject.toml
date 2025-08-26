@@ -10,23 +10,26 @@ authors = [
     {name = "Micaela Gallegos", email = "gallegos31@llnl.gov"},
     {name = "Alexander Armstrong", email = "armstrong48@llnl.gov"},
     {name = "Shayna Kapadia", email = "kapadia2@llnl.gov"},
+    {name = "Asriel Margarian", email = "margarian1@llnl.gov"},
+    {name = "Matthew Kelley", email = "kelley41@llnl.gov"},
 ]
 maintainers = [
     {name = "Ryan Mast", email = "mast9@llnl.gov"},
 ]
 description = "Modular framework to gather file information, analyze dependencies, and generate an SBOM"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["sbom", "pe", "elf", "ole", "msi"]
-license = {text = "MIT License"}
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Operating System :: MacOS",
@@ -36,31 +39,36 @@ classifiers = [
     "Topic :: Software Development",
     "Topic :: System",
     "Topic :: Utilities",
-    "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
     "dataclasses_json==0.6.*",
     "pyelftools==0.32.*",
     # This isn't semver so fix it to a specific release
     "pefile==2024.8.26",
-    "dnfile==0.15.*",
+    "dnfile==0.16.*",
     "olefile==0.47.*",
     "defusedxml==0.7.*",
     "spdx-tools==0.8.*",
-    "cyclonedx-python-lib==9.1.0",
+    # Pinned to specific version for potential breaking changes
+    "cyclonedx-python-lib==11.0.0",
     "pluggy==1.*",
     "click==8.*",
-    "javatools>=1.6,==1.*",
     "loguru==0.7.*",
-    "flask==3.*",
     "tomlkit==0.13.*",
-    "textual==2.*",
+    "textual==5.*",
     "requests>=2.32.3",
-]
+    "rarfile==4.2.*",
+    "networkx>=2.6",
+    # Pinned to specific version for potential breaking changes
+    "python-msi==0.0.0a2",
+    # Pinned to specific version for potential breaking changes
+    "rpmfile==2.1.0",
+  ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-macho = ["lief==0.16.4"]
+macho = ["lief==0.16.6"]
+java = ["javatools>=1.6,==1.*"]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
 docs = ["sphinx", "myst-parser"]
@@ -87,7 +95,7 @@ include = ["surfactant", "surfactant.*"]
 version_file = "surfactant/_version.py"
 
 [tool.pytest.ini_options]
-addopts = ["--import-mode=importlib"]
+addopts = ["--import-mode=importlib", "--ignore=plugins"]
 pythonpath = "."
 
 [tool.ruff]

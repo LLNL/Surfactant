@@ -12,7 +12,7 @@ import click
 from loguru import logger
 
 from surfactant import ContextEntry
-from surfactant.cmd.internal.generate_utils import SpecimenConfigParamType
+from surfactant.cmd.internal.generate_utils import SpecimenContextParamType
 from surfactant.configmanager import ConfigManager
 from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
@@ -29,7 +29,8 @@ def real_path_to_install_path(root_path: str, install_path: str, filepath: str) 
 
 
 def get_software_entry(
-    context,
+    context_queue,
+    current_context,
     pluginmanager,
     parent_sbom: SBOM,
     filepath,
@@ -40,6 +41,8 @@ def get_software_entry(
     install_path=None,
     user_institution_name="",
     omit_unrecognized_types=False,
+    skip_extraction=False,
+    container_prefix=None,
 ) -> Tuple[Software, List[Software]]:
     sw_entry = Software.create_software_from_file(filepath)
     if root_path is not None and install_path is not None:
@@ -47,24 +50,35 @@ def get_software_entry(
     if root_path is not None and container_uuid is not None:
         # make sure there is a "/" separating container uuid and the filepath
         if root_path != "" and not root_path.endswith("/"):
-            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid, filepath)]
+            sw_entry.containerPath = [
+                re.sub("^" + root_path, container_uuid + container_prefix, filepath)
+            ]
         else:
-            sw_entry.containerPath = [re.sub("^" + root_path, container_uuid + "/", filepath)]
+            sw_entry.containerPath = [
+                re.sub("^" + root_path, container_uuid + container_prefix + "/", filepath)
+            ]
     sw_entry.recordedInstitution = user_institution_name
     sw_children: List[Software] = []
+    sw_field_hints: List[Tuple[str, Any, int]] = []
 
     # for unsupported file types, details are just empty; this is the case for archive files (e.g. zip, tar, iso)
     # as well as intel hex or motorola s-rec files
-    extracted_info_results: List[object] = pluginmanager.hook.extract_file_info(
-        sbom=parent_sbom,
-        software=sw_entry,
-        filename=filepath,
-        filetype=filetype,
-        context=context,
-        children=sw_children,
-        omit_unrecognized_types=omit_unrecognized_types,
+    extracted_info_results: List[object] = (
+        pluginmanager.hook.extract_file_info(
+            sbom=parent_sbom,
+            software=sw_entry,
+            filename=filepath,
+            filetype=filetype,
+            context_queue=context_queue,
+            current_context=current_context,
+            children=sw_children,
+            software_field_hints=sw_field_hints,
+            omit_unrecognized_types=omit_unrecognized_types,
+        )
+        if not skip_extraction
+        else []
     )
-    # add metadata extracted from the file, and set SBOM fields if metadata has relevant info
+    # add metadata extracted from the file
     for file_details in extracted_info_results:
         # None as details doesn't add any useful info...
         if file_details is None:
@@ -75,38 +89,36 @@ def get_software_entry(
             sw_entry.metadata = []
         sw_entry.metadata.append(file_details)
 
-        # before checking for keys, make sure the file details object is a dictionary
-        if not isinstance(file_details, Dict):
-            continue
+    # set SBOM fields based on sw_field_hints
+    field_confidence: Dict[str, Tuple[Any, int]] = {}
+    for field, value, confidence in sw_field_hints:
+        # special case since vendor can list multiple values
+        if field == "vendor":
+            if field not in field_confidence:
+                field_confidence[field] = ([], 0)
+            field_confidence[field][0].append(value)
+        # otherwise, find the value for each field with the highest confidence
+        elif field not in field_confidence or confidence > field_confidence[field][1]:
+            field_confidence[field] = (value, confidence)
 
-        # common case is Windows PE file has these details under FileInfo, otherwise fallback default value is fine
-        if "FileInfo" in file_details:
-            fi = file_details["FileInfo"]
-            if "ProductName" in fi:
-                sw_entry.name = fi["ProductName"]
-            if "FileVersion" in fi:
-                sw_entry.version = fi["FileVersion"]
-            if "CompanyName" in fi:
-                sw_entry.vendor = [fi["CompanyName"]]
-            if "FileDescription" in fi:
-                sw_entry.description = fi["FileDescription"]
-            if "Comments" in fi:
-                sw_entry.comments = fi["Comments"]
-
-        # less common: OLE file metadata that might be relevant
-        if filetype == "OLE":
-            logger.trace("-----------OLE--------------")
-            if "subject" in file_details["ole"]:
-                sw_entry.name = file_details["ole"]["subject"]
-            if "revision_number" in file_details["ole"]:
-                sw_entry.version = file_details["ole"]["revision_number"]
-            if "author" in file_details["ole"]:
-                # ensure the vendor list has been created
-                if sw_entry.vendor is None:
-                    sw_entry.vendor = []
-                sw_entry.vendor.append(file_details["ole"]["author"])
-            if "comments" in file_details["ole"]:
-                sw_entry.comments = file_details["ole"]["comments"]
+    # set any fields that haven't been set yet (user/previously set fields take precedence)
+    for field, (value, _) in field_confidence.items():
+        if field == "name" and not sw_entry.name:
+            sw_entry.name = value
+        elif field == "version" and not sw_entry.version:
+            sw_entry.version = value
+        elif field == "vendor":
+            # make sure the vendor field is initialized
+            if sw_entry.vendor is None:
+                sw_entry.vendor = []
+            # add any new vendors detected to the list
+            for vendor in value:
+                if vendor not in sw_entry.vendor:
+                    sw_entry.vendor.append(vendor)
+        elif field == "description" and not sw_entry.description:
+            sw_entry.description = value
+        elif field == "comments" and not sw_entry.comments:
+            sw_entry.comments = value
     return (sw_entry, sw_children)
 
 
@@ -183,9 +195,9 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 
 @click.command("generate")
 @click.argument(
-    "specimen_config",
-    envvar="SPECIMEN_CONFIG",
-    type=SpecimenConfigParamType(),
+    "specimen_context",
+    envvar="SPECIMEN_CONTEXT",
+    type=SpecimenContextParamType(),
     required=True,
 )
 @click.argument("sbom_outfile", envvar="SBOM_OUTPUT", type=click.File("w"), required=True)
@@ -255,7 +267,7 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 # Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
 # pylint: disable-next=too-many-positional-arguments
 def sbom(
-    specimen_config: list,
+    specimen_context: list,
     sbom_outfile: click.File,
     input_sbom: click.File,
     skip_gather: bool,
@@ -266,7 +278,7 @@ def sbom(
     input_format: str,
     omit_unrecognized_types: bool,
 ):
-    """Generate a sbom configured in CONFIG_FILE and output to SBOM_OUTPUT.
+    """Generate a sbom based on SPECIMEN_CONTEXT and output to SBOM_OUTPUT.
 
     An optional INPUT_SBOM can be supplied to use as a base for subsequent operations.
     """
@@ -278,10 +290,10 @@ def sbom(
     output_writer = find_io_plugin(pm, output_format, "write_sbom")
     input_reader = find_io_plugin(pm, input_format, "read_sbom")
 
-    context: queue.Queue[ContextEntry] = queue.Queue()
+    contextQ: queue.Queue[ContextEntry] = queue.Queue()
 
-    for cfg_entry in specimen_config:
-        context.put(ContextEntry(**cfg_entry))
+    for cfg_entry in specimen_context:
+        contextQ.put(ContextEntry(**cfg_entry))
 
     # define the new_sbom variable type
     new_sbom: SBOM
@@ -298,19 +310,23 @@ def sbom(
         file_symlinks: Dict[str, List[str]] = {}
         # List of filename symlinks; keys are SHA256 hashes, values are file names
         filename_symlinks: Dict[str, List[str]] = {}
-        while not context.empty():
-            entry: ContextEntry = context.get()
+        while not contextQ.empty():
+            entry: ContextEntry = contextQ.get()
             if entry.archive:
                 logger.info("Processing parent container " + str(entry.archive))
                 # TODO: if the parent archive has an info extractor that does unpacking interally, should the children be added to the SBOM?
                 # current thoughts are (Syft) doesn't provide hash information for a proper SBOM software entry, so exclude these
                 # extractor plugins meant to unpack files could be okay when used on an "archive", but then extractPaths should be empty
                 parent_entry, _ = get_software_entry(
-                    context,
+                    contextQ,
+                    entry,
                     pm,
                     new_sbom,
                     entry.archive,
+                    filetype=pm.hook.identify_file_type(filepath=entry.archive) or [],
                     user_institution_name=recorded_institution,
+                    skip_extraction=entry.skipProcessingArchive,
+                    container_prefix=entry.containerPrefix,
                 )
                 archive_entry = new_sbom.find_software(parent_entry.sha256)
                 if (
@@ -346,6 +362,13 @@ def sbom(
                     )
                     entry.installPrefix = entry.installPrefix.replace("\\", "\\\\")
 
+            # Clean up the container prefix if needed
+            entry.containerPrefix = (
+                entry.containerPrefix.strip("/") if entry.containerPrefix is not None else ""
+            )
+            if entry.containerPrefix != "":
+                entry.containerPrefix = "/" + entry.containerPrefix
+
             for epath_str in entry.extractPaths:
                 # convert to pathlib.Path, ensures trailing "/" won't be present and some more consistent path formatting
                 epath = pathlib.Path(epath_str)
@@ -361,18 +384,19 @@ def sbom(
                 if epath.is_file():
                     entries = []
                     filepath = epath.as_posix()
-                    # breakpoint()
                     try:
                         sw_parent, sw_children = get_software_entry(
-                            context,
+                            contextQ,
+                            entry,
                             pm,
                             new_sbom,
                             filepath,
-                            filetype=pm.hook.identify_file_type(filepath=filepath),
+                            filetype=pm.hook.identify_file_type(filepath=filepath) or [],
                             root_path=epath.parent.as_posix() if len(epath.parts) > 1 else "",
                             container_uuid=parent_uuid,
                             install_path=install_prefix,
                             user_institution_name=recorded_institution,
+                            container_prefix=entry.containerPrefix,
                         )
                     except Exception as e:
                         raise RuntimeError(f"Unable to process: {filepath}") from e
@@ -475,17 +499,19 @@ def sbom(
                             ]:
                                 try:
                                     sw_parent, sw_children = get_software_entry(
-                                        context,
+                                        contextQ,
+                                        entry,
                                         pm,
                                         new_sbom,
                                         filepath,
-                                        filetype=ftype,
+                                        filetype=ftype or [],
                                         root_path=epath.as_posix(),
                                         container_uuid=parent_uuid,
                                         install_path=install_prefix,
                                         user_institution_name=recorded_institution,
                                         omit_unrecognized_types=omit_unrecognized_types
                                         or entry.omitUnrecognizedTypes,
+                                        container_prefix=entry.containerPrefix,
                                     )
                                 except Exception as e:
                                     raise RuntimeError(f"Unable to process: {filepath}") from e

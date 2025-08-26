@@ -29,6 +29,15 @@ _file_to_file_type = {
     "NET_app_config_test_no1/bin/Debug/net6.0/hello.dll": "PE",
     "Windows_dll_test_no1/hello_world.exe": "PE",
     "Windows_dll_test_no1/testlib.dll": "PE",
+    "cpio_files/hi_little.cpio": "CPIO_BIN little",
+    "cpio_files/hi_big.cpio": "CPIO_BIN big",
+    "cpio_files/cpio_char_new.cpio": "CPIO_ASCII_NEW",
+    "cpio_files/cpio_char_old.cpio": "CPIO_ASCII_OLD",
+    "cd_iso_files/cd_iso_8001.iso": "ISO_9660_CD",
+    "cd_iso_files/cd_iso_8801.iso": "ISO_9660_CD",
+    "cd_iso_files/cd_iso_9001.iso": "ISO_9660_CD",
+    "zstandard/hi.txt.zst": "ZSTANDARD",
+    "mac_os_dmg/mac_os.dmg": "MACOS_DMG",
 }
 
 
@@ -36,14 +45,14 @@ def test_magic_id():
     base_path = pathlib.Path(__file__).parent.absolute()
     data_dir = os.path.join(base_path, "..", "data")
     for file_name, file_type in _file_to_file_type.items():
-        assert identify_file_type(os.path.join(data_dir, file_name)) == file_type
+        assert identify_file_type(os.path.join(data_dir, file_name)) == [file_type]
 
 
 def test_zlib_basic(tmp_path):
     for compress_level in range(10):
         write_to = tmp_path / f"basic_{compress_level}.zlib"
         write_to.write_bytes(zlib.compress(b"hello", level=compress_level))
-        assert identify_file_type(write_to) == "ZLIB"
+        assert identify_file_type(write_to) == ["ZLIB"]
 
 
 @pytest.mark.skipif(
@@ -54,4 +63,4 @@ def test_zlib_window(tmp_path):
         for window_size in range(9, 16):
             write_to = tmp_path / f"window_{compress_level}_{window_size}.zlib"
             write_to.write_bytes(zlib.compress(b"hello", level=compress_level, wbits=window_size))
-            assert identify_file_type(write_to) == "ZLIB"
+            assert identify_file_type(write_to) == ["ZLIB"]

@@ -21,12 +21,15 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         coff_file,
         docker_image,
         elf_file,
+        file_decompression,
         java_file,
         js_file,
         mach_o_file,
         native_lib_file,
         ole_file,
         pe_file,
+        rpm_file,
+        uimage_file,
     )
     from surfactant.input_readers import (
         cyclonedx_reader,
@@ -58,6 +61,8 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         js_file,
         pe_file,
         ole_file,
+        uimage_file,
+        rpm_file,
         dotnet_relationship,
         elf_relationship,
         java_relationship,
@@ -69,6 +74,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         cytrics_reader,
         native_lib_file,
         cyclonedx_reader,
+        file_decompression,
     )
     for plugin in internal_plugins:
         pm.register(plugin)
@@ -94,6 +100,22 @@ def set_blocked_plugins(pm: pluggy.PluginManager) -> None:
 
         # Block the plugin to prevent future registration
         pm.set_blocked(plugin_name)
+
+
+def is_plugin_blocked(pm: pluggy.PluginManager, plugin_name: str) -> bool:
+    """
+    Check if a plugin is blocked in the plugin manager.
+
+    Args:
+        pm (pluggy.PluginManager): The plugin manager instance.
+        plugin_name (str): The name of the plugin to check.
+
+    Returns:
+        bool: True if the plugin is blocked, False otherwise.
+    """
+    if pm.is_blocked(plugin_name):
+        return True
+    return False
 
 
 def get_plugin_manager() -> pluggy.PluginManager:

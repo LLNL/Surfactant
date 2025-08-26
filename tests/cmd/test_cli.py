@@ -9,7 +9,7 @@ import pytest
 
 from surfactant.cmd.cli import cli_add, cli_find
 from surfactant.cmd.cli_commands import Cli
-from surfactant.sbomtypes import SBOM, Relationship
+from surfactant.sbomtypes import SBOM
 
 
 @pytest.fixture(name="test_sbom")
@@ -20,23 +20,29 @@ def fixture_test_sbom():
 
 
 def _compare_sboms(one: SBOM, two: SBOM) -> bool:
-    # Sort software list
-    one.software = sorted(one.software, key=lambda x: x.UUID)
-    two.software = sorted(two.software, key=lambda x: x.UUID)
-
-    # Sort hardware list
-    one.hardware = sorted(one.hardware, key=lambda x: x.UUID)
-    two.hardware = sorted(two.hardware, key=lambda x: x.UUID)
-
-    # Sort system list
+    # Sort systems, hardware, software for deterministic ordering
     one.systems = sorted(one.systems, key=lambda x: x.UUID)
     two.systems = sorted(two.systems, key=lambda x: x.UUID)
 
-    # Sort relationship list
-    one.relationships = sorted(one.relationships, key=lambda x: x.yUUID)
-    two.relationships = sorted(two.relationships, key=lambda x: x.yUUID)
+    one.hardware = sorted(one.hardware, key=lambda x: x.UUID)
+    two.hardware = sorted(two.hardware, key=lambda x: x.UUID)
 
-    return one.to_dict() == two.to_dict()
+    one.software = sorted(one.software, key=lambda x: x.UUID)
+    two.software = sorted(two.software, key=lambda x: x.UUID)
+
+    # Compare graphs directly:
+    def edge_sig(g):
+        return {(u, v, key.upper()) for u, v, key in g.edges(keys=True)}
+
+    if edge_sig(one.graph) != edge_sig(two.graph):
+        return False
+
+    # finally compare everything else via to_dict except relationships:
+    d1 = one.to_dict()
+    d2 = two.to_dict()
+    d1.pop("relationships", None)
+    d2.pop("relationships", None)
+    return d1 == d2
 
 
 bad_sbom = SBOM(
@@ -162,10 +168,15 @@ def test_add_relationship(test_sbom):
         "yUUID": "e286a415-6c6b-427d-9fe6-d7dbb0486f7d",
         "relationship": "Uses",
     }
-    previous_rel_len = len(test_sbom.relationships)
+
+    # count pre-existing edges
+    previous_rel_len = test_sbom.graph.number_of_edges()
+
+    # Add the new relationship via the CLI
     out_bom = cli_add().execute(test_sbom, relationship=relationship)
-    assert len(out_bom.relationships) == previous_rel_len + 1
-    test_sbom.relationships.discard(Relationship(**relationship))
+
+    # after add, graph should have one more edge
+    assert out_bom.graph.number_of_edges() == previous_rel_len + 1
 
 
 def test_add_installpath(test_sbom):
@@ -180,5 +191,6 @@ def test_add_installpath(test_sbom):
 def test_cli_base_serialization(test_sbom):
     serialized = Cli.serialize(test_sbom)
     deserialized = Cli.deserialize(serialized)
-    assert test_sbom == deserialized
+
+    # compare by graph contents and other fields, ignore object identity
     assert _compare_sboms(test_sbom, deserialized)

@@ -1,6 +1,10 @@
-from typing import Any, Dict
+from sys import modules
+from typing import Any, Dict, List
 
-import javatools.jarinfo
+try:
+    import javatools.jarinfo
+except ModuleNotFoundError:
+    pass
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -10,13 +14,27 @@ from surfactant.sbomtypes import SBOM, Software
 # https://gitlab.com/m2crypto/m2crypto/-/blob/master/INSTALL.rst
 
 
-def supports_file(filetype: str) -> bool:
-    return filetype in ("JAVACLASS", "JAR", "WAR", "EAR")
+def supports_file(filetype: List[str]) -> bool:
+    supported_types = ("JAVACLASS", "JAR", "WAR", "EAR")
+    for ft in filetype:
+        if ft in supported_types:
+            return True
+    return False
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: str) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
     if not supports_file(filetype):
+        return None
+    if "javatools" not in modules:
+        # If the optional "java" dependency group isn't installed, skip gathering this info
+        # javatools is LGPL licensed so making it optional is probably safer legally
+        # and javatools also depends on Cheetah3 (ct3), which uses a compiled Python extension
+        # that makes it less than portable (project isn't releasing pre-compiled wheels for
+        # many platforms... and we don't use any of the functionality that depends on ct3)
+        # In the future, may want to write our own simpler module to handle java class files
+        # that could also support newer JDK opcodes, since javatools doesn't seem to get updated
+        # regularly either
         return None
     return extract_java_info(filename, filetype)
 
@@ -47,7 +65,7 @@ _JAVA_VERSION_MAPPING = {
 }
 
 
-def handle_java_class(info: Dict[str, Any], class_info: javatools.JavaClassInfo):
+def handle_java_class(info: Dict[str, Any], class_info: "javatools.JavaClassInfo"):
     # This shouldn't happen but just in-case it does don't overwrite information
     if class_info.get_this() in info["javaClasses"]:
         return
@@ -66,13 +84,13 @@ def handle_java_class(info: Dict[str, Any], class_info: javatools.JavaClassInfo)
         add_to["javaImports"] = []
 
 
-def extract_java_info(filename: str, filetype: str) -> object:
+def extract_java_info(filename: str, filetype: List[str]) -> object:
     info: Dict[str, Any] = {"javaClasses": {}}
-    if filetype in ("JAR", "EAR", "WAR"):
+    if "JAR" in filetype or "EAR" in filetype or "WAR" in filetype:
         with javatools.jarinfo.JarInfo(filename) as jarinfo:
             for class_ in jarinfo.get_classes():
                 handle_java_class(info, jarinfo.get_classinfo(class_))
-    elif filetype == "JAVACLASS":
+    elif "JAVACLASS" in filetype:
         with open(filename, "rb") as f:
             class_info = javatools.JavaClassInfo()
             class_info.unpack(javatools.unpack(f))

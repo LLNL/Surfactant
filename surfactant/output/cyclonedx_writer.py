@@ -28,28 +28,22 @@ def write_sbom(sbom: SBOM, outfile) -> None:
         sbom (SBOM): The SBOM to write to the output file.
         outfile: The output file handle to write the SBOM to.
     """
-    # NOTE eventually outformat and some fields in CycloneDX document should be user settable
     outformat = "json"
 
-    # or Bom(tools=[surfactant_tool])
+    # Initialize BOM and metadata
     surfactant_tool = Tool(name="Surfactant", version=f"{surfactant_version}")
     bom_metadata = BomMetaData(tools=[surfactant_tool])
     bom = Bom(metadata=bom_metadata)
 
     # Add CycloneDX Components for systems
     for system in sbom.systems:
-        system_uuid, comp = convert_system_to_cyclonedx_component(system)
+        _, comp = convert_system_to_cyclonedx_component(system)
         bom.components.add(comp)
 
-    # Create a map of CycloneDX IDs for Components that map directly to a known container UUID
-    # this gets used to avoid creating excessive relationships if a file is present
-    # due to being found within multiple different containers
+    # Build container-path lookup for software
     container_path_relationships: Dict[Tuple[str, str]] = {}
-
     for software in sbom.software:
-        # Create CycloneDX Components for every software entry
-        # start with software entries that act as containers for other software entries
-        if sbom.has_relationship(xUUID=software.UUID, relationship="Contains"):
+        if sbom.get_children(software.UUID, rel_type="Contains"):
             _, container_list = convert_software_to_cyclonedx_container_components(software)
             for container in container_list:
                 bom.components.add(container)
@@ -59,41 +53,47 @@ def write_sbom(sbom: SBOM, outfile) -> None:
                 if parent_uuid:
                     container_path_relationships[file.bom_ref.value] = parent_uuid
 
-    # Convert relationships into CycloneDX relationships
+    # Build a map of Dependency objects keyed by UUID
     cdx_rels: Dict[str, Dependency] = {}
-    for rel in sbom.relationships:
-        rel_type = rel.relationship.upper()
 
-        # Minimize duplicate contains relationships for files with multiple container paths
+    # Walk every edge, pulling the relationship out of the key
+    for parent_uuid, child_uuid, rel_type in sbom.graph.edges(keys=True):
+        rel_type = rel_type.upper()
+
+        # skip duplicate CONTAINS if we've already mapped a container path
         if (
-            (rel_type == "CONTAINS")
-            and (rel.yUUID in container_path_relationships)
-            and (rel.xUUID != container_path_relationships[rel.yUUID])
+            rel_type == "CONTAINS"
+            and child_uuid in container_path_relationships
+            and parent_uuid != container_path_relationships[child_uuid]
         ):
             continue
 
-        # Create Dependency instance for relationships where xUUID is the parent
-        if rel.xUUID not in cdx_rels:
-            cdx_rels[rel.xUUID] = Dependency(ref=BomRef(rel.xUUID))
-        rel_dependency = cdx_rels[rel.xUUID]
+        # ensure we have a Dependency entry for the parent
+        if parent_uuid not in cdx_rels:
+            cdx_rels[parent_uuid] = Dependency(ref=BomRef(parent_uuid))
+        parent_dep = cdx_rels[parent_uuid]
 
-        if rel.yUUID not in rel_dependency.dependencies:
-            rel_dependency.dependencies.add(Dependency(ref=BomRef(rel.yUUID)))
+        if rel_type == "CONTAINS":
+            parent_dep.dependencies.add(Dependency(ref=BomRef(child_uuid)))
+        elif rel_type in ("USES", "DEPENDS_ON", "REQUIRES"):
+            parent_dep.add_scope_dependency(Dependency(ref=BomRef(child_uuid)), scope="runtime")
+        else:
+            parent_dep.add_scope_dependency(Dependency(ref=BomRef(child_uuid)), scope="unknown")
 
-    # Add dependencies for each component
-    for _, v in cdx_rels.items():
-        bom.dependencies.add(v)
+    # Attach all built dependencies to the BOM
+    for dep in cdx_rels.values():
+        bom.dependencies.add(dep)
 
-    # Write the CycloneDX SBOM file
-    output_format = output_format = cyclonedx.output.OutputFormat.JSON
-    if outformat == "json":
-        output_format = cyclonedx.output.OutputFormat.JSON
-    elif outformat == "xml":
-        output_format = cyclonedx.output.OutputFormat.XML
+    # Output the BOM in the requested format
+    output_fmt = (
+        cyclonedx.output.OutputFormat.JSON
+        if outformat == "json"
+        else cyclonedx.output.OutputFormat.XML
+    )
     # The docs say that you don't need to specify a version (it says it defaults to the latest)
     # but I got a missing keyword error when doing so, so just specify 1.6 for now
     outputter: cyclonedx.output.BaseOutput = cyclonedx.output.make_outputter(
-        bom=bom, output_format=output_format, schema_version=cyclonedx.schema.SchemaVersion.V1_6
+        bom=bom, output_format=output_fmt, schema_version=cyclonedx.schema.SchemaVersion.V1_6
     )
     outfile.write(outputter.output_as_string())
 

@@ -19,8 +19,6 @@ from surfactant.cmd.cli import (
     handle_cli_save,
 )
 from surfactant.cmd.config import config
-from surfactant.cmd.config_tui import config_tui
-from surfactant.cmd.createconfig import create_config
 from surfactant.cmd.generate import sbom as generate
 from surfactant.cmd.merge import merge_command
 from surfactant.cmd.plugin import (
@@ -32,7 +30,7 @@ from surfactant.cmd.plugin import (
     plugin_update_db_cmd,
 )
 from surfactant.cmd.stat import stat
-from surfactant.cmd.ui import ui
+from surfactant.cmd.tui import tui
 
 
 @click.group()
@@ -79,10 +77,8 @@ main.add_command(version)
 main.add_command(config)
 main.add_command(stat)
 main.add_command(merge_command)
-main.add_command(create_config)
-main.add_command(ui)
 main.add_command(plugin)
-main.add_command(config_tui)
+main.add_command(tui)
 
 # CLI Subcommands
 cli.add_command(handle_cli_find)
@@ -98,6 +94,7 @@ plugin.add_command(plugin_disable_cmd)
 plugin.add_command(plugin_install_cmd)
 plugin.add_command(plugin_uninstall_cmd)
 plugin.add_command(plugin_update_db_cmd)
+
 
 if __name__ == "__main__":
     main()

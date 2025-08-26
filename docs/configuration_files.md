@@ -1,7 +1,7 @@
 # Configuration Files
 
 There are several files for configuring different aspects of Surfactant functionality based on the subcommand used.
-This page currently describes specimen configuration files, and the Surfactant settings configuration file. The specimen configuration file is used to generate an SBOM for a particular software/firmware sample, and will be the most frequently written by users. The Surfactant settings configuration file is used to turn on and off various Surfactant features, including settings for controlling functionality in Surfactant plugins.
+This page currently describes specimen context files, and the Surfactant settings configuration file. The specimen context file is used to generate an SBOM for a particular software/firmware sample, and will be the one users are most likely to have to create and edit. The Surfactant settings configuration file is used to turn on and off various Surfactant features, including settings for controlling functionality in Surfactant plugins.
 
 ## Settings Configuration File
 
@@ -43,24 +43,27 @@ The file itself is a TOML file, and for the previously mentioned example plugin 
 recorded_institution = "LLNL"
 ```
 
-## Specimen Configuration File
+## Specimen Context File
 
-A specimen configuration file contains the information about the sample to gather information from. Example JSON specimen configuration files can be found in the examples folder of this repository.
+A specimen context file contains the information about the sample to gather information from. Example JSON specimen context files can be found in the examples folder of this repository.
 
-- **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the sample folders, cannot be a file. Note that even on Windows, Unix style `/` directory separators should be used in paths.
-- **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the folders in `extractPaths` were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various `extractPaths`.
-- **installPrefix**: (optional) where the files in `extractPaths` would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc. Note that even on Windows, Unix style `/` directory separators should be used in the path. If not given then the `extractPaths` will be used as the install paths.
-- **omitUnrecognizedTypes**: (optional) Omit files with unrecognized types from the generated SBOM.
-- **includeFileExts**: (optional) A list of file extensions to include, even if not recognized by Surfactant.
+The `Context` tab in the Surfactant TUI (launched with the `surfactant tui` command) provides an interface for creating and modifying specimen context files. Most of the options described can be set using the TUI, however there may be less frequently used options that require modifying the context file by hand.
+
+- **extractPaths**: (required) the absolute path or relative path from location of current working directory that `surfactant` is being run from to the files or folders to gather information on. Note that even on Windows, Unix style `/` directory separators should be used in paths.
+- **archive**: (optional) the full path, including file name, of the zip, exe installer, or other archive file that the files or folders in `extractPaths` were extracted from. This is used to collect metadata about the overall sample and will be added as a "Contains" relationship to all software entries found in the various `extractPaths`.
+- **installPrefix**: (optional) where the files in `extractPaths` would be if installed correctly on an actual system i.e. "C:/", "C:/Program Files/", etc. Note that even on Windows, Unix style `/` directory separators should be used in the path. If not given then the `extractPaths` will be used as the install prefixes.
+- **omitUnrecognizedTypes**: (optional) If set to True, files with unrecognized types will be omitted from the generated SBOM.
+- **includeFileExts**: (optional) A list of file extensions to include, even if not recognized by Surfactant. `omitUnrecognizedTypes` must be set to True for this to take effect.
 - **excludeFileExts**: (optional) A list of file extensions to exclude, even if recognized by Surfactant. Note that if both `omitUnrecognizedTypes` and `includeFileExts` are set, the specified extensions in `includeFileExts` will still be included.
+- **skipProcessingArchive**: (optional) Skip processing the given archive file with info extractors. Software entry for the archive file will still appear in the SBOM with basic info such as hashes, but no information extraction plugins will run to pull out extra file type specific info. Default setting is False.
 
-## Example configuration files
+## Example context files
 
 Lets say you have a .tar.gz file that you want to run surfactant on. For this example, we will be using the HELICS release .tar.gz example. In this scenario, the absolute path for this file is /home/samples/helics.tar.gz. Upon extracting this file, we get a helics folder with 4 sub-folders: bin, include, lib64, and share.
 
-### Example 1: Simple Configuration File
+### Example 1: Simple Context File
 
-If we want to include only the folders that contain binary files to analyze, our most basic configuration would be:
+If we want to include only the folders that contain binary files to analyze, our most basic context file would be:
 
 ```json
 [
@@ -98,9 +101,9 @@ The resulting SBOM would be structured like this:
 }
 ```
 
-### Example 2: Detailed Configuration File
+### Example 2: Detailed Context File
 
-A more detailed configuration file might look like the example below. The resulting SBOM would have a software entry for the helics.tar.gz with a "Contains" relationship to all binaries found to in the extractPaths. Providing the install prefix of `/` and an extractPaths as `/home/samples/helics` will allow to surfactant correctly assign the install paths in the SBOM for binaries in the subfolders as `/bin` and `/lib64`.
+A more detailed context file might look like the example below. The resulting SBOM would have a software entry for the helics.tar.gz with a "Contains" relationship to all binaries found to in the extractPaths. Providing the install prefix of `/` and an extractPaths as `/home/samples/helics` will allow to surfactant correctly assign the install paths in the SBOM for binaries in the subfolders as `/bin` and `/lib64`.
 
 ```json
 [
@@ -158,7 +161,7 @@ The resulting SBOM would be structured like this:
 
 ### Example 3: Adding Related Binaries
 
-If our sample helics tar.gz file came with a related tar.gz file to install a plugin extension module (extracted into a helics_plugin folder that contains bin and lib64 subfolders), we could add that into the configuration file as well:
+If our sample helics tar.gz file came with a related tar.gz file to install a plugin extension module (extracted into a helics_plugin folder that contains bin and lib64 subfolders), we could add that into the context file as well:
 
 ```json
 [
@@ -257,4 +260,4 @@ The resulting SBOM would be structured like this:
 }
 ```
 
-NOTE: These examples have been simplified to show differences in output based on configuration.
+NOTE: These examples have been simplified to show differences in output based on the context file provided.

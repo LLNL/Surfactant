@@ -9,11 +9,24 @@ In order to test out surfactant, you will need a sample file/folder. If you don'
 
 ## Running Surfactant
 
+Most of the functionality for the generate and merge subcommands can be accessed via the Surfactant TUI, which can be launched using the following command:
+
 ```bash
-$  surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
+$  surfactant tui
 ```
 
-**SPECIMEN_CONFIG**: (required) the config file created earlier that contains the information on specimens to include in an SBOM, or the path to a specific file/directory to generate an SBOM for with some implied default configuration options\
+The TUI also provides a convenient interface for creating a specimen context JSON file for more complex SBOM generation use cases, and will also soon provide options for changing Surfactant configuration settings and managing plugins.
+
+While the TUI provides access to most of the options for generating SBOMs, there are times when it may be necessary to run the generate command directly to access certain extra command line options, or in environments where a TUI can't be used.
+
+
+## Generating SBOMs
+
+```bash
+$  surfactant generate [OPTIONS] SPECIMEN_CONTEXT SBOM_OUTFILE [INPUT_SBOM]
+```
+
+**SPECIMEN_CONTEXT**: (required) the context file created earlier that contains the information on specimens to include in an SBOM, or the path to a specific file/directory to generate an SBOM for with some implied default context options\
 **SBOM OUTPUT**: (required) the desired name of the output file\
 **INPUT_SBOM**: (optional) a base sbom, should be used with care as relationships could be messed up when files are installed on different systems\
 **--skip_gather**: (optional) skips the gathering of information on files and adding software entires\
@@ -22,9 +35,7 @@ $  surfactant generate [OPTIONS] SPECIMEN_CONFIG SBOM_OUTFILE [INPUT_SBOM]
 **--recorded_institution**: (optional) the name of the institution collecting the SBOM data (default: LLNL)\
 **--output_format**: (optional) changes the output format for the SBOM (given as full module name of a surfactant plugin implementing the `write_sbom` hook)\
 **--input_format**: (optional) specifies the format of the input SBOM if one is being used (default: cytrics) (given as full module name of a surfactant plugin implementing the `read_sbom` hook)\
-**--help**: (optional) show the help message and exit\
-**--omit_unrecognized_types**: (optional) Omit files with unrecognized types from the generated SBOM
-
+**--help**: (optional) show the help message and exit
 
 
 ## Merging SBOMs
