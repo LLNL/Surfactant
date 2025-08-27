@@ -140,7 +140,8 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 # https://github.com/file/file/blob/master/magic/Magdir/cafebabe
                 if int.from_bytes(magic_bytes[4:8], byteorder="big", signed=False) <= 30:
                     filetype_matches.append("MACHOFAT")
-                filetype_matches.append("JAVACLASS")
+                else:
+                    filetype_matches.append("JAVACLASS")
             if magic_bytes[:4] == b"\xbe\xba\xfe\xca":
                 filetype_matches.append("MACHOFAT")
             if magic_bytes[:4] in [b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"]:
