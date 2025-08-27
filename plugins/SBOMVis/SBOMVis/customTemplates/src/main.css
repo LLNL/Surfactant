@@ -1,23 +1,37 @@
 :root {
-	--darkBackground: #222;
-	--darkAccent: #31353d;
-	--darkText: #fff;
+	color-scheme: light dark;
 
-	--darkBorder: #808074; /* Visjs tooltip default */
-	--darkBorderAlt: #595959;
+	--backgroundColor: light-dark(#ffffff, #222);
+	--accentColor: light-dark(#ff00ff, #31353d);
+	--textColor: light-dark(#ff00ff, #fff);
 
+	/* Sidebar */
+	--sidebarBorderColor: light-dark(#ff00ff, #808074);
+	--sidebarLabelColor: light-dark(#ff00ff, #aaa);
 	--sidebarMaxWidth: 400px;
-	--darkSidebarLabel: #aaa;
 
-	--scrollbarBackground: #1e1e20;
+	--sidebarRowDividerColor: light-dark(#ff00ff, #2a2a3c);
+	--sidebarFoldableSubsectionDashedBorderColor: light-dark(#ff00ff, #444);
 
-	--graphInactiveColor: rgba(200, 200, 200, 0.5);
-	--graphHighlightColor: null;
+	--sidebarIconDefaultColor: light-dark(#ff00ff, #bbb);
+	--sidebarIconHoverColor: light-dark(#ff00ff, #fff);
+
+	--scrollbarHighlightColor: light-dark(#ff00ff, #595959);
+
+	/* Sidebar buttons */
+	--sidebarButtonColor: light-dark(#ff00ff, rgba(255, 255, 255, 0.5));
+	--sidebarButtonHoverColor: light-dark(#ff00ff, rgba(255, 255, 255, 0.9));
+	--sidebarButtonInvertHoverColor: light-dark(
+		#ff00ff,
+		rgba(255, 255, 255, 0.75)
+	);
+
+	--nodeInactiveColor: rgba(200, 200, 200, 0.5);
 }
 
 div.vis-tooltip {
-	color: var(--darkText) !important;
-	background-color: var(--darkBackground) !important; /* Override Bootstrap values */
+	color: var(--textColor) !important;
+	background-color: var(--backgroundColor) !important; /* Override Bootstrap values */
 }
 
 #tooltip {
@@ -28,7 +42,7 @@ div.vis-tooltip {
 	overflow: hidden;
 
 	h6 {
-		background-color: var(--darkAccent);
+		background-color: var(--accentColor);
 		padding: 6px;
 		margin: 0;
 
@@ -45,7 +59,7 @@ div.vis-tooltip {
 	}
 
 	td {
-		color: var(--darkText) !important;
+		color: var(--textColor) !important;
 		padding: 4px 6px;
 		font-size: 13px;
 
@@ -65,7 +79,7 @@ div.vis-tooltip {
 }
 
 #logo {
-	color: var(--darkAccent);
+	color: var(--accentColor);
 	opacity: 0.8;
 	width: 100%;
 
@@ -105,12 +119,12 @@ div.vis-tooltip {
 	overflow-x: hidden;
 	overflow-y: auto;
 
-	background-color: var(--darkBackground);
-	border-right: 1px solid var(--darkBorder);
+	background-color: var(--backgroundColor);
+	border-right: 1px solid var(--sidebarBorderColor);
 
-	color: var(--darkText);
+	color: var(--textColor);
 
-	scrollbar-color: var(--darkBorderAlt) var(--darkBackground);
+	scrollbar-color: var(--scrollbarHighlightColor) var(--backgroundColor);
 	padding: 6px 6px 6px 6px;
 
 	.section {
@@ -127,7 +141,7 @@ div.vis-tooltip {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		background-color: var(--darkAccent);
+		background-color: var(--accentColor);
 		padding: 8px;
 
 		i {
@@ -150,13 +164,13 @@ div.vis-tooltip {
 
 	.section-body {
 		.section-table {
-			color: var(--darkText) !important;
+			color: var(--textColor) !important;
 			width: 100%;
 			border-collapse: collapse;
 			table-layout: fixed;
 
 			tr {
-				border-bottom: 1px solid #2a2a3c;
+				border-bottom: 1px solid var(--sidebarRowDividerColor);
 				width: 100%;
 			}
 
@@ -167,7 +181,7 @@ div.vis-tooltip {
 
 			.label {
 				text-align: left;
-				color: var(--darkSidebarLabel);
+				color: var(--sidebarLabelColor);
 			}
 
 			.value {
@@ -183,16 +197,16 @@ div.vis-tooltip {
 			.icon {
 				width: 30px;
 				text-align: center;
-				border-left: 1px solid var(--darkAccent);
+				border-left: 1px solid var(--accentColor);
 
 				i {
 					pointer-events: auto;
 					cursor: pointer;
-					color: #bbb;
+					color: var(--sidebarIconDefaultColor);
 				}
 
 				i:hover {
-					color: #fff;
+					color: var(--sidebarIconHoverColor);
 				}
 			}
 		}
@@ -200,7 +214,7 @@ div.vis-tooltip {
 		.foldable-subsection-header {
 			padding: 6px 12px;
 			font-weight: bold;
-			color: var(--darkText);
+			color: var(--textColor);
 			margin-top: 4px;
 			cursor: pointer;
 		}
@@ -208,7 +222,7 @@ div.vis-tooltip {
 		.foldable-subsection-body {
 			margin-left: 1rem;
 			padding-left: 0.5rem;
-			border-left: 1px dashed #444;
+			border-left: 1px dashed var(--sidebarFoldableSubsectionDashedBorderColor);
 		}
 
 		.nested-foldable-subsection-body {
@@ -280,7 +294,7 @@ div.vis-tooltip {
 	button {
 		position: flex;
 
-		background-color: rgba(255, 255, 255, 0.5);
+		background-color: var(--sidebarButtonColor);
 		border-radius: 50%;
 
 		border: none;
@@ -291,11 +305,11 @@ div.vis-tooltip {
 		font-size: 2rem;
 
 		i {
-			color: var(--darkAccent);
+			color: var(--accentColor);
 		}
 
 		&:hover {
-			background-color: rgba(255, 255, 255, 0.9);
+			background-color: var(--sidebarButtonHoverColor);
 		}
 	}
 
@@ -304,12 +318,12 @@ div.vis-tooltip {
 		background: transparent;
 
 		i {
-			color: rgba(255, 255, 255, 0.5);
+			color: var(--sidebarButtonColor);
 		}
 
 		&:hover {
 			i {
-				color: rgba(255, 255, 255, 0.75);
+				color: var(--sidebarButtonInvertHoverColor);
 			}
 		}
 	}

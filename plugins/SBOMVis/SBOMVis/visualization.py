@@ -21,8 +21,6 @@ from surfactant.sbomtypes import SBOM
 @dataclass
 class DisplaySettings:
     fg_color: str = "white"
-    bg_color: str = "#222222"
-    icon_color: str = "#648fc9"
 
     node_scale_factor: int = 4  # Increase node size by degree
     icon_scale_factor: int = 4
@@ -113,7 +111,6 @@ def generate_pyvis_graph(
         directed=True,
         height="100vh",
         width="100vw",
-        bgcolor=DisplaySettings.bg_color,
         font_color=DisplaySettings.fg_color,
         cdn_resources="remote",
     )

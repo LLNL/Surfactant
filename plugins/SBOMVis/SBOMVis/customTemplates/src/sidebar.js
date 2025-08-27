@@ -510,7 +510,7 @@ export function insertSearchSidebar(id) {
 
 				// Gray out all nodes
 				const inactiveColor = getComputedStyle(document.body).getPropertyValue(
-					"--graphInactiveColor",
+					"--nodeInactiveColor",
 				);
 				setNodeColors(nodes.getIds(), inactiveColor);
 
