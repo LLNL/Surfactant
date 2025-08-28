@@ -22,7 +22,7 @@ def identify_file_type(filepath: str, context: Optional[ContextEntry]) -> Option
 
     Args:
         filepath (str): The path to the file to determine the type of.
-        context (ContextEntry): The context entry for the file, may be context of parent.
+        context (ContextEntry): The context entry for the file, may be context of parent archive.
 
     Returns:
         Optional[str]: A string identifying the type of file, or None if the file type could not be recognized.
