@@ -8,7 +8,6 @@
 from typing import Any, Dict, List, Tuple
 
 import rpmfile
-from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
@@ -18,7 +17,6 @@ from surfactant.sbomtypes import SBOM, Software
 
 def supports_file(filetype) -> bool:
     """Returns if filetype contains "RPM Package" """
-    logger.debug("Checks for RPM Package")
     return "RPM Package" in filetype
 
 
