@@ -516,8 +516,7 @@ class PluginSettingsTab(textual.widgets.Static):
 
     def __init__(self):
         super().__init__()
-        plugins = surfactant.utils.get_plugin_settings.extract_plugin_settings()
-        plugins["core"] = self.__core_settings
+        plugins = {"core": self.__core_settings} | surfactant.utils.get_plugin_settings.extract_plugin_settings()
         self.plugin_settings = {}
         for name, settings in plugins.items():
             self.plugin_settings[name] = []
