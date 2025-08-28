@@ -502,7 +502,7 @@ class PluginSettingsTab(textual.widgets.Static):
         __setting(
             "output_format",
             "str",
-            "SBOM output format, see --list-output-formats for list of options",
+            "SBOM output format, see 'surfactant generate --list_output_formats' for list of options",
             "CyTRICS",
         ),
         __setting("recorded_institution", "str", "Name of user's institution.", ""),
