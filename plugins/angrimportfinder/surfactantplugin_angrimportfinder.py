@@ -60,14 +60,18 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: L
                 existing_data["imported function names"] = []
                 existing_data["exported function names"] = []
                 # Create an angr project
-                project = angr.Project(filename, auto_load_libs=False)
+                try:
+                    project = angr.Project(filename, auto_load_libs=False)
 
-                # Get the imported functions using symbol information
-                for symbol in project.loader.main_object.symbols:
-                    if symbol.is_import:
-                        existing_data["imported function names"].append(symbol.name)
-                    elif symbol.is_export:
-                        existing_data["exported function names"].append(symbol.name)
+                    # Get the imported functions using symbol information
+                    for symbol in project.loader.main_object.symbols:
+                        if symbol.is_import:
+                            existing_data["imported function names"].append(symbol.name)
+                        elif symbol.is_export:
+                            existing_data["exported function names"].append(symbol.name)
+                except IndexError as e:
+                    logger.warning(f"Error while parsing PE file: {filename}: {e}")
+                    return
 
                 # Write the string_dict to the output JSON file
                 with open(output_name, "w") as json_file:
@@ -88,14 +92,17 @@ def angrimport_finder(sbom: SBOM, software: Software, filename: str, filetype: L
             metadata["imported function names"] = []
             metadata["exported function names"] = []
             # Create an angr project
-            project = angr.Project(filename.as_posix(), auto_load_libs=False)
-            # Get the functions using symbol information
-            for symbol in project.loader.main_object.symbols:
-                if symbol.is_import:
-                    metadata["imported function names"].append(symbol.name)
-                elif symbol.is_export:
-                    metadata["exported function names"].append(symbol.name)
-
+            try:
+                project = angr.Project(filename.as_posix(), auto_load_libs=False)
+                # Get the functions using symbol information
+                for symbol in project.loader.main_object.symbols:
+                    if symbol.is_import:
+                        metadata["imported function names"].append(symbol.name)
+                    elif symbol.is_export:
+                        metadata["exported function names"].append(symbol.name)
+            except IndexError as e:
+                logger.warning(f"Error while parsing PE file: {filename}: {e}")
+                return
             # Write the string_dict to the output JSON file
             with open(output_path, "w") as json_file:
                 json.dump(metadata, json_file, indent=4)

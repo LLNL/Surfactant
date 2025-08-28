@@ -6,8 +6,14 @@
 # TODO: Ensure all the relevant information available is extracted from here
 # https://lief.re/doc/stable/api/python/macho.html
 
+"""
+Config Options:
+    include_bindings_exports(bool): Include bindings/exports information for Mach-O files.
+    include_signature_content(bool): Include signature content for Mach-O files.
+"""
+
 from sys import modules
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -105,8 +111,13 @@ def extract_mach_o_info(filename: str) -> object:
                 "size": signature.data_size,
                 "type": signature_type,
             }
-            if __include_signature_content:
-                details["signature"]["content"] = signature.content
+
+            # signature is a memoryview in lief, turn it into a hex string
+            # this avoid serialization errors later when outputting an SBOM
+            if __include_signature_content and hasattr(signature.content, "hex"):
+                details["signature"]["content"] = signature.content.hex()
+            else:
+                details["signature"]["content"] = None
 
         # Extract library dependencies
         for library in binary.libraries:
@@ -191,3 +202,8 @@ def get_bindings(bindings):
             info["segment"] = binding.segment.name
         bindings_info.append(info)
     return bindings_info
+
+
+@surfactant.plugin.hookimpl
+def settings_name() -> Optional[str]:
+    return "macho"

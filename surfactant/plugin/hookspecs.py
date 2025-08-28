@@ -15,13 +15,14 @@ hookspec = HookspecMarker("surfactant")
 
 
 @hookspec(firstresult=True)
-def identify_file_type(filepath: str) -> Optional[str]:
+def identify_file_type(filepath: str, context: Optional[ContextEntry]) -> Optional[str]:
     """Determine the type of file located at filepath, and return a string identifying the type
     that will be passed to file extraction plugins. Return `None` to indicate that the type was
     unable to be determined.
 
     Args:
         filepath (str): The path to the file to determine the type of.
+        context (ContextEntry): The context entry for the file, may be context of parent archive.
 
     Returns:
         Optional[str]: A string identifying the type of file, or None if the file type could not be recognized.
@@ -150,3 +151,8 @@ def init_hook(command_name: Optional[str] = None) -> None:
         command_name (Optional[str]): The name of the command invoking the initialization,
                                       which can be used to conditionally initialize based on the context.
     """
+
+
+@hookspec
+def settings_name() -> Optional[str]:
+    """The setting base name to use for setting/retrieving settings"""

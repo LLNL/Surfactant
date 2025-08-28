@@ -1,4 +1,4 @@
-# Copyright 2023 Lawrence Livermore National Security, LLC
+# Copyright 2025 Lawrence Livermore National Security, LLC
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
@@ -9,10 +9,11 @@ from typing import Optional
 from loguru import logger
 
 import surfactant.plugin
+from surfactant import ContextEntry
 
 
 @surfactant.plugin.hookimpl
-def identify_file_type(filepath: str) -> Optional[str]:
+def identify_file_type(filepath: str, context: Optional[ContextEntry] = None) -> Optional[str]:
     # pylint: disable=too-many-return-statements
     _filetype_extensions = {
         ".sh": "SHELL",

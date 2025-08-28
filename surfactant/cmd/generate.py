@@ -325,7 +325,8 @@ def sbom(
                     pm,
                     new_sbom,
                     entry.archive,
-                    filetype=pm.hook.identify_file_type(filepath=entry.archive) or [],
+                    filetype=pm.hook.identify_file_type(filepath=entry.archive, context=entry)
+                    or [],
                     user_institution_name=recorded_institution,
                     skip_extraction=entry.skipProcessingArchive,
                     container_prefix=entry.containerPrefix,
@@ -393,7 +394,8 @@ def sbom(
                             pm,
                             new_sbom,
                             filepath,
-                            filetype=pm.hook.identify_file_type(filepath=filepath) or [],
+                            filetype=pm.hook.identify_file_type(filepath=filepath, context=entry)
+                            or [],
                             root_path=epath.parent.as_posix() if len(epath.parts) > 1 else "",
                             container_uuid=parent_uuid,
                             install_path=install_prefix,
@@ -539,7 +541,11 @@ def sbom(
                             if not entry.excludeFileExts:
                                 entry.excludeFileExts = []
                             if (
-                                (ftype := pm.hook.identify_file_type(filepath=filepath))
+                                (
+                                    ftype := pm.hook.identify_file_type(
+                                        filepath=filepath, context=entry
+                                    )
+                                )
                                 or (not (omit_unrecognized_types or entry.omitUnrecognizedTypes))
                                 or (
                                     os.path.splitext(filepath)[1].lower()

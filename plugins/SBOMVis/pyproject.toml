@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sbomvis"
+authors = [
+    {name = "Joseph Hand", email = "hand8@llnl.gov"},
+]
+description = "Surfactant SBOM Visualization"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["surfactant"]
+license = {text = "MIT License"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "dataclasses_json",
+    "Jinja2",
+    "loguru",
+    "networkx",
+    "pyvis",
+    "surfactant"
+]
+dynamic = ["version"]
+
+[project.entry-points."surfactant"]
+"surfactantplugin_sbomvis" = "SBOMVis.surfactantplugin_sbomvis"
+
+[tool.setuptools.packages.find]
+include = ["SBOMVis"]
+
+[project.scripts]
+sbomvis = "SBOMVis.visualization:main"
+
+[tool.setuptools_scm]
+root = "../.."
