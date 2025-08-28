@@ -483,7 +483,7 @@ class PluginSetting(textual.widgets.Static):
         # Set the value now - setting the Input value during __init__ was causing errors...
         self.input_field.value = self.value
         yield textual.containers.HorizontalGroup(
-            textual.widgets.Label(self.info.name), textual.widgets.Button("?", id="help")
+            textual.widgets.Label(self.info.name), textual.widgets.Button("?", id="help", tooltip=self.info.description)
         )
         yield self.input_field
         # To create extra spacing
