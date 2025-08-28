@@ -505,7 +505,7 @@ class PluginSettingsTab(textual.widgets.Static):
             "SBOM output format, see --list-output-formats for list of options",
             "CyTRICS",
         ),
-        __setting("recorded_institution", "str", "Name of user's institution.", "LLNL"),
+        __setting("recorded_institution", "str", "Name of user's institution.", ""),
         __setting(
             "include_all_files",
             "bool",
