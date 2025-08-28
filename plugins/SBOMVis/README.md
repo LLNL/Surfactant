@@ -1,17 +1,17 @@
 # SBOM Visualization Plugin
 A plugin for Surfactant that generates interactive visualizations of CyTRICS-formatted SBOMs
-![Example Output](./Example.jpeg)
+![Example Output](https://github.com/user-attachments/assets/fb3efd41-7e09-4bbf-a56e-2bd2c16cbe9b)
 
 ## Installation
 SBOMVis can be installed as a plugin for Surfactant or as a standalone executable with `pip` & `pipx`. Commands for installing with `pipx` (recommended) are shown below:
 ### As a Surfactant plugin
 ```bash
-$ pipx inject surfactant git+https://github.com/LLNL/Surfactant#subdirectory=plugins/SBOMVis
+$ pipx inject surfactant sbomvis
 ```
 
 ### Standalone installation
 ```bash
-$ pipx install git+https://github.com/LLNL/Surfactant#subdirectory=plugins/SBOMVis
+$ pipx install sbomvis
 ```
 
 ## Usage
@@ -24,9 +24,7 @@ $ surfactant generate --output_format=sbomvis SPECIMEN_CONFIG SBOM_OUTFILE
 ```
 
 ### Generating visualizations from an existing SBOM
-Visualizations can be created from an existing Surfactant SBOM by running `surfactant-sbomvis` and passing in it's path with `-p`.
-```
-usage: surfactant-sbomvis [-h] -p PATH [PATH ...] [-c] [-pb]
+Visualizations can be created from an existing Surfactant SBOM by running `sbomvis` and passing in it's path with `-p`.
 
 Surfactant SBOM Visualization
 

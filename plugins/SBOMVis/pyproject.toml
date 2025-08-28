@@ -3,13 +3,13 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "surfactant-SBOMVis"
+name = "sbomvis"
 authors = [
     {name = "Joseph Hand", email = "hand8@llnl.gov"},
 ]
 description = "Surfactant SBOM Visualization"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["surfactant"]
 license = {text = "MIT License"}
 classifiers = [
@@ -37,4 +37,4 @@ dynamic = ["version"]
 include = ["SBOMVis"]
 
 [project.scripts]
-surfactant-sbomvis = "SBOMVis.visualization:main"
+sbomvis = "SBOMVis.visualization:main"
