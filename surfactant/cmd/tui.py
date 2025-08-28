@@ -565,10 +565,10 @@ class TUI(textual.app.App):
                 yield self.generate_tab
             with textual.widgets.TabPane("Merge"):
                 yield self.merge_tab
-            with textual.widgets.TabPane("Plugin Settings"):
-                yield self.plugin_settings_tab
             with textual.widgets.TabPane("Context"):
                 yield self.context_tab
+            with textual.widgets.TabPane("Settings"):
+                yield self.plugin_settings_tab
 
     def action_toggle_dark(self) -> None:
         """A binding for toggling dark mode"""
