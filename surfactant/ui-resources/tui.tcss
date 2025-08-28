@@ -69,3 +69,9 @@ ExtractPathSelector {
 ContextEntry {
    border: solid white;
 }
+
+PluginSetting #help {
+    width: 3;
+    min-width: 3;
+    max-width: 3;
+}
