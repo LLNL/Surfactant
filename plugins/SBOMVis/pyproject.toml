@@ -38,3 +38,6 @@ include = ["SBOMVis"]
 
 [project.scripts]
 sbomvis = "SBOMVis.visualization:main"
+
+[tool.setuptools_scm]
+root = "../.."
