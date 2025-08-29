@@ -12,7 +12,7 @@ def basic_pe_sbom():
     """
     Create a minimal SBOM with:
       - One binary (UUID: uuid-bin) located in C:/bin
-      - One DLL (UUID: uuid-dll) located in C:/libs
+      - One DLL (UUID: uuid-dll) located in C:/bin
       - The binary declares a direct PE import of 'foo.dll'
 
     Returns:
@@ -45,9 +45,13 @@ def test_pe_import_via_fs_tree(basic_pe_sbom):
     """
     sbom, binary, dll = basic_pe_sbom
 
-    # Simulate fs_tree having indexed the DLL path
-    path = "C:/libs/foo.dll"
-    sbom.fs_tree.add_node(path, software_uuid=dll.UUID)
+    # # Simulate fs_tree having indexed the DLL path
+    # path = "C:/libs/foo.dll"
+    # sbom.fs_tree.add_node(path, software_uuid=dll.UUID)
+
+    # NOTE: SBOM.add_software() already indexes the DLL’s installPath into fs_tree.
+    # You don’t need to add it manually. If you want to be explicit, you can:
+    # sbom.fs_tree.add_node("C:/bin/foo.dll", software_uuid=dll.UUID)
 
     results = pe_relationship.establish_relationships(sbom, binary, binary.metadata[0])
 
