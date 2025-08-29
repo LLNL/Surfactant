@@ -12,6 +12,7 @@ def software_entries():
         Software(UUID="uuid-3", installPath=["/opt/tools/bin/run"]),
     ]
 
+
 def test_fs_tree_population(software_entries):
     """
     Verify that SBOM._add_software_to_fs_tree() builds the filesystem tree correctly.
@@ -46,6 +47,7 @@ def test_fs_tree_population(software_entries):
     assert fs.nodes["/usr/lib/libc.so"]["software_uuid"] == "uuid-2"
     assert fs.nodes["/opt/tools/bin/run"]["software_uuid"] == "uuid-3"
 
+
 def test_get_software_by_path(software_entries):
     """
     Verify SBOM.get_software_by_path() returns the correct Software object.
@@ -67,6 +69,7 @@ def test_get_software_by_path(software_entries):
     assert sw2.UUID == "uuid-3"
     assert sw_invalid is None
 
+
 def test_fs_tree_windows_normalization():
     """
     Ensure Windows-style paths are normalized into POSIX form in fs_tree.
@@ -85,6 +88,7 @@ def test_fs_tree_windows_normalization():
     # Lookup should work with either style
     assert sbom.get_software_by_path(r"C:\Tools\bin\run.exe").UUID == "uuid-win"
     assert sbom.get_software_by_path("C:/Tools/bin/run.exe").UUID == "uuid-win"
+
 
 def test_get_software_by_path_symlink_traversal():
     """
@@ -110,6 +114,7 @@ def test_get_software_by_path_symlink_traversal():
     sbom.record_symlink("/lib/libc.so", "/lib/libc.so.6", subtype="file")
     assert sbom.get_software_by_path("/lib/libc.so").UUID == "uuid-libc"
 
+
 def test_get_software_by_path_symlink_cycle_guard():
     """
     Ensure symlink cycles do not cause infinite loops.
@@ -126,6 +131,7 @@ def test_get_software_by_path_symlink_cycle_guard():
     sbom.record_symlink("/a", "/b", subtype="file")
     sbom.record_symlink("/b", "/a", subtype="file")
     assert sbom.get_software_by_path("/a") is None
+
 
 def test_to_dict_override_filters_path_edges():
     """
