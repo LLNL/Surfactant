@@ -150,8 +150,8 @@ def symlink_heuristic_sbom():
     # Provider library: same directory, matching fileName, different on-disk basename.
     provider = Software(
         UUID="lib-uuid",
-        fileName=["libalias.so"],                         # matches dependency name
-        installPath=["/opt/app/lib/libalias.so.1"],       # NOT the same as '/opt/app/lib/libalias.so'
+        fileName=["libalias.so"],  # matches dependency name
+        installPath=["/opt/app/lib/libalias.so.1"],  # NOT the same as '/opt/app/lib/libalias.so'
     )
 
     sbom = SBOM()

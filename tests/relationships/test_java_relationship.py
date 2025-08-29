@@ -65,13 +65,17 @@ def test_phase_1_fs_tree_match():
         UUID="uuid-supplier",
         fileName=["HelloWorld.class"],
         installPath=["/app/lib/com/example/HelloWorld.class"],
-        metadata=[{"javaClasses": {"com.example.HelloWorld": {"javaExports": ["com.example.HelloWorld"]}}}],
+        metadata=[
+            {"javaClasses": {"com.example.HelloWorld": {"javaExports": ["com.example.HelloWorld"]}}}
+        ],
     )
 
     importer = Software(
         UUID="uuid-importer",
         installPath=["/app/lib/app.jar"],  # NOTE: importer now under /app/lib
-        metadata=[{"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}],
+        metadata=[
+            {"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}
+        ],
     )
 
     sbom.add_software(supplier)
@@ -131,7 +135,9 @@ def test_phase_3_heuristic_match():
     importer = Software(
         UUID="uuid-importer",
         installPath=["/shared/app.jar"],  # parent is /shared
-        metadata=[{"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}],
+        metadata=[
+            {"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}
+        ],
     )
 
     sbom.add_software(supplier)
