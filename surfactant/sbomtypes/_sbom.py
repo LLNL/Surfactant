@@ -7,13 +7,13 @@ from __future__ import annotations
 import json
 import pathlib
 import uuid as uuid_module
+from collections import deque
 from dataclasses import asdict, dataclass, field, fields
 from typing import Dict, List, Optional, Set
 
 import networkx as nx
 from dataclasses_json import config, dataclass_json
 from loguru import logger
-from collections import deque
 
 from surfactant.utils.paths import normalize_path
 
@@ -220,7 +220,7 @@ class SBOM:
         # Attempt to resolve via symlink traversal (BFS) with a depth cap
         visited = set()
         queue = deque([(norm_path, 0)])  # (node, depth)
-        MAX_SYMLINK_STEPS = 1000         # conservative cap; adjust if needed
+        MAX_SYMLINK_STEPS = 1000  # conservative cap; adjust if needed
 
         while queue:
             current, depth = queue.popleft()
@@ -233,7 +233,8 @@ class SBOM:
             if depth > MAX_SYMLINK_STEPS:
                 logger.warning(
                     "[fs_tree] Aborting symlink traversal for %s after %d steps",
-                    path, MAX_SYMLINK_STEPS
+                    path,
+                    MAX_SYMLINK_STEPS,
                 )
                 break
 
