@@ -71,7 +71,7 @@ def test_get_software_by_path(software_entries):
 
 
 def test_fs_tree_windows_normalization():
-    """
+    r"""
     Ensure Windows-style paths are normalized into POSIX form in fs_tree.
 
     Behavior:
