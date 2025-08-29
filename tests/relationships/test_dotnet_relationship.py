@@ -48,9 +48,6 @@ def test_dotnet_fs_tree_match(sbom_fixture):
     """
     sbom, consumer, supplier = sbom_fixture
 
-    # Simulate the DLL being located in fs_tree
-    sbom.fs_tree.add_node("/app/bin/SomeLibrary.dll", software_uuid=supplier.UUID)
-
     results = dotnet_relationship.establish_relationships(sbom, consumer, consumer.metadata[0])
     assert results == [Relationship(consumer.UUID, supplier.UUID, "Uses")]
 
@@ -83,9 +80,6 @@ def test_dotnet_codebase_match():
 
     sbom.add_software(supplier)
     sbom.add_software(consumer)
-
-    # Match is located exactly at the codebase href
-    sbom.fs_tree.add_node("/app/private/lib.dll", software_uuid=supplier.UUID)
 
     results = dotnet_relationship.establish_relationships(sbom, consumer, consumer.metadata[0])
     assert results == [Relationship("uuid-app", "uuid-lib", "Uses")]
@@ -159,8 +153,17 @@ def test_dotnet_subdir():
 
 def test_dotnet_culture_subdir():
     """
-    Test: DLL in a culture-specific subdirectory is matched if Culture is specified.
-    Covers culture-aware probing logic.
+    Test: DLL match is allowed only if the Culture metadata agrees.
+
+    Important note:
+    - The .NET resolver does not auto-probe culture-specific subdirectories.
+    - Instead, it uses the Culture field as a filter when evaluating candidates.
+    - In this case the supplier resides under '/app/culture/' and declares
+      Culture='culture', while the consumer requests Culture='culture'.
+    - Because version/culture filters pass, the supplier is accepted.
+
+    This test ensures culture mismatches are excluded and matches are accepted
+    only when Culture aligns.
     """
     sbom = SBOM()
     supplier = Software(
@@ -176,6 +179,48 @@ def test_dotnet_culture_subdir():
 
     results = dotnet_relationship.establish_relationships(sbom, consumer, consumer.metadata[0])
     assert results == [Relationship("app", "lib3", "Uses")]
+
+
+
+def test_dotnet_heuristic_match():
+    """
+    Test: heuristic (same-directory + filename) resolution.
+
+    We deliberately prevent Phases 1 and 2 from succeeding:
+
+      • Phase 1 (fs_tree): The consumer probes '/app/bin' for 'heur' and 'heur.dll'.
+        The provider is installed as '/app/bin/heur.dll.bak' — so there is no exact
+        path '/app/bin/heur.dll' in fs_tree.
+
+      • Phase 2 (legacy installPath + fileName): The provider's installPath does not
+        end with 'heur.dll' (it ends with 'heur.dll.bak'), so ip.endswith(fn) fails.
+
+      • Phase 3 (heuristic): The provider's fileName includes 'heur.dll' and its
+        parent directory matches a probedir ('/app/bin'), so a relationship should
+        be established via the heuristic fallback.
+    """
+    sbom = SBOM()
+
+    # Provider: same directory as the consumer, but installPath doesn't end with 'heur.dll'
+    supplier = Software(
+        UUID="lib-heur",
+        fileName=["heur.dll"],
+        installPath=["/app/bin/heur.dll.bak"],
+    )
+
+    # Consumer: imports 'heur' (will try 'heur' and 'heur.dll'); probes '/app/bin'
+    consumer = Software(
+        UUID="app-heur",
+        installPath=["/app/bin/app.exe"],
+        metadata=[{"dotnetAssemblyRef": [{"Name": "heur"}]}],
+    )
+
+    sbom.add_software(supplier)
+    sbom.add_software(consumer)
+
+    results = dotnet_relationship.establish_relationships(sbom, consumer, consumer.metadata[0])
+
+    assert results == [Relationship("app-heur", "lib-heur", "Uses")]
 
 
 def test_dotnet_private_path():

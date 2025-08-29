@@ -45,14 +45,6 @@ def test_pe_import_via_fs_tree(basic_pe_sbom):
     """
     sbom, binary, dll = basic_pe_sbom
 
-    # # Simulate fs_tree having indexed the DLL path
-    # path = "C:/libs/foo.dll"
-    # sbom.fs_tree.add_node(path, software_uuid=dll.UUID)
-
-    # NOTE: SBOM.add_software() already indexes the DLL’s installPath into fs_tree.
-    # You don’t need to add it manually. If you want to be explicit, you can:
-    # sbom.fs_tree.add_node("C:/bin/foo.dll", software_uuid=dll.UUID)
-
     results = pe_relationship.establish_relationships(sbom, binary, binary.metadata[0])
 
     assert results is not None
@@ -88,11 +80,15 @@ def test_pe_import_legacy_fallback():
     assert results == [Relationship("uuid-bin", "uuid-dll", "Uses")]
 
 
-def test_pe_symlink_heuristic():
+def test_pe_same_directory_match():
     """
-    Test the heuristic fallback:
-    Match a DLL if its fileName matches and its installPath is in the same folder
-    as one of the probed directories derived from the binary's installPath.
+    Verify that a DLL with a matching fileName in the importer's directory is resolved.
+
+    Note:
+    - This will typically resolve in Phase 1 (fs_tree exact path). If fs_tree were
+      unavailable for the exact path, the resolver’s fallback also matches by
+      fileName + shared directory. (In the current resolver, Phase 2 and Phase 3
+      both use that criterion.)
     """
     sbom = SBOM()
 
@@ -114,6 +110,7 @@ def test_pe_symlink_heuristic():
 
     results = pe_relationship.establish_relationships(sbom, binary, binary.metadata[0])
 
+    # extra sanity check on normalized parent dir
     assert pathlib.PurePosixPath("E:/bin/common.dll").parent.as_posix() == "E:/bin"
     assert results is not None
     assert results == [Relationship("uuid-bin", "uuid-dll", "Uses")]

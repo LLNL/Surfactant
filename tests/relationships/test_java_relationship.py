@@ -54,21 +54,31 @@ def test_sbom():
     return sbom, jar_importer, jar_supplier
 
 
-def test_phase_1_fs_tree_match(test_sbom, java_class_path):
+def test_phase_1_fs_tree_match():
     """
-    Phase 1: Check that sbom.get_software_by_path() resolves the dependency
+    Phase 1: sbom.get_software_by_path() should resolve when the importer’s
+    base dir + class path points at a real node in fs_tree.
     """
-    sbom, importer, supplier = test_sbom
+    sbom = SBOM()
 
-    # Inject into fs_tree
-    sbom.fs_tree.add_node(f"/app/lib/{java_class_path}", software_uuid=supplier.UUID)
+    supplier = Software(
+        UUID="uuid-supplier",
+        fileName=["HelloWorld.class"],
+        installPath=["/app/lib/com/example/HelloWorld.class"],
+        metadata=[{"javaClasses": {"com.example.HelloWorld": {"javaExports": ["com.example.HelloWorld"]}}}],
+    )
 
-    metadata = importer.metadata[0]
-    results = java_relationship.establish_relationships(sbom, importer, metadata)
+    importer = Software(
+        UUID="uuid-importer",
+        installPath=["/app/lib/app.jar"],  # NOTE: importer now under /app/lib
+        metadata=[{"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}],
+    )
 
-    assert results is not None
-    assert len(results) == 1
-    assert results[0] == Relationship(importer.UUID, supplier.UUID, "Uses")
+    sbom.add_software(supplier)
+    sbom.add_software(importer)
+
+    results = java_relationship.establish_relationships(sbom, importer, importer.metadata[0])
+    assert results == [Relationship(importer.UUID, supplier.UUID, "Uses")]
 
 
 def test_phase_2_legacy_path_match():
@@ -105,31 +115,29 @@ def test_phase_2_legacy_path_match():
 
 def test_phase_3_heuristic_match():
     """
-    Phase 3: Match via fileName + shared directory (heuristic)
+    Phase 3: Match via fileName + shared directory (heuristic).
+    Ensures Phase 2 fails (no exact installPath ending with the class path).
     """
     sbom = SBOM()
 
+    # Supplier: same directory as importer’s parent, but NOT under com/example/ path,
+    # so installPath doesn't end with 'com/example/HelloWorld.class'.
     supplier = Software(
         UUID="uuid-supplier",
         fileName=["HelloWorld.class"],
-        installPath=["/shared/com/example/HelloWorld.class"],
+        installPath=["/shared/HelloWorld.class"],  # parent is /shared
     )
 
     importer = Software(
         UUID="uuid-importer",
-        installPath=["/shared/app.jar"],
-        metadata=[
-            {"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}
-        ],
+        installPath=["/shared/app.jar"],  # parent is /shared
+        metadata=[{"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}],
     )
 
-    # place them in same directory /shared
     sbom.add_software(supplier)
     sbom.add_software(importer)
 
     results = java_relationship.establish_relationships(sbom, importer, importer.metadata[0])
-
-    assert results is not None
     assert results == [Relationship(importer.UUID, supplier.UUID, "Uses")]
 
 
