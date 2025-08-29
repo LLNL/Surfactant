@@ -181,7 +181,6 @@ def test_dotnet_culture_subdir():
     assert results == [Relationship("app", "lib3", "Uses")]
 
 
-
 def test_dotnet_heuristic_match():
     """
     Test: heuristic (same-directory + filename) resolution.
