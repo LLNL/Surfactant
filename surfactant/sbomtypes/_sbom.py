@@ -249,7 +249,7 @@ class SBOM:
                         logger.debug(f"[fs_tree] Resolved {path} via symlink: {current} → {target}")
                         return self._find_software_entry(uuid=target_node["software_uuid"])
                     if target not in visited:
-                        queue.append(target)
+                        queue.append((target, depth + 1))
 
         # No match found after traversal
         return None
