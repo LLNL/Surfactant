@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Set
 import networkx as nx
 from dataclasses_json import config, dataclass_json
 from loguru import logger
+from collections import deque
 
 from surfactant.utils.paths import normalize_path
 
@@ -204,7 +205,8 @@ class SBOM:
 
         Behavior:
             - Follows symlink edges (type="symlink") in fs_tree if no direct match exists.
-            - Traverses depth-first with cycle prevention.
+            - Traverses breadth-first with cycle prevention.
+            - Applies a depth cap to avoid pathological long chains.
             - Returns the first resolved node containing a software UUID.
         """
         # Normalize the input path to POSIX format to match internal fs_tree representation
@@ -215,15 +217,29 @@ class SBOM:
         if node and "software_uuid" in node:
             return self._find_software_entry(uuid=node["software_uuid"])
 
-        # Attempt to resolve via symlink traversal
+        # Attempt to resolve via symlink traversal (BFS) with a depth cap
         visited = set()
-        queue = [norm_path]
+        queue = deque([(norm_path, 0)])  # (node, depth)
+        MAX_SYMLINK_STEPS = 1000         # conservative cap; adjust if needed
 
         while queue:
-            current = queue.pop(0)
+            current, depth = queue.popleft()
+
             if current in visited:
                 continue
             visited.add(current)
+
+            # Depth cap guard
+            if depth > MAX_SYMLINK_STEPS:
+                logger.warning(
+                    "[fs_tree] Aborting symlink traversal for %s after %d steps",
+                    path, MAX_SYMLINK_STEPS
+                )
+                break
+
+            # If the node doesn't exist in the graph, there are no edges to follow
+            if not self.fs_tree.has_node(current):
+                continue
 
             # Check each symlink edge from current node
             for _, target, attrs in self.fs_tree.out_edges(current, data=True):
@@ -232,7 +248,8 @@ class SBOM:
                     if "software_uuid" in target_node:
                         logger.debug(f"[fs_tree] Resolved {path} via symlink: {current} → {target}")
                         return self._find_software_entry(uuid=target_node["software_uuid"])
-                    queue.append(target)
+                    if target not in visited:
+                        queue.append(target)
 
         # No match found after traversal
         return None
