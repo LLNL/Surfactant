@@ -80,5 +80,5 @@ export function setColorScheme(mode) {
 	for (const nID in nodesDataset)
 		if (Object.hasOwn(nodesDataset, nID)) tmp.push(nodesDataset[nID]);
 
-	nodes.updateOnly(tmp);
+	nodes.update(tmp);
 }
