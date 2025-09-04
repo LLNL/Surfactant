@@ -33,12 +33,9 @@ function drawGraph() {
 
 	network = new vis.Network(container, data, options);
 
-	if (options.physics.enabled === false) {
-		document.getElementById("physicsToggle").querySelector("i").classList =
-			"fa-solid fa-circle-play";
-
+	if (options.physics.enabled === false)
 		setTimeout(() => network.setOptions({ physics: { enabled: true } }), 250); // Automatically re-enable physics after graph has loaded
-	} else if (nodes.length > 100) {
+	else if (nodes.length > 100) {
 		network.on("stabilizationProgress", (params) => {
 			document.getElementById("loadingBar").removeAttribute("style");
 			const maxWidth = 496;
