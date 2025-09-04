@@ -42,8 +42,9 @@
                  background-color: var(--backgroundColor);
                  position: relative;
                  float: left;
-                 transition: margin-left .4s;
                  padding: 0 !important;
+
+                transition: margin-left .4s, background-color var(--themeTransitionDuration) linear;
              }
 
              body {
@@ -124,6 +125,11 @@
                  box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
              }
              {% endif %}
+
+
+            * {
+                transition: background-color var(--themeTransitionDuration) linear, color var(--themeTransitionDuration) linear, border-color var(--themeTransitionDuration) linear;
+            }
         </style>
 
         <script>
@@ -172,6 +178,7 @@
                 <button id="zoomToView" class="invert" title="Fit graph to view"><i class="fa-solid fa-expand fa-fw"></i></button>
                 <button id="isolatesToggle" class="invert" title="Toggle isolates"><i class="fa-solid fa-eye fa-fw"></i></button>
                 <button id="exportImage" class="invert" title="Export as PNG"><i class="fa-solid fa-download fa-fw"></i></button>
+                <button id="themeToggle" class="invert" title=""><i></i></button>
             </div>
 
             <div id="mynetwork" class="card-body" oncontextmenu="return false"></div>

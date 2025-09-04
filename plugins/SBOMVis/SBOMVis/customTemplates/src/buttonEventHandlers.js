@@ -1,4 +1,5 @@
 import { insertSearchSidebar } from "#sidebarModule";
+import { setColorScheme } from "#utilsModule";
 
 export function toggleSidebar() {
 	const sidebar = document.getElementById("sidebar");
@@ -79,19 +80,34 @@ export function toggleIsolates() {
 	else icon.classList.replace("fa-eye-slash", "fa-eye");
 }
 
+function toggleTheme() {
+	const toggle = document.getElementById("themeToggle");
+	const icon = toggle.querySelector("i");
+
+	if (icon.classList.contains("fa-sun")) setColorScheme("light");
+	else setColorScheme("dark");
+}
+
 export function setButtonEventHandlers() {
 	document
 		.getElementById("sidebarToggle")
 		.addEventListener("click", toggleSidebar);
+
 	document
 		.getElementById("physicsToggle")
 		.addEventListener("click", togglePhysics);
+
 	document
 		.getElementById("searchButton")
 		.addEventListener("click", handleSearch);
+
 	document.getElementById("zoomToView").addEventListener("click", zoomToView);
+
 	document
 		.getElementById("isolatesToggle")
 		.addEventListener("click", toggleIsolates);
+
 	document.getElementById("exportImage").addEventListener("click", exportImage);
+
+	document.getElementById("themeToggle").addEventListener("click", toggleTheme);
 }

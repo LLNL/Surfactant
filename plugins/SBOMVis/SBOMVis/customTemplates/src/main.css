@@ -27,6 +27,8 @@
 	);
 
 	--nodeInactiveColor: rgba(200, 200, 200, 0.5);
+
+	--themeTransitionDuration: 200ms;
 }
 
 div.vis-tooltip {
@@ -91,7 +93,7 @@ div.vis-tooltip {
 	gap: 10px;
 	padding-left: 5px;
 
-	transition: 0.4s;
+	transition: margin-left 0.4s;
 	transform: translateX(0);
 
 	h1 {
@@ -109,7 +111,7 @@ div.vis-tooltip {
 	position: fixed;
 	height: 100%;
 	width: var(--sidebarMaxWidth);
-	transition: 0.4s;
+	transition: transform 0.4s;
 	transform: translateX(-100%);
 
 	z-index: 1;
@@ -284,7 +286,7 @@ div.vis-tooltip {
 	margin-top: 5px;
 	gap: 5px;
 
-	transition: 0.4s;
+	transition: transform 0.4s;
 	transform: translateX(0);
 
 	&.open {
@@ -292,14 +294,11 @@ div.vis-tooltip {
 	}
 
 	button {
-		position: flex;
-
 		background-color: var(--sidebarButtonColor);
 		border-radius: 50%;
 
 		border: none;
 		padding: 0;
-		margin: 0;
 
 		cursor: pointer;
 		font-size: 2rem;
@@ -327,4 +326,8 @@ div.vis-tooltip {
 			}
 		}
 	}
+}
+
+#themeToggle {
+	margin-top: 15px; /* Offset from rest of icons */
 }

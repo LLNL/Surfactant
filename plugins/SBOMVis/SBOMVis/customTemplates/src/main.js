@@ -7,7 +7,7 @@ import {
 	buildNodeSelectionSidebar,
 	buildSBOMOverviewSidebar,
 } from "#sidebarModule";
-import { setNodeColors } from "#utilsModule";
+import { setColorScheme, setNodeColors } from "#utilsModule";
 
 // This method is responsible for drawing the graph, returns the drawn network
 function drawGraph() {
@@ -231,6 +231,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			.load('normal normal 900 24px/1 "Font Awesome 6 Free"')
 			.catch(console.error("Failed to load Font Awesome 6"))
 			.then(() => {
+				setColorScheme("auto"); // Set init color scheme
+				window
+					.matchMedia("(prefers-color-scheme: dark)")
+					.addEventListener("change", (e) => {
+						setColorScheme("auto"); // If the user changes the system color scheme follow that, otherwise use manually set value
+					});
+
 				document
 					.getElementById("sidebar")
 					.replaceChildren(buildSBOMOverviewSidebar());
