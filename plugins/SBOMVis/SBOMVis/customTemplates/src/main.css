@@ -2,27 +2,30 @@
 	color-scheme: light dark;
 
 	--backgroundColor: light-dark(#ffffff, #222);
-	--accentColor: light-dark(#ff00ff, #31353d);
-	--textColor: light-dark(#ff00ff, #fff);
+	--accentColor: light-dark(#e6e6e6, #31353d); /* f0f0f0 */
+	--textColor: light-dark(#29313d, #fff);
 
 	/* Sidebar */
-	--sidebarBorderColor: light-dark(#ff00ff, #808074);
-	--sidebarLabelColor: light-dark(#ff00ff, #aaa);
+	--sidebarBorderColor: light-dark(#a1a1ad, #808074);
+	--sidebarLabelColor: light-dark(#fff #aaa);
 	--sidebarMaxWidth: 400px;
 
-	--sidebarRowDividerColor: light-dark(#ff00ff, #2a2a3c);
-	--sidebarFoldableSubsectionDashedBorderColor: light-dark(#ff00ff, #444);
+	--sidebarRowDividerColor: light-dark(#cfcfcf, #2a2a3c);
+	--sidebarFoldableSubsectionDashedBorderColor: light-dark(#b5b5b5, #444);
 
-	--sidebarIconDefaultColor: light-dark(#ff00ff, #bbb);
-	--sidebarIconHoverColor: light-dark(#ff00ff, #fff);
+	--sidebarIconDefaultColor: light-dark(#3b506f, #bbb);
+	--sidebarIconHoverColor: light-dark(#000, #fff);
 
-	--scrollbarHighlightColor: light-dark(#ff00ff, #595959);
+	--scrollbarHighlightColor: light-dark(#afafaf, #595959);
 
 	/* Sidebar buttons */
-	--sidebarButtonColor: light-dark(#ff00ff, rgba(255, 255, 255, 0.5));
-	--sidebarButtonHoverColor: light-dark(#ff00ff, rgba(255, 255, 255, 0.9));
+	--sidebarButtonColor: light-dark(rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.5));
+	--sidebarButtonHoverColor: light-dark(
+		rgba(0, 0, 0, 0.75),
+		rgba(255, 255, 255, 0.9)
+	);
 	--sidebarButtonInvertHoverColor: light-dark(
-		#ff00ff,
+		rgba(0, 0, 0, 0.75),
 		rgba(255, 255, 255, 0.75)
 	);
 
