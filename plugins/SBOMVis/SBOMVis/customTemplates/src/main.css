@@ -2,8 +2,16 @@
 	color-scheme: light dark;
 
 	--backgroundColor: light-dark(#ffffff, #222);
-	--accentColor: light-dark(#e6e6e6, #31353d); /* f0f0f0 */
-	--textColor: light-dark(#29313d, #fff);
+	--accentColor: light-dark(#e6e6e6, #31353d);
+
+	/* Text color */
+	--lightTextColor: #29313d;
+	--darkTextColor: #fff;
+	--textColor: light-dark(var(--lightTextColor), var(--darkTextColor));
+
+	/* Node icon color */
+	--lightNodeColor: #044090;
+	--darkNodeColor: #fff;
 
 	/* Sidebar */
 	--sidebarBorderColor: light-dark(#a1a1ad, #808074);

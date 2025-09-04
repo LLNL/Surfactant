@@ -21,7 +21,7 @@ export function setNodeColors(nodeIDs, color) {
 }
 
 /**
- * Sets color scheme and dark/light mode toggle icon
+ * Sets color scheme, dark/light mode toggle icon, and update's graph font colors
  * @param {String} mode (dark, light, auto)
  */
 export function setColorScheme(mode) {
@@ -30,6 +30,7 @@ export function setColorScheme(mode) {
 
 	const html = document.querySelector("html");
 
+	// Update icon and CSS color-scheme
 	switch (mode) {
 		case "dark": {
 			icon.classList = "fa-solid fa-sun";
@@ -51,4 +52,33 @@ export function setColorScheme(mode) {
 			break;
 		}
 	}
+
+	// Update node font
+	const nodesDataset = nodes.get({ returnType: "Object" });
+
+	for (const nID in nodesDataset) {
+		if (icon.classList.contains("fa-sun")) {
+			nodesDataset[nID].icon.color = getComputedStyle(
+				document.body,
+			).getPropertyValue("--darkNodeColor");
+
+			nodesDataset[nID].font.color = getComputedStyle(
+				document.body,
+			).getPropertyValue("--darkTextColor");
+		} else {
+			nodesDataset[nID].icon.color = getComputedStyle(
+				document.body,
+			).getPropertyValue("--lightNodeColor");
+
+			nodesDataset[nID].font.color = getComputedStyle(
+				document.body,
+			).getPropertyValue("--lightTextColor");
+		}
+	}
+
+	const tmp = [];
+	for (const nID in nodesDataset)
+		if (Object.hasOwn(nodesDataset, nID)) tmp.push(nodesDataset[nID]);
+
+	nodes.updateOnly(tmp);
 }

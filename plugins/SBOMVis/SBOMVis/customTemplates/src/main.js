@@ -18,7 +18,7 @@ function drawGraph() {
 		nodes.update({ id: nodeID, title: document.getElementById("tooltip") });
 	}
 
-	// Record original color
+	// Record original node body color
 	for (const [nodeID, nodeEntry] of Object.entries(
 		nodes.get({ returnType: "Object" }),
 	)) {
