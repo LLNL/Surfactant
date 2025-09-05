@@ -31,6 +31,7 @@ def get_files(
         directories (List[bytes]): List of directory paths in bytes.
         files (List[bytes]): List of file names in bytes.
         indicies (List[bytes]): Directory associated with current file.
+        hashes: (List[bytes]): Hash for each file
     Returns:
         List of extracted file paths.
     """
@@ -71,6 +72,20 @@ def combine_lists(key_list: List[bytes], value_list: List[bytes]) -> Dict:
         result[name] = version
         index += 1
     return result
+
+
+def extract_hash_algo(algo_identifier: int) -> str:
+    """Grabs the hashing algorithm used for payload files.
+    
+    Args:
+        algo_identifier (int): Integer in RPM file associated with a hashing algorithm
+    """
+    match(algo_identifier):
+        case 0:
+            return "md5"
+        case 8:
+            return "sha256"
+    return f"Unkown: {algo_identifier}"
 
 
 @surfactant.plugin.hookimpl
@@ -145,6 +160,7 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             file_details["rpm"]["buildtime"] = header["buildtime"]
         if "basenames" in header:
             file_details["rpm"]["associated_files"] = get_files(
-                header["dirnames"], header["basenames"], header["dirindexes"], header["filemd5s"]
+                header["dirnames"], header["basenames"], header["dirindexes"], header["payloaddigest"]
             )
+            file_details["rpm"]["payload_algo"] = extract_hash_algo(header["payloaddigestalgo"])
         return file_details
