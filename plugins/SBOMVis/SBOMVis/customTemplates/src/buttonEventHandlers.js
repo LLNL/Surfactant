@@ -16,7 +16,7 @@ export function toggleSidebar() {
 	}
 }
 
-export function togglePhysics() {
+function togglePhysics() {
 	const toggle = document.getElementById("physicsToggle");
 	const icon = toggle.querySelector("i");
 
@@ -41,7 +41,7 @@ export function zoomToView(nodes) {
 	network.fit(options);
 }
 
-export function exportImage() {
+function exportImage() {
 	const canvas = document.getElementById("mynetwork").querySelector("canvas");
 
 	canvas.toBlob((blob) => {
@@ -49,14 +49,14 @@ export function exportImage() {
 	});
 }
 
-export function handleSearch() {
+function handleSearch() {
 	insertSearchSidebar("sidebar");
 
 	if (!document.getElementById("sidebar").classList.contains("open"))
 		toggleSidebar();
 }
 
-export function toggleIsolates() {
+function toggleIsolates() {
 	const toggle = document.getElementById("isolatesToggle");
 	const icon = toggle.querySelector("i");
 
