@@ -4,24 +4,16 @@
  * @param {(String|undefined)} color
  */
 export function setNodeColors(nodeIDs, color) {
-	const nodesDataset = nodes.get(nodeIDs, { returnType: "Object" });
-
-	for (const nID in nodesDataset) {
-		if (color !== undefined) nodesDataset[nID].color = color;
-		else {
-			nodesDataset[nID].color = nodesDataset[nID].originalColor;
-		}
-	}
-
-	const tmp = [];
-	for (const nID in nodesDataset)
-		if (Object.hasOwn(nodesDataset, nID)) tmp.push(nodesDataset[nID]);
-
-	nodes.update(tmp);
+	nodes.update(
+		nodes.get(nodeIDs).map((n) => ({
+			id: n.id,
+			color: color !== undefined ? color : n.originalColor,
+		})),
+	);
 }
 
 /**
- * Sets color scheme, dark/light mode toggle icon, and update's graph font colors
+ * Sets CSS color scheme, dark/light mode toggle icon, and updates node font colors
  * @param {String} mode (dark, light, auto)
  */
 export function setColorScheme(mode) {
@@ -53,32 +45,22 @@ export function setColorScheme(mode) {
 		}
 	}
 
-	// Update node font
-	const nodesDataset = nodes.get({ returnType: "Object" });
+	// Update node font colors
+	const useDarkTheme = icon.classList.contains("fa-sun");
+	const styles = getComputedStyle(document.body);
 
-	for (const nID in nodesDataset) {
-		if (icon.classList.contains("fa-sun")) {
-			nodesDataset[nID].icon.color = getComputedStyle(
-				document.body,
-			).getPropertyValue("--darkNodeColor");
+	const newIconColor = styles.getPropertyValue(
+		useDarkTheme ? "--darkNodeColor" : "--lightNodeColor",
+	);
+	const newLabelColor = styles.getPropertyValue(
+		useDarkTheme ? "--darkTextColor" : "--lightTextColor",
+	);
 
-			nodesDataset[nID].font.color = getComputedStyle(
-				document.body,
-			).getPropertyValue("--darkTextColor");
-		} else {
-			nodesDataset[nID].icon.color = getComputedStyle(
-				document.body,
-			).getPropertyValue("--lightNodeColor");
-
-			nodesDataset[nID].font.color = getComputedStyle(
-				document.body,
-			).getPropertyValue("--lightTextColor");
-		}
-	}
-
-	const tmp = [];
-	for (const nID in nodesDataset)
-		if (Object.hasOwn(nodesDataset, nID)) tmp.push(nodesDataset[nID]);
-
-	nodes.update(tmp);
+	nodes.update(
+		nodes.get().map((n) => ({
+			id: n.id,
+			icon: { ...n.icon, color: newIconColor },
+			font: { ...n.font, color: newLabelColor },
+		})),
+	);
 }

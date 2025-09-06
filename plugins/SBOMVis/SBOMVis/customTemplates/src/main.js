@@ -9,21 +9,17 @@ import {
 } from "#sidebarModule";
 import { setColorScheme, setNodeColors } from "#utilsModule";
 
-// This method is responsible for drawing the graph, returns the drawn network
 function drawGraph() {
 	const container = document.getElementById("mynetwork");
 
-	// Insert tooltip element into nodes (title can be a string or element)
-	for (const nodeID in nodes.get({ returnType: "Object" })) {
-		nodes.update({ id: nodeID, title: document.getElementById("tooltip") });
-	}
-
-	// Record original node body color
-	for (const [nodeID, nodeEntry] of Object.entries(
-		nodes.get({ returnType: "Object" }),
-	)) {
-		nodes.update({ id: nodeID, originalColor: nodeEntry.color });
-	}
+	// Add tooltip for each node & record its default color
+	nodes.update(
+		nodes.get().map((n) => ({
+			id: n.id,
+			title: document.getElementById("tooltip"),
+			originalColor: n.color,
+		})),
+	);
 
 	const data = { nodes: nodes, edges: edges };
 
@@ -201,14 +197,17 @@ function drawGraph() {
 		const isFixed = node.fixed;
 
 		if (isFixed === undefined || isFixed === false) {
-			nodes.update({ id: nodeID, fixed: true });
 			nodes.update({
 				id: nodeID,
+				fixed: true,
 				label: `📌 ${node.nodeMetadata.nodeFileName}`,
 			});
 		} else {
-			nodes.update({ id: nodeID, fixed: false });
-			nodes.update({ id: nodeID, label: node.nodeMetadata.nodeFileName });
+			nodes.update({
+				id: nodeID,
+				fixed: false,
+				label: node.nodeMetadata.nodeFileName,
+			});
 		}
 
 		// Update popup if it's visible
