@@ -1,4 +1,4 @@
-# Copyright 2023 Lawrence Livermore National Security, LLC
+# Copyright 2025 Lawrence Livermore National Security, LLC
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
@@ -10,6 +10,7 @@ from enum import Enum, auto
 from typing import Optional
 
 import surfactant.plugin
+from surfactant import ContextEntry
 from surfactant.infoextractors.coff_file import COFF_MAGIC_TARGET_NAME
 
 
@@ -50,7 +51,7 @@ def is_docker_archive(filepath: str) -> bool:
 
 
 @surfactant.plugin.hookimpl(tryfirst=True)
-def identify_file_type(filepath: str) -> Optional[str]:
+def identify_file_type(filepath: str, context: Optional[ContextEntry] = None) -> Optional[str]:
     filetype_matches = []
     try:
         with open(filepath, "rb") as f:
@@ -140,7 +141,8 @@ def identify_file_type(filepath: str) -> Optional[str]:
                 # https://github.com/file/file/blob/master/magic/Magdir/cafebabe
                 if int.from_bytes(magic_bytes[4:8], byteorder="big", signed=False) <= 30:
                     filetype_matches.append("MACHOFAT")
-                filetype_matches.append("JAVACLASS")
+                else:
+                    filetype_matches.append("JAVACLASS")
             if magic_bytes[:4] == b"\xbe\xba\xfe\xca":
                 filetype_matches.append("MACHOFAT")
             if magic_bytes[:4] in [b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"]:

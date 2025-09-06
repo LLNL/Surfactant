@@ -160,14 +160,23 @@ def extract_pe_info(filename: str) -> object:
         for entry in delay_import_dir:
             file_details["peDelayImport"].append(entry.dll.decode())
 
+    def get_com_desc(data_dir: list):  # mcutshaw's solution
+        for x in data_dir:
+            if "IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR" == x.name:
+                return x
+        return None
+
     file_details["peIsExe"] = pe.is_exe()
     file_details["peIsDll"] = pe.is_dll()
     if opt_hdr := getattr(pe, "OPTIONAL_HEADER", None):
         if opt_hdr_data_dir := getattr(opt_hdr, "DATA_DIRECTORY", None):
-            # COM Descriptor, used to identify CLR/.NET binaries
-            com_desc_dir_num = dnfile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR"]
-            com_desc_dir = opt_hdr_data_dir[com_desc_dir_num]
-            file_details["peIsClr"] = (com_desc_dir.VirtualAddress > 0) and (com_desc_dir.Size > 0)
+            com_desc_dir = get_com_desc(opt_hdr_data_dir)
+            if com_desc_dir is not None:
+                file_details["peIsClr"] = (com_desc_dir.VirtualAddress > 0) and (
+                    com_desc_dir.Size > 0
+                )
+            else:
+                file_details["peIsClr"] = False
 
     if pe_fi := getattr(pe, "FileInfo", None):
         if len(pe_fi) > 0:
