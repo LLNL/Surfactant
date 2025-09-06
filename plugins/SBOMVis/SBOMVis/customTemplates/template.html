@@ -1,6 +1,8 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <link rel="icon" type="image/png" href="https://user-images.githubusercontent.com/3969255/290751328-fe11d1de-c2a9-4602-a7cd-b0e34bfce728.png"/>
+
         {% if cdn_resources=="in_line" %}
             <script>{%  include 'lib/bindings/utils.js' %}</script>
             <style>{%  include 'lib/vis-9.1.2/vis-network.css' %}</style>
@@ -39,11 +41,12 @@
              #mynetwork {
                  min-width: {{width}};
                  min-height: {{height}};
-                 background-color: {{bgcolor}};
+                 background-color: var(--backgroundColor);
                  position: relative;
                  float: left;
-                 transition: margin-left .4s;
                  padding: 0 !important;
+
+                transition: margin-left .4s, background-color var(--themeTransitionDuration) linear;
              }
 
              body {
@@ -59,7 +62,7 @@
                  left:0px;
                  min-width: {{width}};
                  min-height: {{height}};
-                 background-color: var(--darkBackground);
+                 background-color: var(--backgroundColor);
                  -webkit-transition: all 0.5s ease;
                  -moz-transition: all 0.5s ease;
                  -ms-transition: all 0.5s ease;
@@ -124,6 +127,11 @@
                  box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
              }
              {% endif %}
+
+
+            * {
+                transition: background-color var(--themeTransitionDuration) linear, color var(--themeTransitionDuration) linear, border-color var(--themeTransitionDuration) linear;
+            }
         </style>
 
         <script>
@@ -162,15 +170,17 @@
     </head>
 
     <body>
-        <div class="card" style="position: relative; width: 100%; height: 100%; border: none; background-color: var(--darkBackground);;">
+        <div class="card" style="position: relative; width: 100%; height: 100%; border: none; background-color: var(--backgroundColor);">
             <div id="sidebar"></div>
 
             <div id="sidebarButtons">
                 <button id="sidebarToggle" title="Toggle sidebar"><i class="fa-solid fa-circle-chevron-right"></i></button>
                 <button id="physicsToggle" title="Toggle physics"><i class="fa-solid fa-circle-pause"></i></button>
-                <button id="searchButton" class="invert" title="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
-                <button id="zoomToView" class="invert" title="Fit graph to view"><i class="fa-solid fa-expand"></i></button>
-                <button id="exportImage" class="invert" title="Export as PNG"><i class="fa-solid fa-download"></i></button>
+                <button id="searchButton" class="invert" title="Search"><i class="fa-solid fa-magnifying-glass fa-fw"></i></button>
+                <button id="zoomToView" class="invert" title="Fit graph to view"><i class="fa-solid fa-expand fa-fw"></i></button>
+                <button id="isolatesToggle" class="invert" title="Toggle isolates"><i class="fa-solid fa-eye fa-fw"></i></button>
+                <button id="exportImage" class="invert" title="Export as PNG"><i class="fa-solid fa-download fa-fw"></i></button>
+                <button id="themeToggle" class="invert"><i></i></button>
             </div>
 
             <div id="mynetwork" class="card-body" oncontextmenu="return false"></div>
@@ -182,7 +192,7 @@
             </div>
 
             <div id="logo">
-                <img src="https://raw.githubusercontent.com/LLNL/Surfactant/refs/heads/main/docs/logos/surfactant-logo-dark.png"/>
+                <img src="https://user-images.githubusercontent.com/3969255/290751328-fe11d1de-c2a9-4602-a7cd-b0e34bfce728.png"/>
                 <h1>Surfactant</h1>
             </div>
         </div>

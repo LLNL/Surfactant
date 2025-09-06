@@ -101,7 +101,11 @@ function createFoldableSectionInfoTable(headerText, infoItems) {
 	const subsectionHeader = document.createElement("summary");
 	subsectionHeader.classList = "foldable-subsection-header";
 	subsectionHeader.innerText = headerText;
-	if (infoItems.length === 0) subsectionHeader.style.listStyle = "none"; // Don't show arrow when there aren't any items to display
+
+	if (infoItems.length === 0) {
+		subsectionHeader.style.listStyle = "none"; // Don't show arrow when there aren't any items to display
+		subsectionHeader.style.cursor = "text";
+	}
 
 	detailsTag.appendChild(subsectionHeader);
 
@@ -510,7 +514,7 @@ export function insertSearchSidebar(id) {
 
 				// Gray out all nodes
 				const inactiveColor = getComputedStyle(document.body).getPropertyValue(
-					"--graphInactiveColor",
+					"--nodeInactiveColor",
 				);
 				setNodeColors(nodes.getIds(), inactiveColor);
 
