@@ -62,19 +62,16 @@ function toggleIsolates() {
 
 	const shouldBeHidden = icon.classList.contains("fa-eye");
 
-	const selectedNodes = [];
-	for (const n of nodes.get()) {
-		// Has no edges (an isolate) and isn't hidden by user choice
-		if (
-			network.getConnectedNodes(n.id).length === 0 &&
-			n.nodeMetadata.hidden === false
-		) {
-			n.hidden = !n.hidden;
-			selectedNodes.push(n);
-		}
-	}
-
-	nodes.update(selectedNodes);
+	nodes.update(
+		nodes
+			.get()
+			.filter(
+				(n) =>
+					network.getConnectedNodes(n.id).length === 0 &&
+					n.nodeMetadata.hidden === false,
+			) // Has no edges (an isolate) and isn't hidden by user choice
+			.map((n) => ({ id: n.id, hidden: !n.hidden })),
+	);
 
 	if (shouldBeHidden) icon.classList.replace("fa-eye", "fa-eye-slash");
 	else icon.classList.replace("fa-eye-slash", "fa-eye");
