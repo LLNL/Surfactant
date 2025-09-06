@@ -23,37 +23,40 @@ export function setColorScheme(mode) {
 	const html = document.querySelector("html");
 
 	// Update icon and CSS color-scheme
-	switch (mode) {
-		case "dark": {
-			icon.classList = "fa-solid fa-sun";
-			html.style.setProperty("color-scheme", "dark");
-			break;
-		}
+	const colorSchemes = {
+		dark: {
+			icon: "fa-solid fa-sun",
+			tooltip: "Toggle light mode",
+			CSSColorScheme: "dark",
+		},
+		light: {
+			icon: "fa-solid fa-moon",
+			tooltip: "Toggle dark mode",
+			CSSColorScheme: "light",
+		},
+	};
 
-		case "light": {
-			icon.classList = "fa-solid fa-moon";
-			html.style.setProperty("color-scheme", "light");
-			break;
-		}
+	let preferredColorScheme = mode;
+	if (mode === "auto") {
+		preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)")
+			.matches
+			? "dark"
+			: "light"; // Use system preferred color
+		html.style.setProperty("color-scheme", "light dark");
+	} else html.style.setProperty("color-scheme", mode);
 
-		case "auto": {
-			icon.classList = window.matchMedia("(prefers-color-scheme: dark)").matches
-				? "fa-solid fa-sun"
-				: "fa-solid fa-moon"; // Set icon based on system color preference
-			html.style.setProperty("color-scheme", "light dark"); // Auto change
-			break;
-		}
-	}
+	const { icon: iconClass, tooltip } = colorSchemes[preferredColorScheme];
+	icon.classList = iconClass;
+	toggle.setAttribute("title", tooltip);
 
 	// Update node font colors
-	const useDarkTheme = icon.classList.contains("fa-sun");
 	const styles = getComputedStyle(document.body);
 
 	const newIconColor = styles.getPropertyValue(
-		useDarkTheme ? "--darkNodeColor" : "--lightNodeColor",
+		preferredColorScheme === "dark" ? "--darkNodeColor" : "--lightNodeColor",
 	);
 	const newLabelColor = styles.getPropertyValue(
-		useDarkTheme ? "--darkTextColor" : "--lightTextColor",
+		preferredColorScheme === "dark" ? "--darkTextColor" : "--lightTextColor",
 	);
 
 	nodes.update(
