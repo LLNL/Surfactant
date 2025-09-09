@@ -7,33 +7,30 @@ import {
 	buildNodeSelectionSidebar,
 	buildSBOMOverviewSidebar,
 } from "#sidebarModule";
-import { setNodeColors } from "#utilsModule";
+import { setColorScheme, setNodeColors } from "#utilsModule";
 
-// This method is responsible for drawing the graph, returns the drawn network
 function drawGraph() {
 	const container = document.getElementById("mynetwork");
 
-	// Insert tooltip element into nodes (title can be a string or element)
-	for (const nodeID in nodes.get({ returnType: "Object" })) {
-		nodes.update({ id: nodeID, title: document.getElementById("tooltip") });
-	}
-
-	// Record original color
-	for (const [nodeID, nodeEntry] of Object.entries(
-		nodes.get({ returnType: "Object" }),
-	)) {
-		nodes.update({ id: nodeID, originalColor: nodeEntry.color });
-	}
+	// Add tooltip for each node & record its default color
+	nodes.update(
+		nodes.get().map((n) => ({
+			id: n.id,
+			title: document.getElementById("tooltip"),
+			originalColor: n.color,
+		})),
+	);
 
 	const data = { nodes: nodes, edges: edges };
 
 	options.interaction.hover = true;
 
+	options.physics.forceAtlas2Based.avoidOverlap = 0.1; // Used to discourage node overlap
+
 	network = new vis.Network(container, data, options);
 
 	if (options.physics.enabled === false)
-		document.getElementById("physicsToggle").querySelector("i").classList =
-			"fa-solid fa-circle-play";
+		setTimeout(() => network.setOptions({ physics: { enabled: true } }), 250); // Automatically re-enable physics after graph has loaded
 	else if (nodes.length > 100) {
 		network.on("stabilizationProgress", (params) => {
 			document.getElementById("loadingBar").removeAttribute("style");
@@ -200,14 +197,17 @@ function drawGraph() {
 		const isFixed = node.fixed;
 
 		if (isFixed === undefined || isFixed === false) {
-			nodes.update({ id: nodeID, fixed: true });
 			nodes.update({
 				id: nodeID,
+				fixed: true,
 				label: `📌 ${node.nodeMetadata.nodeFileName}`,
 			});
 		} else {
-			nodes.update({ id: nodeID, fixed: false });
-			nodes.update({ id: nodeID, label: node.nodeMetadata.nodeFileName });
+			nodes.update({
+				id: nodeID,
+				fixed: false,
+				label: node.nodeMetadata.nodeFileName,
+			});
 		}
 
 		// Update popup if it's visible
@@ -227,6 +227,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			.load('normal normal 900 24px/1 "Font Awesome 6 Free"')
 			.catch(console.error("Failed to load Font Awesome 6"))
 			.then(() => {
+				setColorScheme("auto"); // Set init color scheme
+				window
+					.matchMedia("(prefers-color-scheme: dark)")
+					.addEventListener("change", (e) => {
+						setColorScheme("auto"); // If the user changes the system color scheme follow that, otherwise use manually set value
+					});
+
 				document
 					.getElementById("sidebar")
 					.replaceChildren(buildSBOMOverviewSidebar());
