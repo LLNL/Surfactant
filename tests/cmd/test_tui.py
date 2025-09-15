@@ -11,7 +11,7 @@ import pytest
 from surfactant.cmd.tui import TUI
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 
-from . import common
+import tests.cmd.common as common
 
 testing_data = Path(Path(__file__).parent.parent, "data")
 
@@ -108,8 +108,7 @@ async def test_context_roundtrip(tmp_path):
     # There doesn't seem to be any better way of doing this
     def ordered(obj):
         if isinstance(obj, dict):
-            return sorted({k: v} for k, v in obj.items)
-        else:
-            return obj
+            return sorted(obj.items())
+        return obj
 
     assert ordered(inp) == ordered(output)

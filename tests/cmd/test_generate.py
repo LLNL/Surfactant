@@ -3,7 +3,7 @@ from pathlib import Path
 
 from surfactant.cmd.generate import sbom
 
-from . import common
+import tests.cmd.common as common
 
 testing_data = Path(Path(__file__).parent.parent, "data")
 
