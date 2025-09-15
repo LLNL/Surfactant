@@ -194,30 +194,35 @@ class GenerateTab(textual.widgets.Static):
         if len(self.output_name.value) == 0:
             self.app.notify("No output name supplied")
             return
-        with self.app.suspend():
-            args = [
-                self.specimen_context.input_path,
-                f"{self.output_dir.input_path}/{self.output_name.value}",
-            ]
-            if len(self.input_sbom.input_path) > 0:
-                args.append(self.input_sbom.input_path)
-            if self.skip_gather.value:
-                args.append("--skip_gather")
-            if self.skip_relationships.value:
-                args.append("--skip_relationships")
-            if len(self.input_format.value) > 0:
-                args.append("--input_format")
-                args.append(self.input_format.value)
-            if self.skip_install_path.value:
-                args.append("--skip_install_path")
+        args = [
+            self.specimen_context.input_path,
+            f"{self.output_dir.input_path}/{self.output_name.value}",
+        ]
+        if len(self.input_sbom.input_path) > 0:
+            args.append(self.input_sbom.input_path)
+        if self.skip_gather.value:
+            args.append("--skip_gather")
+        if self.skip_relationships.value:
+            args.append("--skip_relationships")
+        if len(self.input_format.value) > 0:
             args.append("--input_format")
             args.append(self.input_format.value)
-            args.append("--output_format")
-            args.append(self.output_format.value)
+        if self.skip_install_path.value:
+            args.append("--skip_install_path")
+        args.append("--input_format")
+        args.append(self.input_format.value)
+        args.append("--output_format")
+        args.append(self.output_format.value)
+        # Suspend is not supported in headless mode
+        if not self.app.is_headless:
+            with self.app.suspend():
+                # pylint: disable-next=no-value-for-parameter
+                surfactant.cmd.generate.sbom(args, standalone_mode=False)
+                print("Press enter to continue")
+                _ = input()
+        else:
             # pylint: disable-next=no-value-for-parameter
             surfactant.cmd.generate.sbom(args, standalone_mode=False)
-            print("Press enter to continue")
-            _ = input()
         self.app.refresh()
 
 
@@ -249,9 +254,7 @@ class InputPathsHolder(textual.widgets.Static):
         for m_path in self.input_paths:
             if m_path.active:
                 yield textual.containers.HorizontalGroup(textual.widgets.Label("   "), m_path)
-        yield textual.containers.HorizontalGroup(
-            textual.widgets.Label("   "), textual.widgets.Button("+", id="add_input_path")
-        )
+        yield textual.widgets.Button("+", id="add_input_path")
 
     @textual.on(textual.widgets.Button.Pressed, "#add_input_path")
     def add_input_path(self):
@@ -276,6 +279,7 @@ class MergeTab(textual.widgets.Static):
             [("CyTRICS", "CyTRICS"), ("SPDX", "SPDX"), ("CSV", "CSV")], allow_blank=False
         )
         self.config_file = FileInput("Config File:", False, None)
+        self.btn = textual.widgets.Button("Run", id="run")
 
     def compose(self) -> textual.app.ComposeResult:
         yield self.merge_paths
@@ -292,12 +296,12 @@ class MergeTab(textual.widgets.Static):
             textual.widgets.Label("Output Format: "), self.output_format
         )
         yield self.config_file
-        yield textual.widgets.Button("Run", id="run")
+        yield self.btn
 
     @textual.on(textual.widgets.Button.Pressed, "#run")
     def handle_run(self):
         args = []
-        if len(self.merge_paths.merge_paths) == 0:
+        if len(self.merge_paths.input_paths) == 0:
             self.app.notify("No inputs given")
             return
         if len(self.output_dir.input_path) == 0:
@@ -306,27 +310,32 @@ class MergeTab(textual.widgets.Static):
         if len(self.output_name.value) == 0:
             self.app.notify("No output filename given")
             return
-        for m_path in self.merge_paths.merge_paths:
+        for m_path in self.merge_paths.input_paths:
             if m_path.active:
                 path = m_path.path_selector.input_path
                 if len(path) == 0:
                     self.app.notify("One or more inputs not given")
                     return
                 args.append(path)
-        with self.app.suspend():
-            args.append(f"{self.output_dir.input_path}/{self.output_name.value}")
-            args.append("--input_format")
-            args.append(self.input_format.value)
-            args.append("--output_format")
-            args.append(self.output_format.value)
-            config = self.config_file.input_path
-            if len(config) > 0:
-                args.append("--config_file")
-                args.append(config)
+        args.append(f"{self.output_dir.input_path}/{self.output_name.value}")
+        args.append("--input_format")
+        args.append(self.input_format.value)
+        args.append("--output_format")
+        args.append(self.output_format.value)
+        config = self.config_file.input_path
+        if len(config) > 0:
+            args.append("--config_file")
+            args.append(config)
+        # Suspend is not supported in headless mode
+        if not self.app.is_headless:
+            with self.app.suspend():
+                # pylint: disable-next=no-value-for-parameter
+                surfactant.cmd.merge.merge_command(args, standalone_mode=False)
+                print("Press enter to continue")
+                _ = input()
+        else:
             # pylint: disable-next=no-value-for-parameter
             surfactant.cmd.merge.merge_command(args, standalone_mode=False)
-            print("Press enter to continue")
-            _ = input()
         self.app.refresh()
 
 
@@ -371,6 +380,8 @@ class ContextTab(textual.widgets.Static):
         self.context_input = FileInput("Context file directory:", True, self.context_name)
         self.context_entries: list[ContextEntry] = []
         self.context_count = 1
+        self.save_btn = textual.widgets.Button("Save", id="save")
+        self.load_btn = textual.widgets.Button("Load", id="load")
 
     def compose(self) -> textual.app.ComposeResult:
         yield self.context_input
@@ -378,9 +389,9 @@ class ContextTab(textual.widgets.Static):
             textual.widgets.Label("Context filename: "), self.context_name
         )
         yield textual.containers.HorizontalGroup(
-            textual.widgets.Button("Save", id="save"),
+            self.save_btn,
             textual.widgets.Label("   "),
-            textual.widgets.Button("Load", id="load"),
+            self.load_btn,
         )
         yield textual.widgets.Rule()
         yield from self.context_entries
@@ -541,7 +552,6 @@ class PluginSettingsTab(textual.widgets.Static):
         self.app.notify("Settings saved.")
 
 
-# TODO: Rewrite to use ContentSwitcher?
 class TUI(textual.app.App):
     """An app for running Surfactant commands"""
 
