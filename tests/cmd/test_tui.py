@@ -20,7 +20,9 @@ async def test_generate(tmp_path):
     tui = TUI()
     async with tui.run_test() as pilot:
         # No good way to set files from here via the TUI - just set the path directly
-        tui.generate_tab.specimen_context.input_path = (testing_data / "Windows_dll_test_no1").as_posix()
+        tui.generate_tab.specimen_context.input_path = (
+            testing_data / "Windows_dll_test_no1"
+        ).as_posix()
         tui.generate_tab.output_dir.input_path = tmp_path.as_posix()
         # Type in the filename
         await pilot.click(tui.generate_tab.output_name)
