@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from tests.cmd import common
 from surfactant.cmd.tui import TUI
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
+from tests.cmd import common
 
 testing_data = Path(Path(__file__).parent.parent, "data")
 

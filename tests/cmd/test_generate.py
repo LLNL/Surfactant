@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from tests.cmd import common
 from surfactant.cmd.generate import sbom
+from tests.cmd import common
 
 testing_data = Path(Path(__file__).parent.parent, "data")
 
