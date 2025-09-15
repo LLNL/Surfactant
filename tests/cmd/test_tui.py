@@ -51,11 +51,10 @@ async def test_merge(tmp_path):
         await pilot.press("right")
         # Add two merge paths (I don't know why the pauses are needed)
         await pilot.click("#add_input_path")
-        await pilot.pause(0.1)
+        await pilot.pause(0.5)
         await pilot.click("#add_input_path")
-        await pilot.pause(0.1)
+        await pilot.pause(0.5)
         # Set the merge paths
-        print(tui.merge_tab.merge_paths.input_paths)
         for i, p in enumerate(tui.merge_tab.merge_paths.input_paths):
             p.path_selector.input_path = (tmp_path / f"sbom{i}.json").as_posix()
         tui.merge_tab.output_dir.input_path = tmp_path.as_posix()
