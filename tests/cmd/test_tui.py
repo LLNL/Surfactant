@@ -3,14 +3,18 @@
 #
 # SPDX-License-Identifier: MIT
 
-from pathlib import Path
-from surfactant.cmd.tui import TUI
-import pytest
-from . import common
-from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 import json
+from pathlib import Path
+
+import pytest
+
+from surfactant.cmd.tui import TUI
+from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
+
+from . import common
 
 testing_data = Path(Path(__file__).parent.parent, "data")
+
 
 @pytest.mark.asyncio
 async def test_generate(tmp_path):
@@ -24,7 +28,10 @@ async def test_generate(tmp_path):
         await pilot.press(*"out.json")
         # Run it
         await pilot.click("#run")
-    common.test_generate_result_no_install_prefix(str(tmp_path / "out.json"), str(testing_data / "Windows_dll_test_no1"))
+    common.test_generate_result_no_install_prefix(
+        str(tmp_path / "out.json"), str(testing_data / "Windows_dll_test_no1")
+    )
+
 
 @pytest.mark.asyncio
 async def test_merge(tmp_path):
@@ -60,6 +67,7 @@ async def test_merge(tmp_path):
         merged_sbom = input_reader.read_sbom(f)
     common.test_simple_merge_method(common.get_sbom1(), common.get_sbom2(), merged_sbom)
 
+
 __context_data = """
 [
   {
@@ -74,6 +82,7 @@ __context_data = """
   }
 ]
 """
+
 
 @pytest.mark.asyncio
 async def test_context_roundtrip(tmp_path):
@@ -95,6 +104,7 @@ async def test_context_roundtrip(tmp_path):
         inp = json.load(f)
     with open(tmp_path / "test_output.json") as f:
         output = json.load(f)
+
     # There doesn't seem to be any better way of doing this
     def ordered(obj):
         if isinstance(obj, dict):

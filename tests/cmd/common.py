@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: MIT
 
 import json
-import copy
+
 from surfactant.sbomtypes import SBOM
+
 
 def test_generate_result_no_install_prefix(output_path: str, extract_path: str):
     with open(output_path) as f:
@@ -148,6 +149,7 @@ sbom2_json = """{
 
 def get_sbom2():
     return SBOM.from_json(sbom2_json)
+
 
 def test_simple_merge_method(sbom1, sbom2, merged_sbom):
     # Capture each SBOM's original software entries

@@ -17,6 +17,7 @@ from surfactant.sbomtypes import SBOM
 
 from . import common
 
+
 def get_config():
     return {
         "system": {
