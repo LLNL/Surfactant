@@ -11,7 +11,7 @@ import string
 
 import pytest
 
-import tests.cmd.common as common
+from tests.cmd import common
 from surfactant.cmd.merge import merge
 from surfactant.plugin.manager import get_plugin_manager
 from surfactant.sbomtypes import SBOM

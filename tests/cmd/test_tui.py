@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-import tests.cmd.common as common
+from tests.cmd import common
 from surfactant.cmd.tui import TUI
 from surfactant.plugin.manager import find_io_plugin, get_plugin_manager
 
