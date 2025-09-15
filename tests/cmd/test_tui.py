@@ -20,15 +20,15 @@ async def test_generate(tmp_path):
     tui = TUI()
     async with tui.run_test() as pilot:
         # No good way to set files from here via the TUI - just set the path directly
-        tui.generate_tab.specimen_context.input_path = str(testing_data / "Windows_dll_test_no1")
-        tui.generate_tab.output_dir.input_path = str(tmp_path)
+        tui.generate_tab.specimen_context.input_path = (testing_data / "Windows_dll_test_no1").as_posix()
+        tui.generate_tab.output_dir.input_path = tmp_path.as_posix()
         # Type in the filename
         await pilot.click(tui.generate_tab.output_name)
         await pilot.press(*"out.json")
         # Run it
         await pilot.click("#run")
     common.test_generate_result_no_install_prefix(
-        str(tmp_path / "out.json"), str(testing_data / "Windows_dll_test_no1")
+        (tmp_path / "out.json").as_posix(), (testing_data / "Windows_dll_test_no1").as_posix()
     )
 
 
@@ -55,8 +55,8 @@ async def test_merge(tmp_path):
         # Set the merge paths
         print(tui.merge_tab.merge_paths.input_paths)
         for i, p in enumerate(tui.merge_tab.merge_paths.input_paths):
-            p.path_selector.input_path = str(tmp_path / f"sbom{i}.json")
-        tui.merge_tab.output_dir.input_path = str(tmp_path)
+            p.path_selector.input_path = (tmp_path / f"sbom{i}.json").as_posix()
+        tui.merge_tab.output_dir.input_path = tmp_path.as_posix()
         # Set the output name
         await pilot.click(tui.merge_tab.output_name)
         await pilot.press(*"test_out.json")
@@ -92,7 +92,7 @@ async def test_context_roundtrip(tmp_path):
         # Change to context tab
         await pilot.press(*("right", "right"))
         # Load an existing context file
-        tui.context_tab.context_input.input_path = str(tmp_path)
+        tui.context_tab.context_input.input_path = tmp_path.as_posix()
         tui.context_tab.context_name.value = "test_input.json"
         await pilot.click(tui.context_tab.load_btn)
         # Save it to a new file
