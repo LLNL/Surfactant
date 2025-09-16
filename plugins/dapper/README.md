@@ -35,13 +35,13 @@ Before using this plugin, you need to install Dapper and download the package da
    ```bash
    # List available datasets
    cargo run -- . --list-available-datasets
-   
+
    # Install specific Linux datasets
    cargo run -- . --install ubuntu-focal
    cargo run -- . --install ubuntu-jammy
    cargo run -- . --install ubuntu-noble
    cargo run -- . --install debian-bookworm
-   
+
    # Install all available datasets
    cargo run -- . --install all
    ```
@@ -119,7 +119,7 @@ surfactant plugin enable surfactantplugin_dapper
 All dataset commands must be run from the dapper directory:
 
 ```bash
-cd ~/dapper  
+cd ~/dapper
 ```
 
 Then run:
