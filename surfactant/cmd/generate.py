@@ -6,10 +6,11 @@ import os
 import pathlib
 import queue
 import re
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
+from networkx.exception import NetworkXError
 
 from surfactant import ContextEntry
 from surfactant.cmd.internal.generate_utils import SpecimenContextParamType
@@ -18,6 +19,7 @@ from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
+from surfactant.utils.paths import basename_posix, normalize_path
 
 
 # Converts from a true path to an install path
@@ -313,7 +315,7 @@ def sbom(
         while not contextQ.empty():
             entry: ContextEntry = contextQ.get()
             if entry.archive:
-                logger.info("Processing parent container " + str(entry.archive))
+                logger.info("Processing parent container " + {entry.archive})
                 # TODO: if the parent archive has an info extractor that does unpacking interally, should the children be added to the SBOM?
                 # current thoughts are (Syft) doesn't provide hash information for a proper SBOM software entry, so exclude these
                 # extractor plugins meant to unpack files could be okay when used on an "archive", but then extractPaths should be empty
@@ -400,17 +402,38 @@ def sbom(
                             user_institution_name=recorded_institution,
                             container_prefix=entry.containerPrefix,
                         )
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-exception-caught
                         raise RuntimeError(f"Unable to process: {filepath}") from e
                     entries.append(sw_parent)
                     entries.extend(sw_children if sw_children else [])
+                    # ------------------------------------------------------------------------
+                    # (Optional - Early Injection) Inject symlink paths into each Software entry so SBOM helper handles them
+                    # ------------------------------------------------------------------------
+                    # Early injection: add symlinks gathered so far so fs_tree sees them
+                    # for sw in entries:
+                    #     if sw.fileName is None:
+                    #         sw.fileName = []
+                    #     if sw.installPath is None:
+                    #         sw.installPath = []
+                    #     # Filename symlinks
+                    #     for link in filename_symlinks.get(sw.sha256, []):
+                    #         if link not in sw.fileName:
+                    #             logger.debug(f"Injecting filename symlink '{link}' for SHA {sw.sha256}")
+                    #             sw.fileName.append(link)
+                    #     # Install-path symlinks
+                    #     for link in file_symlinks.get(sw.sha256, []):
+                    #         if link not in sw.installPath:
+                    #             logger.debug(
+                    #                 f"Injecting install-path symlink '{link}' for SHA {sw.sha256}"
+                    #             )
+                    #             sw.installPath.append(link)
                     new_sbom.add_software_entries(entries, parent_entry=parent_entry)
                     # epath was a file, no need to walk the directory tree
                     continue
 
                 # epath is a directory, walk it
-                for cdir, dirs, files in os.walk(epath):
-                    logger.info("Processing " + str(cdir))
+                for cdir, dirs, files in os.walk(epath, followlinks=True):
+                    logger.info(f"Processing {cdir}")
 
                     if entry.installPrefix:
                         for dir_ in dirs:
@@ -427,8 +450,20 @@ def sbom(
                                         epath.as_posix(), entry.installPrefix, dest
                                     )
                                     dir_symlinks.append((install_source, install_dest))
+                                    # Reflect in fs_tree immediately
+                                    try:
+                                        new_sbom.record_symlink(
+                                            install_source, install_dest, subtype="directory"
+                                        )
+                                        logger.debug(
+                                            f"[fs_tree] (dir) {install_source} → {install_dest}"
+                                        )
+                                    except (NetworkXError, ValueError) as e:
+                                        logger.warning(
+                                            f"Failed to record directory symlink in fs_tree: {install_source} → {install_dest}: {e}"
+                                        )
 
-                    entries = []
+                    entries: List[Software] = []
                     for file in files:
                         # os.path.join will insert an OS specific separator between cdir and f
                         # need to make sure that separator is a / and not a \ on windows
@@ -476,6 +511,22 @@ def sbom(
                                     file_symlinks[true_file_sha256].append(install_filepath)
                                 else:
                                     dir_symlinks.append((install_filepath, install_dest))
+
+                                # Reflect this symlink in fs_tree immediately
+                                try:
+                                    subtype = (
+                                        "file" if os.path.isfile(true_filepath) else "directory"
+                                    )
+                                    new_sbom.record_symlink(
+                                        install_filepath, install_dest, subtype=subtype
+                                    )
+                                    logger.debug(
+                                        f"[fs_tree] ({subtype}) {install_filepath} → {install_dest}"
+                                    )
+                                except (NetworkXError, ValueError) as e:
+                                    logger.warning(
+                                        f"Failed to record symlink in fs_tree: {install_filepath} → {install_dest}: {e}"
+                                    )
                             # NOTE Two cases that don't get recorded (but maybe should?) are:
                             # 1. If the file pointed to is outside the extract paths, it won't
                             # appear in the SBOM at all -- is that desirable? If it were included,
@@ -524,64 +575,119 @@ def sbom(
 
                                 entries.append(sw_parent)
                                 entries.extend(sw_children if sw_children else [])
+                    # ------------------------------------------------------------------------
+                    # (Optional - Early Injection) Inject symlink paths into each Software entry so SBOM helper handles them
+                    # ------------------------------------------------------------------------
+                    # Early injection for batch (so fs_tree captures aliases)
+                    # for sw in entries:
+                    #     if sw.fileName is None:
+                    #         sw.fileName = []
+                    #     if sw.installPath is None:
+                    #         sw.installPath = []
+                    #     # Filename symlinks
+                    #     for link in filename_symlinks.get(sw.sha256, []):
+                    #         if link not in sw.fileName:
+                    #             logger.debug(f"Injecting filename symlink '{link}' for SHA {sw.sha256}")
+                    #             sw.fileName.append(link)
+                    #     # Install-path symlinks
+                    #     for link in file_symlinks.get(sw.sha256, []):
+                    #         if link not in sw.installPath:
+                    #             logger.debug(
+                    #                 f"Injecting install-path symlink '{link}' for SHA {sw.sha256}"
+                    #             )
+                    #             sw.installPath.append(link)
                     new_sbom.add_software_entries(entries, parent_entry=parent_entry)
 
-        # Add symlinks to install paths and file names
+        # === Restore symlink metadata using fs_tree (single source of truth) ===
+        # For each Software, gather incoming symlink edges into any fs_tree nodes that represent it.
         for software in new_sbom.software:
-            # ensure fileName, installPath, and metadata lists for the software entry have been created
-            # for a user supplied input SBOM, there are no guarantees
-            if software.fileName is None:
-                software.fileName = []
-            if software.installPath is None:
-                software.installPath = []
-            if software.metadata is None:
-                software.metadata = []
-            if software.sha256 in filename_symlinks:
-                filename_symlinks_added = []
-                for filename in filename_symlinks[software.sha256]:
-                    if filename not in software.fileName:
-                        software.fileName.append(filename)
-                        filename_symlinks_added.append(filename)
-                if filename_symlinks_added:
-                    # Store information on which file names are symlinks
-                    software.metadata.append({"fileNameSymlinks": filename_symlinks_added})
-            if software.sha256 in file_symlinks:
-                symlinks_added = []
-                for full_path in file_symlinks[software.sha256]:
-                    if full_path not in software.installPath:
-                        software.installPath.append(full_path)
-                        symlinks_added.append(full_path)
-                if symlinks_added:
-                    # Store information on which install paths are symlinks
-                    software.metadata.append({"installPathSymlinks": symlinks_added})
+            # Ensure lists exist
+            software.fileName = software.fileName or []
+            software.installPath = software.installPath or []
+            software.metadata = software.metadata or []
 
-        # Add directory symlink destinations to extract/install paths
-        for software in new_sbom.software:
-            # NOTE: this probably doesn't actually add any containerPath symlinks
-            for paths in (software.containerPath, software.installPath):
-                if paths is None:
+            # (1) Identify all fs_tree target nodes for this software:
+            #     (a) nodes explicitly tagged with software_uuid
+            #     (b) normalized install/container paths that are present as nodes
+            tagged_targets = {
+                node
+                for node, attrs in new_sbom.fs_tree.nodes(data=True)
+                if attrs.get("software_uuid") == software.UUID
+            }
+
+            path_targets = set()
+            for p in software.installPath or []:
+                np = normalize_path(p)
+                if new_sbom.fs_tree.has_node(np):
+                    path_targets.add(np)
+            for p in software.containerPath or []:
+                np = normalize_path(p)
+                if new_sbom.fs_tree.has_node(np):
+                    path_targets.add(np)
+
+            target_nodes = sorted(tagged_targets | path_targets)
+            logger.debug(
+                f"[fs_tree] Symlink metadata synthesis for UUID={software.UUID}: "
+                f"tagged_targets={sorted(tagged_targets)} "
+                f"path_targets={sorted(path_targets)} "
+                f"merged_targets={target_nodes}"
+            )
+
+            # (2) Mine fs_tree for symlink edges that point *to* any target node
+            install_symlink_set = set()
+            filename_symlink_set = set()
+
+            for target in target_nodes:
+                # Normalize *again* defensively in case a tagged node wasn't normalized for some reason
+                ntarget = normalize_path(target)
+                if not new_sbom.fs_tree.has_node(ntarget):
                     continue
-                paths_to_add = []
-                for path in paths:
-                    for link_source, link_dest in dir_symlinks:
-                        if path.startswith(link_dest):
-                            # Replace the matching start with the symlink instead
-                            # We can't use os.path.join here because we end up with absolute paths after
-                            # removing the common start.
-                            paths_to_add.append(path.replace(link_dest, link_source, 1))
-                if paths_to_add:
-                    found_md_installpathsymlinks = False
-                    # make sure software.metadata list has been initialized
-                    if software.metadata is None:
-                        software.metadata = []
-                    if isinstance(software.metadata, Iterable):
-                        for md in software.metadata:
-                            if isinstance(md, Dict) and "installPathSymlinks" in md:
-                                found_md_installpathsymlinks = True
-                                md["installPathSymlinks"] += paths_to_add
-                    if not found_md_installpathsymlinks:
-                        software.metadata.append({"installPathSymlinks": paths_to_add})
-                    paths += paths_to_add
+
+                for src, _dst, data in new_sbom.fs_tree.in_edges(ntarget, data=True):
+                    if data.get("type") == "symlink":
+                        install_symlink_set.add(src)
+
+                        # Derive filename alias when basename differs — no broad exceptions
+                        main_name = basename_posix(ntarget)  # harmless re-normalization
+                        link_name = basename_posix(src)
+
+                        if link_name and link_name != main_name:
+                            filename_symlink_set.add(link_name)
+
+                        logger.debug(
+                            f"[fs_tree] symlink edge {src} -> {ntarget} (main={main_name}, link={link_name})"
+                        )
+
+            # (3) Ensure lists contain these aliases (deduped)
+            for ipath in sorted(install_symlink_set):
+                if ipath not in software.installPath:
+                    software.installPath.append(ipath)
+            for fname in sorted(filename_symlink_set):
+                if fname not in software.fileName:
+                    software.fileName.append(fname)
+
+            # (4) Merge/append metadata entries without duplication
+            def _merge_md(key: str, values: List[str], *, _sw: Software = software) -> None:
+                if not values:
+                    return
+                for md in _sw.metadata:
+                    if isinstance(md, dict) and key in md:
+                        md[key] = sorted(set(md[key]) | set(values))
+                        logger.debug(f"[fs_tree] merged metadata {key}: {md[key]}")
+                        break
+                else:
+                    _sw.metadata.append({key: sorted(set(values))})
+                    logger.debug(f"[fs_tree] appended metadata {key}: {values}")
+
+            _merge_md("installPathSymlinks", list(install_symlink_set))
+            _merge_md("fileNameSymlinks", list(filename_symlink_set))
+
+            logger.debug(
+                f"[fs_tree] Metadata for {software.sha256[:12]}: "
+                f"{len(install_symlink_set)} installPathSymlinks, "
+                f"{len(filename_symlink_set)} fileNameSymlinks"
+            )
+
     else:
         logger.info("Skipping gathering file metadata and adding software entries")
 
