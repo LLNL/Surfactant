@@ -315,7 +315,7 @@ def sbom(
         while not contextQ.empty():
             entry: ContextEntry = contextQ.get()
             if entry.archive:
-                logger.info("Processing parent container " + str(entry.archive))
+                logger.info(f"Processing parent container " + {entry.archive})
                 # TODO: if the parent archive has an info extractor that does unpacking interally, should the children be added to the SBOM?
                 # current thoughts are (Syft) doesn't provide hash information for a proper SBOM software entry, so exclude these
                 # extractor plugins meant to unpack files could be okay when used on an "archive", but then extractPaths should be empty
@@ -432,8 +432,8 @@ def sbom(
                     continue
 
                 # epath is a directory, walk it
-                for cdir, dirs, files in os.walk(epath):
-                    logger.info("Processing " + str(cdir))
+                for cdir, dirs, files in os.walk(epath, followlinks=True):
+                    logger.info(f"Processing {cdir}")
 
                     if entry.installPrefix:
                         for dir_ in dirs:
