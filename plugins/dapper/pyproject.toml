@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surfactantplugin-dapper"
+authors = [
+    {name = "Monwen Shen", email = "shen14@llnl.gov"},
+]
+description = "Surfactant plugin for looking up package information in Dapper databases"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["surfactant"]
+license = {text = "MIT License"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "dapper-python",
+    "surfactant",
+]
+dynamic = ["version"]
+
+[project.entry-points."surfactant"]
+"surfactantplugin_dapper" = "surfactantplugin_dapper"
+
+[tool.setuptools]
+py-modules=["surfactantplugin_dapper"]
