@@ -71,7 +71,7 @@ def get_files(
     """
     extracted_files = {}
     index = 0
-    hash_used = ""
+    hash_used = None
     # If there is only one index, return as an integer, not a list of integers
     if isinstance(indicies, int):
         directory = directories[indicies].decode()
