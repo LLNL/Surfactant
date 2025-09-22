@@ -33,8 +33,7 @@ def algo_from_id(algo_identifier: int) -> str:
         return "md5"
     if 8 == algo_identifier:
         return "sha256"
-    else:
-        return f"Unkown: {algo_identifier}"
+    return f"Unkown: {algo_identifier}"
 
 
 def algo_from_len(hash: bytes) -> Optional[str]:
@@ -54,8 +53,7 @@ def algo_from_len(hash: bytes) -> Optional[str]:
         return "sha256"
     if 128 == length:
         return "sha512"
-    else:
-        raise ValueError(f"case for: {hash.decode()} not implemented for algo_from_len")
+    raise ValueError(f"case for: {hash.decode()} not implemented for algo_from_len")
 
 
 def get_files(
