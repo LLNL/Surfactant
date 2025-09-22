@@ -5,7 +5,7 @@
 # import struct
 # from pathlib import Path
 # from queue import Queue                       # Present for use in future extraction implementation
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 import rpmfile
 from loguru import logger
@@ -20,6 +20,41 @@ def supports_file(filetype) -> bool:
     """Returns if filetype contains "RPM Package" """
     logger.debug("Checks for RPM Package")
     return "RPM Package" in filetype
+
+
+def algo_from_id(algo_identifier: int) -> str:
+    """Grabs the hashing algorithm used for payload files.
+    
+    Args:
+        algo_identifier (int): Integer in RPM file associated with a hashing algorithm
+    """
+    match(algo_identifier):
+        case 0:
+            return "md5"
+        case 8:
+            return "sha256"
+    return f"Unkown: {algo_identifier}"
+
+def algo_from_len(hash: bytes) -> Optional[str]:
+    """Grabs hashing algorithm from length. Do not use when sha3 hashes are a possibility
+    
+    Args:
+        length (int): Length of hashing algorithm
+    """
+    match(len(hash.decode())):
+        case 0:
+            return None
+        case 36:
+            return "md5"
+        case 40:
+            return "sha1"
+        case 64:
+            return "sha256"
+        case 128:
+            return "sha512"
+        case _:
+            raise ValueError(f"case for: {hash.decode()} not implemented for algo_from_len")
+
 
 
 def get_files(
@@ -73,21 +108,6 @@ def combine_lists(key_list: List[bytes], value_list: List[bytes]) -> Dict:
         index += 1
     return result
 
-
-def extract_hash_algo(algo_identifier: int) -> str:
-    """Grabs the hashing algorithm used for payload files.
-    
-    Args:
-        algo_identifier (int): Integer in RPM file associated with a hashing algorithm
-    """
-    match(algo_identifier):
-        case 0:
-            return "md5"
-        case 8:
-            return "sha256"
-    return f"Unkown: {algo_identifier}"
-
-
 @surfactant.plugin.hookimpl
 def extract_file_info(
     sbom: SBOM,
@@ -137,7 +157,6 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             "archive_compression",
             "optflags",
             "sha256",
-            "md5",
         ]
         for key in simple_keys:
             if key in header:
@@ -156,11 +175,22 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
         for key, value in complex_keys.items():
             if key in header:
                 file_details["rpm"][key] = combine_lists(header[key], header[value])
+        # md5 field in rpm file may be a different algorithm
+        md5_algo = algo_from_len(header["md5"])
+        if md5_algo is str:
+            file_details["rpm"][md5_algo] = header["md5"].decode()
         if "buildtime" in header:
             file_details["rpm"]["buildtime"] = header["buildtime"]
         if "basenames" in header:
+            file_hash_location=""
+            if "filedigests" in header:
+                file_hash_location = "filedigests"
+            else:
+                file_hash_location = "filemd5s"
             file_details["rpm"]["associated_files"] = get_files(
-                header["dirnames"], header["basenames"], header["dirindexes"], header["payloaddigest"]
-            )
-            file_details["rpm"]["payload_algo"] = extract_hash_algo(header["payloaddigestalgo"])
+                header["dirnames"], 
+                header["basenames"], 
+                header["dirindexes"], 
+                header[file_hash_location])
+            file_details["rpm"]["file_algo"] = algo_from_id(header["filedigestalgo"])
         return file_details
