@@ -36,7 +36,6 @@ def algo_from_id(algo_identifier: int) -> str:
     return f"Unknown: {algo_identifier}"
 
 
-
 def algo_from_len(input_hash: bytes) -> Optional[str]:
     """Grabs hashing algorithm from length. Do not use when sha3 hashes are a possibility
 
