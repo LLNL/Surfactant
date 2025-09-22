@@ -55,7 +55,7 @@ dependencies = [
     "click==8.*",
     "loguru==0.7.*",
     "tomlkit==0.13.*",
-    "textual>=5,<7",
+    "textual==6.*",
     "requests>=2.32.3",
     "rarfile==4.2.*",
     "networkx>=2.6",
