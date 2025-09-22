@@ -183,7 +183,9 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
         try:
             md5_algo = algo_from_len(header["md5"])
         except ValueError as e:
-            logger.error(f"Issue when extracting top-level md5 hash for rpm package: {filename}\nError raised: {e}")
+            logger.error(
+                f"Issue when extracting top-level md5 hash for rpm package: {filename}\nError raised: {e}"
+            )
         if isinstance(md5_algo, str):
             file_details["rpm"][md5_algo] = header["md5"].decode()
         if "buildtime" in header:
@@ -206,5 +208,7 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
                 )
                 file_details["rpm"]["file_algo"] = file_algo
             except ValueError as e:
-                logger.error(f"Error when extracting hash algo from payload files from {filename}\nError: {e}")
+                logger.error(
+                    f"Error when extracting hash algo from payload files from {filename}\nError: {e}"
+                )
         return file_details
