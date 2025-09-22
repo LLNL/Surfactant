@@ -132,16 +132,21 @@ def extract_ole_info(filename: str) -> Dict[str, Any]:
 def extract_msi(filename: str, output_folder: str) -> List[Tuple[str, str]]:
     output_path = Path(output_folder)
 
-    with pymsi.Package(Path(filename)) as package:
-        msi = pymsi.Msi(package, True)
+    try:
+        with pymsi.Package(Path(filename)) as package:
+            msi = pymsi.Msi(package, True)
 
-        preprocess_msi_decompression(msi)
+            preprocess_msi_decompression(msi)
 
-        entries = extract_msi_root(msi.root, output_path)
-        if entries:
-            logger.debug(f"Extracted {entries}")
-            logger.info(f"Extracted MSI contents to {output_path}")
-        return entries
+            entries = extract_msi_root(msi.root, output_path)
+            if entries:
+                logger.debug(f"Extracted {entries}")
+                logger.info(f"Extracted MSI contents to {output_path}")
+            return entries
+    except (FileNotFoundError, UnicodeDecodeError, ValueError, OSError, KeyError) as e:
+        # if the msi files are missing .cab files, FileNotFoundError will catch it
+        logger.warning(f"Issue with MSI extraction: {e}")
+        return []
 
 
 def preprocess_msi_decompression(msi: pymsi.Msi):
