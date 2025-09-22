@@ -31,7 +31,7 @@ def algo_from_id(algo_identifier: int) -> str:
     """
     if 0 == algo_identifier:
         return "md5"
-    elif 8 == algo_identifier:
+    if 8 == algo_identifier:
         return "sha256"
     else:
         return f"Unkown: {algo_identifier}"
@@ -46,13 +46,13 @@ def algo_from_len(hash: bytes) -> Optional[str]:
     length = len(hash.decode())
     if 0 == length:
         return None
-    elif 36 == length:
+    if 36 == length:
         return "md5"
-    elif 40 == length:
+    if 40 == length:
         return "sha1"
-    elif 64 == length:
+    if 64 == length:
         return "sha256"
-    elif 128 == length:
+    if 128 == length:
         return "sha512"
     else:
         raise ValueError(f"case for: {hash.decode()} not implemented for algo_from_len")
