@@ -21,7 +21,7 @@ def supports_file(filetype) -> bool:
     logger.debug("Checks for RPM Package")
     return "RPM Package" in filetype
 
-
+# Currently unused, keeping in case we'd like to use the filedigestalgo field instead of hash length
 def algo_from_id(algo_identifier: int) -> str:
     """Grabs the hashing algorithm used for payload files.
     
@@ -59,7 +59,7 @@ def algo_from_len(hash: bytes) -> Optional[str]:
 
 def get_files(
     directories: List[bytes], files: List[bytes], indicies: List[int], hashes: List[bytes]
-) -> Dict[Any, Any]:
+) -> Tuple[Dict[Any, Any], Optional[str]]:
     """Extracts files from the given directories and files list.
 
     Args:
@@ -68,24 +68,28 @@ def get_files(
         indicies (List[bytes]): Directory associated with current file.
         hashes: (List[bytes]): Hash for each file
     Returns:
-        List of extracted file paths.
+        List of extracted file paths and the hash used for them.
     """
     extracted_files = {}
     index = 0
+    hash_used = ""
     # If there is only one index, return as an integer, not a list of integers
     if isinstance(indicies, int):
         directory = directories[indicies].decode()
         file_name = files[index].decode()
         file_hash = hashes[index].decode()
         extracted_files[f"{directory}{file_name}"] = file_hash
+        hash_used = algo_from_len(hashes[index])
     else:
         while index < len(indicies):
             directory = directories[indicies[index]].decode()
             file_name = files[index].decode()
             file_hash = hashes[index].decode()
             extracted_files[f"{directory}{file_name}"] = file_hash
+            if not hash_used:
+                hash_used = algo_from_len(hashes[index])
             index += 1
-    return extracted_files
+    return (extracted_files, hash_used)
 
 
 def combine_lists(key_list: List[bytes], value_list: List[bytes]) -> Dict:
@@ -187,10 +191,12 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
                 file_hash_location = "filedigests"
             else:
                 file_hash_location = "filemd5s"
-            file_details["rpm"]["associated_files"] = get_files(
+            # Storing which algorithm is used for the file hashes
+            file_algo=""
+            (file_details["rpm"]["associated_files"], file_algo) = get_files(
                 header["dirnames"], 
                 header["basenames"], 
                 header["dirindexes"], 
                 header[file_hash_location])
-            file_details["rpm"]["file_algo"] = algo_from_id(header["filedigestalgo"])
+            file_details["rpm"]["file_algo"] = file_algo
         return file_details
