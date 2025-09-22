@@ -33,7 +33,8 @@ def algo_from_id(algo_identifier: int) -> str:
         return "md5"
     if 8 == algo_identifier:
         return "sha256"
-    return f"Unkown: {algo_identifier}"
+    return f"Unknown: {algo_identifier}"
+
 
 
 def algo_from_len(input_hash: bytes) -> Optional[str]:
