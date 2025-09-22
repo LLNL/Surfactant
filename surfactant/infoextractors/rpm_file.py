@@ -29,12 +29,12 @@ def algo_from_id(algo_identifier: int) -> str:
     Args:
         algo_identifier (int): Integer in RPM file associated with a hashing algorithm
     """
-    match algo_identifier:
-        case 0:
-            return "md5"
-        case 8:
-            return "sha256"
-    return f"Unkown: {algo_identifier}"
+    if 0 == algo_identifier:
+        return "md5"
+    elif 8 == algo_identifier:
+        return "sha256"
+    else:
+        return f"Unkown: {algo_identifier}"
 
 
 def algo_from_len(hash: bytes) -> Optional[str]:
