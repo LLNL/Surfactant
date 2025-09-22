@@ -180,7 +180,10 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
             if key in header:
                 file_details["rpm"][key] = combine_lists(header[key], header[value])
         # md5 field in rpm file may be a different algorithm
-        md5_algo = algo_from_len(header["md5"])
+        try:
+            md5_algo = algo_from_len(header["md5"])
+        except ValueError as e:
+            logger.error(f"Issue when extracting top-level md5 hash for rpm package: {filename}\nError raised: {e}")
         if isinstance(md5_algo, str):
             file_details["rpm"][md5_algo] = header["md5"].decode()
         if "buildtime" in header:
@@ -191,13 +194,17 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
                 file_hash_location = "filedigests"
             else:
                 file_hash_location = "filemd5s"
-            # Storing which algorithm is used for the file hashes
-            file_algo = ""
-            (file_details["rpm"]["associated_files"], file_algo) = get_files(
-                header["dirnames"],
-                header["basenames"],
-                header["dirindexes"],
-                header[file_hash_location],
-            )
-            file_details["rpm"]["file_algo"] = file_algo
+            # Handling error here so filename can be included in error output
+            try:
+                # Storing which algorithm is used for the file hashes
+                file_algo = ""
+                (file_details["rpm"]["associated_files"], file_algo) = get_files(
+                    header["dirnames"],
+                    header["basenames"],
+                    header["dirindexes"],
+                    header[file_hash_location],
+                )
+                file_details["rpm"]["file_algo"] = file_algo
+            except ValueError as e:
+                logger.error(f"Error when extracting hash algo from payload files from {filename}\nError: {e}")
         return file_details
