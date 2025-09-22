@@ -5,7 +5,7 @@
 # import struct
 # from pathlib import Path
 # from queue import Queue                       # Present for use in future extraction implementation
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import rpmfile
 from loguru import logger
@@ -21,27 +21,29 @@ def supports_file(filetype) -> bool:
     logger.debug("Checks for RPM Package")
     return "RPM Package" in filetype
 
+
 # Currently unused, keeping in case we'd like to use the filedigestalgo field instead of hash length
 def algo_from_id(algo_identifier: int) -> str:
     """Grabs the hashing algorithm used for payload files.
-    
+
     Args:
         algo_identifier (int): Integer in RPM file associated with a hashing algorithm
     """
-    match(algo_identifier):
+    match algo_identifier:
         case 0:
             return "md5"
         case 8:
             return "sha256"
     return f"Unkown: {algo_identifier}"
 
+
 def algo_from_len(hash: bytes) -> Optional[str]:
     """Grabs hashing algorithm from length. Do not use when sha3 hashes are a possibility
-    
+
     Args:
         length (int): Length of hashing algorithm
     """
-    match(len(hash.decode())):
+    match len(hash.decode()):
         case 0:
             return None
         case 36:
@@ -54,7 +56,6 @@ def algo_from_len(hash: bytes) -> Optional[str]:
             return "sha512"
         case _:
             raise ValueError(f"case for: {hash.decode()} not implemented for algo_from_len")
-
 
 
 def get_files(
@@ -111,6 +112,7 @@ def combine_lists(key_list: List[bytes], value_list: List[bytes]) -> Dict:
         result[name] = version
         index += 1
     return result
+
 
 @surfactant.plugin.hookimpl
 def extract_file_info(
@@ -186,17 +188,18 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
         if "buildtime" in header:
             file_details["rpm"]["buildtime"] = header["buildtime"]
         if "basenames" in header:
-            file_hash_location=""
+            file_hash_location = ""
             if "filedigests" in header:
                 file_hash_location = "filedigests"
             else:
                 file_hash_location = "filemd5s"
             # Storing which algorithm is used for the file hashes
-            file_algo=""
+            file_algo = ""
             (file_details["rpm"]["associated_files"], file_algo) = get_files(
-                header["dirnames"], 
-                header["basenames"], 
-                header["dirindexes"], 
-                header[file_hash_location])
+                header["dirnames"],
+                header["basenames"],
+                header["dirindexes"],
+                header[file_hash_location],
+            )
             file_details["rpm"]["file_algo"] = file_algo
         return file_details
