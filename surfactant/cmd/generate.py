@@ -297,7 +297,8 @@ def sbom(
 
     # define the new_sbom variable type
     new_sbom: SBOM
-    if not input_sbom:
+    # Click has Sentinel.UNSET type that doesn't have READ attribute, which may appear when running regression test script
+    if not input_sbom or not hasattr(input_sbom, "read"):
         new_sbom = SBOM()
     else:
         new_sbom = input_reader.read_sbom(input_sbom)
