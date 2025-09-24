@@ -9,6 +9,7 @@ from surfactant.sbomtypes import SBOM, Software
 try:
     from dapper_python.databases.linuxDB import LinuxDB
     from dapper_python.dataset_loader import DatasetCatalog
+    from dapper_python.normalize import NormalizedFileName, normalize_file_name
 
     DAPPER_AVAILABLE = True
 except ImportError:
@@ -21,23 +22,36 @@ class DapperPackageInfo:
     """Information about a package found by Dapper."""
 
     package_name: str
-    full_package_name: str
     package_dataset: str
-    normalized_name: str
     original_name: str
     file_path: str
+    normalized_name: Optional[str] = None
+    version: Optional[str] = None
+    soabi: Optional[str] = None
 
     @classmethod
     def from_result(cls, result, dataset_name, filename):
         """Create DapperPackageInfo from database query result."""
 
+        normalized_result = normalize_file_name(filename)
+
+        if isinstance(normalized_result, NormalizedFileName):
+            version = normalized_result.version
+            soabi = normalized_result.soabi
+            normalized_name = normalized_result.name
+        else:
+            version = None
+            soabi = None
+            normalized_name = filename
+
         return cls(
             package_name=result.package_name,
-            full_package_name=result.full_package_name,
             package_dataset=dataset_name,
-            normalized_name=result.normalized_name,
             original_name=filename,
+            normalized_name=normalized_name,
             file_path=str(result.file_path),
+            version=version,
+            soabi=soabi,
         )
 
 
@@ -118,7 +132,7 @@ class DapperPlugin:  # pylint: disable=too-few-public-methods
                         continue
 
                     linux_db = LinuxDB(db_path)
-                    results = linux_db.query_filename(filename, normalize=True)
+                    results = linux_db.query_filename(filename, normalize=False)
 
                     if results:
                         # Add results from this dataset

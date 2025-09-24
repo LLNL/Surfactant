@@ -19,29 +19,22 @@ The Dapper plugin enhances Surfactant's SBOM generation by identifying which sof
 
 Before using this plugin, you need to install Dapper and download the package databases:
 
-1. Install dapper-python (required for database queries):
+1. Install Dapper:
    ```bash
-   pip install dapper-python
+   cargo install dapper
    ```
 
-2. Clone and build Dapper:
-   ```bash
-   git clone https://github.com/LLNL/dapper.git
-   cd dapper
-   cargo build --release
-   ```
-
-3. Download required datasets (must be run from the dapper directory):
+2. Download required datasets (must be run from the dapper directory):
    ```bash
    # List available datasets
    cargo run -- . --list-available-datasets
-   
+
    # Install specific Linux datasets
    cargo run -- . --install ubuntu-focal
    cargo run -- . --install ubuntu-jammy
    cargo run -- . --install ubuntu-noble
    cargo run -- . --install debian-bookworm
-   
+
    # Install all available datasets
    cargo run -- . --install all
    ```
@@ -70,24 +63,26 @@ The plugin adds package information to the metadata field of software entries in
 
 ```json
 {
-  "dapper_packages": [
-    {
-      "package_name": "coreutils",
-      "full_package_name": "coreutils/focal 8.30-3ubuntu2",
-      "package_dataset": "ubuntu-focal",
-      "normalized_name": "cat",
-      "original_name": "cat",
-      "file_path": "bin/cat"
-    },
-    {
-      "package_name": "coreutils",
-      "full_package_name": "coreutils/jammy 8.32-4.1ubuntu1",
-      "package_dataset": "ubuntu-jammy",
-      "normalized_name": "cat",
-      "original_name": "cat",
-      "file_path": "bin/cat"
-    }
-  ]
+   "dapper_packages": [
+            {
+              "package_name": "libssl3",
+              "package_dataset": "ubuntu-jammy",
+              "original_name": "libssl.so.3",
+              "file_path": "usr/lib/x86_64-linux-gnu/libssl.so.3",
+              "normalized_name": "libssl.so",
+              "version": null,
+              "soabi": "3"
+            },
+            {
+              "package_name": "libssl3t64",
+              "package_dataset": "ubuntu-noble",
+              "original_name": "libssl.so.3",
+              "file_path": "usr/lib/x86_64-linux-gnu/libssl.so.3",
+              "normalized_name": "libssl.so",
+              "version": null,
+              "soabi": "3"
+            }
+          ]
 }
 ```
 
@@ -119,7 +114,7 @@ surfactant plugin enable surfactantplugin_dapper
 All dataset commands must be run from the dapper directory:
 
 ```bash
-cd ~/dapper  
+cd ~/dapper
 ```
 
 Then run:
@@ -161,7 +156,7 @@ pipx uninject surfactant surfactantplugin-dapper
 MIT License (same as Surfactant)
 
 ## Additional Resources
-
+- [Dapper on crates.io](https://crates.io/crates/dapper)
 - [Dapper Documentation](https://dapper.readthedocs.io)
 - [Dapper GitHub Repository](https://github.com/LLNL/dapper)
 - [Surfactant Documentation](https://surfactant.readthedocs.io)
