@@ -92,5 +92,6 @@ download_images_from_toml(toml_file_path, image_directory)
 # -------------------------------------------------------------------
 # Make database_sources.toml available as a static file at the site root
 # https://surfactant.readthedocs.io/en/latest/database_sources.toml
+# Make CyTRICS schema available as a static file in a subfolder
 # -------------------------------------------------------------------
-html_extra_path = ["database_sources.toml"]
+html_extra_path = ["database_sources.toml", "cytrics_schema/schema.json"]
