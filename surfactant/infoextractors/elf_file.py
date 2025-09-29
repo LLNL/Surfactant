@@ -63,7 +63,7 @@ def extract_elf_info(filename: str) -> object:
         # Don't assume OS is Linux, map e_ident EI_OSABI value to an OS name
         file_details: Dict[str, Any] = {"OS": ""}
         file_details["elfIdent"] = get_elf_ident_from_file_header(f, elf.little_endian)
-        file_details["elfDependencies"] = []
+        file_details["elfDependencies"] = set()
         file_details["elfRpath"] = []
         file_details["elfRunpath"] = []
         file_details["elfSoname"] = []
@@ -112,7 +112,7 @@ def extract_elf_info(filename: str) -> object:
                     for tag in section.iter_tags():
                         if tag.entry.d_tag == "DT_NEEDED":
                             # Shared libraries
-                            file_details["elfDependencies"].append(tag.needed)
+                            file_details["elfDependencies"].add(tag.needed)
                         elif tag.entry.d_tag == "DT_RPATH":
                             # Library rpath
                             file_details["elfRpath"].append(tag.rpath)
@@ -163,6 +163,14 @@ def extract_elf_info(filename: str) -> object:
         for segment in elf.iter_segments():
             if segment["p_type"] == "PT_GNU_RELRO":
                 file_details["elfGnuRelro"] = True
+            elif segment["p_type"] == "PT_DYNAMIC":
+                for tag in segment.iter_tags():
+                    if tag.entry.d_tag == "DT_NEEDED":
+                        # Shared libraries
+                        file_details["elfDependencies"].add(tag.needed)
+
+        # Ensure the set of dependencies is JSON-encodable
+        file_details["elfDependencies"] = list(file_details["elfDependencies"])
 
         if elf["e_type"] == "ET_EXEC":
             file_details["elfIsExe"] = True
