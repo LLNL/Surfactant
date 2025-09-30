@@ -599,37 +599,84 @@ def sbom(
 def resolve_link(
     path: str, cur_dir: str, extract_dir: str, install_prefix: Optional[str] = None
 ) -> Union[str, None]:
-    assert cur_dir.startswith(extract_dir)
-    # Links seen before
-    seen_paths = set()
-    # os.readlink() resolves one step of a symlink
+    """
+    Safely resolve a symlink, handling cycles, relative targets, and absolute targets.
+
+    Args:
+        path (str): The symlink path to resolve.
+        cur_dir (str): The current directory where `path` resides.
+        extract_dir (str): The root extraction directory; used to rebase relative links.
+        install_prefix (Optional[str]): Optional prefix for install paths (used for metadata).
+    
+    Returns:
+        str | None:
+            - Fully resolved path as a string if successful.
+            - None if resolution fails (e.g., cycle detected or nonexistent target).
+
+    Behavior:
+        - Detects and aborts on infinite symlink cycles.
+        - Preserves absolute symlinks exactly (`/bin/ls` → `/bin/ls`).
+        - Resolves relative symlinks against the directory containing the link.
+        - Rebases paths under `extract_dir` if they lie inside it.
+        - Logs detailed debug messages for each hop, warnings for missing targets,
+          and critical messages for cycles.
+    """
+    path = pathlib.Path(path)
+    cur_dir = pathlib.Path(cur_dir)
+    extract_dir = pathlib.Path(extract_dir)
+
+    # Safety check: cur_dir must be inside extract_dir
+    assert str(cur_dir).startswith(str(extract_dir)), \
+        f"cur_dir={cur_dir} must be inside extract_dir={extract_dir}"
+
+    seen_paths: set[pathlib.Path] = set()
     current_path = path
-    steps = 0
-    while os.path.islink(current_path):
-        # If we've already seen this then we're in an infinite loop
+
+    logger.debug(f"Starting resolution for {path} (cur_dir={cur_dir})")
+
+    while current_path.is_symlink():
+        # Detect infinite loop (symlink cycle)
         if current_path in seen_paths:
-            logger.warning(f"Resolving symlink {path} encountered infinite loop at {current_path}")
+            logger.warning(f"Infinite loop detected at {current_path}")
             return None
         seen_paths.add(current_path)
-        dest = os.readlink(current_path)
-        # Convert relative paths to absolute local paths
-        if not pathlib.Path(dest).is_absolute():
-            common_path = os.path.commonpath([cur_dir, extract_dir])
-            local_path = os.path.join("/", cur_dir[len(common_path) :])
-            dest = os.path.join(local_path, dest)
-        # Convert to a canonical form to eliminate .. to prevent reading above extract_dir
-        # NOTE: should consider detecting reading above extract_dir and warn the user about incomplete file system structure issues
-        dest = os.path.normpath(dest)
-        if install_prefix and dest.startswith(install_prefix):
-            dest = dest[len(install_prefix) :]
-        # We need to get a non-absolute path so os.path.join works as we want
-        if pathlib.Path(dest).is_absolute():
-            # TODO: Windows support, but how???
-            dest = dest[1:]
-        # Rebase to get the true location
-        current_path = os.path.join(extract_dir, dest)
-        cur_dir = os.path.dirname(current_path)
-    if not os.path.exists(current_path):
-        logger.warning(f"Resolved symlink {path} to a path that doesn't exist {current_path}")
+
+        # Read the symlink's target (can be absolute or relative)
+        dest = current_path.readlink()
+        logger.debug(
+            f"{current_path} → {dest} "
+            f"({'absolute' if dest.is_absolute() else 'relative'})"
+        )
+
+        if dest.is_absolute():
+            # Absolute symlink: keep the target as-is
+            new_path = dest
+        else:
+            # Relative symlink: resolve relative to the symlink's directory
+            new_path = (cur_dir / dest).resolve(strict=False)
+
+        # Normalize path (cleans ../, ./, etc.)
+        new_path = new_path.resolve(strict=False)
+
+        # Rebase under extract_dir if the resolved path is inside it
+        try:
+            rel = new_path.relative_to(extract_dir)
+        except ValueError:
+            # Path lies outside extract_dir → leave absolute
+            logger.debug(f"{new_path} is outside {extract_dir}, leaving absolute")
+        else:
+            new_path = extract_dir / rel
+            logger.debug(f"Rebasing under extract_dir → {new_path}")
+
+        # Advance to the next hop in the symlink chain
+        current_path = new_path
+        cur_dir = current_path.parent
+        logger.debug(f"Stepping into {current_path}")
+
+    # Final resolved path (no longer a symlink)
+    if not current_path.exists():
+        logger.warning(f"{path} → {current_path}, but target does not exist")
         return None
-    return os.path.normpath(current_path)
+
+    logger.debug(f"Final resolved path for {path} → {current_path}")
+    return str(current_path)
