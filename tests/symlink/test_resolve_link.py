@@ -79,7 +79,9 @@ def test_absolute_symlink_preserved(_setup_symlinks):
     """
     paths = _setup_symlinks
     result = resolve_link(paths["abs_link"], paths["cur_dir"], paths["extract_dir"])
-    assert result == paths["fake_abs_target"]
+    
+    # Compare Path objects so Windows extended paths (\\?\) don't break equality
+    assert Path(result) == Path(paths["fake_abs_target"])
     assert Path(result).exists()
 
 
