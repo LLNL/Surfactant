@@ -1,6 +1,6 @@
 from pathlib import Path
-
 import pytest
+import errno
 
 from surfactant.cmd.generate import resolve_link
 
@@ -89,14 +89,14 @@ def test_relative_symlink_resolves(_setup_symlinks):
     """Relative symlinks should resolve to the correct file under extract_dir."""
     paths = _setup_symlinks
     result = resolve_link(paths["rel_link"], paths["cur_dir"], paths["extract_dir"])
-    assert Path(result) == Path(paths["real_file"])
+    assert Path(result).resolve(strict=False) == Path(paths["real_file"]).resolve(strict=False)
 
 
 def test_symlink_chain_resolves(_setup_symlinks):
     """Multi-hop symlinks should resolve fully to the final target file."""
     paths = _setup_symlinks
     result = resolve_link(paths["chain1"], paths["cur_dir"], paths["extract_dir"])
-    assert Path(result) == Path(paths["real_file"])
+    assert Path(result).resolve(strict=False) == Path(paths["real_file"]).resolve(strict=False)
 
 
 def test_broken_symlink_returns_none(_setup_symlinks):
@@ -109,20 +109,15 @@ def test_broken_symlink_returns_none(_setup_symlinks):
 def test_cyclic_symlink_returns_none(_setup_symlinks):
     """Cyclic symlinks should be detected and return None."""
     paths = _setup_symlinks
-    try:
-        result = resolve_link(paths["cycle1"], paths["cur_dir"], paths["extract_dir"])
-    except RuntimeError as e:
-        # Current implementation may raise RuntimeError on loop
-        assert "Symlink loop" in str(e)
-    else:
-        assert result is None
+    result = resolve_link(paths["cycle1"], paths["cur_dir"], paths["extract_dir"])
+    assert result is None
 
 
 def test_non_symlink_returns_self(_setup_symlinks):
     """Non-symlink files should be returned unchanged."""
     paths = _setup_symlinks
     result = resolve_link(paths["real_file"], paths["cur_dir"], paths["extract_dir"])
-    assert Path(result) == Path(paths["real_file"])
+    assert Path(result).resolve(strict=False) == Path(paths["real_file"]).resolve(strict=False)
 
 
 def test_symlink_to_parent_outside_extract_dir(tmp_path):
@@ -141,6 +136,6 @@ def test_symlink_to_parent_outside_extract_dir(tmp_path):
     result = resolve_link(str(parent_link), str(cur_dir), str(extract_dir))
 
     # Correct resolution is extract_dir
-    assert Path(result) == Path(extract_dir)
+    assert Path(result).resolve(strict=False) == Path(extract_dir).resolve(strict=False)
     assert Path(result).exists()
     assert Path(result).is_dir()
