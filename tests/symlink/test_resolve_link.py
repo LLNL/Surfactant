@@ -4,7 +4,7 @@ from surfactant.cmd.generate import resolve_link
 
 
 @pytest.fixture
-def setup_symlinks(tmp_path):
+def _setup_symlinks(tmp_path):
     """
     Create a temporary directory tree for testing resolve_link().
 
@@ -70,41 +70,41 @@ def setup_symlinks(tmp_path):
     }
 
 
-def test_absolute_symlink_preserved(setup_symlinks):
+def test_absolute_symlink_preserved(_setup_symlinks):
     """
     Absolute symlinks should resolve to their real absolute target,
     even if it's outside extract_dir.
     """
-    paths = setup_symlinks
+    paths = _setup_symlinks
     result = resolve_link(paths["abs_link"], paths["cur_dir"], paths["extract_dir"])
     assert result == paths["fake_abs_target"]
     assert Path(result).exists()
 
 
-def test_relative_symlink_resolves(setup_symlinks):
+def test_relative_symlink_resolves(_setup_symlinks):
     """Relative symlinks should resolve to the correct file under extract_dir."""
-    paths = setup_symlinks
+    paths = _setup_symlinks
     result = resolve_link(paths["rel_link"], paths["cur_dir"], paths["extract_dir"])
     assert result == paths["real_file"]
 
 
-def test_symlink_chain_resolves(setup_symlinks):
+def test_symlink_chain_resolves(_setup_symlinks):
     """Multi-hop symlinks should resolve fully to the final target file."""
-    paths = setup_symlinks
+    paths = _setup_symlinks
     result = resolve_link(paths["chain1"], paths["cur_dir"], paths["extract_dir"])
     assert result == paths["real_file"]
 
 
-def test_broken_symlink_returns_none(setup_symlinks):
+def test_broken_symlink_returns_none(_setup_symlinks):
     """Broken symlinks should return None instead of a bogus path."""
-    paths = setup_symlinks
+    paths = _setup_symlinks
     result = resolve_link(paths["broken"], paths["cur_dir"], paths["extract_dir"])
     assert result is None
 
 
-def test_cyclic_symlink_returns_none(setup_symlinks):
+def test_cyclic_symlink_returns_none(_setup_symlinks):
     """Cyclic symlinks should be detected and return None."""
-    paths = setup_symlinks
+    paths = _setup_symlinks
     try:
         result = resolve_link(paths["cycle1"], paths["cur_dir"], paths["extract_dir"])
     except RuntimeError as e:
@@ -114,8 +114,8 @@ def test_cyclic_symlink_returns_none(setup_symlinks):
         assert result is None
 
 
-def test_non_symlink_returns_self(setup_symlinks):
+def test_non_symlink_returns_self(_setup_symlinks):
     """Non-symlink files should be returned unchanged."""
-    paths = setup_symlinks
+    paths = _setup_symlinks
     result = resolve_link(paths["real_file"], paths["cur_dir"], paths["extract_dir"])
     assert result == paths["real_file"]
