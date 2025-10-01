@@ -1,6 +1,6 @@
 from pathlib import Path
+
 import pytest
-import errno
 
 from surfactant.cmd.generate import resolve_link
 
