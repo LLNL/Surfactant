@@ -1,5 +1,7 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
 from surfactant.cmd.generate import resolve_link
 
 

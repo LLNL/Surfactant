@@ -607,7 +607,7 @@ def resolve_link(
         cur_dir (str): The current directory where `path` resides.
         extract_dir (str): The root extraction directory; used to rebase relative links.
         install_prefix (Optional[str]): Optional prefix for install paths (used for metadata).
-    
+
     Returns:
         str | None:
             - Fully resolved path as a string if successful.
@@ -626,8 +626,9 @@ def resolve_link(
     extract_dir = pathlib.Path(extract_dir)
 
     # Safety check: cur_dir must be inside extract_dir
-    assert str(cur_dir).startswith(str(extract_dir)), \
+    assert str(cur_dir).startswith(str(extract_dir)), (
         f"cur_dir={cur_dir} must be inside extract_dir={extract_dir}"
+    )
 
     seen_paths: set[pathlib.Path] = set()
     current_path = path
@@ -644,8 +645,7 @@ def resolve_link(
         # Read the symlink's target (can be absolute or relative)
         dest = current_path.readlink()
         logger.debug(
-            f"{current_path} → {dest} "
-            f"({'absolute' if dest.is_absolute() else 'relative'})"
+            f"{current_path} → {dest} ({'absolute' if dest.is_absolute() else 'relative'})"
         )
 
         if dest.is_absolute():
