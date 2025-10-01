@@ -125,26 +125,20 @@ def test_non_symlink_returns_self(_setup_symlinks):
 
 def test_symlink_to_parent_outside_extract_dir(tmp_path):
     """
-    Symlink to '..' should resolve to the real parent directory outside extract_dir,
-    not be rebased back inside.
-
-    This validates the new, correct behavior: resolve_link must preserve
-    the true target instead of incorrectly rebasing it as the old implementation did.
+    Symlink to '..' from inside extract/bin should resolve to extract/,
+    not be rebased further up into tmp_path.
     """
-    # Create extract_dir/bin
     extract_dir = tmp_path / "extract"
     extract_dir.mkdir()
     cur_dir = extract_dir / "bin"
     cur_dir.mkdir()
 
-    # Create symlink pointing to parent (..)
     parent_link = cur_dir / "parent"
     parent_link.symlink_to("..")
 
-    # Resolve symlink
     result = resolve_link(str(parent_link), str(cur_dir), str(extract_dir))
 
-    # Expect the path above extract_dir (tmp_path), not extract_dir itself
-    assert result == str(tmp_path)
+    # Correct resolution is extract_dir
+    assert result == str(extract_dir)
     assert Path(result).exists()
     assert Path(result).is_dir()
