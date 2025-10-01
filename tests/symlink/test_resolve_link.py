@@ -89,14 +89,14 @@ def test_relative_symlink_resolves(_setup_symlinks):
     """Relative symlinks should resolve to the correct file under extract_dir."""
     paths = _setup_symlinks
     result = resolve_link(paths["rel_link"], paths["cur_dir"], paths["extract_dir"])
-    assert result == paths["real_file"]
+    assert Path(result) == Path(paths["real_file"])
 
 
 def test_symlink_chain_resolves(_setup_symlinks):
     """Multi-hop symlinks should resolve fully to the final target file."""
     paths = _setup_symlinks
     result = resolve_link(paths["chain1"], paths["cur_dir"], paths["extract_dir"])
-    assert result == paths["real_file"]
+    assert Path(result) == Path(paths["real_file"])
 
 
 def test_broken_symlink_returns_none(_setup_symlinks):
@@ -122,7 +122,7 @@ def test_non_symlink_returns_self(_setup_symlinks):
     """Non-symlink files should be returned unchanged."""
     paths = _setup_symlinks
     result = resolve_link(paths["real_file"], paths["cur_dir"], paths["extract_dir"])
-    assert result == paths["real_file"]
+    assert Path(result) == Path(paths["real_file"])
 
 
 def test_symlink_to_parent_outside_extract_dir(tmp_path):
@@ -141,6 +141,6 @@ def test_symlink_to_parent_outside_extract_dir(tmp_path):
     result = resolve_link(str(parent_link), str(cur_dir), str(extract_dir))
 
     # Correct resolution is extract_dir
-    assert result == str(extract_dir)
+    assert Path(result) == Path(extract_dir)
     assert Path(result).exists()
     assert Path(result).is_dir()
