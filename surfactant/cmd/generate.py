@@ -606,7 +606,9 @@ def resolve_link(
         path (str): The symlink path to resolve.
         cur_dir (str): The current directory where `path` resides.
         extract_dir (str): The root extraction directory; used to rebase relative links.
-        install_prefix (Optional[str]): Optional prefix for install paths (used for metadata).
+        install_prefix (Optional[str]): Optional prefix for install paths. If given,
+            absolute symlinks starting with this prefix are stripped of it before
+            being rebased into extract_dir.
 
     Returns:
         str | None:
@@ -615,78 +617,95 @@ def resolve_link(
 
     Behavior:
         - Detects and aborts on infinite symlink cycles.
-        - Preserves absolute symlinks exactly (`/bin/ls` → `/bin/ls`).
-        - Resolves relative symlinks against the directory containing the link.
-        - Rebases paths under `extract_dir` if they lie inside it.
-        - Logs detailed debug messages for each hop, warnings for missing targets,
-          and critical messages for cycles.
+        - For absolute symlinks:
+            * If install_prefix is provided and the symlink target starts with it,
+              strip the prefix and rebase the remainder into extract_dir.
+              Example: install_prefix="/" and dest="/bin/ls"
+                       → <extract_dir>/bin/ls
+              Example: install_prefix="C:/" and dest="C:/Program Files/App/foo.dll"
+                       → <extract_dir>/Program Files/App/foo.dll
+            * If no install_prefix is given, assume "/" and rebase all absolutes
+              relative to extract_dir.
+        - For relative symlinks, resolve relative to the symlink’s containing directory.
+        - Normalizes paths with Path.resolve(strict=False) to collapse "." and ".."
+          without requiring the file to exist.
+        - If the normalized path is inside extract_dir, rebase it again for consistency.
+        - Logs debug messages for each hop, warnings for broken symlinks,
+          and warnings for cycle detection.
     """
     path = pathlib.Path(path)
     cur_dir = pathlib.Path(cur_dir)
     extract_dir = pathlib.Path(extract_dir)
 
-    # Sanity check: we only want to operate on paths inside extract_dir
+    # Ensure we are resolving paths under the extraction root
     assert str(cur_dir).startswith(str(extract_dir)), (
         f"cur_dir={cur_dir} must be inside extract_dir={extract_dir}"
     )
 
-    seen_paths: set[pathlib.Path] = set()  # Track visited symlinks to break manual cycles
+    seen_paths: set[pathlib.Path] = set()
     current_path = path
 
     logger.debug(f"Starting resolution for {path} (cur_dir={cur_dir})")
 
-    # Follow symlinks until we reach a real file/directory
+    # Follow symlinks until a non-symlink is reached
     while current_path.is_symlink():
-        # Detect infinite loop (e.g., A → B → A). Return None instead of looping forever.
         if current_path in seen_paths:
             logger.warning(f"Infinite loop detected at {current_path}")
             return None
         seen_paths.add(current_path)
 
-        # Read the symlink's target (may be absolute or relative)
         dest = current_path.readlink()
+        dest_str = str(dest)
         logger.debug(
             f"{current_path} → {dest} ({'absolute' if dest.is_absolute() else 'relative'})"
         )
 
-        # Construct the next path
-        if dest.is_absolute():
-            # Absolute symlink: keep target unchanged (e.g., /bin/ls)
-            new_path = dest
+        if dest.is_absolute() or (install_prefix and dest_str.startswith(install_prefix)):
+            if install_prefix and dest_str.startswith(install_prefix):
+                # Strip install_prefix before rebasing
+                rel_dest = dest_str[len(install_prefix):].lstrip("/")
+                new_path = extract_dir / rel_dest
+                logger.debug(
+                    f"Rebased absolute symlink {dest} using install_prefix {install_prefix} → {new_path}"
+                )
+            else:
+                # Default: rebase against root prefix
+                try:
+                    new_path = extract_dir / dest.relative_to("/")
+                except ValueError:
+                    # dest.relative_to("/") can fail if it's not a Unix-style root path
+                    rel_dest = dest_str.lstrip("/")
+                    new_path = extract_dir / rel_dest
+                logger.debug(f"Rebased absolute symlink {dest} → {new_path}")
         else:
-            # Relative symlink: resolve relative to the symlink’s directory
+            # Relative symlink: resolve against symlink’s directory
             new_path = cur_dir / dest
 
-        # Normalize path safely to remove ".." and "." and follow symlinks
+        # Normalize without requiring the file to exist
         try:
             new_path = pathlib.Path(new_path).resolve(strict=False)
         except (OSError, RuntimeError) as e:
-            # On Windows: OSError [WinError 1921] if cycle encountered
-            # On Linux/macOS: OSError[ELOOP] or RuntimeError for looped resolution
             logger.warning(f"Symlink resolution failed for {current_path}: {e}")
             return None
 
-        # If the resolved path is inside extract_dir, rebase it
+        # If still under extract_dir, ensure canonical representation
         try:
             rel = new_path.relative_to(extract_dir)
         except ValueError:
-            # Outside extract_dir → leave as absolute
             logger.debug(f"{new_path} is outside {extract_dir}, leaving absolute")
         else:
-            # Inside extract_dir → normalize under extract_dir
             new_path = extract_dir / rel
             logger.debug(f"Rebasing under extract_dir → {new_path}")
 
-        # Advance to next hop in chain
         current_path = new_path
         cur_dir = current_path.parent
         logger.debug(f"Stepping into {current_path}")
 
-    # At this point, current_path is no longer a symlink
+    # Final resolved path
     if not current_path.exists():
-        # Final target does not exist → broken symlink
         logger.warning(f"{path} → {current_path}, but target does not exist")
         return None
 
     logger.debug(f"Final resolved path for {path} → {current_path}")
     return str(current_path)
+
