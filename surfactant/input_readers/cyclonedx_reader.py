@@ -46,21 +46,24 @@ def read_sbom(infile) -> SBOM:
         xuuid = uuids[xbomref]
         xuuid = xbomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
 
-        for ydependency in xdependency.dependencies:
+        for ydependency in xdependency.get("dependsOn", []):
             ybomref = ydependency.ref.value
-            if ybomref not in uuids:
-                new_uuid = str(uuid.uuid4())
-                uuids[ybomref] = new_uuid
-            yuuid = uuids[ybomref]
-            yuuid = ybomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
-
-            # It is unclear what different CycloneDX dependency types exist outside of the type shown in the official examples of CycloneDX SBOM types
-            # and how those would map to CyTRICS's relationship types, so each relationship between CycloneDX components will be labeled as "Contains" for the time being
-
-            # TODO: Add in other relationship type mappings
-            rel_type = "Contains"
-            cytrics_rel = Relationship(xUUID=xuuid, yUUID=yuuid, relationship=rel_type)
+            # if ybomref not in uuids:
+            #     new_uuid = str(uuid.uuid4())
+            #     uuids[ybomref] = new_uuid
+            # yuuid = uuids[ybomref]
+            # yuuid = ybomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
+            # Relationship: xbomref "depends on" ybomref
+            rel_type = "DependsOn"
+            cytrics_rel = Relationship(xUUID=xbomref, yUUID=ybomref, relationship=rel_type)
             sbom.add_relationship(cytrics_rel)
+
+            for provided_bomref in xdependency.get("provides", []):
+                rel_type = "Provides"
+                cytrics_rel = Relationship(
+                    xUUID=xbomref, yUUID=provided_bomref, relationship=rel_type
+                )
+                sbom.add_relationship(cytrics_rel)
 
     # Create a CyTRICS software entry for each CycloneDX component
     for component in bom.components:
@@ -147,15 +150,26 @@ def convert_cyclonedx_component_to_software(
         metadata["publisher"] = component.publisher
     if component.group:
         metadata["group"] = component.group
-    # if component.scope:
-    # Need to see some examples of this property in use
-    # TODO: Verify that this is serializable
-    #    metadata["scope"] = component.scope
-    # if component.licenses:
-    # TODO: Create a proper conversion of the object into a serializable format
-    #    metadata["licenses"] = component.licenses
+
+    if component.scope:
+        # scope is an enum (of string) so need to make it serializable
+        metadata["scope"] = component.scope.value
+
+    if component.licenses:  # licenses is an array object
+        metadata["licenses"] = []
+        for license_info in component.licenses:
+            license_obj = license_info.license
+            license_dict = {}
+            if hasattr(license_obj, "id") and license_obj.id:
+                license_dict["id"] = license_obj.id
+            if hasattr(license_obj, "url") and license_obj.url:
+                license_dict["url"] = license_obj.url
+            metadata["licenses"].append(license_dict)
+
     if component.copyright:
         metadata["copyright"] = component.copyright
+
+    # isn't purl already a string-- do we need to construct it like below?
     if component.purl:
         purl = (
             "pkg:"
@@ -180,20 +194,26 @@ def convert_cyclonedx_component_to_software(
 
         metadata["purl"] = purl
 
-    # if component.external_references:
-    # *** Not JSON serializable on its own despite being a serializable class.
-    # TODO: Create a proper conversion of the object into a serializable format
-    #    metadata["external_references"] = component.external_references
+    if hasattr(component, "external_references") and component.external_references:
+        for ext_ref in component.external_references:
+            ext_dict = {}
+            # .type is an enum, get its string value
+            if hasattr(ext_ref, "type") and ext_ref.type:
+                ext_dict["type"] = str(ext_ref.type).lower()
+            if hasattr(ext_ref, "url") and ext_ref.url:
+                ext_dict["url"] = str(ext_ref.url)
+            if hasattr(ext_ref, "comment") and ext_ref.comment:
+                ext_dict["comment"] = ext_ref.comment
+            metadata["externalReferences"].append(ext_dict)
 
-    # if component.properties:
-    # *** Not JSON serializable on its own despite being a serializable class.
-    # TODO: Create a proper conversion of the object into a serializable format
-    #    metadata["properties"] = component.properties
+    if component.properties:  # is array of objects
+        metadata["properties"] = [prop.to_dict() for prop in component.properties]
 
-    # if component.release_notes:
-    # Need to see some examples of this property in use
-    # TODO: Create a proper conversion of the object into a serializable format
-    #    metadata["release_notes"] = component.release_notes
+    if component.release_notes:
+        metadata["properties"] = []
+        for prop in component.properties:
+            prop_dict = prop.to_dict()
+            metadata["properties"].append(prop_dict)
 
     if component.cpe:
         metadata["cpe"] = component.cpe
