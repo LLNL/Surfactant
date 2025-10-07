@@ -434,6 +434,7 @@ def sbom(
                         # os.path.join will insert an OS specific separator between cdir and f
                         # need to make sure that separator is a / and not a \ on windows
                         filepath = pathlib.Path(cdir, file).as_posix()
+                        logger.debug(f"Processing filepath: {filepath}")
                         # TODO: add CI tests for generating SBOMs in scenarios with symlinks... (and just generally more CI tests overall...)
                         # Record symlink details but don't run info extractors on them
                         if os.path.islink(filepath):
