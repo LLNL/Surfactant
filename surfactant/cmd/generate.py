@@ -447,7 +447,7 @@ def sbom(
                             # Compute sha256 hash of the file; skip if the file pointed by the symlink can't be opened
                             try:
                                 true_file_sha256 = sha256sum(true_filepath)
-                            except FileNotFoundError:
+                            except (FileNotFoundError, PermissionError):
                                 logger.warning(
                                     f"Unable to open symlink {filepath} pointing to {true_filepath}"
                                 )
