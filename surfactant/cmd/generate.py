@@ -796,11 +796,6 @@ def resolve_link(
     # Final resolved path validation
     if not current_path.exists():
         logger.warning(f"{path} → {current_path}, but target does not exist")
-        return None
-
-    # Final boundary check
-    if not current_path.exists():
-        logger.warning(f"{path} → {current_path}, but target does not exist")
     else:
         try:
             current_path.relative_to(extract_dir)
