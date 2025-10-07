@@ -250,7 +250,7 @@ def identify_file_type(filepath: str, context: Optional[ContextEntry] = None) ->
             if magic_bytes[:4] == b"\xed\xab\xee\xdb":
                 filetype_matches.append("RPM Package")
 
-    except FileNotFoundError:
+    except (FileNotFoundError, PermissionError):
         return None
 
     return filetype_matches if filetype_matches else None

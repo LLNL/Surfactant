@@ -19,7 +19,7 @@ def get_file_info(filename):
     """
     try:
         fstats = os.stat(filename)
-    except FileNotFoundError:
+    except (FileNotFoundError, PermissionError):
         return None
 
     filehidden = False
@@ -69,7 +69,7 @@ def calc_file_hashes(filename):
                 sha256_hash.update(mv[:n])
                 sha1_hash.update(mv[:n])
                 md5_hash.update(mv[:n])
-    except FileNotFoundError:
+    except (FileNotFoundError, PermissionError):
         return None
     return {
         "sha256": sha256_hash.hexdigest(),
@@ -79,7 +79,7 @@ def calc_file_hashes(filename):
 
 
 def sha256sum(filename):
-    """Calculate sha256 hash for the file specified. May throw a FileNotFound exception.
+    """Calculate sha256 hash for the file specified. May throw a FileNotFound or PermissionError exception.
 
     Args:
         filename (str): Name of file.
@@ -89,6 +89,7 @@ def sha256sum(filename):
 
     Raises:
         FileNotFoundError: If the given filename could not be found.
+        PermissionError: If the given filename could not be read.
     """
     h = sha256()
     with open(filename, "rb") as f:
