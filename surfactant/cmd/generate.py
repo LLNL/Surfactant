@@ -799,13 +799,17 @@ def resolve_link(
         return None
 
     # Final boundary check
-    try:
-        current_path.relative_to(extract_dir)
-    except ValueError:
-        logger.info(
-            f"Skipping final resolved path for {path}: {current_path} is outside extraction directory {extract_dir}"
-        )
-        return None  # Exclude from SBOM
+    if not current_path.exists():
+        logger.warning(f"{path} → {current_path}, but target does not exist")
+    else:
+        try:
+            current_path.relative_to(extract_dir)
+        except ValueError:
+            logger.info(
+                f"Skipping final resolved path for {path}: {current_path} is outside extraction directory {extract_dir}"
+            )
+        else:
+            logger.debug(f"Final resolved path for {path} → {current_path}")
+            return str(current_path)
 
-    logger.debug(f"Final resolved path for {path} → {current_path}")
-    return str(current_path)
+    return None
