@@ -655,19 +655,19 @@ def resolve_link(
     2. **Absolute Symlinks**
        Handled in the following priority order:
 
-       (a) **Within install_prefix**  
+       (a) **Within install_prefix**
            If the target starts with `install_prefix`, it is preserved verbatim
-           (no rebasing or exclusion).  
+           (no rebasing or exclusion).
            Example:
                install_prefix="/usr/bin"
                link="/usr/bin/ls" → preserved as "/usr/bin/ls"
 
-       (b) **Existing system path (outside extract_dir)**  
+       (b) **Existing system path (outside extract_dir)**
            If the target exists on the host filesystem but lies outside `extract_dir`
            (e.g., "/bin/ls", "/lib/x86_64-linux-gnu/libc.so.6"), it is excluded
            from SBOM generation.
 
-       (c) **Relocatable absolute path (no existing match)**  
+       (c) **Relocatable absolute path (no existing match)**
            If the absolute target does not exist locally and does not match
            `install_prefix`, it is rebased under `extract_dir`.
            Example:

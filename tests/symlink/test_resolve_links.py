@@ -61,7 +61,10 @@ def test_symlinks():
         )
 
         # link_to_non_existant → broken chain → excluded
-        assert resolve_link(os.path.join(base_path, "link_to_non_existant"), base_path, base_path) is None
+        assert (
+            resolve_link(os.path.join(base_path, "link_to_non_existant"), base_path, base_path)
+            is None
+        )
 
 
 @pytest.mark.skipif(os.name != "posix", reason="requires POSIX OS")
@@ -139,7 +142,6 @@ def test_resolve_link_cycle_detection(tmp_path):
 
     assert result_a is None, "Cyclic symlink a↔b should be detected"
     assert result_b is None, "Cyclic symlink b↔a should be detected"
-
 
 
 if __name__ == "__main__":
