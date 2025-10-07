@@ -736,22 +736,22 @@ def resolve_link(
         )
 
         if dest.is_absolute():
-            # --- Case 1: target already under install_prefix (e.g., /usr/bin/echo)
+            # Case 1: target already under install_prefix (e.g., /usr/bin/echo)
             if install_prefix and dest_str.startswith(install_prefix):
                 new_path = pathlib.Path(dest_str)
                 logger.debug(
                     f"Absolute symlink {dest} already under install_prefix {install_prefix} → {new_path}"
                 )
 
-            # --- Case 2: absolute path exists on host system (outside extract_dir)
+            # Case 2: absolute path exists on host system (outside extract_dir)
             elif pathlib.Path(dest_str).exists():
                 new_path = pathlib.Path(dest_str)
                 logger.warning(
                     f"Skipping symlink {path}: resolved target {new_path} lies outside extraction directory {extract_dir}"
                 )
-                return None  # ⛔ Exclude from SBOM
+                return None  # Exclude from SBOM
 
-            # --- Case 3: relocatable absolute path (no existing match)
+            # Case 3: relocatable absolute path (no existing match)
             else:
                 try:
                     new_path = extract_dir / dest.relative_to("/")
@@ -764,7 +764,7 @@ def resolve_link(
                 )
 
         else:
-            # --- Relative symlink: resolve relative to current directory
+            # Relative symlink: resolve relative to current directory
             new_path = cur_dir / dest
             logger.debug(f"Resolved relative symlink {dest} → {new_path}")
 
@@ -782,7 +782,7 @@ def resolve_link(
             logger.info(
                 f"Skipping symlink {path}: resolved path {new_path} is outside extraction directory {extract_dir}"
             )
-            return None  # ⛔ Exclude from SBOM
+            return None  # Exclude from SBOM
         else:
             new_path = extract_dir / rel
             logger.debug(f"Rebasing under extract_dir → {new_path}")
@@ -791,19 +791,19 @@ def resolve_link(
         cur_dir = current_path.parent
         logger.debug(f"Stepping into {current_path}")
 
-    # --- Final resolved path validation
+    # Final resolved path validation
     if not current_path.exists():
         logger.warning(f"{path} → {current_path}, but target does not exist")
         return None
 
-    # --- Final boundary check
+    # Final boundary check
     try:
         current_path.relative_to(extract_dir)
     except ValueError:
         logger.info(
             f"Skipping final resolved path for {path}: {current_path} is outside extraction directory {extract_dir}"
         )
-        return None  # ⛔ Exclude from SBOM
+        return None  # Exclude from SBOM
 
     logger.debug(f"Final resolved path for {path} → {current_path}")
     return str(current_path)
