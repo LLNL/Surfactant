@@ -783,10 +783,12 @@ def resolve_link(
                 f"Skipping symlink {path}: resolved path {new_path} is outside extraction directory {extract_dir}"
             )
             return None  # Exclude from SBOM
-        else:
-            new_path = extract_dir / rel
-            logger.debug(f"Rebasing under extract_dir → {new_path}")
 
+        # Rebase the path under extract_dir for the next iteration
+        new_path = extract_dir / rel
+        logger.debug(f"Rebasing under extract_dir → {new_path}")
+
+        # Step into the next path in the chain
         current_path = new_path
         cur_dir = current_path.parent
         logger.debug(f"Stepping into {current_path}")
