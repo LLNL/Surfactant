@@ -13,7 +13,7 @@ from cyclonedx.model.component import Component
 from cyclonedx.model.vulnerability import Vulnerability
 
 import surfactant.plugin
-from surfactant.sbomtypes import SBOM, Observation, Relationship, Software, SoftwareComponent
+from surfactant.sbomtypes import SBOM, Observation, Software, SoftwareComponent
 
 
 @surfactant.plugin.hookimpl
@@ -48,22 +48,24 @@ def read_sbom(infile) -> SBOM:
 
         for ydependency in xdependency.get("dependsOn", []):
             ybomref = ydependency.ref.value
-            # if ybomref not in uuids:
-            #     new_uuid = str(uuid.uuid4())
-            #     uuids[ybomref] = new_uuid
-            # yuuid = uuids[ybomref]
-            # yuuid = ybomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
-            # Relationship: xbomref "depends on" ybomref
-            rel_type = "DependsOn"
-            cytrics_rel = Relationship(xUUID=xbomref, yUUID=ybomref, relationship=rel_type)
-            sbom.add_relationship(cytrics_rel)
+            if ybomref not in uuids:
+                new_uuid = str(uuid.uuid4())
+                uuids[ybomref] = new_uuid
+            yuuid = uuids[ybomref]
+            yuuid = ybomref  # Comment this line if you want the uuid to look like the CyTRICS uuid, uncomment if you want the uuid to match the bom-ref
 
-            for provided_bomref in xdependency.get("provides", []):
-                rel_type = "Provides"
-                cytrics_rel = Relationship(
-                    xUUID=xbomref, yUUID=provided_bomref, relationship=rel_type
-                )
-                sbom.add_relationship(cytrics_rel)
+            # TODO
+            # # Relationship: xbomref "depends on" ybomref
+            # rel_type = "DependsOn"
+            # cytrics_rel = Relationship(xUUID=xbomref, yUUID=ybomref, relationship=rel_type)
+            # sbom.add_relationship(cytrics_rel)
+
+            # for provided_bomref in xdependency.get("provides", []):
+            #     rel_type = "Provides"
+            #     cytrics_rel = Relationship(
+            #         xUUID=xbomref, yUUID=provided_bomref, relationship=rel_type
+            #     )
+            #     sbom.add_relationship(cytrics_rel)
 
     # Create a CyTRICS software entry for each CycloneDX component
     for component in bom.components:
@@ -155,15 +157,19 @@ def convert_cyclonedx_component_to_software(
         # scope is an enum (of string) so need to make it serializable
         metadata["scope"] = component.scope.value
 
-    if component.licenses:  # licenses is an array object
+    if hasattr(component, "licenses") and component.licenses:
         metadata["licenses"] = []
-        for license_info in component.licenses:
-            license_obj = license_info.license
+        for license_obj in component.licenses:
             license_dict = {}
-            if hasattr(license_obj, "id") and license_obj.id:
-                license_dict["id"] = license_obj.id
-            if hasattr(license_obj, "url") and license_obj.url:
-                license_dict["url"] = license_obj.url
+            license_id = getattr(license_obj, "id", None)
+            if license_id:
+                license_dict["id"] = license_id
+            license_url = getattr(license_obj, "url", None)
+            if license_url:
+                license_dict["url"] = str(license_url)
+            license_name = getattr(license_obj, "name", None)
+            if license_name:
+                license_dict["name"] = license_name
             metadata["licenses"].append(license_dict)
 
     if component.copyright:
@@ -195,6 +201,7 @@ def convert_cyclonedx_component_to_software(
         metadata["purl"] = purl
 
     if hasattr(component, "external_references") and component.external_references:
+        metadata["externalReferences"] = []
         for ext_ref in component.external_references:
             ext_dict = {}
             # .type is an enum, get its string value
@@ -209,19 +216,19 @@ def convert_cyclonedx_component_to_software(
     if component.properties:  # is array of objects
         metadata["properties"] = [prop.to_dict() for prop in component.properties]
 
-    if component.release_notes:
-        metadata["properties"] = []
-        for prop in component.properties:
-            prop_dict = prop.to_dict()
-            metadata["properties"].append(prop_dict)
+    if component.release_notes:  # is an object with one required field
+        metadata["releaseNotes"] = {"type": component.release_notes.type}
 
     if component.cpe:
         metadata["cpe"] = component.cpe
 
-    # if component.swid:
-    # *** Not JSON serializable on its own despite being a serializable class.
-    # TODO: Create a proper conversion of the object into a serializable format
-    #    metadata["swid"] = str(component.swid)
+    if component.swid:  # is an object
+        swid_obj = component.swid
+        metadata["swid"] = {}
+        if getattr(swid_obj, "tagId", None):
+            metadata["swid"]["tagId"] = swid_obj.tagId
+        if getattr(swid_obj, "name", None):
+            metadata["swid"]["name"] = swid_obj.name
 
     # if component.pedigree:
     # *** Not JSON serializable on its own despite being a serializable class.
@@ -238,30 +245,36 @@ def convert_cyclonedx_component_to_software(
     if component.manufacturer:
         metadata["manufacturer"] = component.manufacturer
 
-    # if component.authors:
-    # Need to see some examples of this property in use
-    # TODO: Create a proper conversion of the object into a serializable format
-    #    metadata["authors"] = component.authors
+    if component.authors:  # list of objects
+        authors_list = []
+        for author in component.authors:
+            author_dict = {}
+            if getattr(author, "bom_ref", None):
+                author_dict["bom-ref"] = author.bom_ref
+            if getattr(author, "name", None):
+                author_dict["name"] = author.name
+            if getattr(author, "email", None):
+                author_dict["email"] = author.email
+            if getattr(author, "phone", None):
+                author_dict["phone"] = author.phone
+            authors_list.append(author_dict)
+        metadata["authors"] = authors_list
 
     # if component.omnibor_ids:
     # Need to see some examples of this property in use
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["omnibor_ids"] = component.omnibor_ids
 
-    # if component.swhids:
-    # Need to see some examples of this property in use
-    # TODO: Create a proper conversion of the object into a serializable format
-    #    metadata["swhids"] = component.swhids
+    if component.swhid:  # array of strings
+        metadata["swhid"] = component.swhid
 
     # if component.crypto_properties:
     # Need to see some examples of this property in use
     # TODO: Create a proper conversion of the object into a serializable format
     #    metadata["crypto_properties"] = component.crypto_properties
 
-    # if component.tags:
-    # Need to see some examples of this property in use
-    # TODO: Create a proper conversion of the object into a serializable format
-    #    metadata["tags"] = component.tags
+    if component.tags:  # tags is an array of strings
+        metadata["tags"] = component.tags
 
     # TODO: Distinguish CycloneDX files from containers
 
