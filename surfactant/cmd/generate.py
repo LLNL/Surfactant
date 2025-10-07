@@ -597,39 +597,214 @@ def sbom(
 
 
 def resolve_link(
-    path: str, cur_dir: str, extract_dir: str, install_prefix: Optional[str] = None
+    path: str,
+    cur_dir: str,
+    extract_dir: str,
+    install_prefix: Optional[str] = None,
 ) -> Union[str, None]:
-    assert cur_dir.startswith(extract_dir)
-    # Links seen before
-    seen_paths = set()
-    # os.readlink() resolves one step of a symlink
+    """
+    Safely resolve a symbolic link (`symlink`) to its ultimate target while maintaining
+    awareness of the extraction environment, install prefix, and relocation boundaries.
+
+    This function expands both relative and absolute symlinks in a reproducible and
+    relocatable way suitable for software supply chain analysis. It handles circular
+    references, missing targets, and various absolute-path cases gracefully.
+
+    ---
+    Parameters
+    ----------
+    path : str
+        The absolute or relative path to the symlink being resolved.
+        Example: "/usr/bin/dirA/runme"
+    cur_dir : str
+        The directory containing the symlink. Used as the reference base for resolving
+        relative paths.
+        Example: "/usr/bin/dirA"
+    extract_dir : str
+        The root of the extracted or analyzed filesystem tree. All rebased links are
+        rooted under this directory. Any link resolving outside this boundary is
+        considered out-of-scope and excluded.
+        Example: "/usr/bin"
+    install_prefix : Optional[str]
+        The original installation prefix for the analyzed software (e.g., "/usr/bin",
+        "/opt/app"). Used to determine whether an absolute link should be rebased,
+        preserved, or excluded. If None, "/" is assumed as the logical installation root.
+
+    ---
+    Returns
+    -------
+    str | None
+        - The fully resolved, normalized absolute path (as a string) if the target is valid
+          and remains within the extraction directory.
+        - None if resolution fails due to:
+            * Infinite symlink cycle
+            * Nonexistent or broken target
+            * I/O or permission errors while reading symlinks
+            * Final target path lying outside the extraction directory (excluded from SBOM)
+
+    ---
+    Resolution Policy
+    -----------------
+    1. **Relative Symlinks**
+       Resolved relative to the directory containing the symlink.
+       Example:
+           cur_dir = "/usr/bin/dirE"
+           link = "link_to_F" → "../dirF"
+           result = "/usr/bin/dirF"
+
+    2. **Absolute Symlinks**
+       Handled in the following priority order:
+
+       (a) **Within install_prefix**
+           If the target starts with `install_prefix`, it is preserved verbatim
+           (no rebasing or exclusion).
+           Example:
+               install_prefix="/usr/bin"
+               link="/usr/bin/ls" → preserved as "/usr/bin/ls"
+
+       (b) **Existing system path (outside extract_dir)**
+           If the target exists on the host filesystem but lies outside `extract_dir`
+           (e.g., "/bin/ls", "/lib/x86_64-linux-gnu/libc.so.6"), it is excluded
+           from SBOM generation.
+
+       (c) **Relocatable absolute path (no existing match)**
+           If the absolute target does not exist locally and does not match
+           `install_prefix`, it is rebased under `extract_dir`.
+           Example:
+               extract_dir="/opt/pkgroot"
+               link="/usr/local/lib/foo.so"
+               → "/opt/pkgroot/usr/local/lib/foo.so"
+
+    3. **Normalization**
+       The resulting path is normalized using `Path.resolve(strict=False)` to collapse
+       redundant `.` and `..` segments without requiring the target to exist. This
+       ensures canonical paths for incomplete or partially extracted trees.
+
+    4. **Cycle Detection**
+       If the same symlink is encountered more than once during traversal, an infinite
+       loop is assumed and resolution stops immediately, returning None.
+
+    5. **Exclusion Rule**
+       After normalization, any path not contained within `extract_dir` is considered
+       external and excluded from the SBOM (returns None).
+
+    6. **Logging Behavior**
+       - DEBUG: for each resolution step and path rebase
+       - INFO: when links are skipped because they resolve outside the extraction tree
+       - WARNING: for missing targets, broken links, or detected cycles
+
+    ---
+    Example
+    -------
+    Given:
+        extract_dir = "/usr/bin"
+        install_prefix = "/usr/bin"
+
+    Case 1:
+        /usr/bin/dirA/runme → /bin/ls
+        → Skipped (outside extraction directory)
+
+    Case 2:
+        /usr/bin/dirF/runme → /usr/bin/ls
+        → Final resolved path: /usr/bin/ls
+    """
+    path = pathlib.Path(path)
+    cur_dir = pathlib.Path(cur_dir)
+    extract_dir = pathlib.Path(extract_dir).resolve(strict=False)
+
+    # Safety check: ensure we are operating inside the extraction tree
+    assert str(cur_dir).startswith(str(extract_dir)), (
+        f"cur_dir={cur_dir} must be inside extract_dir={extract_dir}"
+    )
+
+    seen_paths: set[pathlib.Path] = set()
     current_path = path
-    steps = 0
-    while os.path.islink(current_path):
-        # If we've already seen this then we're in an infinite loop
+
+    logger.debug(f"Starting resolution for {path} (cur_dir={cur_dir})")
+
+    # Follow symlinks recursively until a non-symlink is reached
+    while current_path.is_symlink():
         if current_path in seen_paths:
-            logger.warning(f"Resolving symlink {path} encountered infinite loop at {current_path}")
+            logger.warning(f"Infinite loop detected at {current_path}")
             return None
         seen_paths.add(current_path)
-        dest = os.readlink(current_path)
-        # Convert relative paths to absolute local paths
-        if not pathlib.Path(dest).is_absolute():
-            common_path = os.path.commonpath([cur_dir, extract_dir])
-            local_path = os.path.join("/", cur_dir[len(common_path) :])
-            dest = os.path.join(local_path, dest)
-        # Convert to a canonical form to eliminate .. to prevent reading above extract_dir
-        # NOTE: should consider detecting reading above extract_dir and warn the user about incomplete file system structure issues
-        dest = os.path.normpath(dest)
-        if install_prefix and dest.startswith(install_prefix):
-            dest = dest[len(install_prefix) :]
-        # We need to get a non-absolute path so os.path.join works as we want
-        if pathlib.Path(dest).is_absolute():
-            # TODO: Windows support, but how???
-            dest = dest[1:]
-        # Rebase to get the true location
-        current_path = os.path.join(extract_dir, dest)
-        cur_dir = os.path.dirname(current_path)
-    if not os.path.exists(current_path):
-        logger.warning(f"Resolved symlink {path} to a path that doesn't exist {current_path}")
-        return None
-    return os.path.normpath(current_path)
+
+        dest = current_path.readlink()
+        dest_str = str(dest)
+        logger.debug(
+            f"{current_path} → {dest} ({'absolute' if dest.is_absolute() else 'relative'})"
+        )
+
+        if dest.is_absolute():
+            # Case 1: target already under install_prefix (e.g., /usr/bin/echo)
+            if install_prefix and dest_str.startswith(install_prefix):
+                new_path = pathlib.Path(dest_str)
+                logger.debug(
+                    f"Absolute symlink {dest} already under install_prefix {install_prefix} → {new_path}"
+                )
+
+            # Case 2: absolute path exists on host system (outside extract_dir)
+            elif pathlib.Path(dest_str).exists():
+                new_path = pathlib.Path(dest_str)
+                logger.warning(
+                    f"Skipping symlink {path}: resolved target {new_path} lies outside extraction directory {extract_dir}"
+                )
+                return None  # Exclude from SBOM
+
+            # Case 3: relocatable absolute path (no existing match)
+            else:
+                try:
+                    new_path = extract_dir / dest.relative_to("/")
+                except ValueError:
+                    # Handle non-Unix paths (e.g., Windows drive letters)
+                    rel_dest = dest_str.lstrip("/")
+                    new_path = extract_dir / rel_dest
+                logger.debug(
+                    f"Rebased absolute symlink {dest} under extract_dir {extract_dir} → {new_path}"
+                )
+
+        else:
+            # Relative symlink: resolve relative to current directory
+            new_path = cur_dir / dest
+            logger.debug(f"Resolved relative symlink {dest} → {new_path}")
+
+        # Normalize the computed path without requiring its existence
+        try:
+            new_path = pathlib.Path(new_path).resolve(strict=False)
+        except (OSError, RuntimeError) as e:
+            logger.warning(f"Symlink resolution failed for {current_path}: {e}")
+            return None
+
+        # Ensure target is within extraction directory
+        try:
+            rel = new_path.relative_to(extract_dir)
+        except ValueError:
+            logger.info(
+                f"Skipping symlink {path}: resolved path {new_path} is outside extraction directory {extract_dir}"
+            )
+            return None  # Exclude from SBOM
+
+        # Rebase the path under extract_dir for the next iteration
+        new_path = extract_dir / rel
+        logger.debug(f"Rebasing under extract_dir → {new_path}")
+
+        # Step into the next path in the chain
+        current_path = new_path
+        cur_dir = current_path.parent
+        logger.debug(f"Stepping into {current_path}")
+
+    # Final resolved path validation
+    if not current_path.exists():
+        logger.warning(f"{path} → {current_path}, but target does not exist")
+    else:
+        try:
+            current_path.relative_to(extract_dir)
+        except ValueError:
+            logger.info(
+                f"Skipping final resolved path for {path}: {current_path} is outside extraction directory {extract_dir}"
+            )
+        else:
+            logger.debug(f"Final resolved path for {path} → {current_path}")
+            return str(current_path)
+
+    return None
