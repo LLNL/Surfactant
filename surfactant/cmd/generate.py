@@ -433,7 +433,7 @@ def sbom(
                     continue
 
                 # epath is a directory, walk it
-                for cdir, dirs, files in os.walk(epath, followlinks=True):
+                for cdir, dirs, files in os.walk(epath):
                     logger.info(f"Processing {cdir}")
 
                     if entry.installPrefix:
