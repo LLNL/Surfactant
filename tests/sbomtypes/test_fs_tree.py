@@ -156,3 +156,36 @@ def test_to_dict_override_filters_path_edges():
     assert "graph" not in data and "fs_tree" not in data
     for rel in data.get("relationships", []):
         assert rel["xUUID"] != "/bin/ls" and rel["yUUID"] != "/usr/bin/ls"
+
+
+def test_expand_pending_dir_symlinks_creates_chained_edges(tmp_path):
+    """
+    Verify that expand_pending_dir_symlinks() synthesizes one-hop chained edges
+    for deferred directory symlinks.
+
+    Scenario:
+        dirE/link_to_F → dirF
+        dirF/runthat    → /bin/echo
+
+    Expected:
+        After expansion, fs_tree contains:
+        /dirE/link_to_F/runthat → /dirF/runthat
+    """
+    sbom = SBOM()
+
+    # Create base structure
+    sbom.fs_tree.add_edge("/usr/bin", "/usr/bin/dirE")
+    sbom.fs_tree.add_edge("/usr/bin", "/usr/bin/dirF")
+    sbom.fs_tree.add_edge("/usr/bin/dirF", "/usr/bin/dirF/runthat")
+
+    # Record directory symlink (deferred expansion)
+    sbom.record_symlink("/usr/bin/dirE/link_to_F", "/usr/bin/dirF", subtype="directory")
+
+    # Expand queued directory symlinks
+    sbom.expand_pending_dir_symlinks()
+
+    # Verify synthetic chained edge was created
+    assert sbom.fs_tree.has_edge(
+        "/usr/bin/dirE/link_to_F/runthat", "/usr/bin/dirF/runthat"
+    )
+
