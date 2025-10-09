@@ -9,7 +9,7 @@ import pathlib
 import uuid as uuid_module
 from collections import deque
 from dataclasses import asdict, dataclass, field, fields
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 import networkx as nx
 from dataclasses_json import config, dataclass_json
@@ -71,6 +71,13 @@ class SBOM:
         # metadata=config(exclude=lambda _: True),  # internal graph; excluded from JSON
         metadata=config(exclude=lambda _: True),
     )  # Add a NetworkX directed graph for quick traversal/query
+
+    _pending_dir_links: List[Tuple[str, str]] = field(
+        default_factory=list,
+        init=False,
+        repr=False,
+        metadata=config(exclude=lambda _: True),
+    )
 
     def __post_init__(self):
         # If called like SBOM(raw_dict), raw_dict will be in .systems
@@ -255,6 +262,82 @@ class SBOM:
         # No match found after traversal
         return None
 
+
+    def get_symlink_sources_for_path(self, path: str) -> List[str]:
+        """
+        Retrieve all symlink paths (direct and transitive) that point to the given target path.
+
+        This function performs a *reverse traversal* of the filesystem graph (`fs_tree`),
+        starting from the specified `path` and walking **incoming** symlink edges
+        (`link → target`) to collect every symlink node that ultimately resolves to
+        that target.
+
+        The method is effectively the inverse of :meth:`get_software_by_path`, which
+        walks *outgoing* symlink edges to resolve a symlink to its destination.
+
+        Behavior:
+            - Follows only edges with attribute ``type="symlink"``.
+            - Traverses breadth-first to handle multi-hop symlink chains
+              (e.g., A → B → C → /usr/bin/ls).
+            - Avoids cycles and repeated nodes using a visited set.
+            - Returns all normalized symlink paths that resolve to the given target path.
+            - Logs debug information for each edge visited and for each discovered source.
+
+        Args:
+            path (str): The target filesystem path (can be POSIX or Windows-style).
+
+        Returns:
+            List[str]: A sorted list of all symlink paths (direct or transitive)
+                       that point to the provided target path.
+                       Empty if none are found.
+
+        Example:
+            Given:
+                /usr/bin/dirE/link_to_F → /usr/bin/dirF
+                /usr/bin/dirF/runthat → /usr/bin/echo
+
+            Then:
+                get_symlink_sources_for_path("/usr/bin/echo")
+                → ["/usr/bin/dirF/runthat", "/usr/bin/dirE/link_to_F/runthat"]
+        """
+        norm_target = normalize_path(path)
+        if not self.fs_tree.has_node(norm_target):
+            logger.debug(f"[fs_tree] Target path not found in graph: {norm_target}")
+            return []
+
+        results: Set[str] = set()
+        visited: Set[str] = set()
+        queue: deque[str] = deque([norm_target])
+
+        logger.debug(f"[fs_tree] Starting reverse symlink traversal from: {norm_target}")
+
+        while queue:
+            current = queue.popleft()
+            if current in visited:
+                continue
+            visited.add(current)
+
+            # Iterate over all incoming symlink edges: src → current
+            for src, _dst, attrs in self.fs_tree.in_edges(current, data=True):
+                if attrs.get("type") != "symlink":
+                    continue
+
+                if src not in results:
+                    results.add(src)
+                    logger.debug(f"[fs_tree] Found symlink source: {src} → {current}")
+
+                # Continue traversal upward through the graph (transitive links)
+                if src not in visited:
+                    queue.append(src)
+
+        logger.debug(
+            f"[fs_tree] Reverse symlink traversal complete for {norm_target}: "
+            f"{len(results)} sources found."
+        )
+
+        return sorted(results)
+
+
     def build_rel_graph(self) -> None:
         """Rebuild the directed graph from systems, software, and any loaded relationships."""
         self.graph = nx.MultiDiGraph()
@@ -358,15 +441,21 @@ class SBOM:
         3. Adds a directed edge link → target in both graphs with:
             - key/type="symlink"
             - subtype=<optional qualifier, e.g. "file" or "directory">
-
-        Capturing these symlink edges enables `get_software_by_path()` to resolve real software
-        targets from symlinked paths, such as common `/lib` → `/usr/lib` scenarios.
+        4. If the symlink is a directory, it additionally synthesizes one-hop
+           “chained” symlinks for each child under the target directory.
+           Example:
+                link_to_F → dirF
+                runthat → /usr/bin/echo
+           yields a synthetic edge:
+                link_to_F/runthat → dirF/runthat
 
         Args:
             link_path (str): Path of the symlink itself (e.g. "/opt/app/lib/foo.so").
             target_path (str): Resolved absolute path of the symlink target (e.g. "/usr/lib/foo.so").
             subtype (Optional[str]): Optional category for the link (e.g. "file" or "directory").
         """
+
+        import os  # local import to avoid circulars
 
         # Normalize inputs to consistent POSIX-style paths
         link_node = normalize_path(link_path)
@@ -405,6 +494,44 @@ class SBOM:
             logger.debug(msg)
         else:
             logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
+
+        # ------------------------------------------------------------------
+        # Synthesize chained edges for directory symlinks (deferred)
+        # ------------------------------------------------------------------
+        if subtype == "directory":
+            # Immediately register for later expansion
+            self._pending_dir_links.append((link_node, target_node))
+            logger.debug(f"[fs_tree] Queued directory symlink for later expansion: {link_node} → {target_node}")
+
+            # Determine all direct child edges under the target directory
+            child_edges = [
+                (src, dst)
+                for src, dst, data in self.fs_tree.edges(target_node, data=True)
+                if data.get("type") != "symlink"  # only structural edges (e.g., subdirs/files)
+            ]
+
+            for _, child in child_edges:
+                child_basename = os.path.basename(child)
+                synthetic_link = normalize_path(os.path.join(link_node, child_basename))
+
+                if not self.fs_tree.has_edge(synthetic_link, child):
+                    self.fs_tree.add_edge(synthetic_link, child, type="symlink", subtype="file")
+                    logger.debug(
+                        f"[fs_tree] Synthetic chained symlink: {synthetic_link} → {child}"
+                    )
+
+                    # Make sure synthetic nodes exist and have Path type
+                    for node in (synthetic_link, child):
+                        if not self.graph.has_node(node):
+                            self.graph.add_node(node, type="Path")
+                        elif "type" not in self.graph.nodes[node]:
+                            self.graph.nodes[node]["type"] = "Path"
+
+                    # Mirror into main graph for completeness
+                    if not self.graph.has_edge(synthetic_link, child, key="symlink"):
+                        self.graph.add_edge(synthetic_link, child, key="symlink")
+                        logger.debug(f"[graph] Synthetic symlink edge: {synthetic_link} → {child}")
+
 
     def record_symlink(
         self, link_path: str, target_path: str, *, subtype: Optional[str] = None

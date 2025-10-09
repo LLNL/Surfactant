@@ -598,6 +598,48 @@ def sbom(
                     #             )
                     #             sw.installPath.append(link)
                     new_sbom.add_software_entries(entries, parent_entry=parent_entry)
+    
+        # ------------------------------------------------------------------
+        # Expand deferred directory symlinks once fs_tree is fully populated
+        # ------------------------------------------------------------------
+        logger.debug(f"[fs_tree] Expanding {len(new_sbom._pending_dir_links)} pending directory symlinks")
+
+        for link_node, target_node in list(new_sbom._pending_dir_links):
+            if not new_sbom.fs_tree.has_node(target_node):
+                continue
+
+            target_prefix = target_node.rstrip("/") + "/"
+
+            # Find only depth-1 descendants by name (no extra slash in the tail)
+            immediate_children = []
+            for child in list(new_sbom.fs_tree.nodes):
+                if child.startswith(target_prefix) and child != target_node:
+                    tail = child[len(target_prefix):]
+                    if "/" not in tail and tail != "":  # depth-1 only
+                        immediate_children.append(child)
+
+            logger.debug(f"[fs_tree] Deferred mirror for {link_node} → {target_node}: "
+                        f"{len(immediate_children)} immediate children")
+
+            for child in immediate_children:
+                tail = child[len(target_prefix):]  # just the basename
+                synthetic_link = normalize_path(os.path.join(link_node, tail))
+
+                if not new_sbom.fs_tree.has_edge(synthetic_link, child):
+                    new_sbom.fs_tree.add_edge(synthetic_link, child, type="symlink", subtype="file")
+                    logger.debug(f"[fs_tree] (deferred) Synthetic chained symlink: {synthetic_link} → {child}")
+
+                    # Keep the relationship graph in sync
+                    for node in (synthetic_link, child):
+                        if not new_sbom.graph.has_node(node):
+                            new_sbom.graph.add_node(node, type="Path")
+                        elif "type" not in new_sbom.graph.nodes[node]:
+                            new_sbom.graph.nodes[node]["type"] = "Path"
+
+                    if not new_sbom.graph.has_edge(synthetic_link, child, key="symlink"):
+                        new_sbom.graph.add_edge(synthetic_link, child, key="symlink")
+                        logger.debug(f"[graph] (deferred) Synthetic symlink edge: {synthetic_link} → {child}")
+
 
         # === Restore symlink metadata using fs_tree (single source of truth) ===
         # For each Software, gather incoming symlink edges into any fs_tree nodes that represent it.
@@ -644,20 +686,22 @@ def sbom(
                 if not new_sbom.fs_tree.has_node(ntarget):
                     continue
 
-                for src, _dst, data in new_sbom.fs_tree.in_edges(ntarget, data=True):
-                    if data.get("type") == "symlink":
-                        install_symlink_set.add(src)
+                # Collect all direct + transitive symlink sources for this target
+                sources = new_sbom.get_symlink_sources_for_path(ntarget)
 
-                        # Derive filename alias when basename differs — no broad exceptions
-                        main_name = basename_posix(ntarget)  # harmless re-normalization
-                        link_name = basename_posix(src)
+                for src in sources:
+                    install_symlink_set.add(src)
 
-                        if link_name and link_name != main_name:
-                            filename_symlink_set.add(link_name)
+                    # Derive filename alias when basename differs — no broad exceptions
+                    main_name = basename_posix(ntarget)
+                    link_name = basename_posix(src)
 
-                        logger.debug(
-                            f"[fs_tree] symlink edge {src} -> {ntarget} (main={main_name}, link={link_name})"
-                        )
+                    if link_name and link_name != main_name:
+                        filename_symlink_set.add(link_name)
+
+                    logger.debug(
+                        f"[fs_tree] symlink edge {src} -> {ntarget} (main={main_name}, link={link_name})"
+                    )
 
             # (3) Ensure lists contain these aliases (deduped)
             for ipath in sorted(install_symlink_set):
@@ -705,94 +749,37 @@ def sbom(
 def resolve_link(
     path: str, cur_dir: str, extract_dir: str, install_prefix: Optional[str] = None
 ) -> Union[str, None]:
-    """
-    Safely resolve a symlink, handling cycles, relative targets, and absolute targets.
-
-    Args:
-        path (str): The symlink path to resolve.
-        cur_dir (str): The current directory where `path` resides.
-        extract_dir (str): The root extraction directory; used to rebase relative links.
-        install_prefix (Optional[str]): Optional prefix for install paths (used for metadata).
-
-    Returns:
-        str | None:
-            - Fully resolved path as a string if successful.
-            - None if resolution fails (e.g., cycle detected or nonexistent target).
-
-    Behavior:
-        - Detects and aborts on infinite symlink cycles.
-        - Preserves absolute symlinks exactly (`/bin/ls` → `/bin/ls`).
-        - Resolves relative symlinks against the directory containing the link.
-        - Rebases paths under `extract_dir` if they lie inside it.
-        - Logs detailed debug messages for each hop, warnings for missing targets,
-          and critical messages for cycles.
-    """
-    path = pathlib.Path(path)
-    cur_dir = pathlib.Path(cur_dir)
-    extract_dir = pathlib.Path(extract_dir)
-
-    # Sanity check: we only want to operate on paths inside extract_dir
-    assert str(cur_dir).startswith(str(extract_dir)), (
-        f"cur_dir={cur_dir} must be inside extract_dir={extract_dir}"
-    )
-
-    seen_paths: set[pathlib.Path] = set()  # Track visited symlinks to break manual cycles
+    assert cur_dir.startswith(extract_dir)
+    # Links seen before
+    seen_paths = set()
+    # os.readlink() resolves one step of a symlink
     current_path = path
-
-    logger.debug(f"Starting resolution for {path} (cur_dir={cur_dir})")
-
-    # Follow symlinks until we reach a real file/directory
-    while current_path.is_symlink():
-        # Detect infinite loop (e.g., A → B → A). Return None instead of looping forever.
+    steps = 0
+    while os.path.islink(current_path):
+        # If we've already seen this then we're in an infinite loop
         if current_path in seen_paths:
-            logger.warning(f"Infinite loop detected at {current_path}")
+            logger.warning(f"Resolving symlink {path} encountered infinite loop at {current_path}")
             return None
         seen_paths.add(current_path)
-
-        # Read the symlink's target (may be absolute or relative)
-        dest = current_path.readlink()
-        logger.debug(
-            f"{current_path} → {dest} ({'absolute' if dest.is_absolute() else 'relative'})"
-        )
-
-        # Construct the next path
-        if dest.is_absolute():
-            # Absolute symlink: keep target unchanged (e.g., /bin/ls)
-            new_path = dest
-        else:
-            # Relative symlink: resolve relative to the symlink’s directory
-            new_path = cur_dir / dest
-
-        # Normalize path safely to remove ".." and "." and follow symlinks
-        try:
-            new_path = pathlib.Path(new_path).resolve(strict=False)
-        except (OSError, RuntimeError) as e:
-            # On Windows: OSError [WinError 1921] if cycle encountered
-            # On Linux/macOS: OSError[ELOOP] or RuntimeError for looped resolution
-            logger.warning(f"Symlink resolution failed for {current_path}: {e}")
-            return None
-
-        # If the resolved path is inside extract_dir, rebase it
-        try:
-            rel = new_path.relative_to(extract_dir)
-        except ValueError:
-            # Outside extract_dir → leave as absolute
-            logger.debug(f"{new_path} is outside {extract_dir}, leaving absolute")
-        else:
-            # Inside extract_dir → normalize under extract_dir
-            new_path = extract_dir / rel
-            logger.debug(f"Rebasing under extract_dir → {new_path}")
-
-        # Advance to next hop in chain
-        current_path = new_path
-        cur_dir = current_path.parent
-        logger.debug(f"Stepping into {current_path}")
-
-    # At this point, current_path is no longer a symlink
-    if not current_path.exists():
-        # Final target does not exist → broken symlink
-        logger.warning(f"{path} → {current_path}, but target does not exist")
+        dest = os.readlink(current_path)
+        # Convert relative paths to absolute local paths
+        if not pathlib.Path(dest).is_absolute():
+            common_path = os.path.commonpath([cur_dir, extract_dir])
+            local_path = os.path.join("/", cur_dir[len(common_path) :])
+            dest = os.path.join(local_path, dest)
+        # Convert to a canonical form to eliminate .. to prevent reading above extract_dir
+        # NOTE: should consider detecting reading above extract_dir and warn the user about incomplete file system structure issues
+        dest = os.path.normpath(dest)
+        if install_prefix and dest.startswith(install_prefix):
+            dest = dest[len(install_prefix) :]
+        # We need to get a non-absolute path so os.path.join works as we want
+        if pathlib.Path(dest).is_absolute():
+            # TODO: Windows support, but how???
+            dest = dest[1:]
+        # Rebase to get the true location
+        current_path = os.path.join(extract_dir, dest)
+        cur_dir = os.path.dirname(current_path)
+    if not os.path.exists(current_path):
+        logger.warning(f"Resolved symlink {path} to a path that doesn't exist {current_path}")
         return None
-
-    logger.debug(f"Final resolved path for {path} → {current_path}")
-    return str(current_path)
+    return os.path.normpath(current_path)
