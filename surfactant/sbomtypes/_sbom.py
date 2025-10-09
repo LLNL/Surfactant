@@ -262,7 +262,6 @@ class SBOM:
         # No match found after traversal
         return None
 
-
     def get_symlink_sources_for_path(self, path: str) -> List[str]:
         """
         Retrieve all symlink paths (direct and transitive) that point to the given target path.
@@ -336,7 +335,6 @@ class SBOM:
         )
 
         return sorted(results)
-
 
     def build_rel_graph(self) -> None:
         """Rebuild the directed graph from systems, software, and any loaded relationships."""
@@ -501,7 +499,9 @@ class SBOM:
         if subtype == "directory":
             # Immediately register for later expansion
             self._pending_dir_links.append((link_node, target_node))
-            logger.debug(f"[fs_tree] Queued directory symlink for later expansion: {link_node} → {target_node}")
+            logger.debug(
+                f"[fs_tree] Queued directory symlink for later expansion: {link_node} → {target_node}"
+            )
 
             # Determine all direct child edges under the target directory
             child_edges = [
@@ -516,9 +516,7 @@ class SBOM:
 
                 if not self.fs_tree.has_edge(synthetic_link, child):
                     self.fs_tree.add_edge(synthetic_link, child, type="symlink", subtype="file")
-                    logger.debug(
-                        f"[fs_tree] Synthetic chained symlink: {synthetic_link} → {child}"
-                    )
+                    logger.debug(f"[fs_tree] Synthetic chained symlink: {synthetic_link} → {child}")
 
                     # Make sure synthetic nodes exist and have Path type
                     for node in (synthetic_link, child):
@@ -531,7 +529,6 @@ class SBOM:
                     if not self.graph.has_edge(synthetic_link, child, key="symlink"):
                         self.graph.add_edge(synthetic_link, child, key="symlink")
                         logger.debug(f"[graph] Synthetic symlink edge: {synthetic_link} → {child}")
-
 
     def record_symlink(
         self, link_path: str, target_path: str, *, subtype: Optional[str] = None

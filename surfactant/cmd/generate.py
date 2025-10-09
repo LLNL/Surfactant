@@ -598,7 +598,7 @@ def sbom(
                     #             )
                     #             sw.installPath.append(link)
                     new_sbom.add_software_entries(entries, parent_entry=parent_entry)
-    
+
         # ------------------------------------------------------------------
         # Expand deferred directory symlinks once fs_tree is fully populated
         # ------------------------------------------------------------------
