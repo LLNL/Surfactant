@@ -632,6 +632,90 @@ class SBOM:
                                 f"Found child symlink: {child} → {real} (subtype={subtype})"
                             )
                             self._record_symlink(str(child), str(real), subtype=subtype)
+        
+    def expand_pending_dir_symlinks(self) -> None:
+        """
+        Expand all deferred directory symlinks recorded in `_pending_dir_links`.
+
+        Each deferred pair `(link_node, target_node)` represents a directory-level
+        symlink such as `/usr/bin/dirE/link_to_F → /usr/bin/dirF`.
+
+        This function performs a one-hop mirror expansion to create synthetic
+        symlink edges linking each immediate child of the target directory back
+        under the symlink source, for example:
+
+            /usr/bin/dirE/link_to_F/runthat → /usr/bin/dirF/runthat
+
+        The goal is to replicate the main branch’s behavior for cross-directory
+        mirroring (e.g., dirE ↔ dirF) without over-expanding into recursive
+        `link_to_F/link_to_E/...` chains.
+
+        Behavior:
+            - Processes only valid directory symlink targets already present in `fs_tree`.
+            - Collects *depth-1* descendants (immediate children) of the target directory.
+            - Skips already-existing synthetic edges to avoid duplication.
+            - Ensures that mirrored nodes are properly typed as `Path` in both graphs.
+            - Mirrors all edges into both `fs_tree` and `graph` for consistency.
+        """
+        import os
+        from surfactant.utils.paths import normalize_path
+
+        pending_count = len(self._pending_dir_links)
+        logger.debug(f"[fs_tree] Expanding {pending_count} pending directory symlinks")
+
+        # Process each deferred directory symlink pair
+        for link_node, target_node in list(self._pending_dir_links):
+            if not self.fs_tree.has_node(target_node):
+                logger.debug(f"[fs_tree] Skipping {link_node} → {target_node} (target missing in fs_tree)")
+                continue
+
+            # Normalize and prepare for prefix-based matching
+            target_prefix = target_node.rstrip("/") + "/"
+
+            # Collect immediate child nodes (depth-1 only, avoid recursive nesting)
+            immediate_children: List[str] = []
+            for child in list(self.fs_tree.nodes):
+                if child.startswith(target_prefix) and child != target_node:
+                    tail = child[len(target_prefix):]
+                    if "/" not in tail and tail:  # ensure depth-1 only
+                        immediate_children.append(child)
+
+            logger.debug(
+                f"[fs_tree] Deferred mirror for {link_node} → {target_node}: "
+                f"{len(immediate_children)} immediate children found"
+            )
+
+            # Create synthetic edges for each immediate child
+            for child in immediate_children:
+                tail = child[len(target_prefix):]
+                synthetic_link = normalize_path(os.path.join(link_node, tail))
+
+                # Skip if edge already exists
+                if self.fs_tree.has_edge(synthetic_link, child):
+                    logger.debug(f"[fs_tree] Skipping existing edge: {synthetic_link} → {child}")
+                    continue
+
+                # Add the synthetic symlink edge to fs_tree
+                self.fs_tree.add_edge(synthetic_link, child, type="symlink", subtype="file")
+                logger.debug(f"[fs_tree] (deferred) Added chained symlink: {synthetic_link} → {child}")
+
+                # Ensure both nodes exist and are typed correctly in the relationship graph
+                for node in (synthetic_link, child):
+                    if not self.graph.has_node(node):
+                        self.graph.add_node(node, type="Path")
+                        logger.debug(f"[graph] Added missing Path node: {node}")
+                    elif "type" not in self.graph.nodes[node]:
+                        self.graph.nodes[node]["type"] = "Path"
+                        logger.debug(f"[graph] Set node type=Path for: {node}")
+
+                # Add mirrored symlink edge in the logical graph
+                if not self.graph.has_edge(synthetic_link, child, key="symlink"):
+                    self.graph.add_edge(synthetic_link, child, key="symlink")
+                    logger.debug(f"[graph] (deferred) Added synthetic symlink edge: {synthetic_link} → {child}")
+
+        logger.debug(f"[fs_tree] Deferred symlink expansion complete — processed {pending_count} entries.")
+
+
 
     # pylint: disable=too-many-arguments
     def create_software(
