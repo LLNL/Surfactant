@@ -2,6 +2,7 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import os
