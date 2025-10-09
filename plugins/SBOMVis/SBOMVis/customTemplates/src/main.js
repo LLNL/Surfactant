@@ -111,7 +111,7 @@ function drawGraph() {
 					const childNodes = network.getConnectedNodes(nodeID, "from");
 
 					const clusterOptions = {
-						joinCondition: (parentNodeOptions, childNodeOptions) => {
+						joinCondition: (_parentNodeOptions, childNodeOptions) => {
 							return childNodes.includes(childNodeOptions.id); // Only cluster if ID matches
 						},
 						clusterNodeProperties: {
@@ -230,7 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				setColorScheme("auto"); // Set init color scheme
 				window
 					.matchMedia("(prefers-color-scheme: dark)")
-					.addEventListener("change", (e) => {
+					.addEventListener("change", () => {
 						setColorScheme("auto"); // If the user changes the system color scheme follow that, otherwise use manually set value
 					});
 

@@ -27,7 +27,10 @@
 	--scrollbarHighlightColor: light-dark(#afafaf, #595959);
 
 	/* Sidebar buttons */
-	--sidebarButtonColor: light-dark(rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.5));
+	--sidebarButtonColor: light-dark(
+		rgba(0, 0, 0, 0.5),
+		rgba(255, 255, 255, 0.5)
+	);
 	--sidebarButtonHoverColor: light-dark(
 		rgba(0, 0, 0, 0.75),
 		rgba(255, 255, 255, 0.9)
@@ -43,8 +46,8 @@
 }
 
 div.vis-tooltip {
-	color: var(--textColor) !important;
-	background-color: var(--backgroundColor) !important; /* Override Bootstrap values */
+	color: var(--textColor);
+	background-color: var(--backgroundColor);
 }
 
 #tooltip {
@@ -72,7 +75,7 @@ div.vis-tooltip {
 	}
 
 	td {
-		color: var(--textColor) !important;
+		color: var(--textColor);
 		padding: 4px 6px;
 		font-size: 13px;
 
@@ -115,6 +118,61 @@ div.vis-tooltip {
 		position: relative;
 		display: block;
 		float: left;
+	}
+}
+
+#sidebarButtons {
+	position: fixed;
+	align-items: center;
+	top: 0;
+	left: 5px;
+	z-index: 100;
+
+	display: flex;
+	flex-direction: column;
+
+	margin-top: 5px;
+	gap: 5px;
+
+	transition: transform 0.4s;
+	transform: translateX(0);
+
+	&.open {
+		transform: translateX(var(--sidebarMaxWidth));
+	}
+
+	button {
+		background-color: var(--sidebarButtonColor);
+		border-radius: 50%;
+
+		border: none;
+		padding: 0;
+
+		cursor: pointer;
+		font-size: 2rem;
+
+		i {
+			color: var(--accentColor);
+		}
+
+		&:hover {
+			background-color: var(--sidebarButtonHoverColor);
+		}
+	}
+
+	button.invert {
+		font-size: 1.75rem;
+		background: transparent;
+
+		i {
+			color: var(--sidebarButtonColor);
+		}
+
+		&:hover {
+			i {
+				color: var(--sidebarButtonInvertHoverColor);
+			}
+		}
 	}
 }
 
@@ -177,7 +235,7 @@ div.vis-tooltip {
 
 	.section-body {
 		.section-table {
-			color: var(--textColor) !important;
+			color: var(--textColor);
 			width: 100%;
 			border-collapse: collapse;
 			table-layout: fixed;
@@ -243,7 +301,7 @@ div.vis-tooltip {
 			display: flex;
 			overflow-x: auto;
 
-			font-size: medium !important;
+			font-size: medium;
 
 			details {
 				margin-left: 1rem;
@@ -256,7 +314,7 @@ div.vis-tooltip {
 
 			ul {
 				list-style-type: "- ";
-				margin: 0 0 0 0 !important;
+				margin: 0 0 0 0;
 			}
 
 			li {
@@ -282,61 +340,6 @@ div.vis-tooltip {
 #sidebar.open ~ #logo,
 #sidebar.open ~ #mynetwork {
 	margin-left: var(--sidebarMaxWidth);
-}
-
-#sidebarButtons {
-	position: fixed;
-	align-items: center;
-	top: 0;
-	left: 5px;
-	z-index: 100;
-
-	display: flex;
-	flex-direction: column;
-
-	margin-top: 5px;
-	gap: 5px;
-
-	transition: transform 0.4s;
-	transform: translateX(0);
-
-	&.open {
-		transform: translateX(var(--sidebarMaxWidth));
-	}
-
-	button {
-		background-color: var(--sidebarButtonColor);
-		border-radius: 50%;
-
-		border: none;
-		padding: 0;
-
-		cursor: pointer;
-		font-size: 2rem;
-
-		i {
-			color: var(--accentColor);
-		}
-
-		&:hover {
-			background-color: var(--sidebarButtonHoverColor);
-		}
-	}
-
-	button.invert {
-		font-size: 1.75rem;
-		background: transparent;
-
-		i {
-			color: var(--sidebarButtonColor);
-		}
-
-		&:hover {
-			i {
-				color: var(--sidebarButtonInvertHoverColor);
-			}
-		}
-	}
 }
 
 #themeToggle {
