@@ -185,7 +185,4 @@ def test_expand_pending_dir_symlinks_creates_chained_edges(tmp_path):
     sbom.expand_pending_dir_symlinks()
 
     # Verify synthetic chained edge was created
-    assert sbom.fs_tree.has_edge(
-        "/usr/bin/dirE/link_to_F/runthat", "/usr/bin/dirF/runthat"
-    )
-
+    assert sbom.fs_tree.has_edge("/usr/bin/dirE/link_to_F/runthat", "/usr/bin/dirF/runthat")
