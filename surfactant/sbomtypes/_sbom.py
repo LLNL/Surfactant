@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: MIT
 from __future__ import annotations
 
+import os
 import json
 import pathlib
+from pathlib import PurePosixPath
 import uuid as uuid_module
 from collections import deque
 from dataclasses import asdict, dataclass, field, fields
@@ -15,7 +17,7 @@ import networkx as nx
 from dataclasses_json import config, dataclass_json
 from loguru import logger
 
-from surfactant.utils.paths import normalize_path
+from surfactant.utils.paths import normalize_path, basename_posix
 
 from ._analysisdata import AnalysisData
 from ._file import File
@@ -424,111 +426,120 @@ class SBOM:
 
         self._add_software_to_fs_tree(sw)
 
+    def _add_symlink_edge(
+        self,
+        src: str,
+        dst: str,
+        *,
+        subtype: Optional[str] = None,
+        log_prefix: str = "[fs_tree]"
+    ) -> None:
+        """
+        Internal helper to safely add a symlink edge to both fs_tree and graph.
+
+        Ensures:
+        - Both nodes exist in fs_tree and graph with type="Path".
+        - The fs_tree edge is labeled type="symlink" with optional subtype.
+        - The logical graph mirrors the same edge with key="symlink".
+        - Duplicate edges are ignored gracefully.
+
+        Args:
+            src (str): Path of the symlink source.
+            dst (str): Target path of the symlink.
+            subtype (Optional[str]): File or directory indicator.
+            log_prefix (str): Optional prefix for debug logs.
+        """
+        # Add edge to fs_tree if not present
+        if not self.fs_tree.has_edge(src, dst):
+            self.fs_tree.add_edge(src, dst, type="symlink", subtype=subtype)
+            logger.debug(f"{log_prefix} Added symlink edge: {src} → {dst} [subtype={subtype}]")
+
+        # Ensure both nodes exist and are typed as Path in the logical graph
+        for node in (src, dst):
+            if not self.graph.has_node(node):
+                self.graph.add_node(node, type="Path")
+            elif "type" not in self.graph.nodes[node]:
+                self.graph.nodes[node]["type"] = "Path"
+
+        # Add mirrored edge in graph if not already present
+        if not self.graph.has_edge(src, dst, key="symlink"):
+            self.graph.add_edge(src, dst, key="symlink")
+            logger.debug(f"[graph] Added symlink edge: {src} → {dst}")
+
     def _record_symlink(
         self, link_path: str, target_path: str, *, subtype: Optional[str] = None
     ) -> None:
         """
-        Record a filesystem symlink in both the SBOM’s relationship graph and its fs_tree.
+        Record a filesystem symlink in both the SBOM's relationship graph and its fs_tree.
 
-        This method does the following:
-        1. Normalizes both paths to POSIX format.
-        2. Ensures both link and target are present as nodes in:
-            • self.graph       (networkx.MultiDiGraph of logical relationships)
-            • self.fs_tree     (networkx.DiGraph of filesystem layout)
-        Nodes are labeled with type="Path" to distinguish them from Software UUIDs.
-        3. Adds a directed edge link → target in both graphs with:
-            - key/type="symlink"
-            - subtype=<optional qualifier, e.g. "file" or "directory">
-        4. If the symlink is a directory, it additionally synthesizes one-hop
-           “chained” symlinks for each child under the target directory.
-           Example:
-                link_to_F → dirF
-                runthat → /usr/bin/echo
-           yields a synthetic edge:
-                link_to_F/runthat → dirF/runthat
+        This method adds the given symlink as a relationship between two filesystem
+        path nodes (`link_path` → `target_path`). It ensures the link exists in both
+        the logical relationship graph (`graph`) and the physical filesystem graph (`fs_tree`),
+        and maintains internal consistency between them.
+
+        Steps:
+            1. Normalize both input paths to POSIX format.
+            2. Create the primary symlink edge using `_add_symlink_edge()`.
+            3. If the symlink is a directory:
+            - Register it for deferred mirroring (to be expanded later by
+                `expand_pending_dir_symlinks()`).
+            - Immediately synthesize one-hop chained symlinks for any direct
+                (non-symlink) children of the target directory.
 
         Args:
-            link_path (str): Path of the symlink itself (e.g. "/opt/app/lib/foo.so").
-            target_path (str): Resolved absolute path of the symlink target (e.g. "/usr/lib/foo.so").
-            subtype (Optional[str]): Optional category for the link (e.g. "file" or "directory").
+            link_path (str): Path of the symlink itself (e.g., "/opt/app/lib/foo.so").
+            target_path (str): Absolute path of the resolved symlink target (e.g., "/usr/lib/foo.so").
+            subtype (Optional[str]): Optional category for the symlink ("file" or "directory").
+
+        Behavior:
+            - Ensures both link and target nodes exist in `fs_tree` and `graph` with type="Path".
+            - Adds missing edges consistently in both structures.
+            - Defers deeper directory mirroring for later expansion to avoid recursive loops.
         """
-
-        import os  # local import to avoid circulars
-
-        # Normalize inputs to consistent POSIX-style paths
+        # ----------------------------------------------------------------------
+        # Step 1: Normalize paths to consistent POSIX-style representation
+        # ----------------------------------------------------------------------
         link_node = normalize_path(link_path)
         target_node = normalize_path(target_path)
 
-        # Ensure both nodes exist in the relationship graph with type="Path"
-        for node in (link_node, target_node):
-            if not self.graph.has_node(node):
-                self.graph.add_node(node, type="Path")
-                logger.debug(f"[graph] Added symlink node: {node}")
-            elif "type" not in self.graph.nodes[node]:
-                self.graph.nodes[node]["type"] = "Path"
+        # ----------------------------------------------------------------------
+        # Step 2: Create the primary symlink edge between link and target
+        # ----------------------------------------------------------------------
+        self._add_symlink_edge(link_node, target_node, subtype=subtype)
 
-        # Add symlink edge in the main graph if not already present
-        if not self.graph.has_edge(link_node, target_node, key="symlink"):
-            self.graph.add_edge(link_node, target_node, key="symlink")
-            logger.debug(f"[graph] Recorded symlink edge: {link_node} → {target_node}")
-
-        # Ensure both nodes exist in the fs_tree as well
-        for node in (link_node, target_node):
-            if not self.fs_tree.has_node(node):
-                self.fs_tree.add_node(node)
-                logger.debug(f"[fs_tree] Added symlink node: {node}")
-
-        # Check for existing identical symlink in fs_tree
-        existing_edges = self.fs_tree.get_edge_data(link_node, target_node, default={})
-        seen = any(
-            attrs.get("type") == "symlink" and attrs.get("subtype") == subtype
-            for attrs in existing_edges.values()
-        )
-        if not seen:
-            self.fs_tree.add_edge(link_node, target_node, type="symlink", subtype=subtype)
-            msg = f"[fs_tree] Recorded symlink edge: {link_node} → {target_node}"
-            if subtype:
-                msg += f" [subtype={subtype}]"
-            logger.debug(msg)
-        else:
-            logger.debug(f"[fs_tree] Symlink edge already exists: {link_node} → {target_node}")
-
-        # ------------------------------------------------------------------
-        # Synthesize chained edges for directory symlinks (deferred)
-        # ------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+        # Step 3: Handle directory symlinks — queue and synthesize one-hop children
+        # ----------------------------------------------------------------------
         if subtype == "directory":
-            # Immediately register for later expansion
+            # Register for deferred expansion after all directories are processed
             self._pending_dir_links.append((link_node, target_node))
             logger.debug(
-                f"[fs_tree] Queued directory symlink for later expansion: {link_node} → {target_node}"
+                f"[fs_tree] Queued directory symlink for deferred expansion: "
+                f"{link_node} → {target_node}"
             )
 
-            # Determine all direct child edges under the target directory
+            # Identify direct (non-symlink) children under the target directory
             child_edges = [
                 (src, dst)
                 for src, dst, data in self.fs_tree.edges(target_node, data=True)
-                if data.get("type") != "symlink"  # only structural edges (e.g., subdirs/files)
+                if data.get("type") != "symlink"  # include only structural edges
             ]
 
+            if not child_edges:
+                logger.debug(f"[fs_tree] No immediate children found under {target_node}; skipping chained edges.")
+                return
+
+            # Create one-hop chained symlink edges for each direct child
             for _, child in child_edges:
-                child_basename = os.path.basename(child)
-                synthetic_link = normalize_path(os.path.join(link_node, child_basename))
+                child_basename = PurePosixPath(child).name
+                synthetic_link = normalize_path(str(PurePosixPath(link_node) / child_basename))
 
-                if not self.fs_tree.has_edge(synthetic_link, child):
-                    self.fs_tree.add_edge(synthetic_link, child, type="symlink", subtype="file")
-                    logger.debug(f"[fs_tree] Synthetic chained symlink: {synthetic_link} → {child}")
-
-                    # Make sure synthetic nodes exist and have Path type
-                    for node in (synthetic_link, child):
-                        if not self.graph.has_node(node):
-                            self.graph.add_node(node, type="Path")
-                        elif "type" not in self.graph.nodes[node]:
-                            self.graph.nodes[node]["type"] = "Path"
-
-                    # Mirror into main graph for completeness
-                    if not self.graph.has_edge(synthetic_link, child, key="symlink"):
-                        self.graph.add_edge(synthetic_link, child, key="symlink")
-                        logger.debug(f"[graph] Synthetic symlink edge: {synthetic_link} → {child}")
+                # Add synthetic child edge via the shared helper
+                self._add_symlink_edge(synthetic_link, child, subtype="file")
+                logger.debug(
+                    f"[fs_tree] (immediate) Synthetic chained symlink created: "
+                    f"{synthetic_link} → {child}"
+                )
 
     def record_symlink(
         self, link_path: str, target_path: str, *, subtype: Optional[str] = None
@@ -639,7 +650,7 @@ class SBOM:
 
         This function performs a one-hop mirror expansion to create synthetic
         symlink edges linking each immediate child of the target directory back
-        under the symlink source, for example:
+        under the symlink source. For example:
 
             /usr/bin/dirE/link_to_F/runthat → /usr/bin/dirF/runthat
 
@@ -654,22 +665,27 @@ class SBOM:
             - Ensures that mirrored nodes are properly typed as `Path` in both graphs.
             - Mirrors all edges into both `fs_tree` and `graph` for consistency.
         """
-        import os
-        from surfactant.utils.paths import normalize_path
 
         pending_count = len(self._pending_dir_links)
         logger.debug(f"[fs_tree] Expanding {pending_count} pending directory symlinks")
 
+        # ----------------------------------------------------------------------
         # Process each deferred directory symlink pair
+        # ----------------------------------------------------------------------
         for link_node, target_node in list(self._pending_dir_links):
             if not self.fs_tree.has_node(target_node):
-                logger.debug(f"[fs_tree] Skipping {link_node} → {target_node} (target missing in fs_tree)")
+                logger.debug(
+                    f"[fs_tree] Skipping {link_node} → {target_node} "
+                    "(target missing in fs_tree)"
+                )
                 continue
 
             # Normalize and prepare for prefix-based matching
             target_prefix = target_node.rstrip("/") + "/"
 
+            # ------------------------------------------------------------------
             # Collect immediate child nodes (depth-1 only, avoid recursive nesting)
+            # ------------------------------------------------------------------
             immediate_children: List[str] = []
             for child in list(self.fs_tree.nodes):
                 if child.startswith(target_prefix) and child != target_node:
@@ -682,35 +698,33 @@ class SBOM:
                 f"{len(immediate_children)} immediate children found"
             )
 
+            # ------------------------------------------------------------------
             # Create synthetic edges for each immediate child
+            # ------------------------------------------------------------------
             for child in immediate_children:
-                tail = child[len(target_prefix):]
-                synthetic_link = normalize_path(os.path.join(link_node, tail))
+                # Derive the synthetic symlink path using normalize_path + basename_posix
+                child_basename = basename_posix(child)
+                synthetic_link = normalize_path(link_node, child_basename)
 
-                # Skip if edge already exists
+                # Skip if this symlink edge already exists
                 if self.fs_tree.has_edge(synthetic_link, child):
-                    logger.debug(f"[fs_tree] Skipping existing edge: {synthetic_link} → {child}")
+                    logger.debug(
+                        f"[fs_tree] Skipping existing edge: {synthetic_link} → {child}"
+                    )
                     continue
 
-                # Add the synthetic symlink edge to fs_tree
-                self.fs_tree.add_edge(synthetic_link, child, type="symlink", subtype="file")
-                logger.debug(f"[fs_tree] (deferred) Added chained symlink: {synthetic_link} → {child}")
+                # Add synthetic symlink edge to both fs_tree and graph
+                self._add_symlink_edge(synthetic_link, child, subtype="file")
+                logger.debug(
+                    f"[fs_tree] (deferred) Synthetic chained symlink created: "
+                    f"{synthetic_link} → {child}"
+                )
 
-                # Ensure both nodes exist and are typed correctly in the relationship graph
-                for node in (synthetic_link, child):
-                    if not self.graph.has_node(node):
-                        self.graph.add_node(node, type="Path")
-                        logger.debug(f"[graph] Added missing Path node: {node}")
-                    elif "type" not in self.graph.nodes[node]:
-                        self.graph.nodes[node]["type"] = "Path"
-                        logger.debug(f"[graph] Set node type=Path for: {node}")
+        logger.debug(
+            f"[fs_tree] Deferred symlink expansion complete — "
+            f"processed {pending_count} entries."
+        )
 
-                # Add mirrored symlink edge in the logical graph
-                if not self.graph.has_edge(synthetic_link, child, key="symlink"):
-                    self.graph.add_edge(synthetic_link, child, key="symlink")
-                    logger.debug(f"[graph] (deferred) Added synthetic symlink edge: {synthetic_link} → {child}")
-
-        logger.debug(f"[fs_tree] Deferred symlink expansion complete — processed {pending_count} entries.")
 
 
 
