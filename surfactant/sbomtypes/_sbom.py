@@ -629,7 +629,7 @@ class SBOM:
                                 f"Found child symlink: {child} → {real} (subtype={subtype})"
                             )
                             self._record_symlink(str(child), str(real), subtype=subtype)
-        
+
     def expand_pending_dir_symlinks(self) -> None:
         """
         Expand all deferred directory symlinks recorded in `_pending_dir_links`.
@@ -655,6 +655,7 @@ class SBOM:
             - Mirrors all edges into both `fs_tree` and `graph` for consistency.
         """
         import os
+
         from surfactant.utils.paths import normalize_path
 
         pending_count = len(self._pending_dir_links)
@@ -663,7 +664,9 @@ class SBOM:
         # Process each deferred directory symlink pair
         for link_node, target_node in list(self._pending_dir_links):
             if not self.fs_tree.has_node(target_node):
-                logger.debug(f"[fs_tree] Skipping {link_node} → {target_node} (target missing in fs_tree)")
+                logger.debug(
+                    f"[fs_tree] Skipping {link_node} → {target_node} (target missing in fs_tree)"
+                )
                 continue
 
             # Normalize and prepare for prefix-based matching
@@ -673,7 +676,7 @@ class SBOM:
             immediate_children: List[str] = []
             for child in list(self.fs_tree.nodes):
                 if child.startswith(target_prefix) and child != target_node:
-                    tail = child[len(target_prefix):]
+                    tail = child[len(target_prefix) :]
                     if "/" not in tail and tail:  # ensure depth-1 only
                         immediate_children.append(child)
 
@@ -684,7 +687,7 @@ class SBOM:
 
             # Create synthetic edges for each immediate child
             for child in immediate_children:
-                tail = child[len(target_prefix):]
+                tail = child[len(target_prefix) :]
                 synthetic_link = normalize_path(os.path.join(link_node, tail))
 
                 # Skip if edge already exists
@@ -694,7 +697,9 @@ class SBOM:
 
                 # Add the synthetic symlink edge to fs_tree
                 self.fs_tree.add_edge(synthetic_link, child, type="symlink", subtype="file")
-                logger.debug(f"[fs_tree] (deferred) Added chained symlink: {synthetic_link} → {child}")
+                logger.debug(
+                    f"[fs_tree] (deferred) Added chained symlink: {synthetic_link} → {child}"
+                )
 
                 # Ensure both nodes exist and are typed correctly in the relationship graph
                 for node in (synthetic_link, child):
@@ -708,11 +713,13 @@ class SBOM:
                 # Add mirrored symlink edge in the logical graph
                 if not self.graph.has_edge(synthetic_link, child, key="symlink"):
                     self.graph.add_edge(synthetic_link, child, key="symlink")
-                    logger.debug(f"[graph] (deferred) Added synthetic symlink edge: {synthetic_link} → {child}")
+                    logger.debug(
+                        f"[graph] (deferred) Added synthetic symlink edge: {synthetic_link} → {child}"
+                    )
 
-        logger.debug(f"[fs_tree] Deferred symlink expansion complete — processed {pending_count} entries.")
-
-
+        logger.debug(
+            f"[fs_tree] Deferred symlink expansion complete — processed {pending_count} entries."
+        )
 
     # pylint: disable=too-many-arguments
     def create_software(
