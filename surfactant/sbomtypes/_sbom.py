@@ -5,20 +5,19 @@
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-import os
 import json
 import pathlib
-from pathlib import PurePosixPath
 import uuid as uuid_module
 from collections import deque
 from dataclasses import asdict, dataclass, field, fields
+from pathlib import PurePosixPath
 from typing import Dict, List, Optional, Set, Tuple
 
 import networkx as nx
 from dataclasses_json import config, dataclass_json
 from loguru import logger
 
-from surfactant.utils.paths import normalize_path, basename_posix
+from surfactant.utils.paths import basename_posix, normalize_path
 
 from ._analysisdata import AnalysisData
 from ._file import File
@@ -428,12 +427,7 @@ class SBOM:
         self._add_software_to_fs_tree(sw)
 
     def _add_symlink_edge(
-        self,
-        src: str,
-        dst: str,
-        *,
-        subtype: Optional[str] = None,
-        log_prefix: str = "[fs_tree]"
+        self, src: str, dst: str, *, subtype: Optional[str] = None, log_prefix: str = "[fs_tree]"
     ) -> None:
         """
         Internal helper to safely add a symlink edge to both fs_tree and graph.
@@ -527,7 +521,9 @@ class SBOM:
             ]
 
             if not child_edges:
-                logger.debug(f"[fs_tree] No immediate children found under {target_node}; skipping chained edges.")
+                logger.debug(
+                    f"[fs_tree] No immediate children found under {target_node}; skipping chained edges."
+                )
                 return
 
             # Create one-hop chained symlink edges for each direct child
@@ -676,8 +672,7 @@ class SBOM:
         for link_node, target_node in list(self._pending_dir_links):
             if not self.fs_tree.has_node(target_node):
                 logger.debug(
-                    f"[fs_tree] Skipping {link_node} → {target_node} "
-                    "(target missing in fs_tree)"
+                    f"[fs_tree] Skipping {link_node} → {target_node} (target missing in fs_tree)"
                 )
                 continue
 
@@ -709,9 +704,7 @@ class SBOM:
 
                 # Skip if this symlink edge already exists
                 if self.fs_tree.has_edge(synthetic_link, child):
-                    logger.debug(
-                        f"[fs_tree] Skipping existing edge: {synthetic_link} → {child}"
-                    )
+                    logger.debug(f"[fs_tree] Skipping existing edge: {synthetic_link} → {child}")
                     continue
 
                 # Add synthetic symlink edge to both fs_tree and graph
@@ -722,10 +715,8 @@ class SBOM:
                 )
 
         logger.debug(
-            f"[fs_tree] Deferred symlink expansion complete — "
-            f"processed {pending_count} entries."
+            f"[fs_tree] Deferred symlink expansion complete — processed {pending_count} entries."
         )
-
 
         logger.debug(
             f"[fs_tree] Deferred symlink expansion complete — processed {pending_count} entries."
