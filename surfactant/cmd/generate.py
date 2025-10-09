@@ -604,7 +604,6 @@ def sbom(
         # ------------------------------------------------------------------
         new_sbom.expand_pending_dir_symlinks()
 
-
         # === Restore symlink metadata using fs_tree (single source of truth) ===
         # For each Software, gather incoming symlink edges into any fs_tree nodes that represent it.
         for software in new_sbom.software:

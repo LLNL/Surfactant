@@ -640,7 +640,7 @@ class SBOM:
                                 f"Found child symlink: {child} → {real} (subtype={subtype})"
                             )
                             self._record_symlink(str(child), str(real), subtype=subtype)
-        
+
     def expand_pending_dir_symlinks(self) -> None:
         """
         Expand all deferred directory symlinks recorded in `_pending_dir_links`.
@@ -689,7 +689,7 @@ class SBOM:
             immediate_children: List[str] = []
             for child in list(self.fs_tree.nodes):
                 if child.startswith(target_prefix) and child != target_node:
-                    tail = child[len(target_prefix):]
+                    tail = child[len(target_prefix) :]
                     if "/" not in tail and tail:  # ensure depth-1 only
                         immediate_children.append(child)
 
@@ -726,7 +726,9 @@ class SBOM:
         )
 
 
-
+        logger.debug(
+            f"[fs_tree] Deferred symlink expansion complete — processed {pending_count} entries."
+        )
 
     # pylint: disable=too-many-arguments
     def create_software(
