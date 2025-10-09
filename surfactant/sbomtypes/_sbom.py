@@ -1084,6 +1084,7 @@ class SBOM:
         data.pop("graph", None)
         data.pop("fs_tree", None)
         data.pop("_loaded_relationships", None)
+        data.pop("_pending_dir_links", None)
 
         # Convert sets → lists for JSON
         for k, v in list(data.items()):
