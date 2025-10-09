@@ -598,11 +598,13 @@ def sbom(
                     #             )
                     #             sw.installPath.append(link)
                     new_sbom.add_software_entries(entries, parent_entry=parent_entry)
-    
+
         # ------------------------------------------------------------------
         # Expand deferred directory symlinks once fs_tree is fully populated
         # ------------------------------------------------------------------
-        logger.debug(f"[fs_tree] Expanding {len(new_sbom._pending_dir_links)} pending directory symlinks")
+        logger.debug(
+            f"[fs_tree] Expanding {len(new_sbom._pending_dir_links)} pending directory symlinks"
+        )
 
         for link_node, target_node in list(new_sbom._pending_dir_links):
             if not new_sbom.fs_tree.has_node(target_node):
@@ -614,20 +616,24 @@ def sbom(
             immediate_children = []
             for child in list(new_sbom.fs_tree.nodes):
                 if child.startswith(target_prefix) and child != target_node:
-                    tail = child[len(target_prefix):]
+                    tail = child[len(target_prefix) :]
                     if "/" not in tail and tail != "":  # depth-1 only
                         immediate_children.append(child)
 
-            logger.debug(f"[fs_tree] Deferred mirror for {link_node} → {target_node}: "
-                        f"{len(immediate_children)} immediate children")
+            logger.debug(
+                f"[fs_tree] Deferred mirror for {link_node} → {target_node}: "
+                f"{len(immediate_children)} immediate children"
+            )
 
             for child in immediate_children:
-                tail = child[len(target_prefix):]  # just the basename
+                tail = child[len(target_prefix) :]  # just the basename
                 synthetic_link = normalize_path(os.path.join(link_node, tail))
 
                 if not new_sbom.fs_tree.has_edge(synthetic_link, child):
                     new_sbom.fs_tree.add_edge(synthetic_link, child, type="symlink", subtype="file")
-                    logger.debug(f"[fs_tree] (deferred) Synthetic chained symlink: {synthetic_link} → {child}")
+                    logger.debug(
+                        f"[fs_tree] (deferred) Synthetic chained symlink: {synthetic_link} → {child}"
+                    )
 
                     # Keep the relationship graph in sync
                     for node in (synthetic_link, child):
@@ -638,8 +644,9 @@ def sbom(
 
                     if not new_sbom.graph.has_edge(synthetic_link, child, key="symlink"):
                         new_sbom.graph.add_edge(synthetic_link, child, key="symlink")
-                        logger.debug(f"[graph] (deferred) Synthetic symlink edge: {synthetic_link} → {child}")
-
+                        logger.debug(
+                            f"[graph] (deferred) Synthetic symlink edge: {synthetic_link} → {child}"
+                        )
 
         # === Restore symlink metadata using fs_tree (single source of truth) ===
         # For each Software, gather incoming symlink edges into any fs_tree nodes that represent it.
