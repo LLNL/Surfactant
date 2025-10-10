@@ -7,7 +7,11 @@ import {
 	buildNodeSelectionSidebar,
 	buildSBOMOverviewSidebar,
 } from "#sidebarModule";
-import { setColorScheme, setNodeColors } from "#utilsModule";
+import {
+	registerClickHandlers,
+	setColorScheme,
+	setNodeColors,
+} from "#utilsModule";
 
 function drawGraph() {
 	const container = document.getElementById("mynetwork");
@@ -51,28 +55,6 @@ function drawGraph() {
 				document.getElementById("loadingBar").style.display = "none";
 			}, 500);
 		});
-	}
-
-	function registerClickHandlers(onClick, onDoubleClick) {
-		const clickThreshold = 250;
-		let lastClickTime = 0;
-
-		function clickHandler(e) {
-			const newClickTime = new Date();
-			if (newClickTime - lastClickTime > clickThreshold) {
-				setTimeout(() => {
-					if (newClickTime - lastClickTime > clickThreshold) onClick(e);
-				}, clickThreshold);
-			}
-		}
-
-		function doubleClickHandler(e) {
-			lastClickTime = new Date();
-			onDoubleClick(e);
-		}
-
-		network.on("click", clickHandler); // Vis.js doesn't distinguish between single clicks and double clicks: https://github.com/almende/vis/issues/203
-		network.on("doubleClick", doubleClickHandler);
 	}
 
 	function onClick(params) {
