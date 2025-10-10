@@ -100,3 +100,25 @@ export function registerClickHandlers(onClick, onDoubleClick) {
 	network.on("click", clickHandler); // Vis.js doesn't distinguish between single clicks and double clicks: https://github.com/almende/vis/issues/203
 	network.on("doubleClick", doubleClickHandler);
 }
+
+/**
+ * Sets the new mouse cursor style while over the network canvas
+ * @param {String} newCursorStyle
+ */
+export function changeCursor(newCursorStyle) {
+	const networkCanvas = document
+		.getElementById("mynetwork")
+		.getElementsByTagName("canvas")[0];
+	networkCanvas.style.cursor = newCursorStyle;
+}
+
+/**
+ * Returns the current mouse cursor
+ * @returns {String}
+ */
+export function getCursor() {
+	const networkCanvas = document
+		.getElementById("mynetwork")
+		.getElementsByTagName("canvas")[0];
+	return networkCanvas.style.cursor;
+}

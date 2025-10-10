@@ -162,6 +162,10 @@
             {% include 'src/sidebar.js' %}
         </script>
 
+        <script type="inline-module" id="mouseEventHandlersModule">
+            {% include 'src/mouseEventHandlers.js' %}
+        </script>
+
         <script src="https://unpkg.com/inline-module/index.js"></script> <!-- Inline modules aren't supported in ES, this is a workaround that makes integrating embedded code from Jinja cleaner & easier -->
 
         <script type="module">
