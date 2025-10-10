@@ -1,7 +1,9 @@
+import { createPopupElement } from "#popupModule";
+
 /**
  * Sets the nodes with the given array of IDs with `color` or it's default color if left undefined
  * @param {Array} nodeIDs
- * @param {(String|undefined)} color
+ * @param {(string|undefined)} color
  */
 export function setNodeColors(nodeIDs, color) {
 	nodes.update(
@@ -14,7 +16,7 @@ export function setNodeColors(nodeIDs, color) {
 
 /**
  * Sets CSS color scheme, dark/light mode toggle icon, and updates node font colors
- * @param {String} mode (dark, light, auto)
+ * @param {string} mode (dark, light, auto)
  */
 export function setColorScheme(mode) {
 	const toggle = document.getElementById("themeToggle");
@@ -103,7 +105,7 @@ export function registerClickHandlers(onClick, onDoubleClick) {
 
 /**
  * Sets the new mouse cursor style while over the network canvas
- * @param {String} newCursorStyle
+ * @param {string} newCursorStyle
  */
 export function changeCursor(newCursorStyle) {
 	const networkCanvas = document
@@ -114,11 +116,59 @@ export function changeCursor(newCursorStyle) {
 
 /**
  * Returns the current mouse cursor
- * @returns {String}
+ * @returns {string}
  */
 export function getCursor() {
 	const networkCanvas = document
 		.getElementById("mynetwork")
 		.getElementsByTagName("canvas")[0];
 	return networkCanvas.style.cursor;
+}
+
+/**
+ * Pins/unpins node with given ID in-place
+ * @param {string} nodeID
+ */
+export function toggleNodePin(nodeID) {
+	if (network.isCluster(nodeID)) {
+		const node = network.body.nodes[nodeID];
+		const fixed = node.options.fixed;
+		const shouldBeFixed = !(fixed.x === true && fixed.y === true);
+
+		network.clustering.updateClusteredNode(nodeID, { fixed: shouldBeFixed });
+		if (shouldBeFixed)
+			network.clustering.updateClusteredNode(nodeID, {
+				label: `📌 ${node.options.nodeMetadata.nodeFileName}`,
+			});
+		else
+			network.clustering.updateClusteredNode(nodeID, {
+				label: node.options.nodeMetadata.nodeFileName,
+			});
+
+		return;
+	}
+
+	const node = nodes.get(nodeID);
+	const isFixed = node.fixed;
+
+	if (isFixed === undefined || isFixed === false) {
+		nodes.update({
+			id: nodeID,
+			fixed: true,
+			label: `📌 ${node.nodeMetadata.nodeFileName}`,
+		});
+	} else {
+		nodes.update({
+			id: nodeID,
+			fixed: false,
+			label: node.nodeMetadata.nodeFileName,
+		});
+	}
+
+	// Update popup if it's visible
+	if (
+		document.getElementsByClassName("vis-tooltip")[0].style.visibility ===
+		"visible"
+	)
+		createPopupElement(nodeID);
 }

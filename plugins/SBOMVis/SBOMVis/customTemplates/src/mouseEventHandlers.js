@@ -1,7 +1,6 @@
 import { toggleSidebar } from "#buttonEventHandlersModule";
-import { createPopupElement } from "#popupModule";
 import { buildNodeSelectionSidebar } from "#sidebarModule";
-import { getCursor, setNodeColors } from "#utilsModule";
+import { getCursor, setNodeColors, toggleNodePin } from "#utilsModule";
 
 /**
  * Event handler when the user single clicks on the network canvas
@@ -82,50 +81,10 @@ export function doubleClickEventHandler(params) {
  * @param {object} params
  */
 export function contextMenuEventHandler(params) {
-	if (getCursor() === "grabbing") return; // Don't try to pin if a node is grabbed
+	if (getCursor() === "grabbing") return; // Don't try to show menu if grabbing node
 
 	const nodeID = this.getNodeAt(params.pointer.DOM);
 	if (nodeID === undefined) return; // Didn't click on a node
 
-	if (network.isCluster(nodeID)) {
-		const node = network.body.nodes[nodeID];
-		const fixed = node.options.fixed;
-		const shouldBeFixed = !(fixed.x === true && fixed.y === true);
-
-		network.clustering.updateClusteredNode(nodeID, { fixed: shouldBeFixed });
-		if (shouldBeFixed)
-			network.clustering.updateClusteredNode(nodeID, {
-				label: `📌 ${node.options.nodeMetadata.nodeFileName}`,
-			});
-		else
-			network.clustering.updateClusteredNode(nodeID, {
-				label: node.options.nodeMetadata.nodeFileName,
-			});
-
-		return;
-	}
-
-	const node = nodes.get(nodeID);
-	const isFixed = node.fixed;
-
-	if (isFixed === undefined || isFixed === false) {
-		nodes.update({
-			id: nodeID,
-			fixed: true,
-			label: `📌 ${node.nodeMetadata.nodeFileName}`,
-		});
-	} else {
-		nodes.update({
-			id: nodeID,
-			fixed: false,
-			label: node.nodeMetadata.nodeFileName,
-		});
-	}
-
-	// Update popup if it's visible
-	if (
-		document.getElementsByClassName("vis-tooltip")[0].style.visibility ===
-		"visible"
-	)
-		createPopupElement(nodeID);
+	toggleNodePin(nodeID);
 }
