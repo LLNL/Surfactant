@@ -1,6 +1,11 @@
 import { toggleSidebar } from "#buttonEventHandlersModule";
 import { buildNodeSelectionSidebar } from "#sidebarModule";
-import { getCursor, isNodePinned, setNodeColors } from "#utilsModule";
+import {
+	getCursor,
+	isNodePinned,
+	setNodeColors,
+	toggleNodePin,
+} from "#utilsModule";
 
 /**
  * Event handler when the user single clicks on the network canvas
@@ -10,7 +15,7 @@ export function clickEventHandler(params) {
 	const nodeID = params.nodes[0];
 
 	if (params.nodes.length !== 0) {
-		// Reset selection highlight if use clicks away from search results
+		// Reset selection highlight if user clicks away from search results
 		const searchIsActive = !!document
 			.getElementById("sidebar")
 			.querySelector("#resultsSection");
@@ -77,21 +82,24 @@ export function doubleClickEventHandler(params) {
 }
 
 /**
- * Event handler when the user right clicks on the network canvas
- * @param {object} params
+ * Adds or replaces the content of the #contextMenu element
+ * @param {string} nodeID
+ * @param {number} xPos X Position in the window
+ * @param {number} yPos Y Position in the window
  */
-export function contextMenuEventHandler(params) {
-	if (getCursor() === "grabbing") return; // Don't try to show menu if grabbing node
-
-	const nodeID = this.getNodeAt(params.pointer.DOM);
-	if (nodeID === undefined) return; // Didn't click on a node
-
-	document.getElementsByClassName("vis-tooltip")[0].style.opacity = "0%"; // Hide tooltip
-
+function createContextMenu(nodeID, xPos, yPos) {
 	const contextMenu = document.getElementById("contextMenu");
-	contextMenu.style.left = `${params.pointer.DOM.x}px`;
-	contextMenu.style.top = `${params.pointer.DOM.y}px`;
+	contextMenu.style.left = `${xPos}px`;
+	contextMenu.style.top = `${yPos}px`;
 	contextMenu.style.visibility = "visible";
+
+	contextMenu.addEventListener(
+		"click",
+		(e) => {
+			e.stopPropagation();
+		},
+		{ once: true },
+	);
 
 	const frag = document.createDocumentFragment();
 
@@ -99,6 +107,10 @@ export function contextMenuEventHandler(params) {
 	const nodePinned = isNodePinned(nodeID);
 	const togglePinEntry = document.createElement("div");
 	togglePinEntry.className = "contextMenuItem";
+	togglePinEntry.addEventListener("click", () => {
+		toggleNodePin(nodeID);
+		createContextMenu(nodeID, xPos, yPos);
+	});
 
 	const togglePinIcon = document.createElement("i");
 	togglePinIcon.className = nodePinned
@@ -127,4 +139,19 @@ export function contextMenuEventHandler(params) {
 	frag.appendChild(deleteNodeEntry);
 
 	contextMenu.replaceChildren(frag);
+}
+
+/**
+ * Event handler when the user right clicks on the network canvas
+ * @param {object} params
+ */
+export function contextMenuEventHandler(params) {
+	if (getCursor() === "grabbing") return; // Don't try to show menu if grabbing node
+
+	const nodeID = this.getNodeAt(params.pointer.DOM);
+	if (nodeID === undefined) return; // Didn't click on a node
+
+	document.getElementsByClassName("vis-tooltip")[0].style.opacity = "0%"; // Hide tooltip
+
+	createContextMenu(nodeID, params.pointer.DOM.x, params.pointer.DOM.y);
 }

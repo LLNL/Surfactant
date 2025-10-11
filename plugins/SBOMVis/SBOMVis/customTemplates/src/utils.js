@@ -197,7 +197,8 @@ export function toggleNodePin(nodeID) {
 	// Update popup if it's visible
 	if (
 		document.getElementsByClassName("vis-tooltip")[0].style.visibility ===
-		"visible"
+			"visible" &&
+		document.getElementById("tooltip").style.opacity !== "0%"
 	)
 		createPopupElement(nodeID);
 }
