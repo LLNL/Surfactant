@@ -71,7 +71,7 @@ export function resolvePath(graph, path) {
  * @returns true if it only contains UUID values, false if contains a child node
  */
 export function isLeaf(node) {
-	for (const [k, v] of Object.entries(node)) {
+	for (const [_k, v] of Object.entries(node)) {
 		if (!Array.isArray(v)) return false;
 	}
 

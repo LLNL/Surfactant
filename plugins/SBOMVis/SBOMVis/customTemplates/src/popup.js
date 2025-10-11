@@ -73,7 +73,7 @@ export function createPopupElement(nodeID) {
 			}
 
 			default: {
-				console.error("Unknown type ${node.nodeMetadata.type} encountered");
+				console.error(`Unknown type ${node.nodeMetadata.type} encountered`);
 			}
 		}
 	}
