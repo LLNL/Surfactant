@@ -127,6 +127,18 @@ function createContextMenu(nodeID, xPos, yPos) {
 	// Delete node button
 	const deleteNodeEntry = document.createElement("div");
 	deleteNodeEntry.className = "contextMenuItem";
+	deleteNodeEntry.addEventListener("click", () => {
+		if (
+			window.confirm(
+				"Are you sure you want to delete this node?\nIt will not affect the underlying SBOM",
+			)
+		) {
+			network.selectNodes([nodeID]);
+			network.deleteSelected();
+		}
+
+		contextMenu.style.visibility = "hidden";
+	});
 
 	const deleteNodeIcon = document.createElement("i");
 	deleteNodeIcon.className = "fa-solid fa-trash";
