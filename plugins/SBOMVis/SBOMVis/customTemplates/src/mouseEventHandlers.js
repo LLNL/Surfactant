@@ -1,6 +1,6 @@
 import { toggleSidebar } from "#buttonEventHandlersModule";
 import { buildNodeSelectionSidebar } from "#sidebarModule";
-import { getCursor, setNodeColors, toggleNodePin } from "#utilsModule";
+import { getCursor, isNodePinned, setNodeColors } from "#utilsModule";
 
 /**
  * Event handler when the user single clicks on the network canvas
@@ -86,5 +86,45 @@ export function contextMenuEventHandler(params) {
 	const nodeID = this.getNodeAt(params.pointer.DOM);
 	if (nodeID === undefined) return; // Didn't click on a node
 
-	toggleNodePin(nodeID);
+	document.getElementsByClassName("vis-tooltip")[0].style.opacity = "0%"; // Hide tooltip
+
+	const contextMenu = document.getElementById("contextMenu");
+	contextMenu.style.left = `${params.pointer.DOM.x}px`;
+	contextMenu.style.top = `${params.pointer.DOM.y}px`;
+	contextMenu.style.visibility = "visible";
+
+	const frag = document.createDocumentFragment();
+
+	// Pinned node toggle
+	const nodePinned = isNodePinned(nodeID);
+	const togglePinEntry = document.createElement("div");
+	togglePinEntry.className = "contextMenuItem";
+
+	const togglePinIcon = document.createElement("i");
+	togglePinIcon.className = nodePinned
+		? "fa-solid fa-thumbtack-slash"
+		: "fa-solid fa-thumbtack";
+	togglePinEntry.appendChild(togglePinIcon);
+
+	const togglePinText = document.createElement("span");
+	togglePinText.textContent = nodePinned ? "Unpin node" : "Pin node";
+	togglePinEntry.appendChild(togglePinText);
+
+	frag.appendChild(togglePinEntry);
+
+	// Delete node button
+	const deleteNodeEntry = document.createElement("div");
+	deleteNodeEntry.className = "contextMenuItem";
+
+	const deleteNodeIcon = document.createElement("i");
+	deleteNodeIcon.className = "fa-solid fa-trash";
+	deleteNodeEntry.appendChild(deleteNodeIcon);
+
+	const deleteNodeText = document.createElement("span");
+	deleteNodeText.textContent = "Delete node";
+	deleteNodeEntry.appendChild(deleteNodeText);
+
+	frag.appendChild(deleteNodeEntry);
+
+	contextMenu.replaceChildren(frag);
 }

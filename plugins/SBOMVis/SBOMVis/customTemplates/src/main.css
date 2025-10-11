@@ -345,3 +345,49 @@ div.vis-tooltip {
 #themeToggle {
 	margin-top: 15px; /* Offset from rest of icons */
 }
+
+#contextMenu {
+	position: absolute;
+
+	color: var(--textColor);
+	background-color: var(--backgroundColor);
+
+	border: 1px solid var(--sidebarBorderColor);
+	border-radius: 1px;
+	box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
+
+	font-family: sans-serif;
+	font-size: 16px;
+
+	width: auto;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+
+	padding: 4px;
+
+	.contextMenuItem {
+		flex: 1 1 auto;
+		align-items: center;
+		display: flex;
+		cursor: pointer;
+		gap: 6px;
+		padding: 2px;
+
+		&:hover {
+			background-color: var(--accentColor);
+		}
+
+		i {
+			flex: 0 0 16px;
+			display: flex;
+			justify-content: center;
+
+			color: var(--sidebarButtonColor);
+		}
+
+		span {
+			flex: 0 0 auto;
+		}
+	}
+}

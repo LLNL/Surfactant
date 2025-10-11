@@ -86,6 +86,9 @@ export function registerClickHandlers(onClick, onDoubleClick) {
 	let lastClickTime = 0;
 
 	function clickHandler(e) {
+		if (document.getElementById("contextMenu").style.visibility !== "hidden")
+			return; // 'Cancel' the click event to the canvas when closing the context menu
+
 		const newClickTime = new Date();
 		if (newClickTime - lastClickTime > clickThreshold) {
 			setTimeout(() => {
@@ -101,6 +104,16 @@ export function registerClickHandlers(onClick, onDoubleClick) {
 
 	network.on("click", clickHandler); // Vis.js doesn't distinguish between single clicks and double clicks: https://github.com/almende/vis/issues/203
 	network.on("doubleClick", doubleClickHandler);
+
+	// Hide the context menu when clicking anywhere else on the page
+	document.addEventListener("click", (e) => {
+		const contextMenu = document.getElementById("contextMenu");
+
+		if (contextMenu && !contextMenu.contains(e.target)) {
+			document.getElementsByClassName("vis-tooltip")[0].style.opacity = "100%"; // Re-enable tooltip
+			document.getElementById("contextMenu").style.visibility = "hidden";
+		}
+	});
 }
 
 /**
@@ -123,6 +136,22 @@ export function getCursor() {
 		.getElementById("mynetwork")
 		.getElementsByTagName("canvas")[0];
 	return networkCanvas.style.cursor;
+}
+
+/**
+ * Returns true if the node is pinned regardless if regular node or cluster
+ * @param {string} nodeID
+ * @returns {boolean}
+ */
+export function isNodePinned(nodeID) {
+	if (network.isCluster(nodeID)) {
+		const node = network.body.nodes[nodeID];
+		const fixed = node.options.fixed;
+		return fixed.x === true && fixed.y === true;
+	}
+
+	const node = nodes.get(nodeID);
+	return !!node.fixed; // Can be false or undefined (if the node wasn't previously pinned)
 }
 
 /**
