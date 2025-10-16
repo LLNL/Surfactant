@@ -24,7 +24,7 @@ function createRow(
 
 	if (Array.isArray(middleColumnValue)) {
 		middleColumn.innerText = middleColumnValue
-			.map((i) => (i < middleColumnValue.length - 1 ? "${i};" : i))
+			.map((i) => (i < middleColumnValue.length - 1 ? `${i};` : i))
 			.join("");
 	} else middleColumn.innerText = middleColumnValue;
 
