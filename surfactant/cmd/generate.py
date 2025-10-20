@@ -297,7 +297,8 @@ def sbom(
 
     # define the new_sbom variable type
     new_sbom: SBOM
-    if not input_sbom:
+    # Click has Sentinel.UNSET type that doesn't have READ attribute, which may appear when running regression test script
+    if not input_sbom or not hasattr(input_sbom, "read"):
         new_sbom = SBOM()
     else:
         new_sbom = input_reader.read_sbom(input_sbom)
@@ -433,6 +434,7 @@ def sbom(
                         # os.path.join will insert an OS specific separator between cdir and f
                         # need to make sure that separator is a / and not a \ on windows
                         filepath = pathlib.Path(cdir, file).as_posix()
+                        logger.debug(f"Processing filepath: {filepath}")
                         # TODO: add CI tests for generating SBOMs in scenarios with symlinks... (and just generally more CI tests overall...)
                         # Record symlink details but don't run info extractors on them
                         if os.path.islink(filepath):
@@ -446,7 +448,7 @@ def sbom(
                             # Compute sha256 hash of the file; skip if the file pointed by the symlink can't be opened
                             try:
                                 true_file_sha256 = sha256sum(true_filepath)
-                            except FileNotFoundError:
+                            except (FileNotFoundError, PermissionError):
                                 logger.warning(
                                     f"Unable to open symlink {filepath} pointing to {true_filepath}"
                                 )
