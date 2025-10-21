@@ -146,6 +146,30 @@ def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
 
 
 def replace_dst(origstr, dvar, newval) -> str:
+    """
+   Replaces placeholders in a string with a new value.
+
+   This function replaces occurrences of `$dvar` and `${dvar}` in the input
+   string `origstr` with the value specified by `newval`. 
+
+    Args:
+        origstr (str): The original string.
+        dvar (str): The variable name to look for in origstr.
+        newval (str): The value to replace occurrences of dvar with.
+
+    Returns:
+        str: A new string with all occurrences of `$dvar` and `${dvar}` replaced
+        by `newval`.
+
+    Typical Usage Example:
+        >>> origstr = "The variable $name and ${name} are placeholders."
+        >>> replace_dst(origstr, "name", "Alice")
+        'The variable Alice and Alice are placeholders.'
+
+   Raises:
+        None
+
+    """
     return origstr.replace("$" + dvar, newval).replace("${" + dvar + "}", newval)
 
 
