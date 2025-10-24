@@ -1,10 +1,10 @@
-# Dapper Plugin for SBOM Surfactant
+# DAPper Plugin for SBOM Surfactant
 
-A plugin for Surfactant that uses [Dapper](https://github.com/LLNL/dapper) to identify software packages from binary files by querying comprehensive package databases.
+A plugin for Surfactant that uses [DAPper](https://github.com/LLNL/dapper) to identify software packages from binary files by querying comprehensive package databases.
 
 ## Overview
 
-The Dapper plugin enhances Surfactant's SBOM generation by identifying which software packages provide specific binary files. It queries multiple Linux distribution databases (Ubuntu, Debian) to find package information for ELF files, with planned support for Windows PE files via NuGet databases.
+The DAPper plugin enhances Surfactant's SBOM generation by identifying which software packages provide specific binary files. It queries multiple Linux distribution databases (Ubuntu, Debian) to find package information for ELF files, and Windows PE files via NuGet databases.
 
 ## Features
 
@@ -27,16 +27,19 @@ Before using this plugin, you need to install Dapper and download the package da
 2. Download required datasets (must be run from the dapper directory):
    ```bash
    # List available datasets
-   cargo run -- . --list-available-datasets
+   dapper db list-available
 
    # Install specific Linux datasets
-   cargo run -- . --install ubuntu-focal
-   cargo run -- . --install ubuntu-jammy
-   cargo run -- . --install ubuntu-noble
-   cargo run -- . --install debian-bookworm
+   dapper db install ubuntu-focal
+   dapper db install ubuntu-jammy
+   dapper db install ubuntu-noble
+   dapper db install debian-bookworm
+
+   # Install nuget datasets
+   dapper db install nuget
 
    # Install all available datasets
-   cargo run -- . --install all
+   dapper db install all
    ```
 
 ## Installation
@@ -121,13 +124,13 @@ Then run:
 
 ```bash
 # List installed datasets
-cargo run -- . --list-datasets
+dapper db list-installed
 
 # Update all datasets
-cargo run -- . --update all
+dapper db update all
 
 # Remove a dataset
-cargo run -- . --uninstall ubuntu-focal
+dapper db uninstall ubuntu-focal
 ```
 
 ## Supported File Types
@@ -156,8 +159,8 @@ pipx uninject surfactant surfactantplugin-dapper
 MIT License (same as Surfactant)
 
 ## Additional Resources
-- [Dapper on crates.io](https://crates.io/crates/dapper)
-- [Dapper Documentation](https://dapper.readthedocs.io)
-- [Dapper GitHub Repository](https://github.com/LLNL/dapper)
+- [DAPper on crates.io](https://crates.io/crates/dapper)
+- [DAPper Documentation](https://dapper.readthedocs.io)
+- [DAPper GitHub Repository](https://github.com/LLNL/dapper)
 - [Surfactant Documentation](https://surfactant.readthedocs.io)
 - [Dataset Repository](https://huggingface.co/datasets/dapper-datasets)
