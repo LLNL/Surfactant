@@ -67,7 +67,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-macho = ["lief==0.17.0"]
+macho = ["lief==0.17.1"]
 java = ["javatools>=1.6,==1.*"]
 test = ["pytest", "pytest-asyncio"]
 dev = ["build", "pre-commit"]
