@@ -50,7 +50,7 @@ dependencies = [
     "defusedxml==0.7.*",
     "spdx-tools==0.8.*",
     # Pinned to specific version for potential breaking changes
-    "cyclonedx-python-lib==11.1.0",
+    "cyclonedx-python-lib==11.4.0",
     "pluggy==1.*",
     "click==8.*",
     "loguru==0.7.*",
@@ -60,14 +60,14 @@ dependencies = [
     "rarfile==4.2.*",
     "networkx>=2.6",
     # Pinned to specific version for potential breaking changes
-    "python-msi==0.0.0a2",
+    "python-msi==0.0.0a3",
     # Pinned to specific version for potential breaking changes
     "rpmfile==2.1.0",
   ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-macho = ["lief==0.17.0"]
+macho = ["lief==0.17.1"]
 java = ["javatools>=1.6,==1.*"]
 test = ["pytest", "pytest-asyncio"]
 dev = ["build", "pre-commit"]
