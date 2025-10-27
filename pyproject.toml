@@ -60,7 +60,7 @@ dependencies = [
     "rarfile==4.2.*",
     "networkx>=2.6",
     # Pinned to specific version for potential breaking changes
-    "python-msi==0.0.0a2",
+    "python-msi==0.0.0a3",
     # Pinned to specific version for potential breaking changes
     "rpmfile==2.1.0",
   ]
