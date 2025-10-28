@@ -7,9 +7,8 @@
 # from queue import Queue                       # Present for use in future extraction implementation
 from typing import Any, Dict, List, Optional, Tuple
 
-from loguru import logger
-
 import rpmfile
+from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Software
