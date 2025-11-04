@@ -114,7 +114,7 @@ pylint surfactant
 ### Linting Rules
 
 - **Ruff**: Enforces E (pycodestyle errors), F (pyflakes), B (flake8-bugbear), I (isort)
-- **Exceptions**: 
+- **Exceptions**:
   - E501 (line too long) - ignored, handled by formatter
   - F841 (unused variable) - ignored
   - B (bugbear violations) - not auto-fixed
