@@ -508,16 +508,9 @@
                 await pyodide.loadPackage('micropip');
                 const micropip = pyodide.pyimport('micropip');
                 
-                // Install core dependencies that are available in Pyodide
-                // Note: Some dependencies may not be available, we'll handle errors gracefully
-                try {
-                    await micropip.install('requests');
-                    await micropip.install('networkx');
-                    await micropip.install('click');
-                    await micropip.install('defusedxml');
-                } catch (e) {
-                    console.warn('Some dependencies could not be installed:', e);
-                }
+                // Install Surfactant from PyPI
+                // This will install all required dependencies
+                await micropip.install('surfactant');
                 
                 showStatus('Python environment ready! You can now generate SBOMs.', 'success');
             } catch (error) {
@@ -621,9 +614,14 @@
                 // Create a virtual file system in Pyodide
                 const fs = pyodide.FS;
                 
-                // Create input directory
+                // Create input and output directories
                 try {
                     fs.mkdir('/input');
+                } catch (e) {
+                    // Directory might already exist
+                }
+                try {
+                    fs.mkdir('/output');
                 } catch (e) {
                     // Directory might already exist
                 }
@@ -651,7 +649,7 @@
                     fs.writeFile(path, uint8Array);
                 }
 
-                // For now, generate a mock SBOM since full Surfactant may not work in Pyodide
+                // Get configuration
                 const outputFormat = document.getElementById('output-format').value;
                 const outputName = document.getElementById('output-name').value;
                 const skipGather = document.getElementById('skip-gather').checked;
@@ -659,16 +657,62 @@
                 const skipInstallPath = document.getElementById('skip-install-path').checked;
                 const recordedInstitution = document.getElementById('recorded-institution').value;
 
-                // Generate mock SBOM structure
-                const sbom = generateMockSBOM(outputFormat, {
-                    files: uploadedFiles,
-                    skipGather,
-                    skipRelationships,
-                    skipInstallPath,
-                    recordedInstitution
-                });
+                // Create context configuration file
+                const contextConfig = [{
+                    "extractPaths": ["/input"]
+                }];
+                fs.writeFile('/context.json', JSON.stringify(contextConfig));
 
-                generatedSBOM = JSON.stringify(sbom, null, 2);
+                // Map output format to Surfactant format names
+                const formatMap = {
+                    'CyTRICS': 'surfactant.output.cytrics_writer',
+                    'SPDX': 'surfactant.output.spdx_writer',
+                    'CSV': 'surfactant.output.csv_writer'
+                };
+                
+                const outputFormatStr = formatMap[outputFormat] || formatMap['CyTRICS'];
+                
+                // Build command arguments for Surfactant
+                let args = ['/context.json', '/output/' + outputName];
+                
+                if (skipGather) {
+                    args.splice(0, 0, '--skip_gather');
+                }
+                if (skipRelationships) {
+                    args.splice(0, 0, '--skip_relationships');
+                }
+                if (skipInstallPath) {
+                    args.splice(0, 0, '--skip_install_path');
+                }
+                if (recordedInstitution) {
+                    args.splice(0, 0, '--recorded_institution', recordedInstitution);
+                }
+                args.splice(0, 0, '--output_format', outputFormatStr);
+
+                // Run Surfactant
+                showStatus('Running Surfactant analysis...', 'info');
+                
+                await pyodide.runPythonAsync(`
+from surfactant.cmd.generate import sbom
+import sys
+
+# Set up arguments
+args = ${JSON.stringify(args)}
+
+try:
+    # Call Surfactant's sbom function
+    sbom(args, standalone_mode=False)
+    print("SBOM generation completed successfully")
+except Exception as e:
+    print(f"Error: {str(e)}")
+    import traceback
+    traceback.print_exc()
+    raise
+                `);
+
+                // Read the generated SBOM
+                const sbomData = fs.readFile('/output/' + outputName, { encoding: 'utf8' });
+                generatedSBOM = sbomData;
                 
                 document.getElementById('output-content').textContent = generatedSBOM;
                 document.getElementById('output').classList.add('show');
@@ -680,57 +724,6 @@
             } finally {
                 generateBtn.disabled = false;
                 loading.classList.remove('show');
-            }
-        }
-
-        function generateMockSBOM(format, options) {
-            const timestamp = new Date().toISOString();
-            
-            if (format === 'CyTRICS') {
-                return {
-                    "bomFormat": "CyTRICS",
-                    "specVersion": "1.0",
-                    "metadata": {
-                        "timestamp": timestamp,
-                        "tools": ["Surfactant Demo"],
-                        "recordedInstitution": options.recordedInstitution || "Demo Instance"
-                    },
-                    "software": options.files.map((file, index) => ({
-                        "UUID": `file-${index}-${Date.now()}`,
-                        "fileName": file.name,
-                        "size": file.size,
-                        "installPath": options.skipInstallPath ? [] : [`/input/${file.name}`],
-                        "containerPath": [`/input/${file.name}`],
-                        "captureTime": timestamp,
-                        "sha256": "pending-analysis",
-                        "md5": "pending-analysis"
-                    })),
-                    "relationships": options.skipRelationships ? [] : []
-                };
-            } else if (format === 'SPDX') {
-                return {
-                    "spdxVersion": "SPDX-2.3",
-                    "dataLicense": "CC0-1.0",
-                    "SPDXID": "SPDXRef-DOCUMENT",
-                    "name": "Surfactant-Demo-SBOM",
-                    "documentNamespace": `https://surfactant.demo/${timestamp}`,
-                    "creationInfo": {
-                        "created": timestamp,
-                        "creators": ["Tool: Surfactant Demo"]
-                    },
-                    "packages": options.files.map((file, index) => ({
-                        "SPDXID": `SPDXRef-Package-${index}`,
-                        "name": file.name,
-                        "filesAnalyzed": false,
-                        "downloadLocation": "NOASSERTION"
-                    }))
-                };
-            } else { // CSV
-                let csv = "FileName,Size,Path,Timestamp\n";
-                options.files.forEach(file => {
-                    csv += `"${file.name}",${file.size},"/input/${file.name}","${timestamp}"\n`;
-                });
-                return csv;
             }
         }
 

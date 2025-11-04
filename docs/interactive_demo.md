@@ -47,6 +47,7 @@ Customize the SBOM generation process:
 The demo runs entirely in your browser using:
 
 - **Pyodide**: Python runtime compiled to WebAssembly
+- **Surfactant**: Full Surfactant library installed from PyPI
 - **Modern Web APIs**: File System Access API for file handling
 - **Responsive Design**: Works on desktop and mobile devices
 
@@ -58,9 +59,9 @@ All processing happens locally in your browser. No files are uploaded to any ser
 
 Please note that the browser-based demo has some limitations compared to the full Surfactant installation:
 
-- Not all Python dependencies may be available in the browser environment
-- Large files or directories may take longer to process
-- Some advanced features may have limited functionality
+- First-time load may take longer as Surfactant and its dependencies are downloaded and installed
+- Large files or directories may take longer to process due to browser resource constraints
+- Some advanced features requiring native libraries may have limited functionality
 - For production use, we recommend installing Surfactant locally
 
 ## Getting Started
