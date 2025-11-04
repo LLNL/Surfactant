@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: MIT
 import json
 from pathlib import Path
-from typing import List
 
 import binary2strings as b2s
 from loguru import logger
@@ -14,7 +13,7 @@ from surfactant.sbomtypes import SBOM, Software
 
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
-def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: List[str]):
+def extract_strings(sbom: SBOM, software: Software, filename: str, filetype: list[str]):
     """
     Extract ASCII strings from a binary file using binary2strings.
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.

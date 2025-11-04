@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: MIT
 import pathlib
 from collections.abc import Iterable
-from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
@@ -18,13 +17,11 @@ def has_required_fields(metadata) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def establish_relationships(
-    sbom: SBOM, software: Software, metadata
-) -> Optional[List[Relationship]]:
+def establish_relationships(sbom: SBOM, software: Software, metadata) -> list[Relationship] | None:
     if not has_required_fields(metadata):
         return None
 
-    relationships: List[Relationship] = []
+    relationships: list[Relationship] = []
     dependent_uuid = software.UUID
     dnName = None
     dnCulture = None

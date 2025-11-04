@@ -296,7 +296,7 @@ def handle_transfers() -> None:
 
             try:
                 copy2(file, f"{DRIVE}/{newname}")
-            except IOError as err:
+            except OSError as err:
                 exception(err)
 
     # Signal to the host that each file has finished copying
@@ -371,7 +371,7 @@ def handle_file(fname: str) -> None:
 
         # Remove file from folder
         remove(fname)
-    except IOError as err:
+    except OSError as err:
         exception(err)
         sleep(0.5)
 

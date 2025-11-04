@@ -7,7 +7,6 @@ from argparse import ArgumentParser
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import List
 
 import networkx
 import pyvis
@@ -186,7 +185,7 @@ def main():
 
     args = parser.parse_args()
 
-    sboms: List[dict] = []
+    sboms: list[dict] = []
     for path in args.path:
         with open(path, "r") as f:
             sboms.append({"sbom": SBOM.from_json(f.read()), "sbomFileName": Path(path).name})

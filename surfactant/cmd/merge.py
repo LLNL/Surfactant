@@ -1,6 +1,5 @@
 import json
 import uuid as uuid_module
-from typing import Tuple
 
 import click
 import networkx as nx
@@ -133,7 +132,7 @@ def merge(
     output_writer.write_sbom(merged_sbom, sbom_outfile)
 
 
-def create_system_object(sbom: SBOM, config=None, system_uuid=None) -> Tuple[System, bool]:
+def create_system_object(sbom: SBOM, config=None, system_uuid=None) -> tuple[System, bool]:
     """Function to create an accurate system object
 
     Positional arguments:

@@ -104,7 +104,16 @@ indent-width = 4
 
 [tool.ruff.lint]
 # ruff defaults: E4, E7, E9, F
-select = ["E", "F", "B", "I"]
+select = [
+          "E",     # Pycodestyle [E](https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
+          "F",     # Pyflakes [F](https://docs.astral.sh/ruff/rules/#pyflakes-f)
+          "B",     # flake8-bugbear [B](https://docs.astral.sh/ruff/rules/#flake8-bugbear-b)
+          "I",     # isort [I][https://docs.astral.sh/ruff/rules/#isort-i]
+          "UP006", # non-pep585-annotation [UP006](https://docs.astral.sh/ruff/rules/non-pep585-annotation/)
+          "UP007", # non-pep604-annotation-union [UP007](https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/)
+          "UP024", # os-error-alias [UP024](https://docs.astral.sh/ruff/rules/os-error-alias/)
+          "UP035", # deprecated-import [UP035](https://docs.astral.sh/ruff/rules/deprecated-import/)
+         ]
 ignore = ["E501", "F841"]
 # don't fix flake8-bugbear (`B`) violations
 unfixable = ["B"]

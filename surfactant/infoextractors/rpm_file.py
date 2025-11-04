@@ -5,7 +5,7 @@
 # import struct
 # from pathlib import Path
 # from queue import Queue                       # Present for use in future extraction implementation
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import rpmfile
 
@@ -21,8 +21,8 @@ def supports_file(filetype) -> bool:
 
 
 def get_files(
-    directories: List[bytes], files: List[bytes], indicies: List[int], hashes: List[bytes]
-) -> Dict[Any, Any]:
+    directories: list[bytes], files: list[bytes], indicies: list[int], hashes: list[bytes]
+) -> dict[Any, Any]:
     """Extracts files from the given directories and files list.
 
     Args:
@@ -50,7 +50,7 @@ def get_files(
     return extracted_files
 
 
-def combine_lists(key_list: List[bytes], value_list: List[bytes]) -> Dict:
+def combine_lists(key_list: list[bytes], value_list: list[bytes]) -> dict:
     """Combines 2 lists into a single dictionary - matching on index.
 
     Args:
@@ -76,8 +76,8 @@ def extract_file_info(
     sbom: SBOM,
     software: Software,
     filename: str,
-    filetype: List[str],
-    software_field_hints: List[Tuple[str, object, int]],
+    filetype: list[str],
+    software_field_hints: list[tuple[str, object, int]],
     # context_queue: "Queue[ContextEntry]",     # Present for use in future extraction implementation
     # current_context: Optional[ContextEntry],
 ) -> object:
@@ -90,7 +90,7 @@ def extract_file_info(
     return rpm_info
 
 
-def extract_rpm_info(filename: str) -> Dict[str, Any]:
+def extract_rpm_info(filename: str) -> dict[str, Any]:
     """Extracts fields from the header of an RPM Package.
 
     Args:
@@ -98,7 +98,7 @@ def extract_rpm_info(filename: str) -> Dict[str, Any]:
     Returns:
         A dictionary of all fields found in the RPM header.
     """
-    file_details: Dict[str, Any] = {}
+    file_details: dict[str, Any] = {}
     with rpmfile.open(filename) as rpm:
         header = rpm.headers
         file_details["rpm"] = {}

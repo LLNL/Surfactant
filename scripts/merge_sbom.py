@@ -8,7 +8,6 @@ import json
 import sys
 import uuid as uuid_module
 from collections import deque
-from typing import Optional
 
 
 def is_valid_uuid4(u) -> bool:
@@ -29,10 +28,10 @@ def is_valid_uuid4(u) -> bool:
 
 def find_relationship_entry(
     sbom,
-    xUUID: Optional[str] = None,
-    yUUID: Optional[str] = None,
-    relationship: Optional[str] = None,
-) -> Optional[dict]:
+    xUUID: str | None = None,
+    yUUID: str | None = None,
+    relationship: str | None = None,
+) -> dict | None:
     """Search for a specific relationship entry and check if a match exists.
 
     Args:
@@ -62,10 +61,10 @@ def find_relationship_entry(
 
 def find_star_relationship_entry(
     sbom,
-    xUUID: Optional[str] = None,
-    yUUID: Optional[str] = None,
-    relationship: Optional[str] = None,
-) -> Optional[dict]:
+    xUUID: str | None = None,
+    yUUID: str | None = None,
+    relationship: str | None = None,
+) -> dict | None:
     """Search for a star relationship entry and check if a match exists.
 
     Args:
@@ -93,9 +92,7 @@ def find_star_relationship_entry(
     return None
 
 
-def find_systems_entry(
-    sbom, uuid: Optional[str] = None, name: Optional[str] = None
-) -> Optional[dict]:
+def find_systems_entry(sbom, uuid: str | None = None, name: str | None = None) -> dict | None:
     """Search for a systems entry and check if a match exists.
 
     Args:
@@ -121,11 +118,11 @@ def find_systems_entry(
 
 def find_software_entry(
     sbom,
-    uuid: Optional[str] = None,
-    sha256: Optional[str] = None,
-    md5: Optional[str] = None,
-    sha1: Optional[str] = None,
-) -> Optional[dict]:
+    uuid: str | None = None,
+    sha256: str | None = None,
+    md5: str | None = None,
+    sha1: str | None = None,
+) -> dict | None:
     """Search for a specific software entry and check if a match exists.
 
     Args:
