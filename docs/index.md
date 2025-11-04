@@ -11,6 +11,8 @@
 
 Surfactant provides a modular framework to gather file information and analyze dependencies for generating an SBOM.
 
+**[Try the Interactive Demo](demo.html)** - Generate SBOMs directly in your browser!
+
 Some links to pages that may be useful are:
 
 [PyPI](https://pypi.org/project/Surfactant/)
@@ -24,6 +26,7 @@ Some links to pages that may be useful are:
    :maxdepth: 2
 
    self
+   interactive_demo
    getting_started
    basic_usage
    configuration_files
