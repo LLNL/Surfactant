@@ -6,7 +6,7 @@ Surfactant is a modular framework for gathering file information to generate Sof
 
 ## Key Technologies
 
-- **Language**: Python 3.9+
+- **Language**: Python 3.10+
 - **CLI Framework**: Click 8.x
 - **TUI Framework**: Textual 6.x
 - **Plugin System**: Pluggy 1.x
@@ -194,7 +194,7 @@ surfactant version
 
 ## Important Notes
 
-- Python >= 3.9 required
+- Python >= 3.10 required
 - Uses setuptools-scm for automatic versioning from git tags
 - MIT licensed (see LICENSE and NOTICE files)
 - Maintained by Lawrence Livermore National Laboratory (LLNL)
@@ -203,7 +203,7 @@ surfactant version
 
 ## Continuous Integration
 
-- **pytest.yml**: Runs tests on Ubuntu, macOS, and Windows with Python 3.9, 3.10, and 3.13 (testing oldest supported, intermediate, and newest versions)
+- **pytest.yml**: Runs tests on Ubuntu, macOS, and Windows with Python 3.10, and 3.13 (testing oldest supported and newest versions)
 - **regressions.yml**: Runs regression tests
 - **test_plugins.yml**: Tests plugin functionality
 - All PRs require passing tests and pre-commit checks
