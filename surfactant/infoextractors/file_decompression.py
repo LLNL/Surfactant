@@ -17,8 +17,9 @@ import shutil
 import tarfile
 import tempfile
 import zipfile
+from collections.abc import Callable
 from queue import Queue
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 import rarfile
 from loguru import logger
