@@ -18,13 +18,14 @@ maintainers = [
 ]
 description = "Modular framework to gather file information, analyze dependencies, and generate an SBOM"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 keywords = ["sbom", "pe", "elf", "ole", "msi"]
 license = "MIT"
 license-files = ["LICENSE", "NOTICE"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
