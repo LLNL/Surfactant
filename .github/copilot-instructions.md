@@ -204,10 +204,11 @@ surfactant version
 
 ## Continuous Integration
 
-- **pytest.yml**: Runs tests on Ubuntu, macOS, and Windows with Python 3.9, 3.10, and 3.13
+- **pytest.yml**: Runs tests on Ubuntu, macOS, and Windows with Python 3.9, 3.10, and 3.13 (testing oldest supported, intermediate, and newest versions)
 - **regressions.yml**: Runs regression tests
 - **test_plugins.yml**: Tests plugin functionality
 - All PRs require passing tests and pre-commit checks
+- Note: Python 3.11 and 3.12 are supported but not explicitly tested in CI (compatibility assumed between tested versions)
 
 ## External Resources
 
