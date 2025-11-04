@@ -347,6 +347,7 @@
                     <li>Configure SBOM generation settings</li>
                     <li>Generate and download SBOMs in various formats</li>
                     <li><strong>Note:</strong> Initial load may take a moment as dependencies are downloaded</li>
+                    <li><strong>Browser Note:</strong> Directory upload works best in Chrome, Edge, and other Chromium-based browsers</li>
                 </ul>
             </div>
 
@@ -364,7 +365,7 @@
                         <div>📁 Click to select files or drag and drop here</div>
                         <small>Supports multiple files and directories</small>
                     </div>
-                    <input type="file" id="file-input" multiple webkitdirectory style="display: none;" onchange="handleFileSelect(event)">
+                    <input type="file" id="file-input" multiple webkitdirectory style="display: none;" onchange="handleFileSelect(event)" aria-label="Select files or directory to analyze" role="button">
                     <div class="file-list" id="file-list"></div>
                 </div>
 
@@ -537,7 +538,8 @@
         // File upload handling
         function handleFileSelect(event) {
             const files = Array.from(event.target.files);
-            uploadedFiles = files;
+            // Append files instead of replacing to match drag-and-drop behavior
+            uploadedFiles = uploadedFiles.concat(files);
             displayFileList();
         }
 
@@ -585,7 +587,8 @@
             e.preventDefault();
             uploadArea.classList.remove('drag-over');
             const files = Array.from(e.dataTransfer.files);
-            uploadedFiles = files;
+            // Append files instead of replacing
+            uploadedFiles = uploadedFiles.concat(files);
             displayFileList();
         });
 
@@ -739,7 +742,15 @@
             }
 
             const outputName = document.getElementById('output-name').value;
-            const blob = new Blob([generatedSBOM], { type: 'application/json' });
+            const outputFormat = document.getElementById('output-format').value;
+            
+            // Determine MIME type based on format
+            let mimeType = 'application/json';
+            if (outputFormat === 'CSV') {
+                mimeType = 'text/csv';
+            }
+            
+            const blob = new Blob([generatedSBOM], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
