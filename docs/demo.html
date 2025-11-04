@@ -467,7 +467,7 @@
                 <div class="settings-section">
                     <h3>About Surfactant</h3>
                     <p style="line-height: 1.6; color: #666;">
-                        Surfactant is a modular framework to gather file information and analyze dependencies for generating Software Bills of Materials (SBOMs). 
+                        Surfactant is a modular framework to gather file information and analyze dependencies for generating Software Bills of Materials (SBOMs).
                         It provides comprehensive insight into software composition, helping organizations understand their software supply chain.
                     </p>
                     <h4 style="margin-top: 20px; margin-bottom: 10px;">Features:</h4>
@@ -501,17 +501,17 @@
                 pyodide = await loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
                 });
-                
+
                 showStatus('Installing Surfactant and dependencies...', 'info');
-                
+
                 // Install micropip first
                 await pyodide.loadPackage('micropip');
                 const micropip = pyodide.pyimport('micropip');
-                
+
                 // Install Surfactant from PyPI
                 // This will install all required dependencies
                 await micropip.install('surfactant');
-                
+
                 showStatus('Python environment ready! You can now generate SBOMs.', 'success');
             } catch (error) {
                 showStatus('Error initializing Python environment: ' + error.message, 'error');
@@ -523,7 +523,7 @@
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
+
             event.target.classList.add('active');
             document.getElementById(tabName + '-tab').classList.add('active');
         }
@@ -539,7 +539,7 @@
         function displayFileList() {
             const fileListDiv = document.getElementById('file-list');
             fileListDiv.innerHTML = '';
-            
+
             uploadedFiles.forEach((file, index) => {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item';
@@ -566,16 +566,16 @@
 
         // Drag and drop support
         const uploadArea = document.getElementById('file-upload-area');
-        
+
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('drag-over');
         });
-        
+
         uploadArea.addEventListener('dragleave', () => {
             uploadArea.classList.remove('drag-over');
         });
-        
+
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadArea.classList.remove('drag-over');
@@ -605,7 +605,7 @@
 
             const generateBtn = document.getElementById('generate-btn');
             const loading = document.getElementById('loading');
-            
+
             generateBtn.disabled = true;
             loading.classList.add('show');
             showStatus('Generating SBOM...', 'info');
@@ -613,7 +613,7 @@
             try {
                 // Create a virtual file system in Pyodide
                 const fs = pyodide.FS;
-                
+
                 // Create input and output directories
                 try {
                     fs.mkdir('/input');
@@ -631,7 +631,7 @@
                     const arrayBuffer = await file.arrayBuffer();
                     const uint8Array = new Uint8Array(arrayBuffer);
                     const path = '/input/' + (file.webkitRelativePath || file.name);
-                    
+
                     // Create parent directories if needed
                     const parts = path.split('/');
                     let currentPath = '';
@@ -645,7 +645,7 @@
                             }
                         }
                     }
-                    
+
                     fs.writeFile(path, uint8Array);
                 }
 
@@ -669,12 +669,12 @@
                     'SPDX': 'surfactant.output.spdx_writer',
                     'CSV': 'surfactant.output.csv_writer'
                 };
-                
+
                 const outputFormatStr = formatMap[outputFormat] || formatMap['CyTRICS'];
-                
+
                 // Build command arguments for Surfactant
                 let args = ['/context.json', '/output/' + outputName];
-                
+
                 if (skipGather) {
                     args.splice(0, 0, '--skip_gather');
                 }
@@ -691,7 +691,7 @@
 
                 // Run Surfactant
                 showStatus('Running Surfactant analysis...', 'info');
-                
+
                 await pyodide.runPythonAsync(`
 from surfactant.cmd.generate import sbom
 import sys
@@ -713,10 +713,10 @@ except Exception as e:
                 // Read the generated SBOM
                 const sbomData = fs.readFile('/output/' + outputName, { encoding: 'utf8' });
                 generatedSBOM = sbomData;
-                
+
                 document.getElementById('output-content').textContent = generatedSBOM;
                 document.getElementById('output').classList.add('show');
-                
+
                 showStatus('SBOM generated successfully!', 'success');
             } catch (error) {
                 showStatus('Error generating SBOM: ' + error.message, 'error');
@@ -736,13 +736,13 @@ except Exception as e:
 
             const outputName = document.getElementById('output-name').value;
             const outputFormat = document.getElementById('output-format').value;
-            
+
             // Determine MIME type based on format
             let mimeType = 'application/json';
             if (outputFormat === 'CSV') {
                 mimeType = 'text/csv';
             }
-            
+
             const blob = new Blob([generatedSBOM], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -750,7 +750,7 @@ except Exception as e:
             a.download = outputName;
             a.click();
             URL.revokeObjectURL(url);
-            
+
             showStatus('SBOM downloaded successfully!', 'success');
         }
 
@@ -776,7 +776,7 @@ except Exception as e:
             try {
                 const config = document.getElementById('context-editor').value;
                 JSON.parse(config); // Validate JSON
-                
+
                 const blob = new Blob([config], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -784,7 +784,7 @@ except Exception as e:
                 a.download = 'context-config.json';
                 a.click();
                 URL.revokeObjectURL(url);
-                
+
                 showStatus('Context configuration downloaded', 'success');
             } catch (error) {
                 showStatus('Invalid JSON in context configuration: ' + error.message, 'error');
