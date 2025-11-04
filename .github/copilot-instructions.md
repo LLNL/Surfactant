@@ -153,11 +153,10 @@ Plugins are separate packages installed via pip/pipx.
 
 ### Context Objects
 
-The `SpecimenContext` class is central to SBOM generation, containing:
-- Software metadata
-- Extracted file information
-- Relationships between components
-- Configuration for extraction process
+The `ContextEntry` class is central to SBOM generation, containing:
+- Detailing what directories should be traversed
+- Configuring what file types should be included/omitted from the SBOM
+- Contextual information on where the files in the traversed directory would be if installed on a "real" system
 
 ## Testing Guidelines
 
