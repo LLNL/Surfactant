@@ -160,11 +160,16 @@ def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
     Combines resolved RPATH/RUNPATH paths with system default paths unless
     DF_1_NODEFLIB is set. This reflects ELF loader behavior for dependency resolution.
     """
-
-    # Start with RPATH or RUNPATH entries, if any
+    # Start with RPATH or RUNPATH entries, if any.
+    # 1. Search using directories in DT_RPATH if present and no DT_RUNPATH exists (use of DT_RPATH is deprecated)
+    # 2. Use LD_LIBRARY_PATH environment variable; ignore if suid/sgid binary (nothing to do, we don't have this information w/o running on a live system)
+    # 3. Search using directories in DT_RUNPATH if present
     paths = generate_runpaths(sw, md)  # May include $ORIGIN etc., already substituted
 
     # Check for the DF_1_NODEFLIB dynamic flag: disables default library search
+    # 4. From /etc/ld.so.cache (/var/run/ld.so.hints on FreeBSD) list of compiled candidate libraries previously found in augmented library path; if binary was linked with -z nodeflib linker option, libraries in default library paths are skipped
+    # /etc/ld.so.conf can be used to add additional directories to defaults (e.g. /usr/local/lib or /opt/lib), but we don't necessarily have a way to gather this info
+    # Search in default path /lib, then /usr/lib; skip if binary was linked with -z nodeflib option
     nodeflib = False
     if "elfDynamicFlags1" in md and "DF_1_NODEFLIB" in md["elfDynamicFlags1"]:
         nodeflib = md["elfDynamicFlags1"]["DF_1_NODEFLIB"]
