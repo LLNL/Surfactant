@@ -284,6 +284,14 @@ def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
             For now, such paths are discarded if unresolved.
 
     If no DSTs are present, the original path is returned unchanged.
+    
+    Parameters:
+        sw (Software): The software object (used for $ORIGIN resolution).
+        md (dict): ELF metadata.
+        path (str): The raw path string to process.
+
+    Returns:
+        List[pathlib.PurePosixPath]: All normalized, substituted search paths.
     """
     pathlist: List[pathlib.PurePosixPath] = []
 

@@ -63,6 +63,105 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
       2. Secondary: Legacy string-based matching using installPath and fileName
       3. Tertiary: Heuristic match based on fileName and shared parent directory (symlink-aware)
 
+    Background and References:
+    --------------------------
+    This function models how Windows determines which DLLs a process loads when calling
+    `LoadLibrary`, `LoadLibraryEx`, or related APIs. It partially reconstructs the DLL
+    search order used by the Windows loader, focusing on statically analyzable aspects.
+
+    See also:
+        - Dynamic-link library search order:
+          https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order
+        - DLL redirection:
+          https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-redirection
+        - API sets overview:
+          https://learn.microsoft.com/en-us/windows/win32/apiindex/windows-apisets
+
+    DLL Search Order (Desktop Applications):
+    ---------------------------------------
+    The Windows loader uses multiple strategies to locate DLLs, depending on how
+    they are loaded, manifest configuration, SafeDllSearchMode, and other factors.
+    The typical order is:
+
+      1. **Explicit path, redirection, or manifest-based loading**
+         - A full path is specified in `LoadLibrary` or `LoadLibraryEx`.
+         - DLL redirection: presence of a `.local` file (e.g., `myapp.exe.local`)
+           causes the loader to check the application directory first, regardless
+           of the full path specified. The `.local` file’s contents are ignored.
+         - Manifests can disable `.local` redirection behavior.
+           (Note: enabling DLL redirection may require setting the `DevOverrideEnable`
+           registry key.)
+
+      2. **In-memory or KnownDLLs**
+         - If a DLL with the same module name is already loaded in memory, no search occurs.
+         - If the DLL name is found in the `KnownDLLs` registry key, the system copy is used.
+
+      3. **LOAD_LIBRARY_SEARCH flags (for LoadLibraryEx)**
+         - The loader searches directories in the following order when flags are set:
+             - `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR`
+             - `LOAD_LIBRARY_SEARCH_APPLICATION_DIR`
+             - Paths added via `AddDllDirectory()` or `SetDllDirectory()`
+               (if multiple directories are added, search order is unspecified)
+             - System directory (`LOAD_LIBRARY_SEARCH_SYSTEM32`)
+             - Paths added via `AddDllDirectory()` (`LOAD_LIBRARY_SEARCH_USER_DIRS`) or `SetDllDirectory()`
+
+      4. **Application directory**
+         - The directory from which the application was loaded.
+           If `LoadLibraryEx` is called with `LOAD_WITH_ALTERED_SEARCH_PATH`,
+           the directory containing the specified absolute path (`lpFileName`) is used instead.
+
+      5. **SetDllDirectory paths**
+         - The directory explicitly added using `SetDllDirectory()`.
+
+      6. **Current directory**
+         - Only checked if SafeDllSearchMode is disabled.
+
+      7. **System directory**
+         - Retrieved via `GetSystemDirectory()`.
+
+      8. **16-bit system directory**
+         - Typically `%windir%\\SYSTEM` on 32-bit systems.
+           There is no dedicated API to retrieve this directory.
+           (Not supported or relevant on 64-bit Windows.)
+
+      9. **Windows directory**
+         - Retrieved via `GetWindowsDirectory()`.
+
+     10. **Current directory (SafeDllSearchMode enabled)**
+         - When SafeDllSearchMode is on (default behavior), this check occurs later in the sequence.
+
+     11. **PATH environment variable**
+         - Each directory in the PATH environment variable is searched.
+           The per-application “App Paths” registry entries are *not* used for DLL lookup
+           (they only apply to executable search resolution).
+
+    Additional Windows Features:
+    ----------------------------
+    Windows 10 and Windows 11 introduced **API sets**, a redirection mechanism that maps
+    logical DLL names (e.g., `api-ms-win-core-file-l1-1-0.dll`) to actual implementation
+    DLLs. These API set DLLs are not physical files on disk — they are resolved internally
+    by the Windows loader and cannot be statically traced via file presence.
+
+    Implementation Scope in Static Analysis:
+    ----------------------------------------
+    Because this static analysis lacks access to runtime information such as manifests,
+    registry settings, environment variables, and system search modes, we only approximate
+    the search behavior by checking a *subset* of possible locations.
+
+    Practically, this function performs:
+      - **Step 4**: Searches the directory the importing executable or shared object
+        was loaded from (derived from `installPath`).
+      - Optionally extends this to a few heuristic matching phases (see below).
+
+    Notes and Implementation Details:
+    ---------------------------------
+    - If `installPath` is missing, the file is likely a temporary artifact or installer
+      and cannot be resolved safely.
+    - Future improvement (TODO): attempt resolution using relative locations within
+      `containerPath`, for cases where files originate from the same container UUID.
+    - While logging missing DLLs could be informative, it would be excessively noisy,
+      as most unresolved DLLs are standard Windows system libraries.
+
     Args:
         sbom (SBOM): The software bill of materials object with fs_tree and software entries.
         sw (Software): The importing software that declares PE DLL dependencies.
@@ -73,6 +172,8 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
     """
     relationships: List[Relationship] = []
 
+    # No installPath is probably temporary files/installer
+    # TODO maybe resolve dependencies using relative locations in containerPath, for files originating from the same container UUID?
     if sw.installPath is None:
         logger.debug(f"[PE][skip] No installPath for {sw.name} ({sw.UUID}); skipping resolution")
         return relationships
