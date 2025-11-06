@@ -246,67 +246,44 @@ def replace_dst(origstr, dvar, newval) -> str:
     return origstr.replace("$" + dvar, newval).replace("${" + dvar + "}", newval)
 
 
-# def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
-#     # substitute any dynamic string tokens found; may result in multiple strings if different variants are possible
-#     # replace $ORIGIN, ${ORIGIN}, $LIB, ${LIB}, $PLATFORM, ${PLATFORM} tokens
-#     # places the dynamic linker does this expansion are:
-#     # - environment vars: LD_LIBRARY_PATH, LD_PRELOAD, and LD_AUDIT
-#     # - dynamic section tags: DT_NEEDED, DT_RPATH, DT_RUNPATH, DT_AUDIT, and DT_DEPAUDIT
-#     # - arguments to ld.so: --audit, --library-path, and --preload
-#     # - the filename arguments to dlopen and dlmopen
-#     # more details in the `Dynamic string tokens` section of https://man7.org/linux/man-pages/man8/ld.so.8.html
-#     pathlist: List[pathlib.PurePosixPath] = []
-#     # ORIGIN: replace with absolute directory containing the program or shared object (with symlinks resolved and no ../ or ./ subfolders)
-#     # for SUID/SGID binaries, after expansion the normalized path must be in a trusted directory (https://github.com/bminor/glibc/blob/0d41182/elf/dl-load.c#L356-L357, https://github.com/bminor/glibc/blob/0d41182/elf/dl-load.c#L297-L316)
-#     if (path.find("$ORIGIN") != -1) or (path.find("${ORIGIN}") != -1):
-#         if isinstance(sw.installPath, Iterable):
-#             for ipath in sw.installPath:
-#                 origin = pathlib.PurePosixPath(ipath).parent.as_posix()
-#                 pathlist.append(pathlib.PurePosixPath(replace_dst(path, "ORIGIN", origin)))
-
-#     # LIB: expands to `lib` or `lib64` depending on arch (x86-64 to lib64, x86-32 to lib)
-#     if (path.find("$LIB") != -1) or (path.find("${LIB}") != -1):
-#         if not pathlist:
-#             # nothing in the original pathlist, use the original path passed in
-#             pathlist.append(pathlib.PurePosixPath(replace_dst(path, "LIB", "lib")))
-#             pathlist.append(pathlib.PurePosixPath(replace_dst(path, "LIB", "lib64")))
-#         else:
-#             # perform substitutions with every current entry in pathlist
-#             pathlist = [
-#                 newp
-#                 for p in pathlist
-#                 for newp in (
-#                     pathlib.PurePosixPath(replace_dst(p, "LIB", "lib")),
-#                     pathlib.PurePosixPath(replace_dst(p, "LIB", "lib64")),
-#                 )
-#             ]
-
-#     # PLATFORM: expands to string corresponding to CPU type of the host system (e.g. "x86_64")
-#     # some archs the string comes from AT_PLATFORM value in auxiliary vector (getauxval)
-#     if (path.find("$PLATFORM") != -1) or (path.find("${PLATFORM}") != -1):
-#         # NOTE consider using what is known about the target CPU of the ELF binary, and get all possible PLATFORM values based on that from glibc/muslc source code?
-#         #      this would take some significant amount of searching (inconsistent in how different platforms set the value), and could result in a large increase in
-#         #      the number of search paths for a feature that is rarely used (similar to hwcaps subfolder searching)
-#         # For now, discard paths given that no valid substitution was found
-#         return []
-
-#     # normalize paths after expanding tokens to avoid portions of the path involving  ../, ./, and // occurrences
-#     pathlist = [posix_normpath(p.as_posix()) for p in pathlist]
-#     return pathlist
-
-
 def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
     """
     Expands dynamic string tokens (DSTs) in ELF search paths like $ORIGIN, $LIB, $PLATFORM.
-    If no DSTs are present, returns the original path unchanged.
 
-    Parameters:
-        sw (Software): The software object (used for $ORIGIN resolution).
-        md (dict): ELF metadata.
-        path (str): The raw path string to process.
+    Background and References:
+    --------------------------
+    The dynamic linker (`ld.so`) performs these substitutions for several contexts:
+        - Environment variables: LD_LIBRARY_PATH, LD_PRELOAD, and LD_AUDIT
+        - Dynamic section tags: DT_NEEDED, DT_RPATH, DT_RUNPATH, DT_AUDIT, and DT_DEPAUDIT
+        - Arguments to ld.so: --audit, --library-path, and --preload
+        - Filename arguments to dlopen() and dlmopen()
 
-    Returns:
-        List[pathlib.PurePosixPath]: All normalized, substituted search paths.
+    More details:
+        See the “Dynamic string tokens” section of:
+        https://man7.org/linux/man-pages/man8/ld.so.8.html
+
+    Token behavior summary:
+        $ORIGIN / ${ORIGIN}:
+            Replaced with the absolute directory containing the program or shared object
+            (with symlinks resolved and no ../ or ./ components).
+            For SUID/SGID binaries, the resolved path must lie in a trusted directory.
+            References:
+              - glibc: elf/dl-load.c#L356-L357
+              - glibc: elf/dl-load.c#L297-L316
+
+        $LIB / ${LIB}:
+            Expands to either "lib" or "lib64" depending on architecture
+            (e.g. x86-64 → lib64, x86-32 → lib).
+
+        $PLATFORM / ${PLATFORM}:
+            Expands to the CPU type string (e.g. "x86_64").
+            On some architectures this comes from AT_PLATFORM in the auxiliary vector.
+            Implementing full substitution would require target-specific enumeration
+            of possible platform values (from glibc or musl sources), which is nontrivial
+            and rarely used — similar to hardware capability (hwcaps) subfolder searching.
+            For now, such paths are discarded if unresolved.
+
+    If no DSTs are present, the original path is returned unchanged.
     """
     pathlist: List[pathlib.PurePosixPath] = []
 
