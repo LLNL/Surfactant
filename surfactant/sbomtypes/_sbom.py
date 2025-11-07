@@ -568,8 +568,8 @@ class SBOM:
         file- or directory-level symlinks under each installPath.
 
         Args:
-            entries:        list of Software instances to add.
-            parent_entry:   if provided, attach a "Contains" edge from this parent to each entry.
+            entries (Optional[List[Software]]): list of Software instances to add.
+            parent_entry (Optional[Software]): if provided, attach a "Contains" edge from this parent to each entry.
         """
         if not entries:
             return
