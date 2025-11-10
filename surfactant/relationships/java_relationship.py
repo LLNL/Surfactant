@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
@@ -10,7 +8,7 @@ def has_required_fields(metadata) -> bool:
 
 class _ExportDict:
     created = False
-    supplied_by: Dict[str, str] = {}
+    supplied_by: dict[str, str] = {}
 
     @classmethod
     def create_export_dict(cls, sbom: SBOM):
@@ -19,23 +17,21 @@ class _ExportDict:
         for software_entry in sbom.software:
             if software_entry.metadata:
                 for metadata in software_entry.metadata:
-                    if isinstance(metadata, Dict) and "javaClasses" in metadata:
+                    if isinstance(metadata, dict) and "javaClasses" in metadata:
                         for class_info in metadata["javaClasses"].values():
                             for export in class_info["javaExports"]:
                                 cls.supplied_by[export] = software_entry.UUID
         cls.created = True
 
     @classmethod
-    def get_supplier(cls, import_name: str) -> Optional[str]:
+    def get_supplier(cls, import_name: str) -> str | None:
         if import_name in cls.supplied_by:
             return cls.supplied_by[import_name]
         return None
 
 
 @surfactant.plugin.hookimpl
-def establish_relationships(
-    sbom: SBOM, software: Software, metadata
-) -> Optional[List[Relationship]]:
+def establish_relationships(sbom: SBOM, software: Software, metadata) -> list[Relationship] | None:
     if not has_required_fields(metadata):
         return None
     _ExportDict.create_export_dict(sbom)

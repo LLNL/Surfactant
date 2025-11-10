@@ -170,7 +170,7 @@ def cleanup(session: Session) -> None:
     for file in listdir(f"./{SHARED}"):
         try:
             remove(f"./{SHARED}/{file}")
-        except IOError as err:
+        except OSError as err:
             exception(f"CANNOT DELETE ./{SHARED}/{file}: {str(err)}")
 
     # Let the user read VM output if debug is on

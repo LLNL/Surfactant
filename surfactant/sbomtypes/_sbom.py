@@ -7,7 +7,6 @@ from __future__ import annotations
 import json
 import uuid as uuid_module
 from dataclasses import asdict, dataclass, field, fields
-from typing import Dict, List, Optional, Set
 
 import networkx as nx
 from dataclasses_json import config, dataclass_json
@@ -42,20 +41,20 @@ def recover_serializers(cls):
 @dataclass
 class SBOM:
     # pylint: disable=R0902
-    systems: List[System] = field(default_factory=list)
-    hardware: List[Hardware] = field(default_factory=list)
-    software: List[Software] = field(default_factory=list)
+    systems: list[System] = field(default_factory=list)
+    hardware: list[Hardware] = field(default_factory=list)
+    software: list[Software] = field(default_factory=list)
     # relationships: Set[Relationship] = field(default_factory=set)  # (removed relationships field. Graph is now the single source of truth)
-    _loaded_relationships: List[Relationship] = (
+    _loaded_relationships: list[Relationship] = (
         field(  # this metadata will capture the old array on load (but won’t re-emit it)
             default_factory=list,
             metadata=config(field_name="relationships", exclude=lambda _: True),
         )
     )
-    analysisData: List[AnalysisData] = field(default_factory=list)
-    observations: List[Observation] = field(default_factory=list)
-    starRelationships: Set[StarRelationship] = field(default_factory=set)
-    software_lookup_by_sha256: Dict = field(default_factory=dict)
+    analysisData: list[AnalysisData] = field(default_factory=list)
+    observations: list[Observation] = field(default_factory=list)
+    starRelationships: set[StarRelationship] = field(default_factory=set)
+    software_lookup_by_sha256: dict = field(default_factory=dict)
     graph: nx.MultiDiGraph = field(
         init=False,
         repr=False,
@@ -179,9 +178,9 @@ class SBOM:
 
     def has_relationship(
         self,
-        xUUID: Optional[str] = None,
-        yUUID: Optional[str] = None,
-        relationship: Optional[str] = None,
+        xUUID: str | None = None,
+        yUUID: str | None = None,
+        relationship: str | None = None,
     ) -> bool:
         """
         Return True if there exists at least one edge u→v in the graph
@@ -202,7 +201,7 @@ class SBOM:
             return True
         return False
 
-    def find_software(self, sha256: Optional[str]) -> Optional[Software]:
+    def find_software(self, sha256: str | None) -> Software | None:
         if sha256 in self.software_lookup_by_sha256:
             return self.software_lookup_by_sha256[sha256]
         return None
@@ -217,7 +216,7 @@ class SBOM:
             self.graph.add_node(sw.UUID, type="Software")
 
     def add_software_entries(
-        self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
+        self, entries: list[Software] | None, parent_entry: Software | None = None
     ):
         """Add software entries, merging duplicates and preserving all relationship edges.
 
@@ -266,25 +265,25 @@ class SBOM:
     def create_software(
         self,
         *,  # all arguments are keyword-only
-        name: Optional[str] = None,
-        size: Optional[int] = None,
-        sha1: Optional[str] = None,
-        sha256: Optional[str] = None,
-        md5: Optional[str] = None,
-        fileName: Optional[List[str]] = None,
-        installPath: Optional[List[str]] = None,
-        containerPath: Optional[List[str]] = None,
-        captureTime: Optional[int] = None,
-        version: Optional[str] = None,
-        vendor: Optional[List[str]] = None,
-        description: Optional[str] = None,
-        relationshipAssertion: Optional[str] = None,
-        comments: Optional[str] = None,
-        metadata: Optional[List[object]] = None,
-        supplementaryFiles: Optional[List[File]] = None,
-        provenance: Optional[List[SoftwareProvenance]] = None,
-        recordedInstitution: Optional[str] = None,
-        components: Optional[List[SoftwareComponent]] = None,
+        name: str | None = None,
+        size: int | None = None,
+        sha1: str | None = None,
+        sha256: str | None = None,
+        md5: str | None = None,
+        fileName: list[str] | None = None,
+        installPath: list[str] | None = None,
+        containerPath: list[str] | None = None,
+        captureTime: int | None = None,
+        version: str | None = None,
+        vendor: list[str] | None = None,
+        description: str | None = None,
+        relationshipAssertion: str | None = None,
+        comments: str | None = None,
+        metadata: list[object] | None = None,
+        supplementaryFiles: list[File] | None = None,
+        provenance: list[SoftwareProvenance] | None = None,
+        recordedInstitution: str | None = None,
+        components: list[SoftwareComponent] | None = None,
     ) -> Software:
         sw = Software(
             name=name,
@@ -313,7 +312,7 @@ class SBOM:
 
     def merge(self, sbom_m: SBOM):
         # merged/old to new UUID map
-        uuid_updates: Dict[str, str] = {}
+        uuid_updates: dict[str, str] = {}
 
         # 1) Merge systems
         if sbom_m.systems:
@@ -426,8 +425,8 @@ class SBOM:
                 self.starRelationships.add(star_rel)
 
     def _find_systems_entry(
-        self, uuid: Optional[str] = None, name: Optional[str] = None
-    ) -> Optional[System]:
+        self, uuid: str | None = None, name: str | None = None
+    ) -> System | None:
         """Merge helper function to find and return
         the matching system entry in the provided sbom.
 
@@ -450,11 +449,11 @@ class SBOM:
 
     def _find_software_entry(
         self,
-        uuid: Optional[str] = None,
-        sha256: Optional[str] = None,
-        md5: Optional[str] = None,
-        sha1: Optional[str] = None,
-    ) -> Optional[Software]:
+        uuid: str | None = None,
+        sha256: str | None = None,
+        md5: str | None = None,
+        sha1: str | None = None,
+    ) -> Software | None:
         """Merge helper function to find and return
         the matching software entry in the provided sbom.
 
@@ -491,10 +490,10 @@ class SBOM:
 
     def _find_relationship_entry(
         self,
-        xUUID: Optional[str] = None,
-        yUUID: Optional[str] = None,
-        relationship: Optional[str] = None,
-    ) -> Optional[Relationship]:
+        xUUID: str | None = None,
+        yUUID: str | None = None,
+        relationship: str | None = None,
+    ) -> Relationship | None:
         """Merge helper function to find and return
         the matching relationship entry in the provided sbom.
 
@@ -522,10 +521,10 @@ class SBOM:
 
     def _find_star_relationship_entry(
         self,
-        xUUID: Optional[str] = None,
-        yUUID: Optional[str] = None,
-        relationship: Optional[str] = None,
-    ) -> Optional[StarRelationship]:
+        xUUID: str | None = None,
+        yUUID: str | None = None,
+        relationship: str | None = None,
+    ) -> StarRelationship | None:
         """Merge helper function to find and return
         the matching star relationship entry in the provided sbom.
 
@@ -565,7 +564,7 @@ class SBOM:
             return False
         return str(u_test) == u
 
-    def get_children(self, xUUID: str, rel_type: Optional[str] = None) -> List[str]:
+    def get_children(self, xUUID: str, rel_type: str | None = None) -> list[str]:
         """
         Return all v such that there is an edge xUUID → v,
         optionally filtered by relationship key.
@@ -576,7 +575,7 @@ class SBOM:
                 children.append(v)
         return children
 
-    def get_parents(self, yUUID: str, rel_type: Optional[str] = None) -> List[str]:
+    def get_parents(self, yUUID: str, rel_type: str | None = None) -> list[str]:
         """
         Return all u such that there is an edge u → yUUID,
         optionally filtered by relationship key.

@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Surfactant plugin for generating fuzzy hashes"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["surfactant"]
 license = "MIT"
 classifiers = [

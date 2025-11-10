@@ -4,7 +4,6 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
 
 from loguru import logger
 
@@ -56,7 +55,7 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
     except json.JSONDecodeError as e:
         logger.error(f"Error reading JSON file: {e}")
         return
-    except IOError as e:
+    except OSError as e:
         logger.error(f"IO error when reading {json_output_path}: {e}")
 
     openvex_template = {
@@ -88,7 +87,7 @@ def convert_cve_to_openvex(json_output_path, shaHash, output_dir):
     try:
         with open(openvex_output, "w") as outfile:
             json.dump(openvex_template, outfile, indent=4)
-    except IOError as e:
+    except OSError as e:
         logger.error(f"IO error when writing {openvex_output}: {e}")
 
 
@@ -117,7 +116,7 @@ def process_file(input_file, shaHash, output_directory):
         logger.error(f"Error running CVE-bin-tool: {e}")
     except json.JSONDecodeError as e:
         logger.error(f"JSON decoding error in {input_file}: {e}")
-    except IOError as e:
+    except OSError as e:
         logger.error(f"I/O error processing {input_file}: {e}")
 
     # Check if the expected JSON file was created and proceed if it exists
@@ -140,7 +139,7 @@ def delete_extra_files(*file_paths):
 
 
 @surfactant.plugin.hookimpl(specname="extract_file_info")
-def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: List[str]):
+def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: list[str]):
     """
     :param sbom(SBOM): The SBOM that the software entry/file is being added to. Can be used to add observations or analysis data.
     :param software(Software): The software entry associated with the file to extract information from.
@@ -206,7 +205,7 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: List
         with open(existing_json_path, "w") as file:
             json.dump(data, file, indent=4)
             logger.info(f"Updated data saved to {existing_json_path}")
-    except IOError as e:
+    except OSError as e:
         logger.error(f"IO error when writing {existing_json_path}: {e}")
 
     # Clean up extra files

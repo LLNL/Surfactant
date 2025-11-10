@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 from dataclasses import dataclass
-from typing import List, Optional
 
 
 @dataclass
@@ -32,11 +31,11 @@ class ContextEntry:
             `extractPaths` specified should map to a specific subfolder within the corresponding archive file.
     """
 
-    extractPaths: List[str]
-    archive: Optional[str] = None
-    installPrefix: Optional[str] = None
-    omitUnrecognizedTypes: Optional[bool] = None
-    includeFileExts: Optional[List[str]] = None
-    excludeFileExts: Optional[List[str]] = None
-    skipProcessingArchive: Optional[bool] = False
-    containerPrefix: Optional[str] = None
+    extractPaths: list[str]
+    archive: str | None = None
+    installPrefix: str | None = None
+    omitUnrecognizedTypes: bool | None = None
+    includeFileExts: list[str] | None = None
+    excludeFileExts: list[str] | None = None
+    skipProcessingArchive: bool | None = False
+    containerPrefix: str | None = None

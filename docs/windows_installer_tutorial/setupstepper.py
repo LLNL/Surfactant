@@ -233,7 +233,9 @@ def step_through(app: Application) -> None:
             if len(p_l) == 0:
                 continue
 
-            p_l, controls = (list(t) for t in zip(*sorted(zip(p_l, controls))))
+            p_l, controls = (
+                list(t) for t in zip(*sorted(zip(p_l, controls, strict=False)), strict=False)
+            )
             p_l.reverse()
             controls.reverse()
 
@@ -296,7 +298,7 @@ def handle_transfers() -> None:
 
             try:
                 copy2(file, f"{DRIVE}/{newname}")
-            except IOError as err:
+            except OSError as err:
                 exception(err)
 
     # Signal to the host that each file has finished copying
@@ -371,7 +373,7 @@ def handle_file(fname: str) -> None:
 
         # Remove file from folder
         remove(fname)
-    except IOError as err:
+    except OSError as err:
         exception(err)
         sleep(0.5)
 

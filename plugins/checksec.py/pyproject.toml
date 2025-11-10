@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Surfactant checksec.py"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["surfactant"]
 license = {text = "MIT License"}
 classifiers = [

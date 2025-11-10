@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: MIT
 import pathlib
 from collections.abc import Iterable
-from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
@@ -39,13 +38,11 @@ def has_required_fields(metadata) -> bool:
 
 
 @surfactant.plugin.hookimpl
-def establish_relationships(
-    sbom: SBOM, software: Software, metadata
-) -> Optional[List[Relationship]]:
+def establish_relationships(sbom: SBOM, software: Software, metadata) -> list[Relationship] | None:
     if not has_required_fields(metadata):
         return None
 
-    relationships: List[Relationship] = []
+    relationships: list[Relationship] = []
     dependent_uuid = software.UUID
     default_search_paths = generate_search_paths(software, metadata)
     for dep in metadata["elfDependencies"]:
@@ -96,7 +93,7 @@ def establish_relationships(
     return relationships
 
 
-def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
+def generate_search_paths(sw: Software, md) -> list[pathlib.PurePosixPath]:
     # 1. Search using directories in DT_RPATH if present and no DT_RUNPATH exists (use of DT_RPATH is deprecated)
     # 2. Use LD_LIBRARY_PATH environment variable; ignore if suid/sgid binary (nothing to do, we don't have this information w/o running on a live system)
     # 3. Search using directories in DT_RUNPATH if present
@@ -118,7 +115,7 @@ def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
     return paths
 
 
-def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
+def generate_runpaths(sw: Software, md) -> list[pathlib.PurePosixPath]:
     # rpath and runpath are lists of strings (just in case an ELF file has several, though that is probably an invalid ELF file)
     rp_to_use = []
     rpath = None
@@ -173,7 +170,7 @@ def replace_dst(origstr, dvar, newval) -> str:
     return origstr.replace("$" + dvar, newval).replace("${" + dvar + "}", newval)
 
 
-def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
+def substitute_all_dst(sw: Software, md, path) -> list[pathlib.PurePosixPath]:
     # substitute any dynamic string tokens found; may result in multiple strings if different variants are possible
     # replace $ORIGIN, ${ORIGIN}, $LIB, ${LIB}, $PLATFORM, ${PLATFORM} tokens
     # places the dynamic linker does this expansion are:
@@ -182,7 +179,7 @@ def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
     # - arguments to ld.so: --audit, --library-path, and --preload
     # - the filename arguments to dlopen and dlmopen
     # more details in the `Dynamic string tokens` section of https://man7.org/linux/man-pages/man8/ld.so.8.html
-    pathlist: List[pathlib.PurePosixPath] = []
+    pathlist: list[pathlib.PurePosixPath] = []
     # ORIGIN: replace with absolute directory containing the program or shared object (with symlinks resolved and no ../ or ./ subfolders)
     # for SUID/SGID binaries, after expansion the normalized path must be in a trusted directory (https://github.com/bminor/glibc/blob/0d41182/elf/dl-load.c#L356-L357, https://github.com/bminor/glibc/blob/0d41182/elf/dl-load.c#L297-L316)
     if (path.find("$ORIGIN") != -1) or (path.find("${ORIGIN}") != -1):

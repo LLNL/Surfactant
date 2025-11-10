@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: MIT
 import json
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # from pluggy import get_plugin_manager, get_plugin
 from loguru import logger
@@ -45,7 +45,7 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
 
         super().__init__(config)
 
-    def parse_raw_data(self, raw_data: str) -> Dict[str, Dict[str, List[str]]]:
+    def parse_raw_data(self, raw_data: str) -> dict[str, dict[str, list[str]]]:
         """
         Parses a RetireJS JSON dump into a nested dict:
         { library_name: { 'filename': [regex...], 'filecontent': [...], 'hashes': [...] } }
@@ -64,7 +64,7 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
         VERSION_PLACEHOLDER = "\u00a7\u00a7version\u00a7\u00a7"
         VERSION_NUMBER_PATTERN = r"\d+(?:\.\d+)*"
 
-        clean_db: Dict[str, Dict[str, List[str]]] = {}
+        clean_db: dict[str, dict[str, list[str]]] = {}
 
         for library, lib_entry in db.items():
             if "extractors" in lib_entry:
@@ -96,19 +96,19 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
 js_db_manager = RetireJSDatabaseManager()
 
 
-def supports_file(filetype: List[str]) -> bool:
+def supports_file(filetype: list[str]) -> bool:
     return "JAVASCRIPT" in filetype
 
 
 @surfactant.plugin.hookimpl
-def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: List[str]) -> object:
+def extract_file_info(sbom: SBOM, software: Software, filename: str, filetype: list[str]) -> object:
     if not supports_file(filetype):
         return None
     return extract_js_info(filename)
 
 
 def extract_js_info(filename: str) -> object:
-    js_info: Dict[str, Any] = {"jsLibraries": []}
+    js_info: dict[str, Any] = {"jsLibraries": []}
     js_lib_database = js_db_manager.get_database()
 
     if js_lib_database is None:
@@ -133,7 +133,7 @@ def extract_js_info(filename: str) -> object:
     return js_info
 
 
-def match_by_attribute(attribute: str, content: str, database: Dict) -> List[Dict]:
+def match_by_attribute(attribute: str, content: str, database: dict) -> list[dict]:
     libs = []
     for name, library in database.items():
         if attribute in library:
@@ -175,5 +175,5 @@ def update_db() -> str:
 
 
 @surfactant.plugin.hookimpl
-def init_hook(command_name: Optional[str] = None) -> None:
+def init_hook(command_name: str | None = None) -> None:
     js_db_manager.initialize_database(command_name)

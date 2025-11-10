@@ -24,7 +24,7 @@ pytest:
   stage: test
   extends:
     - .oslic
-  image: python:3.9
+  image: python:3.10
   script:
     - pip install .
     - pip install -r requirements-dev.txt

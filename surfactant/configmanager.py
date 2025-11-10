@@ -2,7 +2,7 @@ import os
 import platform
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import tomlkit
 
@@ -20,11 +20,11 @@ class ConfigManager:
     """
 
     _initialized: bool = False
-    _instances: Dict[str, "ConfigManager"] = {}
+    _instances: dict[str, "ConfigManager"] = {}
     _lock = Lock()
 
     def __new__(
-        cls, app_name: str = "surfactant", config_dir: Optional[Union[str, Path]] = None
+        cls, app_name: str = "surfactant", config_dir: str | Path | None = None
     ) -> "ConfigManager":
         """Manage singleton configuration manager for each unique application name.
 
@@ -42,9 +42,7 @@ class ConfigManager:
                 cls._instances[app_name] = instance
             return cls._instances[app_name]
 
-    def __init__(
-        self, app_name: str = "surfactant", config_dir: Optional[Union[str, Path]] = None
-    ) -> None:
+    def __init__(self, app_name: str = "surfactant", config_dir: str | Path | None = None) -> None:
         """Initializes the configuration manager.
 
         Args:
@@ -83,7 +81,7 @@ class ConfigManager:
             with open(self.config_file_path, "r") as configfile:
                 self.config = tomlkit.parse(configfile.read())
 
-    def get(self, section: str, option: str, fallback: Optional[Any] = None) -> Any:
+    def get(self, section: str, option: str, fallback: Any | None = None) -> Any:
         """Gets a configuration value.
 
         Args:
