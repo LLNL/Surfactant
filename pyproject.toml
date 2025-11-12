@@ -50,7 +50,7 @@ dependencies = [
     "defusedxml==0.7.*",
     "spdx-tools==0.8.*",
     # Pinned to specific version for potential breaking changes
-    "cyclonedx-python-lib==11.4.0",
+    "cyclonedx-python-lib==11.5.0",
     "pluggy==1.*",
     "click==8.*",
     "loguru==0.7.*",
