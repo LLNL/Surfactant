@@ -1,4 +1,5 @@
 from pathlib import PurePosixPath
+
 from surfactant.utils.paths import normalize_path
 
 
