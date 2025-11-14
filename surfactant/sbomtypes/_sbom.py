@@ -213,7 +213,7 @@ class SBOM:
             if sw.sha256:
                 try:
                     self.record_hash_node(norm_path, sw.sha256)
-                except Exception as e: # pylint: disable=broad-exception-caught
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     logger.warning(f"[fs_tree] Failed to attach hash edge for {norm_path}: {e}")
 
     def get_software_by_path(self, path: str) -> Optional[Software]:
@@ -735,14 +735,14 @@ class SBOM:
                             for path in sw.installPath or []:
                                 try:
                                     self.record_hash_node(path, sw.sha256)
-                                except Exception as e: # pylint: disable=broad-exception-caught
+                                except Exception as e:  # pylint: disable=broad-exception-caught
                                     logger.warning(
                                         f"[fs_tree] Failed to record hash link for {path}: {e}"
                                     )
                             for path in other.installPath or []:
                                 try:
                                     self.record_hash_node(path, sw.sha256)
-                                except Exception as e: # pylint: disable=broad-exception-caught
+                                except Exception as e:  # pylint: disable=broad-exception-caught
                                     logger.warning(
                                         f"[fs_tree] Failed to record hash link for {path}: {e}"
                                     )
