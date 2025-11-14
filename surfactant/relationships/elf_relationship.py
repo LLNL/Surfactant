@@ -301,11 +301,11 @@ def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
     if "elfRunpath" in md and md["elfRunpath"]:
         runpath = md["elfRunpath"]
 
-    According to the ELF specification:
-    - If DT_RUNPATH is present, it takes precedence—even if empty.
-    - If DT_RUNPATH is missing or empty (no usable entries), fall back to DT_RPATH.
-    - Each entry may contain DST tokens ($ORIGIN, $LIB, etc.) that must be expanded.
-    """
+    # According to the ELF specification:
+    # - If DT_RUNPATH is present, it takes precedence—even if empty.
+    # - If DT_RUNPATH is missing or empty (no usable entries), fall back to DT_RPATH.
+    # - Each entry may contain DST tokens ($ORIGIN, $LIB, etc.) that must be expanded.
+
     runpaths = []
 
     rpath = md.get("elfRpath") or []
