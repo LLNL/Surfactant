@@ -4,9 +4,10 @@
 # SPDX-License-Identifier: MIT
 from typing import Optional
 
+from loguru import logger
+
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM
-from loguru import logger
 
 
 @surfactant.plugin.hookimpl

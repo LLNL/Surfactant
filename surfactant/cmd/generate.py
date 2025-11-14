@@ -19,7 +19,6 @@ from surfactant.fileinfo import sha256sum
 from surfactant.plugin.manager import call_init_hooks, find_io_plugin, get_plugin_manager
 from surfactant.relationships import parse_relationships
 from surfactant.sbomtypes import SBOM, Software
-from surfactant.utils.paths import basename_posix, normalize_path
 
 
 # Converts from a true path to an install path
@@ -419,7 +418,9 @@ def sbom(
                         # Filename symlinks
                         for link in filename_symlinks.get(sw.sha256, []):
                             if link not in sw.fileName:
-                                logger.debug(f"Injecting filename symlink '{link}' for SHA {sw.sha256}")
+                                logger.debug(
+                                    f"Injecting filename symlink '{link}' for SHA {sw.sha256}"
+                                )
                                 sw.fileName.append(link)
                         # Install-path symlinks
                         for link in file_symlinks.get(sw.sha256, []):
@@ -562,8 +563,8 @@ def sbom(
                             if not entry.includeFileExts:
                                 entry.includeFileExts = []
                             if not entry.excludeFileExts:
-                                entry.excludeFileExts = []                
-                            
+                                entry.excludeFileExts = []
+
                             # file-type identification and SBOM entry creation
                             if (
                                 (
@@ -612,7 +613,9 @@ def sbom(
                         # Filename symlinks
                         for link in filename_symlinks.get(sw.sha256, []):
                             if link not in sw.fileName:
-                                logger.debug(f"Injecting filename symlink '{link}' for SHA {sw.sha256}")
+                                logger.debug(
+                                    f"Injecting filename symlink '{link}' for SHA {sw.sha256}"
+                                )
                                 sw.fileName.append(link)
                         # Install-path symlinks
                         for link in file_symlinks.get(sw.sha256, []):
@@ -627,7 +630,7 @@ def sbom(
         # Expand deferred directory symlinks once fs_tree is fully populated
         # ------------------------------------------------------------------
         new_sbom.expand_pending_dir_symlinks()
-    
+
         # ------------------------------------------------------------------
         # Expand deferred file symlinks after all installPath nodes are added
         # ------------------------------------------------------------------
@@ -639,7 +642,6 @@ def sbom(
         # ------------------------------------------------------------------
         new_sbom.inject_symlink_metadata()
 
-        
     else:
         logger.info("Skipping gathering file metadata and adding software entries")
 

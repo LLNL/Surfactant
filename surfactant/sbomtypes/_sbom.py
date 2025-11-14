@@ -526,7 +526,7 @@ class SBOM:
         if subtype != "directory" and not self.fs_tree.has_node(target_node):
             self._pending_file_links.append((link_node, target_node, subtype))
             logger.debug(f"[fs_tree] Queued deferred file symlink: {link_node} → {target_node}")
-            return        
+            return
 
         # ----------------------------------------------------------------------
         # Step 3: Create the primary symlink edge between link and target
@@ -590,7 +590,6 @@ class SBOM:
 
         # Delegate to internal implementation (already normalizes & dedupes)
         self._record_symlink(link_path, target_path, subtype=subtype)
-
 
     def record_hash_node(self, file_path: str, sha256: str) -> None:
         """
@@ -670,7 +669,9 @@ class SBOM:
                 f"equivalent path(s): {sorted(equivalents)}"
             )
         else:
-            logger.debug(f"[fs_tree] get_hash_equivalents: no hash-equivalent siblings for {path_node}")
+            logger.debug(
+                f"[fs_tree] get_hash_equivalents: no hash-equivalent siblings for {path_node}"
+            )
 
         return equivalents
 
@@ -734,18 +735,21 @@ class SBOM:
                                 try:
                                     self.record_hash_node(path, sw.sha256)
                                 except Exception as e:
-                                    logger.warning(f"[fs_tree] Failed to record hash link for {path}: {e}")
+                                    logger.warning(
+                                        f"[fs_tree] Failed to record hash link for {path}: {e}"
+                                    )
                             for path in other.installPath or []:
                                 try:
                                     self.record_hash_node(path, sw.sha256)
                                 except Exception as e:
-                                    logger.warning(f"[fs_tree] Failed to record hash link for {path}: {e}")
+                                    logger.warning(
+                                        f"[fs_tree] Failed to record hash link for {path}: {e}"
+                                    )
                             logger.debug(
                                 f"[fs_tree] Linked identical content by hash: "
                                 f"{sw.installPath} ↔ {other.installPath}"
                             )
                             break
-
 
             # Attach a Contains edge from parent, if any
             if parent_entry:
@@ -875,13 +879,14 @@ class SBOM:
             if self.fs_tree.has_edge(link_node, target_node):
                 continue
             if not self.fs_tree.has_node(target_node):
-                logger.debug(f"[fs_tree] Skipping deferred file link {link_node} → {target_node} (missing target)")
+                logger.debug(
+                    f"[fs_tree] Skipping deferred file link {link_node} → {target_node} (missing target)"
+                )
                 continue
             self._add_symlink_edge(link_node, target_node, subtype=subtype)
             logger.debug(f"[fs_tree] Deferred file symlink created: {link_node} → {target_node}")
 
         self._pending_file_links.clear()
-
 
     def inject_symlink_metadata(self) -> None:
         """
@@ -959,7 +964,9 @@ class SBOM:
                 # --------------------------------------------------------------
                 hash_equivs = self.get_hash_equivalents(path)
                 if hash_equivs:
-                    logger.debug(f"[fs_tree] Found hash-equivalent siblings for {path}: {hash_equivs}")
+                    logger.debug(
+                        f"[fs_tree] Found hash-equivalent siblings for {path}: {hash_equivs}"
+                    )
                     for equiv in hash_equivs:
                         if equiv not in path_symlinks:
                             path_symlinks.add(equiv)
@@ -1005,7 +1012,7 @@ class SBOM:
 
             _merge_md("fileNameSymlinks", file_symlinks)
             _merge_md("installPathSymlinks", path_symlinks)
-        
+
             # Optional: legacy-style alias duplication into fileName[]
             for alias in file_symlinks:
                 if alias not in sw.fileName:
@@ -1013,7 +1020,6 @@ class SBOM:
                     logger.debug(f"[fs_tree] Added alias '{alias}' to fileName for {sw.UUID}")
 
         logger.debug("[fs_tree] Completed symlink metadata injection pass")
-
 
     # pylint: disable=too-many-arguments
     def create_software(
