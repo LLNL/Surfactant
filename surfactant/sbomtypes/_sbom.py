@@ -81,6 +81,16 @@ class SBOM:
         metadata=config(exclude=lambda _: True),
     )
 
+    # Deferred file-level symlinks (link_path, target_path, subtype)
+    # Queues symlink edges discovered before target nodes exist in fs_tree.
+    # Flushed later by expand_pending_file_symlinks() to ensure no links are lost.
+    _pending_file_links: List[Tuple[str, str, Optional[str]]] = field(
+        default_factory=list,
+        init=False,
+        repr=False,
+        metadata=config(exclude=lambda _: True),
+    )
+
     def __post_init__(self):
         # If called like SBOM(raw_dict), raw_dict will be in .systems
         if isinstance(self.systems, dict) and not self.hardware and not self.software:
@@ -197,6 +207,13 @@ class SBOM:
 
             # Associate this path node with the software UUID
             self.fs_tree.nodes[norm_path]["software_uuid"] = sw.UUID
+
+            # wire the file → hash edge so hash-equivalence works
+            if sw.sha256:
+                try:
+                    self.record_hash_node(norm_path, sw.sha256)
+                except Exception as e:
+                    logger.warning(f"[fs_tree] Failed to attach hash edge for {norm_path}: {e}")
 
     def get_software_by_path(self, path: str) -> Optional[Software]:
         """
@@ -470,16 +487,19 @@ class SBOM:
         This method adds the given symlink as a relationship between two filesystem
         path nodes (`link_path` → `target_path`). It ensures the link exists in both
         the logical relationship graph (`graph`) and the physical filesystem graph (`fs_tree`),
-        and maintains internal consistency between them.
+        maintaining internal consistency between them.
 
         Steps:
             1. Normalize both input paths to POSIX format.
-            2. Create the primary symlink edge using `_add_symlink_edge()`.
-            3. If the symlink is a directory:
-            - Register it for deferred mirroring (to be expanded later by
-                `expand_pending_dir_symlinks()`).
-            - Immediately synthesize one-hop chained symlinks for any direct
-                (non-symlink) children of the target directory.
+            2. If the target node does not yet exist in the fs_tree (common when the
+               target software entry is added later), queue the link for deferred
+               creation in `expand_pending_file_symlinks()`.
+            3. Otherwise, create the primary symlink edge immediately using `_add_symlink_edge()`.
+            4. If the symlink is a directory:
+               - Register it for deferred mirroring in `_pending_dir_links`
+                 (expanded later by `expand_pending_dir_symlinks()`).
+               - Immediately synthesize one-hop chained symlinks for any direct,
+                 non-symlink children of the target directory.
 
         Args:
             link_path (str): Path of the symlink itself (e.g., "/opt/app/lib/foo.so").
@@ -487,10 +507,12 @@ class SBOM:
             subtype (Optional[str]): Optional category for the symlink ("file" or "directory").
 
         Behavior:
-            - Ensures both link and target nodes exist in `fs_tree` and `graph` with type="Path".
+            - Ensures link and target nodes exist as Path-type nodes in both graphs.
+            - Defers file symlinks whose targets are not yet known to ensure completeness.
             - Adds missing edges consistently in both structures.
-            - Defers deeper directory mirroring for later expansion to avoid recursive loops.
+            - Defers deeper directory mirroring to avoid recursive loops.
         """
+
         # ----------------------------------------------------------------------
         # Step 1: Normalize paths to consistent POSIX-style representation
         # ----------------------------------------------------------------------
@@ -498,12 +520,21 @@ class SBOM:
         target_node = normalize_path(target_path)
 
         # ----------------------------------------------------------------------
-        # Step 2: Create the primary symlink edge between link and target
+        # Step 2: If target node is missing, defer file symlink creation
+        # ----------------------------------------------------------------------
+        logger.debug(f"[fs_tree] subtype={subtype}")
+        if subtype != "directory" and not self.fs_tree.has_node(target_node):
+            self._pending_file_links.append((link_node, target_node, subtype))
+            logger.debug(f"[fs_tree] Queued deferred file symlink: {link_node} → {target_node}")
+            return        
+
+        # ----------------------------------------------------------------------
+        # Step 3: Create the primary symlink edge between link and target
         # ----------------------------------------------------------------------
         self._add_symlink_edge(link_node, target_node, subtype=subtype)
 
         # ----------------------------------------------------------------------
-        # Step 3: Handle directory symlinks — queue and synthesize one-hop children
+        # Step 4: Handle directory symlinks — queue and synthesize one-hop children
         # ----------------------------------------------------------------------
         if subtype == "directory":
             # Register for deferred expansion after all directories are processed
@@ -551,6 +582,7 @@ class SBOM:
             target_path: Resolved absolute path of the symlink target.
             subtype: Optional qualifier (e.g., "file" or "directory").
         """
+        logger.debug(f"{link_path} -> {target_path} ({subtype})")
         if not isinstance(link_path, str) or not isinstance(target_path, str):
             raise TypeError("link_path and target_path must be strings")
         if not link_path or not target_path:
@@ -558,6 +590,89 @@ class SBOM:
 
         # Delegate to internal implementation (already normalizes & dedupes)
         self._record_symlink(link_path, target_path, subtype=subtype)
+
+
+    def record_hash_node(self, file_path: str, sha256: str) -> None:
+        """
+        Record a hash equivalence edge between a filesystem path and its content hash.
+
+        This method links the given file node to a virtual hash node (e.g., "sha256:<digest>"),
+        allowing the fs_tree to represent content-equivalence relationships across files.
+        Such hash-based edges enable detection of identical files that were copied,
+        flattened, or dereferenced during extraction—restoring logical symlink equivalence
+        and supporting later deduplication.
+
+        Args:
+            file_path (str): Absolute or relative path of the file within the extraction root.
+            sha256 (str): SHA-256 digest string representing the file's content.
+
+        Behavior:
+            - Normalizes `file_path` to POSIX-style notation for consistent node keys.
+            - Ensures the hash node exists in the fs_tree with type="Hash".
+            - Adds a directed "hash" edge from the file node → hash node.
+
+        Example:
+            /usr/bin/su  →  sha256:f163759953aafc083e9ee25c20cda300ae01e37612eb24e54086cacffe1aca5a
+        """
+        file_node = normalize_path(file_path)
+        hash_node = f"sha256:{sha256}"
+
+        logger.debug(f"[fs_tree] Recording hash node for file: {file_node} (hash={hash_node})")
+
+        # Ensure both nodes exist, guarding against accidental type overrides
+        if self.fs_tree.has_node(hash_node):
+            existing_type = self.fs_tree.nodes[hash_node].get("type")
+            if existing_type != "Hash":
+                logger.warning(
+                    f"[fs_tree] Node {hash_node} already exists with type={existing_type}, "
+                    "overwriting to type=Hash"
+                )
+            else:
+                logger.debug(f"[fs_tree] Reusing existing hash node: {hash_node}")
+        else:
+            self.fs_tree.add_node(hash_node, type="Hash")
+            logger.debug(f"[fs_tree] Added new hash node: {hash_node}")
+
+        self.fs_tree.nodes[hash_node]["type"] = "Hash"  # enforce correct type
+        self.fs_tree.add_edge(file_node, hash_node, type="hash")
+        logger.debug(f"[fs_tree] Added hash edge: {file_node} → {hash_node} (type=hash)")
+
+    def get_hash_equivalents(self, path_node: str) -> set[str]:
+        """
+        Return all filesystem paths in fs_tree that share the same hash node
+        as the given target. Used as a fallback when symlink metadata is missing
+        but identical file content (hash) indicates equivalence.
+
+        Args:
+            path_node (str): Normalized path node in fs_tree.
+
+        Returns:
+            set[str]: Other filesystem path nodes that point to the same hash node.
+        """
+        equivalents = set()
+        if not self.fs_tree.has_node(path_node):
+            logger.debug(f"[fs_tree] get_hash_equivalents: target node not found: {path_node}")
+            return equivalents
+
+        # Find hash edges (path → sha256:...)
+        for _, hash_node, data in self.fs_tree.out_edges(path_node, data=True):
+            if data.get("type") == "hash":
+                logger.debug(f"[fs_tree] Found hash edge: {path_node} → {hash_node}")
+                # For each path that shares this hash node, collect siblings
+                for src, _ in self.fs_tree.in_edges(hash_node):
+                    if src != path_node:
+                        equivalents.add(src)
+                        logger.debug(f"[fs_tree] Added hash-equivalent sibling: {src}")
+
+        if equivalents:
+            logger.debug(
+                f"[fs_tree] get_hash_equivalents: {path_node} has {len(equivalents)} "
+                f"equivalent path(s): {sorted(equivalents)}"
+            )
+        else:
+            logger.debug(f"[fs_tree] get_hash_equivalents: no hash-equivalent siblings for {path_node}")
+
+        return equivalents
 
     def add_software_entries(
         self, entries: Optional[List[Software]], parent_entry: Optional[Software] = None
@@ -607,6 +722,30 @@ class SBOM:
                 self.add_software(sw)
                 node_uuid = sw.UUID
                 logger.debug(f"Added new software node {node_uuid}")
+
+                # ------------------------------------------------------------------
+                # If another software entry already has the same sha256, link them by hash equivalence
+                # ------------------------------------------------------------------
+                if sw.sha256:
+                    for other in self.software:
+                        if other is not sw and other.sha256 == sw.sha256:
+                            # Both files share the same content hash — link them to the same hash node
+                            for path in sw.installPath or []:
+                                try:
+                                    self.record_hash_node(path, sw.sha256)
+                                except Exception as e:
+                                    logger.warning(f"[fs_tree] Failed to record hash link for {path}: {e}")
+                            for path in other.installPath or []:
+                                try:
+                                    self.record_hash_node(path, sw.sha256)
+                                except Exception as e:
+                                    logger.warning(f"[fs_tree] Failed to record hash link for {path}: {e}")
+                            logger.debug(
+                                f"[fs_tree] Linked identical content by hash: "
+                                f"{sw.installPath} ↔ {other.installPath}"
+                            )
+                            break
+
 
             # Attach a Contains edge from parent, if any
             if parent_entry:
@@ -721,6 +860,160 @@ class SBOM:
         logger.debug(
             f"[fs_tree] Deferred symlink expansion complete — processed {pending_count} entries."
         )
+
+    def expand_pending_file_symlinks(self) -> None:
+        """
+        Expand all deferred file symlinks recorded in `_pending_file_links`.
+
+        Ensures that file-level symlinks pointing to targets that were not yet
+        added to the fs_tree at record time are created once the full graph exists.
+        """
+        pending_count = len(self._pending_file_links)
+        logger.debug(f"[fs_tree] Expanding {pending_count} pending file symlinks")
+
+        for link_node, target_node, subtype in list(self._pending_file_links):
+            if self.fs_tree.has_edge(link_node, target_node):
+                continue
+            if not self.fs_tree.has_node(target_node):
+                logger.debug(f"[fs_tree] Skipping deferred file link {link_node} → {target_node} (missing target)")
+                continue
+            self._add_symlink_edge(link_node, target_node, subtype=subtype)
+            logger.debug(f"[fs_tree] Deferred file symlink created: {link_node} → {target_node}")
+
+        self._pending_file_links.clear()
+
+
+    def inject_symlink_metadata(self) -> None:
+        """
+        Populate legacy-style symlink metadata into each Software entry using fs_tree
+        relationships, hash-equivalence, and gathered filename aliases.
+
+        This method restores compatibility with legacy SBOM outputs by reintroducing
+        metadata fields that explicitly describe file aliasing relationships.
+
+        It collects three classes of alias information:
+
+            1. **Filesystem Symlinks:** incoming symlink edges in `fs_tree`
+               (e.g., "usr/sbin/runuser" → "usr/bin/su")
+
+            2. **Hash-Equivalent Siblings:** other files that share identical content
+               (sha256) but appear at different install paths.
+
+            3. **Gathered Filename Aliases:** additional names from `sw.fileName`
+               that were injected during the gather phase but are not canonical
+               basenames of the install paths (e.g., bash-completion stubs like
+               "runuser" for "su").
+
+        The resulting metadata entries are merged or appended under each
+        `Software.metadata` list in a legacy-compatible format:
+
+            - ``fileNameSymlinks`` — list of alternate basenames
+            - ``installPathSymlinks`` — list of alternate full install paths
+
+        This operation:
+            • Traverses all Software entries
+            • Derives alias sets from symlink edges, identical hashes, and fileName extras
+            • Merges metadata without duplication
+            • Does *not* alter fs_tree or graph topology
+
+        Example output:
+            {
+                "fileName": ["su"],
+                "metadata": [
+                    {"fileNameSymlinks": ["runuser"]},
+                    {"installPathSymlinks": ["usr/sbin/runuser"]}
+                ]
+            }
+        """
+
+        logger.debug("[fs_tree] Injecting legacy-style symlink metadata into Software entries")
+
+        # ----------------------------------------------------------------------
+        # Iterate over all software entries and derive metadata from fs_tree
+        # ----------------------------------------------------------------------
+        for sw in self.software:
+            if not sw.installPath:
+                continue
+
+            file_symlinks = set()
+            path_symlinks = set()
+
+            # ------------------------------------------------------------------
+            # For each installPath, gather direct and indirect symlink aliases
+            # ------------------------------------------------------------------
+            for path in sw.installPath:
+                logger.debug(f"[fs_tree] Processing installPath for symlink injection: {path}")
+
+                # --------------------------------------------------------------
+                # 1. Reverse lookup: find symlink nodes that point to this path
+                # --------------------------------------------------------------
+                sources = self.get_symlink_sources_for_path(path)
+                if sources:
+                    logger.debug(f"[fs_tree] Found symlink sources for {path}: {sources}")
+                    for src in sources:
+                        path_symlinks.add(src)
+                        file_symlinks.add(PurePosixPath(src).name)
+
+                # --------------------------------------------------------------
+                # 2. Include hash-equivalent siblings (same content)
+                # --------------------------------------------------------------
+                hash_equivs = self.get_hash_equivalents(path)
+                if hash_equivs:
+                    logger.debug(f"[fs_tree] Found hash-equivalent siblings for {path}: {hash_equivs}")
+                    for equiv in hash_equivs:
+                        if equiv not in path_symlinks:
+                            path_symlinks.add(equiv)
+                            file_symlinks.add(PurePosixPath(equiv).name)
+
+            # ------------------------------------------------------------------
+            # 3. Add gathered filename aliases not tied to install basenames
+            # ------------------------------------------------------------------
+            primary_basenames = {PurePosixPath(p).name for p in (sw.installPath or [])}
+            file_name_extras = set(sw.fileName or []) - primary_basenames
+            if file_name_extras:
+                file_symlinks |= file_name_extras
+                logger.debug(
+                    f"[fs_tree] Added gathered filename aliases for {sw.UUID}: {sorted(file_name_extras)}"
+                )
+
+            # ------------------------------------------------------------------
+            # Skip entries with no discovered symlink or hash equivalence
+            # ------------------------------------------------------------------
+            if not (file_symlinks or path_symlinks):
+                continue
+
+            # ------------------------------------------------------------------
+            # 4. Merge alias metadata into Software.metadata
+            # ------------------------------------------------------------------
+            if sw.metadata is None:
+                sw.metadata = []
+
+            def _merge_md(key: str, values: set[str]) -> None:
+                """Merge or append a metadata entry for the given key, avoiding duplication."""
+                if not values:
+                    return
+                merged = sorted(values)
+                for md in sw.metadata:
+                    if isinstance(md, dict) and key in md:
+                        existing = set(md[key])
+                        md[key] = sorted(existing | set(merged))
+                        logger.debug(f"[fs_tree] Merged {key} for {sw.UUID}: {md[key]}")
+                        break
+                else:
+                    sw.metadata.append({key: merged})
+                    logger.debug(f"[fs_tree] Appended {key} for {sw.UUID}: {merged}")
+
+            _merge_md("fileNameSymlinks", file_symlinks)
+            _merge_md("installPathSymlinks", path_symlinks)
+        
+            # Optional: legacy-style alias duplication into fileName[]
+            for alias in file_symlinks:
+                if alias not in sw.fileName:
+                    sw.fileName.append(alias)
+                    logger.debug(f"[fs_tree] Added alias '{alias}' to fileName for {sw.UUID}")
+
+        logger.debug("[fs_tree] Completed symlink metadata injection pass")
+
 
     # pylint: disable=too-many-arguments
     def create_software(
@@ -1064,7 +1357,8 @@ class SBOM:
         This method performs the following steps:
         1. Creates a dictionary from the SBOM dataclass fields using `asdict()`.
         2. Removes internal-only attributes that should not be serialized
-        (`graph`, `fs_tree`, `_loaded_relationships`).
+           (`graph`, `fs_tree`, `_loaded_relationships`, `_pending_dir_links`,
+           `_pending_file_links`).
         3. Converts any `set` values in the remaining fields to `list` so the
         output is JSON-compatible.
         4. Builds a filtered `relationships` list from the SBOM's main `graph`:
@@ -1085,6 +1379,7 @@ class SBOM:
         data.pop("fs_tree", None)
         data.pop("_loaded_relationships", None)
         data.pop("_pending_dir_links", None)
+        data.pop("_pending_file_links", None)
 
         # Convert sets → lists for JSON
         for k, v in list(data.items()):

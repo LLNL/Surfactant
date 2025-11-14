@@ -6,11 +6,13 @@ from typing import Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM
+from loguru import logger
 
 
 @surfactant.plugin.hookimpl
 def write_sbom(sbom: SBOM, outfile) -> None:
     # outfile is a file pointer, not a file name
+    logger.debug("writing SBOM")
     outfile.write(sbom.to_json(indent=2))
 
 
