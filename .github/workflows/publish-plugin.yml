@@ -53,14 +53,14 @@ jobs:
         run: |
           pip install build twine
           cd plugins/${{ inputs.plugin_name }}
-          
+
           if [ -n "${{ inputs.version_override }}" ]; then
             echo "Building with version override: ${{ inputs.version_override }}"
             export SETUPTOOLS_SCM_PRETEND_VERSION="${{ inputs.version_override }}"
           else
             echo "Building with version from git tags (setuptools-scm)"
           fi
-          
+
           python -m build
           python -m twine check dist/*
 
