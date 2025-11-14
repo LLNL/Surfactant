@@ -511,7 +511,314 @@
                 // Install Surfactant from PyPI
                 // This will install all required dependencies
                 await micropip.install('surfactant');
+                await micropip.install('lzma');
+                await micropip.install('hashlib');
 
+                // --- START: pbkdf2_hmac shim injection ---
+                // Ensure a pure-Python pbkdf2_hmac is present on hashlib before any later imports use it.
+                // We run this as Python code inside Pyodide.
+                const pbkdf2Shim = `
+import hashlib, hmac, struct, math
+def _pbkdf2_hmac(hash_name, password, salt, iterations, dklen=None):
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    if isinstance(salt, str):
+        salt = salt.encode('utf-8')
+    if iterations <= 0:
+        raise ValueError("iterations must be a positive integer")
+    try:
+        # validate hash name and get digest size
+        h = hashlib.new(hash_name)
+    except Exception as e:
+        raise ValueError("unknown hash name: %r" % (hash_name,)) from e
+    hlen = h.digest_size
+    if dklen is None:
+        dklen = hlen
+    if dklen <= 0:
+        raise ValueError("dklen must be a positive integer")
+    l = -(-dklen // hlen)  # ceil(dklen / hlen)
+    # choose a digest factory usable by hmac.new
+    digestmod = getattr(hashlib, hash_name, None)
+    if digestmod is None:
+        def digestmod(data=b'', _name=hash_name):
+            return hashlib.new(_name, data)
+    dk = b''
+    for block_index in range(1, l + 1):
+        U = hmac.new(password, salt + struct.pack(">I", block_index), digestmod).digest()
+        T = bytearray(U)
+        for _ in range(1, iterations):
+            U = hmac.new(password, U, digestmod).digest()
+            for i in range(len(T)):
+                T[i] ^= U[i]
+        dk += bytes(T)
+    return dk[:dklen]
+
+# Install into hashlib only if it's missing. Safe no-op if C-backed pbkdf2_hmac exists.
+try:
+    if not hasattr(hashlib, 'pbkdf2_hmac'):
+        hashlib.pbkdf2_hmac = _pbkdf2_hmac
+except Exception:
+    # Don't raise during environment init; leave Python importing to fail later if needed.
+    pass
+`;
+                await pyodide.runPythonAsync(pbkdf2Shim);
+                // --- END: pbkdf2_hmac shim injection ---
+
+                // --- START: subprocess.run failure shim injection ---
+                // Make subprocess.run behave as if the called process always exited with
+                // a non‑zero return code (failure). This also raises CalledProcessError
+                // if check=True (matching subprocess.run semantics).
+                const fakeSubprocess = `
+import os, subprocess as _sub
+
+def _fake_run(*popenargs, **kwargs):
+    """
+    A drop-in replacement for subprocess.run that returns a CompletedProcess
+    with a failing returncode (default 1). If check=True is passed, it
+    raises CalledProcessError just like the real subprocess.run would.
+    Special handling:
+      - If capture_output=True or stdout=PIPE/stderr=PIPE is requested, the
+        CompletedProcess will have stdout/stderr set to an empty bytes or
+        string depending on text/universal_newlines.
+      - You can override the fake returncode per-call by passing
+        fake_returncode=<int> in kwargs (this key is consumed).
+      - You can set the environment variable PYODIDE_FAKE_SUBPROCESS_RC to
+        choose a default non-zero return code.
+    """
+    # Allow caller to override the fake return code for testing
+    rc = kwargs.pop('fake_returncode', None)
+    if rc is None:
+        env_rc = os.environ.get('PYODIDE_FAKE_SUBPROCESS_RC')
+        try:
+            rc = int(env_rc) if env_rc is not None else 1
+        except Exception:
+            rc = 1
+
+    # Detect text mode
+    text_mode = bool(kwargs.get('text') or kwargs.get('universal_newlines', False))
+    capture_output = bool(kwargs.get('capture_output', False))
+    stdout_kw = kwargs.get('stdout', None)
+    stderr_kw = kwargs.get('stderr', None)
+
+    # Prepare empty stdout/stderr values of appropriate type if requested
+    def empty_value():
+        return '' if text_mode else b''
+
+    want_stdout = capture_output or (stdout_kw is _sub.PIPE)
+    want_stderr = capture_output or (stderr_kw is _sub.PIPE)
+
+    cp_stdout = empty_value() if want_stdout else None
+    cp_stderr = empty_value() if want_stderr else None
+
+    # Determine command representation used in CompletedProcess
+    cmd = popenargs[0] if popenargs else kwargs.get('args')
+
+    cp = _sub.CompletedProcess(cmd, rc, stdout=cp_stdout, stderr=cp_stderr)
+
+    if kwargs.get('check'):
+        # Raise CalledProcessError to mimic real behaviour when check=True
+        raise _sub.CalledProcessError(returncode=cp.returncode, cmd=cp.args,
+                                      output=cp.stdout, stderr=cp.stderr)
+    return cp
+
+# Install the shim. This replaces subprocess.run for the duration of the session.
+try:
+    import subprocess as _submod
+    _submod.run = _fake_run
+except Exception:
+    # Avoid failing environment initialization if something goes wrong here.
+    pass
+`;
+                await pyodide.runPythonAsync(fakeSubprocess);
+                // --- END: subprocess.run failure shim injection ---
+
+                // --- START: subprocess.Popen failure shim injection ---
+                const fakePopen = `
+import os, subprocess as _sub, io
+
+class _FakePopen:
+    """
+    A drop-in replacement for subprocess.Popen that simulates a process which
+    has already exited with a failing return code.
+
+    Behavior notes:
+    - returncode is set immediately to the fake return code (so poll() returns it).
+    - wait() returns the fake return code.
+    - communicate() returns empty bytes or strings for stdout/stderr depending on
+      text/universal_newlines/text mode and whether stdout/stderr were requested
+      as _sub.PIPE.
+    - It supports common methods: poll, wait, communicate, kill, terminate, send_signal.
+    - It supports context manager use (with ... as p).
+    - The default fake return code is taken from the environment variable
+      PYODIDE_FAKE_SUBPROCESS_RC (if present and an int), otherwise 1.
+    - Callers can still pass stdout=_sub.PIPE or stderr=_sub.PIPE to receive
+      empty streams (BytesIO or StringIO depending on text mode).
+    """
+
+    def __init__(self, args, bufsize=-1, executable=None, stdin=None, stdout=None,
+                 stderr=None, preexec_fn=None, close_fds=False, shell=False,
+                 cwd=None, env=None, universal_newlines=False, startupinfo=None,
+                 creationflags=0, restore_signals=False, start_new_session=False,
+                 pass_fds=(), *, text=None):
+        # Determine text mode (PEP 343 style: 'text' preferred, fallback to universal_newlines)
+        if text is None:
+            self._text = bool(universal_newlines)
+        else:
+            self._text = bool(text)
+
+        self.args = args
+        self.pid = 0  # fake pid
+        self._stdin = stdin
+        self._stdout_arg = stdout
+        self._stderr_arg = stderr
+
+        # Prepare stdout/stderr buffers if requested as PIPE
+        want_stdout = (stdout is _sub.PIPE)
+        want_stderr = (stderr is _sub.PIPE)
+        if want_stdout:
+            self.stdout = io.StringIO() if self._text else io.BytesIO()
+        else:
+            self.stdout = None
+        if want_stderr:
+            self.stderr = io.StringIO() if self._text else io.BytesIO()
+        else:
+            self.stderr = None
+
+        # Determine the fake return code: kwargs can't be passed to Popen, so we use env
+        rc = os.environ.get('PYODIDE_FAKE_SUBPROCESS_RC')
+        try:
+            rc = int(rc) if rc is not None else 1
+        except Exception:
+            rc = 1
+        self.returncode = rc
+        self._fake_rc = rc
+
+    # Poll returns the returncode if the process is finished (we simulate finished)
+    def poll(self):
+        return self.returncode
+
+    # wait returns the returncode; timeout ignored for simplicity
+    def wait(self, timeout=None):
+        return self.returncode
+
+    # communicate returns (stdout, stderr) matching the requested types
+    def communicate(self, input=None, timeout=None):
+        out = None
+        err = None
+        if self.stdout is not None:
+            self.stdout.seek(0)
+            out = self.stdout.read()
+        if self.stderr is not None:
+            self.stderr.seek(0)
+            err = self.stderr.read()
+        return (out, err)
+
+    # Methods to mimic real Popen process control (they are no-ops here)
+    def kill(self):
+        self.returncode = self._fake_rc
+
+    def terminate(self):
+        self.returncode = self._fake_rc
+
+    def send_signal(self, sig):
+        self.returncode = self._fake_rc
+
+    # Context manager support
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+# Install the shim into subprocess so code that does 'subprocess.Popen(...)'
+# will receive the fake implementation that behaves as if the process failed.
+try:
+    import subprocess as _submod
+    _submod.Popen = _FakePopen
+except Exception:
+    # Avoid failing environment initialization if something goes wrong.
+    pass
+`;
+                await pyodide.runPythonAsync(fakePopen);
+                // --- END: subprocess.Popen failure shim injection ---
+
+                // --- START: same-thread ThreadPoolExecutor shim injection ---
+                const sameThreadExecutorShim = `
+import concurrent.futures as _cf
+from concurrent.futures import Future
+import time
+
+class SameThreadThreadPoolExecutor(_cf.Executor):
+    """
+    A drop-in-like replacement for concurrent.futures.ThreadPoolExecutor that
+    does not spawn threads: it runs submitted callables synchronously on the
+    calling thread and returns already-completed Future objects.
+
+    Supported methods: submit, map, shutdown, __enter__/__exit__.
+    The constructor accepts the usual max_workers and thread_name_prefix args
+    for API compatibility, but they are ignored.
+    """
+    def __init__(self, max_workers=None, thread_name_prefix=''):
+        self._shutdown = False
+
+    def submit(self, fn, *args, **kwargs):
+        if self._shutdown:
+            raise RuntimeError("Cannot schedule new futures after shutdown")
+        fut = Future()
+        try:
+            result = fn(*args, **kwargs)
+        except BaseException as exc:
+            # Preserve traceback semantics by attaching the exception to the Future
+            fut.set_exception(exc)
+        else:
+            fut.set_result(result)
+        return fut
+
+    def map(self, func, *iterables, timeout=None, chunksize=1):
+        """
+        Map runs synchronously and yields results in input order.
+        If timeout is provided it applies to the total time spent producing results.
+        """
+        if self._shutdown:
+            raise RuntimeError("Executor has been shutdown")
+        it = zip(*iterables)
+        start = time.monotonic()
+        for args in it:
+            if timeout is not None and (time.monotonic() - start) > timeout:
+                raise _cf.TimeoutError()
+            fut = self.submit(func, *args)
+            # fut is already completed; result() will not block except to enforce timeout
+            if timeout is None:
+                yield fut.result()
+            else:
+                elapsed = time.monotonic() - start
+                if elapsed > timeout:
+                    raise _cf.TimeoutError()
+                yield fut.result()
+
+    def shutdown(self, wait=True, *, cancel_futures=False):
+        """
+        No background threads to join; just mark as shut down.
+        cancel_futures is accepted for API compatibility but has no effect here.
+        """
+        self._shutdown = True
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.shutdown(wait=True)
+
+# Install into concurrent.futures to replace ThreadPoolExecutor for callers.
+try:
+    _cf.ThreadPoolExecutor = SameThreadThreadPoolExecutor
+except Exception:
+    # If anything goes wrong, don't fail environment initialization.
+    pass
+`;
+            await pyodide.runPythonAsync(sameThreadExecutorShim);
+            // --- END: same-thread ThreadPoolExecutor shim injection ---
+            
                 showStatus('Python environment ready! You can now generate SBOMs.', 'success');
             } catch (error) {
                 showStatus('Error initializing Python environment: ' + error.message, 'error');
