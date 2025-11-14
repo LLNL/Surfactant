@@ -19,6 +19,8 @@ permissions:
 jobs:
   validate-and-build:
     runs-on: ubuntu-latest
+    outputs:
+      package_name: ${{ steps.extract_package_name.outputs.package_name }}
     steps:
       - name: Checkout repository with full history
         uses: actions/checkout@v5
@@ -62,6 +64,17 @@ jobs:
           python -m build
           python -m twine check dist/*
 
+      - name: Extract package name
+        id: extract_package_name
+        run: |
+          cd plugins/${{ inputs.plugin_name }}
+          # Extract package name from the wheel filename
+          WHEEL_FILE=$(ls dist/*.whl | head -n 1)
+          # Extract package name (everything before the first hyphen in the filename)
+          PACKAGE_NAME=$(basename "$WHEEL_FILE" | cut -d'-' -f1)
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Extracted package name: $PACKAGE_NAME"
+
       - name: Upload Python package dist artifacts
         uses: actions/upload-artifact@v5
         with:
@@ -74,7 +87,7 @@ jobs:
     needs: validate-and-build
     environment:
       name: pypi
-      url: https://pypi.org/project/${{ inputs.plugin_name }}
+      url: https://pypi.org/project/${{ needs.validate-and-build.outputs.package_name }}
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
