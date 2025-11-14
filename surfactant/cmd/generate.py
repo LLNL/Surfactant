@@ -505,7 +505,7 @@ def sbom(
                                 logger.debug(
                                     f"[fs_tree] Linked symlink + target by hash: {install_filepath} ↔ {install_dest}"
                                 )
-                            except Exception as e:
+                            except Exception as e: # pylint: disable=broad-exception-caught
                                 logger.warning(
                                     f"[fs_tree] Failed to link symlink + target by hash for {filepath}: {e}"
                                 )
@@ -596,7 +596,7 @@ def sbom(
                                         or entry.omitUnrecognizedTypes,
                                         container_prefix=entry.containerPrefix,
                                     )
-                                except Exception as e:
+                                except Exception as e: # pylint: disable=broad-exception-caught
                                     raise RuntimeError(f"Unable to process: {filepath}") from e
 
                                 entries.append(sw_parent)
