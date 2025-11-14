@@ -995,20 +995,20 @@ class SBOM:
             if sw.metadata is None:
                 sw.metadata = []
 
-            def _merge_md(key: str, values: set[str]) -> None:
+            def _merge_md(key: str, values: set[str], *, _sw: Software = sw) -> None:
                 """Merge or append a metadata entry for the given key, avoiding duplication."""
                 if not values:
                     return
                 merged = sorted(values)
-                for md in sw.metadata:
+                for md in _sw.metadata:
                     if isinstance(md, dict) and key in md:
                         existing = set(md[key])
                         md[key] = sorted(existing | set(merged))
-                        logger.debug(f"[fs_tree] Merged {key} for {sw.UUID}: {md[key]}")
+                        logger.debug(f"[fs_tree] Merged {key} for {_sw.UUID}: {md[key]}")
                         break
                 else:
-                    sw.metadata.append({key: merged})
-                    logger.debug(f"[fs_tree] Appended {key} for {sw.UUID}: {merged}")
+                    _sw.metadata.append({key: merged})
+                    logger.debug(f"[fs_tree] Appended {key} for {_sw.UUID}: {merged}")
 
             _merge_md("fileNameSymlinks", file_symlinks)
             _merge_md("installPathSymlinks", path_symlinks)
