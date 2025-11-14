@@ -7,8 +7,14 @@
 #
 # SPDX-License-Identifier: MIT
 import os
-import re
 from typing import Any, Dict, List, Optional, Set, Union
+
+# regex adds features that built-in re module is missing
+# e.g. variable width look-behind
+try:
+    import regex as re
+except ImportError:
+    import re
 
 from loguru import logger
 

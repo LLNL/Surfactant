@@ -59,6 +59,7 @@ dependencies = [
     "requests>=2.32.3",
     "rarfile==4.2.*",
     "networkx>=2.6",
+    "regex; platform_python_implementation == 'CPython'",
     # Pinned to specific version for potential breaking changes
     "python-msi==0.0.0a3",
     # Pinned to specific version for potential breaking changes

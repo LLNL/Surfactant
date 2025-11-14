@@ -15,6 +15,22 @@ from ._internal.posix_utils import posix_normpath
 
 
 def has_required_fields(metadata) -> bool:
+    """
+    Checks if the metadata contains the required `elfDependencies` field.
+
+    This function determines whether the `elfDependencies` field exists in the provided
+    metadata. This field indicates the necessary
+    dependency information to establish relationships.
+
+    Args:
+        metadata: The metadata provided to determine the presence of elfDependencies.
+
+    Returns:
+        bool: True if the `elfDependencies` field exists in the metadata, False otherwise.
+
+    Raises:
+        None
+    """
     # no elfDependencies info, can't establish relationships
     return "elfDependencies" in metadata
 
@@ -45,23 +61,41 @@ def establish_relationships(
     sbom: SBOM, software: Software, metadata
 ) -> Optional[List[Relationship]]:
     """
-    Establishes 'Uses' relationships between a given software entity and its dynamically
-    linked ELF dependencies, based on resolved filesystem paths and SBOM entries.
+    Establish relationships between a software item and its dependencies.
 
-    This function emulates the dynamic linker’s behavior:
-    - If a dependency path contains '/', treat it as an absolute or relative path.
-    - Otherwise, resolve it using a search path (RPATH, RUNPATH, and system defaults).
-    - Uses SBOM's fs_tree (preferred), legacy installPath-based fallback,
-      and heuristic matching for symlink-style relationships.
+    This function processes metadata to identify software dependencies and their
+    corresponding relationships. It examines `metadata` for ELF dependencies,
+    determines possible file paths for the dependencies, and searches the SBOM
+    (Software Bill of Materials) for entries that match these dependencies.
 
-    Parameters:
-        sbom (SBOM): The complete software bill of materials.
-        software (Software): The software object whose dependencies are being resolved.
-        metadata (dict): ELF metadata containing dependency information (e.g. 'elfDependencies').
+    Args:
+        sbom (SBOM): The software bill of materials, containing data about the available software.
+        software (Software): The software entity for which relationships are being established.
+        metadata: Metadata providing details about the software dependencies. Must contain
+            the "elfDependencies" field to describe ELF-based dependencies.
 
     Returns:
-        Optional[List[Relationship]]: A list of Relationship objects indicating usage,
-                                      or None if metadata is incomplete.
+        Optional[List[Relationship]]: A list of `Relationship` objects representing dependencies
+        between the specified software and other software items in the SBOM. If the required
+        fields in `metadata` are missing, `None` is returned.
+
+    Raises:
+        None
+
+    Notes:
+        - The function uses `metadata["elfDependencies"]` to locate dependencies described
+          as ELF paths or filenames.
+        - Relative paths in metadata are normalized and matched against installation paths
+          of the candidate software entries.
+        - Dependency file paths are cross-referenced with `sbom.software` entries to establish
+          their relationships.
+        - Returned `Relationship` objects are unique: no duplicates are added to the result list.
+
+    Example:
+        relationships = establish_relationships(sbom, software, metadata)
+        if relationships:
+            for relationship in relationships:
+                print(f"{relationship.dependent_uuid} uses {relationship.dependency_uuid}")
     """
     if not has_required_fields(metadata):
         return None
@@ -157,10 +191,32 @@ def establish_relationships(
 
 def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
     """
-    Combines resolved RPATH/RUNPATH paths with system default paths unless
-    DF_1_NODEFLIB is set. This reflects ELF loader behavior for dependency resolution.
+    Generates a list of search paths for locating runtime libraries.
+
+    This function constructs a list of search paths leveraging the `generate_runpaths`
+    function, which generates runtime paths for the given software using PurePosixPath formatting. If the
+    metadata specifies the `DF_1_NODEFLIB` flag in `elfDynamicFlags1`, it skips
+    default library paths (`/lib`, `/lib64`, `/usr/lib`, `/usr/lib64`) to comply with
+    the `-z nodeflib` linker option.
+
+    Args:
+        sw (Software): An object representing the software to generate search
+            paths for.
+        md: Metadata associated with the software, which may include dynamic
+            flags (`elfDynamicFlags1`) to determine if default library paths should
+            be excluded.
+
+    Returns:
+        List[pathlib.PurePosixPath]: A list of `PurePosixPath` objects representing
+        the search paths for runtime library resolution. This includes paths from
+        `generate_runpaths`, along with default library paths if `DF_1_NODEFLIB` is
+        not set.
+
+    Notes:
+        - The `DT_RPATH` dynamic tag has been deprecated.
+        - Default library paths are included only if the `-z nodeflib` linker option
+          is not specified through the `DF_1_NODEFLIB` flag in `elfDynamicFlags1`.
     """
-    # Start with RPATH or RUNPATH entries, if any.
     # 1. Search using directories in DT_RPATH if present and no DT_RUNPATH exists (use of DT_RPATH is deprecated)
     # 2. Use LD_LIBRARY_PATH environment variable; ignore if suid/sgid binary (nothing to do, we don't have this information w/o running on a live system)
     # 3. Search using directories in DT_RUNPATH if present
@@ -186,7 +242,64 @@ def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
 
 def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
     """
-    Resolves ELF runpaths from metadata using $ORIGIN and other DST substitutions.
+    Generate a list of resolved runpaths based on the metadata from
+    an ELF file and the provided software object.
+
+    This function determines the appropriate runpath entries by analyzing
+    DT_RPATH and DT_RUNPATH from ELF metadata (`md`) and substitutes
+    dynamic string tokens (DSTs) to produce formatted paths.
+
+    The logic follows these rules:
+    1. If `elfRpath` is present in the metadata and `elfRunpath` is not,
+       the function uses `elfRpath` as the source of runpaths. Note that
+       the use of DT_RPATH is deprecated.
+    2. If `elfRunpath` exists, it takes precedence and the function uses
+       `elfRunpath` as the source of runpath.
+    3. Paths are split using `:` as a separator, and empty path components
+       are ignored.
+    4. All paths perform DST substitution using the
+       `substitute_all_dst()` function.
+
+    Args:
+        sw (Software): An object containing dependency and installation information, where
+           the software path can be iterated on through all runpath entries.
+        md: ELF metadata containing key-values such as `elfRpath`
+            and `elfRunpath`.
+
+    Returns:
+        List[pathlib.PurePosixPath]: A list of finalized runpaths where
+        all dynamic string tokens are resolved. Each path is represented
+        as a `pathlib.PurePosixPath` object.
+
+    Example:
+        Suppose `md` contains ELF metadata with the following entries:
+        ```
+       >>>md = {
+       >>>"elfRpath": ["/lib:/usr/lib"],
+       >>>"elfRunpath": None,
+        }
+        [
+            PurePosixPath('/lib'),
+            PurePosixPath('/usr/lib')
+        ]
+        ```
+        And `sw` enables substitution tokens such as `$LIB`.
+        The function will return resolved paths by splitting `"/lib:/usr/lib"`
+        and applying substitutions where `$LIB` is located.
+
+    Notes:
+        - If the ELF file specifies both `DT_RPATH` and `DT_RUNPATH`,
+          `DT_RUNPATH` is given precedence.
+    """
+
+    # rpath and runpath are lists of strings (just in case an ELF file has several, though that is probably an invalid ELF file)
+    rp_to_use = []
+    rpath = None
+    runpath = None
+    if "elfRpath" in md and md["elfRpath"]:
+        rpath = md["elfRpath"]
+    if "elfRunpath" in md and md["elfRunpath"]:
+        runpath = md["elfRunpath"]
 
     According to the ELF specification:
     - If DT_RUNPATH is present, it takes precedence—even if empty.
