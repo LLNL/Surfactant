@@ -47,6 +47,7 @@ def recover_serializers(cls):
 @dataclass_json
 @dataclass
 class SBOM:
+    # pylint: disable=too-many-public-methods
     # pylint: disable=R0902
     systems: List[System] = field(default_factory=list)
     hardware: List[Hardware] = field(default_factory=list)
