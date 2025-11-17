@@ -223,6 +223,12 @@ def check_gpl_acceptance(database_category: str, key: str, gpl: bool, overridden
     if not gpl or overridden:
         return True
     config_manager = ConfigManager()
+    
+    # Check for runtime --allow-gpl flag (one-time acceptance)
+    runtime_allow_gpl = config_manager.get("runtime", "allow_gpl")
+    if runtime_allow_gpl == "once":
+        return True
+    
     gpl_setting = config_manager.get("sources", "gpl_license_ok")
     if gpl_setting in ("always", "a", True):
         return True
