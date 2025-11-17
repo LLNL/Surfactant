@@ -3,10 +3,105 @@
 #
 # SPDX-License-Identifier: MIT
 
-from dataclasses import dataclass
-from typing import List, Optional, Tuple
+"""
+Config Options:
+    max_file_size(int): The maximum file size to extract in bytes. [default=1000000]
+    strip_leading_zeros(bool): If leading zeros should be stripped from the binary. [default=False]
+    output_path(str): The path to output files to.  Outputs to the current directory if empty.
+"""
 
-import math
+from dataclasses import dataclass
+from queue import Queue
+from typing import List, Optional, Tuple
+import pathlib
+
+from loguru import logger
+
+import surfactant.plugin
+from surfactant import ContextEntry
+from surfactant.configmanager import ConfigManager
+from surfactant.sbomtypes import SBOM, Software
+
+MAX_FILE_SIZE = int(ConfigManager().get("srec_hex", "max_file_size", 1000000))
+STRIP_LEADING_ZEROS = bool(ConfigManager().get("srec_hex", "strip_leading_zeros", False))
+EXTRACT_DIR = pathlib.Path(ConfigManager().get("srec_hex", "output_path", "")).absolute()
+EXTRACT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@surfactant.plugin.hookimpl
+def settings_name() -> Optional[str]:
+    return "srec_hex"
+
+
+def supports_file(filetype: List[str]) -> bool:
+    # We only want to support one of the expected formats at a time
+    seen_supported = False
+    for ftype in filetype:
+        is_supported = ftype in ("INTEL_HEX", "MOTOROLA_SREC")
+        if seen_supported:
+            return False
+        if is_supported:
+            seen_supported = True
+    return seen_supported
+
+
+@surfactant.plugin.hookimpl
+def extract_file_info(
+    sbom: SBOM,
+    software: Software,
+    filename: str,
+    filetype: List[str],
+    context_queue: "Queue[ContextEntry]",
+    current_context: Optional[ContextEntry],
+) -> object:
+    if not supports_file(filetype):
+        return
+
+    # If there's no current context do nothing
+    if not current_context:
+        return
+
+    print(software)
+
+    if software.installPath and len(software.installPath) > 0:
+        print("doot")
+        info = None
+        print("hoot")
+        print("INTEL_HEX" in filetype)
+        print(filetype)
+        if "INTEL_HEX" in filetype:
+            info = read_hex_info(filename)
+        elif "MOTOROLA_SREC" in filetype:
+            print('mmmmm')
+            info = read_srecord_info(filename)
+            print('ggggggggg')
+        if info is None:
+            logger.error(f"Failed to parse {filename} - skipping")
+            return
+        print("woak")
+        first, last = get_first_and_last_address(info)
+        # Skip files that are too large
+        # If stripping leading zeros, need to compare the first/last address
+        # Otherwise, only need to compare the last
+        if (
+            (STRIP_LEADING_ZEROS and last - first >= MAX_FILE_SIZE)
+            or (not STRIP_LEADING_ZEROS and last >= MAX_FILE_SIZE)
+        ):
+            logger.info(f"Skipping {filename} as it is too large")
+            return
+
+        print('ccc')
+        install_loc = (EXTRACT_DIR / filename).as_posix()
+        print(install_loc)
+        with open(install_loc, 'wb') as f:
+            write_write_info_to_file(f, info, trim_leading_zeros=STRIP_LEADING_ZEROS)
+
+        new_entry = ContextEntry(
+            installPrefix=install_loc,
+            extractPaths=current_context.extractPaths,
+        )
+        context_queue.put(new_entry)
+
 
 @dataclass
 class WriteInfo:
