@@ -88,7 +88,7 @@ def extract_file_info(
 
         new_entry = ContextEntry(
             installPrefix=install_loc,
-            extractPaths=[],
+            extractPaths=[install_loc],
         )
         context_queue.put(new_entry)
 
