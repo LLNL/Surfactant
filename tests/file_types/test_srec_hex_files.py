@@ -3,14 +3,19 @@
 #
 # SPDX-License-Identifier: MIT
 
-from surfactant.infoextractors.srec_hex import read_srecord_info, read_hex_info, write_write_info_to_file
-
-import pathlib
 import os
+import pathlib
+
+from surfactant.infoextractors.srec_hex import (
+    read_hex_info,
+    read_srecord_info,
+    write_write_info_to_file,
+)
 
 _base_path = pathlib.Path(__file__).parent.absolute()
 _data_dir = os.path.join(_base_path, "..", "data", "binary")
 _expected_output_loc = os.path.join(_base_path, "..", "data", "msitest_no1", "test.msi")
+
 
 def test_srec_extract(tmp_path):
     with open(tmp_path / "srec_test.bin", "wb") as f:
@@ -22,6 +27,7 @@ def test_srec_extract(tmp_path):
     with open(_expected_output_loc, "rb") as f:
         expected_data = f.read()
     assert output_data == expected_data
+
 
 def test_hex_extract(tmp_path):
     with open(tmp_path / "hex_test.bin", "wb") as f:

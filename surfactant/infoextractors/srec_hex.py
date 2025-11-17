@@ -10,11 +10,11 @@ Config Options:
     output_path(str): The path to output files to.  Outputs to the current directory if empty.
 """
 
+import os.path
+import pathlib
 from dataclasses import dataclass
 from queue import Queue
 from typing import List, Optional, Tuple
-import pathlib
-import os.path
 
 from loguru import logger
 
@@ -75,15 +75,14 @@ def extract_file_info(
         # Skip files that are too large
         # If stripping leading zeros, need to compare the first/last address
         # Otherwise, only need to compare the last
-        if (
-            (STRIP_LEADING_ZEROS and last - first >= MAX_FILE_SIZE)
-            or (not STRIP_LEADING_ZEROS and last >= MAX_FILE_SIZE)
+        if (STRIP_LEADING_ZEROS and last - first >= MAX_FILE_SIZE) or (
+            not STRIP_LEADING_ZEROS and last >= MAX_FILE_SIZE
         ):
             logger.info(f"Skipping {filename} as it is too large")
             return
 
         install_loc = (EXTRACT_DIR / os.path.basename(filename)).as_posix()
-        with open(install_loc, 'wb') as f:
+        with open(install_loc, "wb") as f:
             write_write_info_to_file(f, info, trim_leading_zeros=STRIP_LEADING_ZEROS)
 
         new_entry = ContextEntry(
@@ -98,6 +97,7 @@ class WriteInfo:
     start_address: int
     data: bytearray
 
+
 def read_srecord_info(file: str) -> Optional[List[WriteInfo]]:
     ret_info: List[WriteInfo] = []
     with open(file) as f:
@@ -105,26 +105,42 @@ def read_srecord_info(file: str) -> Optional[List[WriteInfo]]:
             line = line.strip()
             if len(line) == 0:
                 continue
-            if line[0] != 'S':
+            if line[0] != "S":
                 return None
             srec_type = line[1]
             byte_count = int(line[2:4], base=16)
             bytes_sum = byte_count
-            if srec_type == '1':
+            if srec_type == "1":
                 addr = (int(line[4:6], base=16) << 8) | (int(line[6:8], base=16))
                 next_byte = 8
                 bytes_sum += int(line[4:6], base=16) + int(line[6:8], base=16)
                 # Byte count is address + data + checksum, so exclude the data and address bytes
                 bytes_to_read = byte_count - 2 - 1
-            elif srec_type == '2':
-                addr = (int(line[4:6], base=16) << 16) | (int(line[6:8], base=16) << 8) | (int(line[8:10], base=16))
+            elif srec_type == "2":
+                addr = (
+                    (int(line[4:6], base=16) << 16)
+                    | (int(line[6:8], base=16) << 8)
+                    | (int(line[8:10], base=16))
+                )
                 next_byte = 10
-                bytes_sum += int(line[4:6], base=16) + int(line[6:8], base=16) + int(line[8:10], base=16)
+                bytes_sum += (
+                    int(line[4:6], base=16) + int(line[6:8], base=16) + int(line[8:10], base=16)
+                )
                 bytes_to_read = byte_count - 3 - 1
-            elif srec_type == '3':
-                addr = (int(line[4:6], base=16) << 24) | (int(line[6:8], base=16) << 16) | (int(line[8:10], base=16) << 8) | (int(line[10:12], base=16))
+            elif srec_type == "3":
+                addr = (
+                    (int(line[4:6], base=16) << 24)
+                    | (int(line[6:8], base=16) << 16)
+                    | (int(line[8:10], base=16) << 8)
+                    | (int(line[10:12], base=16))
+                )
                 next_byte = 12
-                bytes_sum += int(line[4:6], base=16) + int(line[6:8], base=16) + int(line[8:10], base=16) + int(line[10:12], base=16)
+                bytes_sum += (
+                    int(line[4:6], base=16)
+                    + int(line[6:8], base=16)
+                    + int(line[8:10], base=16)
+                    + int(line[10:12], base=16)
+                )
                 bytes_to_read = byte_count - 4 - 1
             else:
                 continue
@@ -133,7 +149,7 @@ def read_srecord_info(file: str) -> Optional[List[WriteInfo]]:
             for byte_no in range(bytes_to_read):
                 i += 1
                 start_byte = next_byte + byte_no * 2
-                temp_bytes.append(int(line[start_byte:start_byte + 2], base=16))
+                temp_bytes.append(int(line[start_byte : start_byte + 2], base=16))
                 bytes_sum += temp_bytes[-1]
             # verify checksum
             expected_checksum = int(line[-2:], base=16)
@@ -143,6 +159,7 @@ def read_srecord_info(file: str) -> Optional[List[WriteInfo]]:
             ret_info.append(WriteInfo(addr, bytearray(temp_bytes)))
     return ret_info
 
+
 def read_hex_info(file: str) -> Optional[List[WriteInfo]]:
     ret_info: List[WriteInfo] = []
     with open(file) as f:
@@ -151,7 +168,7 @@ def read_hex_info(file: str) -> Optional[List[WriteInfo]]:
             line = line.strip()
             if len(line) == 0:
                 continue
-            if line[0] != ':':
+            if line[0] != ":":
                 return None
             byte_count = int(line[1:3], base=16)
             bytes_sum = byte_count
@@ -162,7 +179,7 @@ def read_hex_info(file: str) -> Optional[List[WriteInfo]]:
             data_bytes: List[int] = []
             for byte_no in range(byte_count):
                 start_byte = 9 + byte_no * 2
-                data_bytes.append(int(line[start_byte:start_byte + 2], base=16))
+                data_bytes.append(int(line[start_byte : start_byte + 2], base=16))
                 bytes_sum += data_bytes[-1]
             if data_type == 0:
                 addr = addr_top_bytes + addr
@@ -178,6 +195,7 @@ def read_hex_info(file: str) -> Optional[List[WriteInfo]]:
                 return None
     return ret_info
 
+
 def get_first_and_last_address(data: List[WriteInfo]) -> Tuple[int, int]:
     # Arbitrarly large number so smaller addresses will always compare true
     first_address = 2 << 65
@@ -190,12 +208,13 @@ def get_first_and_last_address(data: List[WriteInfo]) -> Tuple[int, int]:
             last_address = entry_end
     return first_address, last_address
 
+
 # write_to is a file-like object
 # returns true if the file was successfully written
 def write_write_info_to_file(write_to, data: List[WriteInfo], *, trim_leading_zeros: bool) -> bool:
     first_address, _ = get_first_and_last_address(data)
     if not trim_leading_zeros and first_address > 0:
-        write_to.write(b'0' * first_address)
+        write_to.write(b"0" * first_address)
     data = sorted(data, key=lambda x: x.start_address)
     write_address = 0
     for entry in data:
@@ -203,7 +222,7 @@ def write_write_info_to_file(write_to, data: List[WriteInfo], *, trim_leading_ze
             # Error: Overlapping data, skip writting the file?
             return False
         elif write_address < entry.start_address:
-            write_to.write(b'0' * (entry.start_address - write_address))
+            write_to.write(b"0" * (entry.start_address - write_address))
             write_address = entry.start_address
         write_to.write(entry.data)
         write_address += len(entry.data)
