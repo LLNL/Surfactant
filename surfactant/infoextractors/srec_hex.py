@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from queue import Queue
 from typing import List, Optional, Tuple
 import pathlib
+import os.path
 
 from loguru import logger
 
@@ -61,24 +62,15 @@ def extract_file_info(
     if not current_context:
         return
 
-    print(software)
-
     if software.installPath and len(software.installPath) > 0:
-        print("doot")
         info = None
-        print("hoot")
-        print("INTEL_HEX" in filetype)
-        print(filetype)
         if "INTEL_HEX" in filetype:
             info = read_hex_info(filename)
         elif "MOTOROLA_SREC" in filetype:
-            print('mmmmm')
             info = read_srecord_info(filename)
-            print('ggggggggg')
         if info is None:
             logger.error(f"Failed to parse {filename} - skipping")
             return
-        print("woak")
         first, last = get_first_and_last_address(info)
         # Skip files that are too large
         # If stripping leading zeros, need to compare the first/last address
@@ -90,15 +82,13 @@ def extract_file_info(
             logger.info(f"Skipping {filename} as it is too large")
             return
 
-        print('ccc')
-        install_loc = (EXTRACT_DIR / filename).as_posix()
-        print(install_loc)
+        install_loc = (EXTRACT_DIR / os.path.basename(filename)).as_posix()
         with open(install_loc, 'wb') as f:
             write_write_info_to_file(f, info, trim_leading_zeros=STRIP_LEADING_ZEROS)
 
         new_entry = ContextEntry(
             installPrefix=install_loc,
-            extractPaths=current_context.extractPaths,
+            extractPaths=[],
         )
         context_queue.put(new_entry)
 
