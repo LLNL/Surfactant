@@ -46,6 +46,7 @@ def supports_file(filetype: List[str]) -> bool:
     return seen_supported
 
 
+# pylint: disable=too-many-positional-arguments
 @surfactant.plugin.hookimpl
 def extract_file_info(
     sbom: SBOM,
@@ -201,11 +202,9 @@ def get_first_and_last_address(data: List[WriteInfo]) -> Tuple[int, int]:
     first_address = 2 << 65
     last_address = 0
     for entry in data:
-        if entry.start_address < first_address:
-            first_address = entry.start_address
+        first_address = min(entry.start_address, first_address)
         entry_end = entry.start_address + len(entry.data)
-        if entry_end > last_address:
-            last_address = entry_end
+        last_address = max(entry_end, last_address)
     return first_address, last_address
 
 
@@ -221,7 +220,7 @@ def write_write_info_to_file(write_to, data: List[WriteInfo], *, trim_leading_ze
         if write_address > entry.start_address:
             # Error: Overlapping data, skip writting the file?
             return False
-        elif write_address < entry.start_address:
+        if write_address < entry.start_address:
             write_to.write(b"0" * (entry.start_address - write_address))
             write_address = entry.start_address
         write_to.write(entry.data)
