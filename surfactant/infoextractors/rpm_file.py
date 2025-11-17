@@ -28,9 +28,9 @@ def algo_from_id(algo_identifier: int) -> str:
     Args:
         algo_identifier (int): Integer in RPM file associated with a hashing algorithm
     """
-    if 0 == algo_identifier:
+    if algo_identifier == 0:
         return "md5"
-    if 8 == algo_identifier:
+    if algo_identifier == 8:
         return "sha256"
     return f"Unknown: {algo_identifier}"
 
@@ -42,15 +42,15 @@ def algo_from_len(input_hash: bytes) -> Optional[str]:
         length (int): Length of hashing algorithm
     """
     length = len(input_hash.decode())
-    if 0 == length:
+    if length == 0:
         return None
-    if 36 == length:
+    if length == 36:
         return "md5"
-    if 40 == length:
+    if length == 40:
         return "sha1"
-    if 64 == length:
+    if length == 64:
         return "sha256"
-    if 128 == length:
+    if length == 128:
         return "sha512"
     raise ValueError(f"case for: {input_hash.decode()} not implemented for algo_from_len")
 
