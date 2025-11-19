@@ -222,24 +222,26 @@ def check_gpl_acceptance(database_category: str, key: str, gpl: bool, overridden
     """
     if not gpl or overridden:
         return True
-    
+
     config_manager = ConfigManager()
-    
+
     # Check GPL setting (includes runtime overrides which take precedence)
     gpl_setting = config_manager.get("sources", "gpl_license_ok")
     if gpl_setting in ("always", "a", True):
         return True
     if gpl_setting in ("never", "n", False):
         return False
-    
+
     # Prompt user if no setting is configured
     return _prompt_user_for_gpl_acceptance(config_manager, database_category, key)
 
 
-def _prompt_user_for_gpl_acceptance(config_manager: ConfigManager, database_category: str, key: str) -> bool:
+def _prompt_user_for_gpl_acceptance(
+    config_manager: ConfigManager, database_category: str, key: str
+) -> bool:
     """
     Prompt the user for GPL acceptance and optionally save their preference.
-    
+
     Returns:
         bool: True if user accepts, False otherwise.
     """
@@ -251,9 +253,9 @@ def _prompt_user_for_gpl_acceptance(config_manager: ConfigManager, database_cate
         user_input = input(prompt).strip()
     except (EOFError, KeyboardInterrupt):
         return False
-    
+
     user_input_lower = user_input.lower()
-    
+
     # Handle always/never options that update config
     if user_input_lower in ("a", "always"):
         config_manager.set("Settings", "gpl_license_ok", "always")
@@ -261,6 +263,6 @@ def _prompt_user_for_gpl_acceptance(config_manager: ConfigManager, database_cate
     if user_input_lower in ("never") or user_input == "N":
         config_manager.set("Settings", "gpl_license_ok", "never")
         return False
-    
+
     # Handle yes/no for this time only
     return user_input_lower in ("y", "yes")

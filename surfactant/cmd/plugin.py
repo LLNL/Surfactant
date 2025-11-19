@@ -134,7 +134,7 @@ def plugin_update_db_cmd(plugin_name, update_all, allow_gpl):
     """Updates the database for a specified plugin or all plugins if --all is used."""
     pm = get_plugin_manager()
     config_manager = ConfigManager()
-    
+
     # Handle --allow-gpl flag
     # When used as --allow-gpl (without =), Click sets it to empty string (from flag_value)
     # When used as --allow-gpl=value, Click sets it to the value
@@ -148,7 +148,7 @@ def plugin_update_db_cmd(plugin_name, update_all, allow_gpl):
         else:
             # Normalize the value
             allow_gpl_lower = allow_gpl.lower()
-            
+
             if allow_gpl_lower in ("always", "a"):
                 # Permanently set to always accept GPL
                 config_manager.set("sources", "gpl_license_ok", "always")
@@ -161,9 +161,12 @@ def plugin_update_db_cmd(plugin_name, update_all, allow_gpl):
                 allow_gpl = "never"
             else:
                 # Unknown value, treat as error
-                click.echo(f"Error: Invalid value for --allow-gpl: '{allow_gpl}'. Use 'always' or 'never', or use the flag without a value for one-time acceptance.", err=True)
+                click.echo(
+                    f"Error: Invalid value for --allow-gpl: '{allow_gpl}'. Use 'always' or 'never', or use the flag without a value for one-time acceptance.",
+                    err=True,
+                )
                 return
-    
+
     try:
         call_init_hooks(pm, hook_filter=["update_db"], command_name="update-db")
 
@@ -180,7 +183,9 @@ def plugin_update_db_cmd(plugin_name, update_all, allow_gpl):
                         click.echo(f"No update operation performed for {plugin_name}.")
         else:
             if not plugin_name:
-                click.echo("Please specify a plugin name or use --all to update all plugins.", err=True)
+                click.echo(
+                    "Please specify a plugin name or use --all to update all plugins.", err=True
+                )
                 return
 
             plugin = find_plugin_by_name(pm, plugin_name)  # Get an instance of the plugin
@@ -194,7 +199,9 @@ def plugin_update_db_cmd(plugin_name, update_all, allow_gpl):
             has_update_db_hook = is_hook_implemented(pm, plugin, "update_db")
 
             if not has_update_db_hook:
-                click.echo(f"Plugin '{plugin_name}' does not implement the 'update_db' hook.", err=True)
+                click.echo(
+                    f"Plugin '{plugin_name}' does not implement the 'update_db' hook.", err=True
+                )
                 return
 
             # Call the update_db hook for the specified plugin

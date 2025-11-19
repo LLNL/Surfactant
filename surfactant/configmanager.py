@@ -59,7 +59,9 @@ class ConfigManager:
         self.config_dir = Path(config_dir) / app_name if config_dir else None
         self.config = tomlkit.document()
         self.config_file_path = self._get_config_file_path()
-        self._runtime_overrides: Dict[str, Dict[str, Any]] = {}  # Runtime overlay for temporary values
+        self._runtime_overrides: Dict[
+            str, Dict[str, Any]
+        ] = {}  # Runtime overlay for temporary values
         self._load_config()
 
     def _get_config_file_path(self) -> Path:
@@ -98,7 +100,7 @@ class ConfigManager:
         # Check runtime overrides first (they take precedence)
         if section in self._runtime_overrides and option in self._runtime_overrides[section]:
             return self._runtime_overrides[section][option]
-        
+
         return self.config.get(section, {}).get(option, fallback)
 
     def set(self, section: str, option: str, value: Any) -> None:
@@ -149,10 +151,10 @@ class ConfigManager:
 
     def set_runtime_override(self, section: str, option: str, value: Any) -> None:
         """Sets a runtime override value that takes precedence over config file values.
-        
+
         Runtime overrides are not persisted to the config file and only exist in memory.
         They take precedence over values loaded from the config file.
-        
+
         Args:
             section (str): The section within the configuration.
             option (str): The option within the section.
@@ -164,7 +166,7 @@ class ConfigManager:
 
     def clear_runtime_override(self, section: str, option: str) -> None:
         """Clears a runtime override value.
-        
+
         Args:
             section (str): The section within the configuration.
             option (str): The option within the section.
@@ -180,7 +182,7 @@ class ConfigManager:
 
     def has_runtime_overrides(self) -> bool:
         """Check if any runtime overrides are set.
-        
+
         Returns:
             bool: True if any runtime overrides exist, False otherwise.
         """
