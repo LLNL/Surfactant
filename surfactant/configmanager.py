@@ -59,6 +59,9 @@ class ConfigManager:
         self.config_dir = Path(config_dir) / app_name if config_dir else None
         self.config = tomlkit.document()
         self.config_file_path = self._get_config_file_path()
+        self._runtime_overrides: Dict[
+            str, Dict[str, Any]
+        ] = {}  # Runtime overlay for temporary values
         self._load_config()
 
     def _get_config_file_path(self) -> Path:
@@ -94,6 +97,10 @@ class ConfigManager:
         Returns:
             Any: The configuration value or the fallback value.
         """
+        # Check runtime overrides first (they take precedence)
+        if section in self._runtime_overrides and option in self._runtime_overrides[section]:
+            return self._runtime_overrides[section][option]
+
         return self.config.get(section, {}).get(option, fallback)
 
     def set(self, section: str, option: str, value: Any) -> None:
@@ -141,6 +148,45 @@ class ConfigManager:
         with cls._lock:
             if app_name in cls._instances:
                 del cls._instances[app_name]
+
+    def set_runtime_override(self, section: str, option: str, value: Any) -> None:
+        """Sets a runtime override value that takes precedence over config file values.
+
+        Runtime overrides are not persisted to the config file and only exist in memory.
+        They take precedence over values loaded from the config file.
+
+        Args:
+            section (str): The section within the configuration.
+            option (str): The option within the section.
+            value (Any): The value to set as a runtime override.
+        """
+        if section not in self._runtime_overrides:
+            self._runtime_overrides[section] = {}
+        self._runtime_overrides[section][option] = value
+
+    def clear_runtime_override(self, section: str, option: str) -> None:
+        """Clears a runtime override value.
+
+        Args:
+            section (str): The section within the configuration.
+            option (str): The option within the section.
+        """
+        if section in self._runtime_overrides and option in self._runtime_overrides[section]:
+            del self._runtime_overrides[section][option]
+            if not self._runtime_overrides[section]:
+                del self._runtime_overrides[section]
+
+    def clear_all_runtime_overrides(self) -> None:
+        """Clears all runtime override values."""
+        self._runtime_overrides.clear()
+
+    def has_runtime_overrides(self) -> bool:
+        """Check if any runtime overrides are set.
+
+        Returns:
+            bool: True if any runtime overrides exist, False otherwise.
+        """
+        return bool(self._runtime_overrides)
 
     def get_data_dir_path(self) -> Path:
         """Determines the path to the data directory, for storing things such as databases.

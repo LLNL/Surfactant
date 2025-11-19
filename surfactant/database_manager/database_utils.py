@@ -19,11 +19,11 @@ from loguru import logger
 from surfactant.configmanager import ConfigManager
 from surfactant.database_manager.utils import (
     calculate_hash,
+    check_gpl_acceptance,
     download_content,
     get_source_for,
     load_db_version_metadata,
     save_db_version_metadata,
-    check_gpl_acceptance,
 )
 
 
@@ -82,9 +82,7 @@ class BaseDatabaseManager(ABC):
             self.config.source = url
             self.config.gpl = gpl
             self._overridden = overridden
-            logger.debug(
-                "Using external URL override for {}: {}", self.config.database_key, url
-            )
+            logger.debug("Using external URL override for {}: {}", self.config.database_key, url)
         else:
             self._overridden = False
             logger.debug("Using hard-coded URL for {}", self.config.database_key)
@@ -173,7 +171,12 @@ class BaseDatabaseManager(ABC):
     def download_and_update_database(self) -> str:
         # Check GPL acceptance before download
         if self.config.gpl:
-            if not check_gpl_acceptance(self.config.database_dir, self.config.database_key, self.config.gpl, getattr(self, '_overridden', False)):
+            if not check_gpl_acceptance(
+                self.config.database_dir,
+                self.config.database_key,
+                self.config.gpl,
+                getattr(self, "_overridden", False),
+            ):
                 return f"Download aborted: '{self.config.database_key}' is GPL-licensed and user did not accept."
 
         raw_data = download_content(self.config.source)
