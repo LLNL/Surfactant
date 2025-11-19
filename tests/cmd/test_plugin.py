@@ -51,9 +51,13 @@ def test_allow_gpl_flag_once(isolated_config):
             # Check that command succeeded
             assert result.exit_code == 0
             
-            # Verify runtime setting is NOT persisted (should be cleaned up)
-            runtime_setting = isolated_config.get("runtime", "allow_gpl")
-            assert runtime_setting is None
+            # Verify runtime override is NOT persisted (should be cleaned up)
+            gpl_setting = isolated_config.get("sources", "gpl_license_ok")
+            assert gpl_setting is None
+            
+            # Verify runtime override was cleared
+            assert "sources" not in isolated_config._runtime_overrides or \
+                   "gpl_license_ok" not in isolated_config._runtime_overrides.get("sources", {})
 
 
 def test_allow_gpl_flag_always(isolated_config):
@@ -112,10 +116,10 @@ def test_check_gpl_acceptance_with_runtime_flag():
         config_manager = ConfigManager(config_dir=tmpdir)
         
         try:
-            # Set runtime flag
-            config_manager.set("runtime", "allow_gpl", "once")
+            # Set runtime override
+            config_manager.set_runtime_override("sources", "gpl_license_ok", "always")
             
-            # Test that GPL is accepted due to runtime flag
+            # Test that GPL is accepted due to runtime override
             result = check_gpl_acceptance(
                 database_category="test_category",
                 key="test_key",
@@ -195,7 +199,8 @@ def test_no_allow_gpl_flag(isolated_config):
             assert result.exit_code == 0
             
             # Verify no GPL settings were changed
-            runtime_setting = isolated_config.get("runtime", "allow_gpl")
-            assert runtime_setting is None
             gpl_setting = isolated_config.get("sources", "gpl_license_ok")
             assert gpl_setting is None
+            
+            # Verify no runtime overrides were set
+            assert not isolated_config._runtime_overrides

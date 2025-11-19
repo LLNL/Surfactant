@@ -142,22 +142,23 @@ def plugin_update_db_cmd(plugin_name, update_all, allow_gpl):
     if allow_gpl is not None:
         # If it's an empty string, treat as one-time acceptance
         if allow_gpl == "":
-            allow_gpl = "once"
-            config_manager.set("runtime", "allow_gpl", "once")
+            # Set runtime override that won't be persisted to config file
+            config_manager.set_runtime_override("sources", "gpl_license_ok", "always")
+            allow_gpl = "once"  # Track that this is a one-time override
         else:
             # Normalize the value
             allow_gpl_lower = allow_gpl.lower()
             
             if allow_gpl_lower in ("always", "a"):
                 # Permanently set to always accept GPL
-                allow_gpl = "always"
                 config_manager.set("sources", "gpl_license_ok", "always")
                 click.echo("GPL license acceptance set to 'always'.")
+                allow_gpl = "always"
             elif allow_gpl_lower in ("never", "n"):
                 # Permanently set to never accept GPL
-                allow_gpl = "never"
                 config_manager.set("sources", "gpl_license_ok", "never")
                 click.echo("GPL license acceptance set to 'never'.")
+                allow_gpl = "never"
             else:
                 # Unknown value, treat as error
                 click.echo(f"Error: Invalid value for --allow-gpl: '{allow_gpl}'. Use 'always' or 'never', or use the flag without a value for one-time acceptance.", err=True)
@@ -206,9 +207,6 @@ def plugin_update_db_cmd(plugin_name, update_all, allow_gpl):
             else:
                 click.echo(f"No update operation performed for {plugin_name}.")
     finally:
-        # Clean up temporary runtime setting
+        # Clean up runtime override if it was a one-time acceptance
         if allow_gpl == "once":
-            runtime_section = config_manager["runtime"]
-            if runtime_section and "allow_gpl" in runtime_section:
-                del runtime_section["allow_gpl"]
-                config_manager._save_config()
+            config_manager.clear_runtime_override("sources", "gpl_license_ok")
