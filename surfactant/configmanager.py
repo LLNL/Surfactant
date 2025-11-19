@@ -178,6 +178,14 @@ class ConfigManager:
         """Clears all runtime override values."""
         self._runtime_overrides.clear()
 
+    def has_runtime_overrides(self) -> bool:
+        """Check if any runtime overrides are set.
+        
+        Returns:
+            bool: True if any runtime overrides exist, False otherwise.
+        """
+        return bool(self._runtime_overrides)
+
     def get_data_dir_path(self) -> Path:
         """Determines the path to the data directory, for storing things such as databases.
 

@@ -12,10 +12,11 @@ from click.testing import CliRunner
 
 from surfactant.cmd.plugin import plugin_update_db_cmd
 from surfactant.configmanager import ConfigManager
+from surfactant.database_manager.utils import check_gpl_acceptance
 
 
 @pytest.fixture
-def temp_config_dir(tmp_path):
+def temp_config_dir(tmp_path):  # pylint: disable=redefined-outer-name
     """Create a temporary config directory for testing."""
     config_dir = tmp_path / "test_config"
     config_dir.mkdir()
@@ -23,7 +24,7 @@ def temp_config_dir(tmp_path):
 
 
 @pytest.fixture
-def isolated_config(temp_config_dir):
+def isolated_config(temp_config_dir):  # pylint: disable=redefined-outer-name
     """Create an isolated ConfigManager instance for testing."""
     # Delete any existing instance
     ConfigManager.delete_instance("surfactant")
@@ -34,7 +35,7 @@ def isolated_config(temp_config_dir):
     ConfigManager.delete_instance("surfactant")
 
 
-def test_allow_gpl_flag_once(isolated_config):
+def test_allow_gpl_flag_once(isolated_config):  # pylint: disable=redefined-outer-name
     """Test --allow-gpl flag without a value (one-time acceptance)."""
     runner = CliRunner()
     
@@ -56,11 +57,10 @@ def test_allow_gpl_flag_once(isolated_config):
             assert gpl_setting is None
             
             # Verify runtime override was cleared
-            assert "sources" not in isolated_config._runtime_overrides or \
-                   "gpl_license_ok" not in isolated_config._runtime_overrides.get("sources", {})
+            assert not isolated_config.has_runtime_overrides()
 
 
-def test_allow_gpl_flag_always(isolated_config):
+def test_allow_gpl_flag_always(isolated_config):  # pylint: disable=redefined-outer-name
     """Test --allow-gpl=always to permanently set GPL acceptance."""
     runner = CliRunner()
     
@@ -83,7 +83,7 @@ def test_allow_gpl_flag_always(isolated_config):
             assert gpl_setting == "always"
 
 
-def test_allow_gpl_flag_never(isolated_config):
+def test_allow_gpl_flag_never(isolated_config):  # pylint: disable=redefined-outer-name
     """Test --allow-gpl=never to permanently disable GPL acceptance."""
     runner = CliRunner()
     
@@ -108,8 +108,6 @@ def test_allow_gpl_flag_never(isolated_config):
 
 def test_check_gpl_acceptance_with_runtime_flag():
     """Test that check_gpl_acceptance respects the runtime allow_gpl flag."""
-    from surfactant.database_manager.utils import check_gpl_acceptance
-    
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create isolated config
         ConfigManager.delete_instance("surfactant")
@@ -133,8 +131,6 @@ def test_check_gpl_acceptance_with_runtime_flag():
 
 def test_check_gpl_acceptance_with_permanent_always():
     """Test that check_gpl_acceptance respects permanent 'always' setting."""
-    from surfactant.database_manager.utils import check_gpl_acceptance
-    
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create isolated config
         ConfigManager.delete_instance("surfactant")
@@ -158,8 +154,6 @@ def test_check_gpl_acceptance_with_permanent_always():
 
 def test_check_gpl_acceptance_with_permanent_never():
     """Test that check_gpl_acceptance respects permanent 'never' setting."""
-    from surfactant.database_manager.utils import check_gpl_acceptance
-    
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create isolated config
         ConfigManager.delete_instance("surfactant")
@@ -181,7 +175,7 @@ def test_check_gpl_acceptance_with_permanent_never():
             ConfigManager.delete_instance("surfactant")
 
 
-def test_no_allow_gpl_flag(isolated_config):
+def test_no_allow_gpl_flag(isolated_config):  # pylint: disable=redefined-outer-name
     """Test command without --allow-gpl flag (default behavior)."""
     runner = CliRunner()
     
@@ -203,4 +197,4 @@ def test_no_allow_gpl_flag(isolated_config):
             assert gpl_setting is None
             
             # Verify no runtime overrides were set
-            assert not isolated_config._runtime_overrides
+            assert not isolated_config.has_runtime_overrides()
