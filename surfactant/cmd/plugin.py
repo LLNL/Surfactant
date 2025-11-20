@@ -122,7 +122,12 @@ def plugin_uninstall_cmd(plugin_name):
     is_flag=True,
     help="Update all plugins that implement the 'update_db' hook.",
 )
-def plugin_update_db_cmd(plugin_name, update_all):
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Force the database to update regardless of whether the upstream source has changed.",
+)
+def plugin_update_db_cmd(plugin_name, update_all, force):
     """Updates the database for a specified plugin or all plugins if --all is used."""
     pm = get_plugin_manager()
     call_init_hooks(pm, hook_filter=["update_db"], command_name="update-db")
@@ -133,7 +138,7 @@ def plugin_update_db_cmd(plugin_name, update_all):
             if is_hook_implemented(pm, plugin, "update_db"):
                 plugin_name = pm.get_name(plugin) or pm.get_canonical_name(plugin)
                 click.echo(f"Updating {plugin_name} ...")
-                update_result = plugin.update_db()
+                update_result = plugin.update_db(force=force)
                 if update_result:
                     click.echo(f"Update result for {plugin_name}: {update_result}")
                 else:
@@ -160,7 +165,7 @@ def plugin_update_db_cmd(plugin_name, update_all):
         # Call the update_db hook for the specified plugin
         plugin_name = pm.get_name(plugin) or pm.get_canonical_name(plugin)
         click.echo(f"Updating {plugin_name} ...")
-        update_result = plugin.update_db()
+        update_result = plugin.update_db(force=force)
 
         if update_result:
             click.echo(f"Update result for {plugin_name}: {update_result}")

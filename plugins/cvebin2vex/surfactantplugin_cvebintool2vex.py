@@ -214,10 +214,15 @@ def cvebintool2vex(sbom: SBOM, software: Software, filename: str, filetype: List
 
 
 @surfactant.plugin.hookimpl
-def update_db():
+def update_db(force: bool = False):
     # Example update logic
     try:
-        subprocess.check_call(["cve-bin-tool", "--update", "now", "."])
+        cmd = ["cve-bin-tool", "--update", "now", "."]
+        if force:
+            # Add any force-specific options if cve-bin-tool supports them
+            # For now, the standard update command will re-download if needed
+            pass
+        subprocess.check_call(cmd)
         return "Database updated successfully."
     except subprocess.CalledProcessError as e:
         return f"Failed to update database: {e}"
