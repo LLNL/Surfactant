@@ -173,7 +173,7 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 @surfactant.plugin.hookimpl
 def update_db(force: bool = False) -> str:
-    return js_db_manager.download_and_update_database()
+    return js_db_manager.download_and_update_database(force=force)
 
 
 @surfactant.plugin.hookimpl

@@ -276,7 +276,7 @@ def match_by_attribute(
 
 @surfactant.plugin.hookimpl
 def update_db(force: bool = False) -> str:
-    return native_lib_manager.download_and_update_database()
+    return native_lib_manager.download_and_update_database(force=force)
 
 
 @surfactant.plugin.hookimpl
