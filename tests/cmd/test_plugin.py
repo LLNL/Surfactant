@@ -11,8 +11,8 @@ from click.testing import CliRunner
 from surfactant.cmd.plugin import plugin_update_db_cmd
 
 
-@pytest.fixture
-def mock_plugin_manager():
+@pytest.fixture(name="mock_plugin_manager")
+def fixture_mock_plugin_manager():
     """Create a mock plugin manager with a test plugin."""
     pm = MagicMock()
     test_plugin = MagicMock()
