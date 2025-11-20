@@ -1,0 +1,107 @@
+name: Publish Plugin to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugin_name:
+        description: 'Plugin folder name (within plugins/ directory)'
+        required: true
+        default: 'SBOMVis'
+        type: string
+      version_override:
+        description: 'Optional: Force a specific version (overrides git tag detection)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run mode (skip PyPI upload)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    outputs:
+      package_name: ${{ steps.extract_package_name.outputs.package_name }}
+    steps:
+      - name: Checkout repository with full history
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Fetch full history for setuptools-scm
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+
+      - name: Validate plugin directory exists
+        run: |
+          PLUGIN_DIR="plugins/${{ inputs.plugin_name }}"
+          if [ ! -d "$PLUGIN_DIR" ]; then
+            echo "Error: Plugin directory '$PLUGIN_DIR' does not exist"
+            echo "Available plugins:"
+            ls -1 plugins/
+            exit 1
+          fi
+          if [ ! -f "$PLUGIN_DIR/pyproject.toml" ] && [ ! -f "$PLUGIN_DIR/setup.py" ]; then
+            echo "Error: Plugin '${{ inputs.plugin_name }}' does not have pyproject.toml or setup.py"
+            exit 1
+          fi
+          echo "Plugin directory validated: $PLUGIN_DIR"
+
+      - name: Build wheel
+        env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ inputs.version_override }}
+        run: |
+          pip install build twine
+          cd plugins/${{ inputs.plugin_name }}
+
+          if [ -n "${{ inputs.version_override }}" ]; then
+            echo "Building with version override: ${{ inputs.version_override }}"
+            export SETUPTOOLS_SCM_PRETEND_VERSION="${{ inputs.version_override }}"
+          else
+            echo "Building with version from git tags (setuptools-scm)"
+          fi
+
+          python -m build
+          python -m twine check dist/*
+
+      - name: Extract package name
+        id: extract_package_name
+        run: |
+          cd plugins/${{ inputs.plugin_name }}
+          # Extract package name from the wheel filename
+          WHEEL_FILE=$(ls dist/*.whl | head -n 1)
+          # Extract package name (everything before the first hyphen in the filename)
+          PACKAGE_NAME=$(basename "$WHEEL_FILE" | cut -d'-' -f1)
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Extracted package name: $PACKAGE_NAME"
+
+      - name: Upload Python package dist artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: python-package-dist
+          path: plugins/${{ inputs.plugin_name }}/dist
+
+  pypi-publish:
+    name: Upload plugin to PyPI
+    runs-on: ubuntu-latest
+    needs: validate-and-build
+    if: ${{ inputs.dry_run == false }}
+    environment:
+      name: pypi
+      url: https://pypi.org/project/${{ needs.validate-and-build.outputs.package_name }}
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+    steps:
+      - name: Download Python package dist artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: python-package-dist
+          path: dist
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

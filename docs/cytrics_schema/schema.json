@@ -1,0 +1,949 @@
+{
+    "$id": "CyTRICS_Schema_JSON_1.0.1",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "CyTRICS JSON Schema 1.0.1",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "bomUUID": {
+            "$ref": "#/definitions/bomUUID"
+        },
+        "bomFormat": {
+            "type": "string",
+            "description": "Name of the format for this BOM. Must be cytrics.",
+            "const": "cytrics"
+        },
+        "bomDescription": {
+            "type": "string",
+            "description": "String to allow submitter to provide description of the context of the BOM."
+        },
+        "specVersion": {
+            "type": "string",
+            "description": "Version of the CyTRICs schema that this BOM was generated for. Must be a valid semantic version minus the additional identifiers like -alpha.",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+        },
+        "tools": {
+            "$ref": "#/definitions/tools"
+        },
+        "authors": {
+            "$ref": "#/definitions/authors"
+        },
+        "hardware": {
+            "$ref": "#/definitions/hardware"
+        },
+        "software": {
+            "$ref": "#/definitions/software"
+        },
+        "relationships": {
+            "$ref": "#/definitions/relationships"
+        }
+    },
+    "required": [
+        "bomFormat",
+        "specVersion"
+    ],
+    "definitions": {
+        "authors": {
+            "type": [
+                "array",
+                "null"
+            ],
+            "description": "Array of individuals or organizations that authored the BOM and their type.",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "authorType": {
+                        "type": "string",
+                        "description": "Type of author.",
+                        "examples": [
+                            "name",
+                            "organization",
+                            "program"
+                        ]
+                    },
+                    "authorName": {
+                        "type": "string",
+                        "description": "Name of author.",
+                        "examples": [
+                            "John Doe",
+                            "National Lab X",
+                            "CyTRICS"
+                        ]
+                    }
+                }
+            }
+        },
+        "bomUUID": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "BOM UUID",
+            "type": "string",
+            "description": "The universally unique identifier (UUID) for CyTRICS program use generated using UUID version 4 specification outlined in RFC 4122 for the BOM.",
+            "format": "uuid"
+        },
+        "hardware": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "CyTRICS Hardware Bill-of-Materials (HBOM)",
+            "type": "array",
+            "description": "Array of Hardware data objects.",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "UUID": {
+                        "type": "string",
+                        "description": "Universally unique identifier (UUID) for CyTRICS program use generated using UUID version 4 specification outlined in RFC 4122.",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture the name(s) of a hardware component.",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "nameValue": {
+                                    "type": "string",
+                                    "description": "Name corresponding to the component being recorded.",
+                                    "examples": [
+                                        "LM2585S-12/NOPB",
+                                        "S5PC100",
+                                        "66376644",
+                                        "LT1009CDR",
+                                        "ZXY02010065100000",
+                                        "731304429111",
+                                        "3625A 24VDC Output Module"
+                                    ]
+                                },
+                                "nameType": {
+                                    "type": "string",
+                                    "description": "The type of name being recorded.",
+                                    "examples": [
+                                        "manufacturer part number (MPN)",
+                                        "model number",
+                                        "serial number",
+                                        "catalog number",
+                                        "stock keeping unit (SKU)",
+                                        "universal product code (UPC)",
+                                        "product name"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "captureTime": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "description": "Date time that the hardware enumeration started in a RFC 3339 valid string.",
+                        "examples": [
+                            "2024-12-10T19:39:10+00:00",
+                            "2024-12-10T19:39:10Z",
+                            "2024-12-10T20:39:10+01:00"
+                        ]
+                    },
+                    "countryOfOrigin": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture country or countries where the component was manufactured.",
+                        "items": {
+                            "type": "string",
+                            "description": "Country or countries where the component was manufactured.",
+                            "examples": [
+                                "Canada",
+                                "China",
+                                "US",
+                                "UK"
+                            ]
+                        }
+                    },
+                    "countryOfOriginSource": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Describe how the country or countries of origin were determined."
+                    },
+                    "quantity": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "The number of identical hardware components.",
+                        "default": 1
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Description of the hardware under test."
+                    },
+                    "vendor": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture hardware vendor or vendors.",
+                        "items": {
+                            "type": "string",
+                            "description": "Component vendor.",
+                            "examples": [
+                                "ABB",
+                                "Alliance Memory",
+                                "Altera",
+                                "Analog Devices",
+                                "Cypress Semiconductors",
+                                "Everspin",
+                                "ISSI",
+                                "ITE",
+                                "Intel",
+                                "International Rectifier",
+                                "Intersil",
+                                "Lattice Semiconductor",
+                                "Linear Technology",
+                                "Macronix",
+                                "Maxim Integrated",
+                                "Microchip Technology",
+                                "Micron Technology",
+                                "Murata Power Solutions",
+                                "NXP Semiconductors",
+                                "Nexperia",
+                                "ON Semiconductor",
+                                "PLX Technology",
+                                "Phillips",
+                                "Pulse Electronics",
+                                "STMicroelectronics",
+                                "Seiko Epson",
+                                "Texas Instruments",
+                                "Vishay Intertechnology",
+                                "XILINX"
+                            ]
+                        }
+                    },
+                    "identifiers": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture labels or identifiers on the hardware component.",
+                        "items": {
+                            "type": "string",
+                            "description": "Label or identifier on the hardware component. Characters which cannot be read or otherwise determined, but are clearly a single character may be represented using '?' for each such character.",
+                            "examples": [
+                                ["54618", "TI 298", "A9FY"],
+                                ["LTZG", "I047", "e3"],
+                                ["23KG4"],
+                                ["A3PF"],
+                                ["29F1???ABADA"]
+                            ]
+                        }
+                    },
+                    "hardwareType": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "A list of the types of hardware.",
+                        "items": {
+                            "type": "string",
+                            "description": "Type of hardware.",
+                            "examples": [
+                                "Actuator",
+                                "Circuit board",
+                                "Flash",
+                                "EEPROM",
+                                "Display device",
+                                "Memory",
+                                "Step-down converter",
+                                "Voltage regulator",
+                                "Programmable logic",
+                                "Processor",
+                                "Sensor",
+                                "System-on-a-chip",
+                                "Transistors"
+                            ]
+                        }
+                    },
+                    "comments": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture comments about the hardware",
+                        "items": {
+                            "$ref": "#/sharedDefinitions/commentEntry"
+                        }
+                    },
+                    "metadata": {
+                        "description": "Optional field that allows the capture of information outside of the defined schema. Must be formatted as valid JSON.",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": true,
+                            "properties": {}
+                        }
+                    },
+                    "supplementaryFiles": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to store paths to any supplementary files that are included with this HBOM. The files will be stored in an associated zip file and should be referenced from the root of the zip file.",
+                        "items": {
+                            "$ref": "#/sharedDefinitions/file"
+                        }
+                    },
+                    "packageType": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The packaging type of the integrated circuit",
+                        "examples": [
+                            "DIP-8",
+                            "SMD-4",
+                            "VQFN-24",
+                            "BGA",
+                            "SOIC-8",
+                            "FBGA-484",
+                            "TSSOP-16"
+                        ]
+                    },
+                    "boardLocation": {
+                        "type": [
+                            "array"
+                        ],
+                        "description": "The locations of the component on the board",
+                        "items": {
+                            "type": [
+                                "string"
+                            ],
+                            "description": "The location of the component on the board"
+                        }
+                    }
+                },
+                "required": [
+                    "UUID"
+                ],
+                "anyOf": [
+                    {
+                        "properties": {
+                            "countryOfOriginSource": {
+                                "type": [
+                                    "null"
+                                ]
+                            },
+                            "countryOfOrigin": {
+                                "type": [
+                                    "null"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "countryOfOriginSource": {
+                                "type": [
+                                    "string"
+                                ]
+                            },
+                            "countryOfOrigin": {
+                                "type": [
+                                    "array"
+                                ],
+                                "minItems": 1,
+                                "description": "Country or countries where the component was manufactured.",
+                                "items": {
+                                    "type": [
+                                        "string"
+                                    ],
+                                    "description": "Country where the component was manufactured.",
+                                    "examples": [
+                                        "Canada",
+                                        "China",
+                                        "US",
+                                        "UK"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "countryOfOriginSource",
+                            "countryOfOrigin"
+                        ]
+                    }
+                ]
+            }
+        },
+        "relationships": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Relationships",
+            "type": "array",
+            "description": "Array of objects containing metadata on how hardware or software components are linked.",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "xUUID": {
+                        "type": "string",
+                        "description": "UUID: Unique identifier of the of source entity.",
+                        "format": "uuid"
+                    },
+                    "yUUID": {
+                        "type": "string",
+                        "description": "UUID: Unique identifier of the of destination entity.",
+                        "format": "uuid"
+                    },
+                    "relationship": {
+                        "type": "string",
+                        "description": "Defines the relationship between two components. XUUID _____ yUUID.",
+                        "examples": [
+                            "Contains",
+                            "Downloads",
+                            "Uses",
+                            "Mounted on"
+                        ]
+                    },
+                    "comments": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture comments about the relationship.",
+                        "items": {
+                            "$ref": "#/sharedDefinitions/commentEntry"
+                        }
+                    }
+                },
+                "required": [
+                    "xUUID",
+                    "yUUID",
+                    "relationship"
+                ]
+            }
+        },
+        "software": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "CyTRICS Software Bill-of-Materials (SBOM)",
+            "type": "array",
+            "description": "Array of Software data objects.",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "UUID": {
+                        "type": "string",
+                        "description": "CyTRICS Universally Unique Identifier (UUID) generated using UUID version 4 specification outlined in RFC 4122.",
+                        "format": "uuid",
+                        "examples": [
+                            "e2742ed2-2532-4602-aaa9-38635c34905d",
+                            "cbb608f4-cd01-4f30-b064-f4e4dda2fa8f"
+                        ]
+                    },
+                    "softwareType": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "A list of types for the software being recorded.",
+                        "items": {
+                            "type": "string",
+                            "description": "Type of software.",
+                            "examples": [
+                                "discrete",
+                                "embedded",
+                                "file",
+                                "static library",
+                                "dynamic library",
+                                "data",
+                                "source code",
+                                "python"
+                            ]
+                        }
+                    },
+                    "name": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture the name(s) of a software component.",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "nameValue": {
+                                    "type": "string",
+                                    "description": "Name corresponding to the component being recorded.",
+                                    "examples": [
+                                        "cpe:2.3:o:microsoft:windows_10_1507:-:*:*:*:*:*:x64:*",
+                                        "pkg:pypi/django@1.11.1",
+                                        "Windows 10 1507 64-bit"
+                                    ]
+                                },
+                                "nameType": {
+                                    "type": "string",
+                                    "description": "The type of name being recorded.",
+                                    "examples": [
+                                        "common platform enumeration (CPE)",
+                                        "package URL (purl)",
+                                        "product name"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "size": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "Size of the file in bytes.",
+                        "examples": [
+                            10,
+                            15,
+                            1001
+                        ]
+                    },
+                    "fileName": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture filename(s) where the component was observed.",
+                        "items": {
+                            "type": "string",
+                            "description": "Filename(s) where the component was observed."
+                        }
+                    },
+                    "installPath": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "List of installation path(s) that the component installs to.",
+                        "items": {
+                            "type": "string",
+                            "description": "Installation path(s) of the component.",
+                            "examples": [
+                                "C:\\Program Files (x86)\\file.xml",
+                                "C:\\Program Files (x86)\\file.dll",
+                                "/usr/lib/gcc/x86_64-linux-gnu/11/plugin/libcc1plugin.so.0.0.0",
+                                "/lib/gcc/x86_64-linux-gnu/11/plugin/libcc1plugin.so.0.0.0"
+                            ]
+                        }
+                    },
+                    "containerPath": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture the relative path(s) of the component within container(s).",
+                        "items": {
+                            "type": "string",
+                            "description": "Relative path(s) of the component within container(s). Note this is for readability and does not eliminate the requirement to define relationships.",
+                            "examples": [
+                                "fdb40802-1c57-47f7-a553-efb2f8462ab0\\file.dll",
+                                "6e2f5d71-fa9a-498b-b552-19d26d3b123a\\file.dll"
+                            ]
+                        }
+                    },
+                    "captureTime": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time",
+                        "description": "Date time that the software enumeration started in a RFC 3339 valid string.",
+                        "examples": [
+                            "2024-12-10T19:39:10+00:00",
+                            "2024-12-10T19:39:10Z",
+                            "2024-12-10T20:39:10+01:00"
+                        ]
+                    },
+                    "version": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Version of the software.",
+                        "examples": [
+                            "1.2.3.1",
+                            "1.0000001",
+                            "git:c26d9cba7201994ba110d0863a0a663c0657ad4f",
+                            "pkg:github/package-url/purl-spec@244fd47e07d1004f0aed9c"
+
+                        ]
+                    },
+                    "vendor": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture software vendor or vendors.",
+                        "items": {
+                            "type": "string",
+                            "description": "Component vendor",
+                            "examples": [
+                                "ABB",
+                                "GE",
+                                "Microsoft",
+                                "Rockwell Collins",
+                                "Schneider Electric",
+                                "Schweitzer Engineering Laboratories",
+                                "Siemens"
+                            ]
+                        }
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Description of the component.",
+                        "examples": [
+                            "This is software to handle connections and programming of relays and other remote systems. It was tested in a Windows 98 VM due to software requirements/limitations."
+                        ]
+                    },
+                    "sha1": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Secure Hash Algorithm 1 (SHA-1) hash of the software. An attempt should be made to obtain all three hashes, but will pass validation if at least one is present and not null (unless notHashable is true)."
+                    },
+                    "sha256": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Secure Hash Algorithm 256 (SHA-256) hash of the software. An attempt should be made to obtain all three hashes, but will pass validation if at least one is present and not null (unless notHashable is true)."
+                    },
+                    "md5": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "MD5 hash of the software. An attempt should be made to obtain all three hashes, but will pass validation if at least one is present and not null (unless notHashable is true)."
+                    },
+                    "notHashable": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
+                        "description": "Flag indicating the software is not hashable. When true hashes may be omitted, otherwise at least one of the other three hashes must be present to pass validation."
+                    },
+                    "relationshipAssertion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Assert belief about component child relationships for which an authoritative SBOM does not exist; Unknown as the default value;  Partial if some, but not necessarily all relationships have been identified; Known if all relationships have been identified, or Root if the component has no further children.",
+                        "enum": [
+                            "Unknown",
+                            "Root",
+                            "Partial",
+                            "Known"
+                        ],
+                        "default": "Unknown"
+                    },
+                    "comments": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to capture comments about the software",
+                        "items": {
+                            "$ref": "#/sharedDefinitions/commentEntry"
+                        }
+                    },
+                    "metadata": {
+                        "description": "Optional field that allows the capture of information outside of the defined schema. Must be formatted as valid JSON.",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": true,
+                            "properties": {}
+                        }
+                    },
+                    "supplementaryFiles": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "Array to store paths to any supplementary files that are included with this SBOM. The files will be stored in an associated zip file and should be referenced from the root of the zip file.",
+                        "items": {
+                            "$ref": "#/sharedDefinitions/file"
+                        }
+                    }
+                },
+                "required": [
+                    "UUID"
+                ],
+                "if": {
+                    "anyOf": [
+                        {
+                            "not": {
+                                "required": [
+                                    "notHashable"
+                                ]
+                            }
+                        },
+                        {
+                            "properties": {
+                                "notHashable": {
+                                    "enum": [
+                                        false,
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                "then": {
+                    "anyOf": [
+                        {
+                            "properties": {
+                                "sha1": {
+                                    "type": [
+                                        "string"
+                                    ],
+                                    "description": "Secure Hash Algorithm 1 (SHA-1) hash of the software."
+                                },
+                                "sha256": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Secure Hash Algorithm 256 (SHA-256) hash of the software."
+                                },
+                                "md5": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "MD5 hash of the software."
+                                }
+                            },
+                            "required": [
+                                "sha1"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "sha1": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Secure Hash Algorithm 1 (SHA-1) hash of the software."
+                                },
+                                "sha256": {
+                                    "type": [
+                                        "string"
+                                    ],
+                                    "description": "Secure Hash Algorithm 256 (SHA-256) hash of the software."
+                                },
+                                "md5": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "MD5 hash of the software."
+                                }
+                            },
+                            "required": [
+                                "sha256"
+                            ]
+                        },
+                        {
+                            "properties": {
+                                "sha1": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Secure Hash Algorithm 1 (SHA-1) hash of the software."
+                                },
+                                "sha256": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "description": "Secure Hash Algorithm 256 (SHA-256) hash of the software."
+                                },
+                                "md5": {
+                                    "type": [
+                                        "string"
+                                    ],
+                                    "description": "MD5 hash of the software."
+                                }
+                            },
+                            "required": [
+                                "md5"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "tools": {
+            "type": [
+                "array",
+                "null"
+            ],
+            "description": "Array of tools that were used in creation of the BOM.",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "toolName": {
+                        "type": "string",
+                        "description": "Name of tool used in the creation of the BOM.",
+                        "examples": [
+                            "DCS",
+                            "surfactant"
+                        ]
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "Tool version.",
+                        "examples": [
+                            "1.0.1",
+                            "git:9d4f444967e11bb2df8eb30479fab3d32a01e7da"
+                        ]
+                    },
+                    "externalReference": {
+                        "type": "string",
+                        "description": "External reference to tool if it exists.",
+                        "examples": [
+                            "pkg:pypi/django@1.11.1",
+                            "pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25",
+                            "https://github.com/LLNL/Surfactant"
+                        ]
+                    }
+                },
+                "required": [
+                    "toolName"
+                ]
+            }
+        }
+    },
+    "sharedDefinitions": {
+        "file": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "filePath": {
+                    "type": "string",
+                    "description": "A string that contains the analysis UUID/file name.",
+                    "minLength": 5,
+                    "examples": [
+                        "62156927-93d6-4960-9305-be52956fedd5/test.tar",
+                        "62156927-93d6-4960-9305-be52956fedd5/test1.js"
+                    ]
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Description of the file."
+                },
+                "category": {
+                    "type": "string",
+                    "description": "File category.",
+                    "examples": [
+                        "Data sheet",
+                        "Image",
+                        "Manual",
+                        "Webpage",
+                        "CT Scan"
+                    ]
+                },
+                "capturedBy": {
+                    "type": "string",
+                    "description": "Entity that captured the file."
+                },
+                "captureTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Date time that the file was captured in a RFC 3339 valid string."
+                },
+                "source": {
+                    "type": "string",
+                    "description": "Source providing the file."
+                },
+                "methodOfAcquisition": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "description": "Description of the media used to obtain the information.",
+                    "items": {
+                        "type": "string",
+                        "description": "Description of the media used to obtain the information.",
+                        "examples": [
+                            "LessMSI",
+                            "Python"
+                        ]
+                    }
+                }
+            }
+        },
+        "commentEntry": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "fieldName": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Name of the field this comment is referencing."
+                },
+                "comment": {
+                    "type": "string",
+                    "description": "Comment text."
+                },
+                "author": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Name of the person making the comment"
+                },
+                "timestamp": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Timestamp of the comment in a RFC 3339 valid string.",
+                    "format": "date-time"
+                }
+            },
+            "required": [
+                "comment"
+            ],
+            "examples": [
+                {"fieldName": "identifiers", "comment": "A3PF could be A8PF"},
+                {"comment": "device used security screws on exterior wall"},
+                {
+                    "comment": "relationship is stated by documentation but could not verify through analysis",
+                    "author": "Com M. Ent"
+                },
+                {
+                    "fieldName": "sha256",
+                    "comment": "hash was calculated from the primary binary only",
+                    "author": "Com M. Ent",
+                    "timestamp": "2024-12-10T19:39:10+00:00"
+                }
+            ]
+        }
+    }
+}
