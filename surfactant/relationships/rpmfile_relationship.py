@@ -1,43 +1,67 @@
-# Copyright 2023 Lawrence Livermore National Security, LLC
+# Copyright 2025 Lawrence Livermore National Security, LLC
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
 import pathlib
 from collections.abc import Iterable
-from typing import List, Optional, Dict
+from typing import List, Optional
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
+from ._internal.posix_utils import posix_normpath
+
+from loguru import logger
+
+
 def has_required_fields(metadata) -> bool:
-    """Checks if the metadata is an RPM file containing associated files.
-    Args:
-        metadata (dict): Metadata dictionary to check."""
-    return "rpm" in metadata and "associated_files" in metadata["rpm"]
+    # no elfDependencies info, can't establish relationships
+    return "rpm" in metadata and "associated_files" in metadata["rpm"] and "file_algo" in metadata["rpm"]
+
+
 
 
 @surfactant.plugin.hookimpl
 def establish_relationships(
     sbom: SBOM, software: Software, metadata
 ) -> Optional[List[Relationship]]:
-    if not has_required_fields(metadata) or len(sbom.software) == 0:
+    if not has_required_fields(metadata):
         return None
-
+    # Current file is a RPM package with associated_files and file_algo sections
     relationships: List[Relationship] = []
     parent_uuid = software.UUID
-    files: Dict = metadata["rpm"]["associated_files"]
-    hashes: Dict[str, str] = {}
-    for file_path, file_hash in files.items():
-        hashes[file_hash] = file_path
-    
-    
-    for item in sbom.software:
-        if item.size >= 10 and item.md5 != "" and item.md5 in hashes:
-            child_uuid = item.UUID
-            relationship = Relationship(
-                parent_uuid,
-                child_uuid,
-                "Installs",
-            )
-            relationships.append(relationship)
+    # Check what kind of hash the RPM uses for its associated files and act accordingly. If the hash doesn't match the implemented hash algorithms then print a warning
+    if "sha256" == metadata["rpm"]["file_algo"]:
+        for key,value in metadata["rpm"]["associated_files"].items():
+            if value:
+                child_software = sbom.find_software(value)
+                if child_software:
+                    rel = Relationship(parent_uuid, child_software.UUID, "Installs")
+                    if rel not in relationships:
+                        relationships.append(rel)
+    elif "md5" == metadata["rpm"]["file_algo"]:
+        for key,value in metadata["rpm"]["associated_files"].items():
+            if value:
+                child_uuid = find_md5_match(value, sbom.software)
+                if child_uuid:
+                    rel = Relationship(parent_uuid, child_uuid, "Installs")
+                    if rel not in relationships:
+                        relationships.append(rel)
+    else:
+        logger.warning(f"RPM Package File: {software.fileName} uses {metadata["rpm"]["file_algo"]} for its internal file hashes, which has not been implemented")
     return relationships
+
+
+def find_md5_match(search_md5: str, sList: List[Software]) -> Optional[str]:
+    """Searches through the SBOM software db for md5 hash matches
+
+    Args:
+        search_md5 (str): MD5 hash to match against
+        sList (List[Software]): List of software found in the search space
+    Returns:
+        **UUID** of the first match found, **None** if no matches were found
+    """
+    for entry in sList:
+        if search_md5 == entry.md5:
+            return entry.UUID
+    return None
