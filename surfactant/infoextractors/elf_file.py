@@ -169,8 +169,8 @@ def extract_elf_info(filename: str) -> object:
                         # Shared libraries
                         file_details["elfDependencies"].add(tag.needed)
 
-        # Ensure the set of dependencies is JSON-encodable
-        file_details["elfDependencies"] = list(file_details["elfDependencies"])
+        # Ensure the set of dependencies is JSON-encodable, and has a stable ordering
+        file_details["elfDependencies"] = sorted(file_details["elfDependencies"])
 
         if elf["e_type"] == "ET_EXEC":
             file_details["elfIsExe"] = True
