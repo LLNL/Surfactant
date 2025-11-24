@@ -7,8 +7,14 @@
 #
 # SPDX-License-Identifier: MIT
 import json
-import re
 from typing import Any, Dict, List, Optional
+
+# regex adds features that built-in re module is missing
+# e.g. variable width look-behind
+try:
+    import regex as re
+except ImportError:
+    import re
 
 # from pluggy import get_plugin_manager, get_plugin
 from loguru import logger
@@ -82,12 +88,8 @@ class RetireJSDatabaseManager(BaseDatabaseManager):
                                 re.compile(replaced.encode("utf-8"))  # Validate regex
                                 clean_db[library][entry].append(replaced)
                             except re.error as rex:
-                                logger.error(
-                                    "Invalid regex for %s[%s]: %r — %s",
-                                    library,
-                                    entry,
-                                    replaced,
-                                    rex,
+                                logger.warning(
+                                    f"Unable to compile retirejs regex for {library}[{entry}], pattern will not be used to recognize {library}: {replaced} — {rex}"
                                 )
 
         return clean_db
@@ -170,8 +172,8 @@ def strip_irrelevant_data(retirejs_db: dict) -> dict:
 
 
 @surfactant.plugin.hookimpl
-def update_db() -> str:
-    return js_db_manager.download_and_update_database()
+def update_db(force: bool = False) -> str:
+    return js_db_manager.download_and_update_database(force=force)
 
 
 @surfactant.plugin.hookimpl

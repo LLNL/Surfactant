@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 
 import requests
@@ -92,5 +93,25 @@ download_images_from_toml(toml_file_path, image_directory)
 # -------------------------------------------------------------------
 # Make database_sources.toml available as a static file at the site root
 # https://surfactant.readthedocs.io/en/latest/database_sources.toml
+# Make CyTRICS schema available as a static file in a subfolder
 # -------------------------------------------------------------------
 html_extra_path = ["database_sources.toml"]
+
+
+# -------------------------------------------------------------------
+# Make CyTRICS schema available as a static file under cytrics_schema/
+# -------------------------------------------------------------------
+def _copy_cytrics_schema(app, exception):
+    src = os.path.abspath(os.path.join(os.path.dirname(__file__), "cytrics_schema", "schema.json"))
+    if not os.path.exists(src):
+        # Add a warning to the RTD logs instead of failing the build
+        print(f"cytrics_schema.json not found at {src}")
+        return
+    dst_dir = os.path.join(app.outdir, "cytrics_schema")
+    os.makedirs(dst_dir, exist_ok=True)
+    shutil.copy(src, os.path.join(dst_dir, "schema.json"))
+
+
+# Build process needs some customization to preserve the cytrics_schema subfolder
+def setup(app):
+    app.connect("build-finished", _copy_cytrics_schema)

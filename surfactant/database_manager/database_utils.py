@@ -165,7 +165,7 @@ class BaseDatabaseManager(ABC):
         """Parses raw database data into a structured format."""
         # No implementation needed for abstract methods.
 
-    def download_and_update_database(self) -> str:
+    def download_and_update_database(self, force: bool = False) -> str:
         raw_data = download_content(self.config.source)
         if not raw_data:
             return "No update occurred. Failed to download database."
@@ -175,7 +175,7 @@ class BaseDatabaseManager(ABC):
             self.database_version_file_path, self.config.database_key
         )
 
-        if current_data and new_hash == current_data.get("hash"):
+        if not force and current_data and new_hash == current_data.get("hash"):
             return "No update occurred. Database is up-to-date."
 
         parsed_data = self.parse_raw_data(raw_data)

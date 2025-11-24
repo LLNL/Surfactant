@@ -110,11 +110,16 @@ def extract_file_info(
 
 
 @surfactant.plugin.hookimpl
-def update_db():
+def update_db(force: bool = False):
     logger.info("Starting grype database update...")
     # Example update logic
     try:
-        subprocess.check_call(["grype", "db", "update"])
+        cmd = ["grype", "db", "update"]
+        if force:
+            # Add any force-specific options if grype supports them
+            # For now, the standard update command will re-download if needed
+            pass
+        subprocess.check_call(cmd)
         logger.info("Grype database updated successfully.")
         return "Database updated successfully."
     except subprocess.CalledProcessError as e:
