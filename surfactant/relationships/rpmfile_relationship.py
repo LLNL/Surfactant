@@ -2,23 +2,21 @@
 # See the top-level LICENSE file for details.
 #
 # SPDX-License-Identifier: MIT
-import pathlib
-from collections.abc import Iterable
 from typing import List, Optional
+
+from loguru import logger
 
 import surfactant.plugin
 from surfactant.sbomtypes import SBOM, Relationship, Software
 
-from ._internal.posix_utils import posix_normpath
-
-from loguru import logger
-
 
 def has_required_fields(metadata) -> bool:
     # no elfDependencies info, can't establish relationships
-    return "rpm" in metadata and "associated_files" in metadata["rpm"] and "file_algo" in metadata["rpm"]
-
-
+    return (
+        "rpm" in metadata
+        and "associated_files" in metadata["rpm"]
+        and "file_algo" in metadata["rpm"]
+    )
 
 
 @surfactant.plugin.hookimpl
@@ -32,7 +30,7 @@ def establish_relationships(
     parent_uuid = software.UUID
     # Check what kind of hash the RPM uses for its associated files and act accordingly. If the hash doesn't match the implemented hash algorithms then print a warning
     if "sha256" == metadata["rpm"]["file_algo"]:
-        for key,value in metadata["rpm"]["associated_files"].items():
+        for key, value in metadata["rpm"]["associated_files"].items():
             if value:
                 child_software = sbom.find_software(value)
                 if child_software:
@@ -40,7 +38,7 @@ def establish_relationships(
                     if rel not in relationships:
                         relationships.append(rel)
     elif "md5" == metadata["rpm"]["file_algo"]:
-        for key,value in metadata["rpm"]["associated_files"].items():
+        for key, value in metadata["rpm"]["associated_files"].items():
             if value:
                 child_uuid = find_md5_match(value, sbom.software)
                 if child_uuid:
@@ -48,7 +46,9 @@ def establish_relationships(
                     if rel not in relationships:
                         relationships.append(rel)
     else:
-        logger.warning(f"RPM Package File: {software.fileName} uses {metadata["rpm"]["file_algo"]} for its internal file hashes, which has not been implemented")
+        logger.warning(
+            f"RPM Package File: {software.fileName} uses {metadata['rpm']['file_algo']} for its internal file hashes, which has not been implemented"
+        )
     return relationships
 
 
