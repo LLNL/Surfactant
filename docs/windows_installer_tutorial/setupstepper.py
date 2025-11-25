@@ -233,7 +233,9 @@ def step_through(app: Application) -> None:
             if len(p_l) == 0:
                 continue
 
-            p_l, controls = (list(t) for t in zip(*sorted(zip(p_l, controls))))
+            p_l, controls = (
+                list(t) for t in zip(*sorted(zip(p_l, controls, strict=False)), strict=False)
+            )
             p_l.reverse()
             controls.reverse()
 

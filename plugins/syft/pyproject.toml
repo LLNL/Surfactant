@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Surfactant syft"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["surfactant"]
 license = "MIT"
 classifiers = [
