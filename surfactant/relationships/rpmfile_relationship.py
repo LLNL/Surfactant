@@ -30,7 +30,7 @@ def establish_relationships(
     parent_uuid = software.UUID
     # Check what kind of hash the RPM uses for its associated files and act accordingly. If the hash doesn't match the implemented hash algorithms then print a warning
     if "sha256" == metadata["rpm"]["file_algo"]:
-        for key, value in metadata["rpm"]["associated_files"].items():
+        for _key,value in metadata["rpm"]["associated_files"].items():
             if value:
                 child_software = sbom.find_software(value)
                 if child_software:
@@ -38,7 +38,7 @@ def establish_relationships(
                     if rel not in relationships:
                         relationships.append(rel)
     elif "md5" == metadata["rpm"]["file_algo"]:
-        for key, value in metadata["rpm"]["associated_files"].items():
+        for _key,value in metadata["rpm"]["associated_files"].items():
             if value:
                 child_uuid = find_md5_match(value, sbom.software)
                 if child_uuid:
