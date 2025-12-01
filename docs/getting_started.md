@@ -2,7 +2,7 @@
 
 ## System Prerequisites
 
-Surfactant requires Python . or newer. Tests are regularly run on Linux, macOS,
+Surfactant requires Python 3.10 or newer. Tests are regularly run on Linux, macOS,
 and Windows, though it should also work on other operating systems such as FreeBSD.
 
 ## Installation
