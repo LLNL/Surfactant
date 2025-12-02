@@ -264,6 +264,14 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
     required=False,
     help="Omit files with unrecognized types from the generated SBOM.",
 )
+@click.option(
+    "--install_prefix",
+    "install_prefix_",
+    is_flag=False,
+    default=None,
+    help="SBOM install prefix",
+)
+
 # Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
 # pylint: disable-next=too-many-positional-arguments
 def sbom(
@@ -277,6 +285,7 @@ def sbom(
     output_format: str,
     input_format: str,
     omit_unrecognized_types: bool,
+    install_prefix_: str,
 ):
     """Generate a sbom based on SPECIMEN_CONTEXT and output to SBOM_OUTPUT.
 
@@ -347,6 +356,15 @@ def sbom(
             else:
                 parent_entry = None
                 parent_uuid = None
+
+            # Replace entry install prefix with user specified value if given by cli args
+            if install_prefix_:
+                if entry.installPrefix:
+                    logger.warning(
+                        f"Conflicting installPrefix definitions; Overriding config file ({entry.installPrefix}) with CLI argument ({install_prefix_})"
+                    )
+
+                entry.installPrefix = install_prefix_
 
             # If an installPrefix was given, clean it up some
             if entry.installPrefix:
