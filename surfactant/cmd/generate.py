@@ -370,9 +370,7 @@ def sbom(
             if entry.installPrefix:
                 if not entry.installPrefix.endswith(("/", "\\")):
                     # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
-                    logger.warning(
-                        "Fixing installPrefix in config file entry (include the trailing /)"
-                    )
+                    logger.warning("Fixing installPrefix (include the trailing /)")
                     entry.installPrefix += "/"
                 if "\\" in entry.installPrefix:
                     # Using an install prefix with backslashes can result in a gradual reduction of the number of backslashes... and weirdness
