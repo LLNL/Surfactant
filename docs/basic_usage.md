@@ -35,6 +35,7 @@ $  surfactant generate [OPTIONS] SPECIMEN_CONTEXT SBOM_OUTFILE [INPUT_SBOM]
 **--recorded_institution**: (optional) the name of the institution collecting the SBOM data (default: LLNL)\
 **--output_format**: (optional) changes the output format for the SBOM (given as full module name of a surfactant plugin implementing the `write_sbom` hook)\
 **--input_format**: (optional) specifies the format of the input SBOM if one is being used (default: cytrics) (given as full module name of a surfactant plugin implementing the `read_sbom` hook)\
+**--install_prefix**: (optional) specifies a SBOM install prefix\
 **--help**: (optional) show the help message and exit
 
 
