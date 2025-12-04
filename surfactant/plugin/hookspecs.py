@@ -129,11 +129,14 @@ def short_name() -> Optional[str]:
 
 
 @hookspec
-def update_db() -> Optional[str]:
+def update_db(force: bool = False) -> Optional[str]:
     """Updates the database for the plugin.
 
     This hook should be implemented by plugins that require a database update.
     The implementation should perform the necessary update operations.
+
+    Args:
+        force (bool): If True, forces the database to update regardless of whether the upstream source has changed.
 
     Returns:
         Optional[str]: A message indicating the result of the update operation, or None if no update was needed.

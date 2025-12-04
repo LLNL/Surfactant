@@ -30,7 +30,7 @@ or decompilation.
 
 For ease of use, we recommend using [pipx](https://github.com/pypa/pipx) since it transparently handles creating and using Python virtual environments, which helps avoid dependency conflicts with other installed Python apps. Install `pipx` by following [their installation instructions](https://github.com/pypa/pipx#install-pipx).
 
-1. Install Surfactant using `pipx install` (with python >= 3.9)
+1. Install Surfactant using `pipx install` (with python >= 3.10)
 
 ```bash
 pipx install surfactant
@@ -46,7 +46,7 @@ pipx inject surfactant git+https://github.com/LLNL/Surfactant#subdirectory=plugi
 
 If for some reason manually managing virtual environments is desired, the following steps can be used instead:
 
-1. Create a virtual environment with python >= 3.9 and activate it [Optional, but highly recommended over a global install]
+1. Create a virtual environment with python >= 3.10 and activate it [Optional, but highly recommended over a global install]
 
 ```bash
 python -m venv venv
@@ -67,7 +67,7 @@ pip install git+https://github.com/LLNL/Surfactant#subdirectory=plugins/fuzzyhas
 
 ### For Developers:
 
-1. Create a virtual environment with python >= 3.9 [Optional, but recommended]
+1. Create a virtual environment with python >= 3.10 [Optional, but recommended]
 
 ```bash
 python -m venv venv
