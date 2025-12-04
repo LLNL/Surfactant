@@ -6,6 +6,7 @@ import os
 import pathlib
 import queue
 import re
+import sys
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import click
@@ -360,9 +361,10 @@ def sbom(
             # Replace entry install prefix with user specified value if given by cli args
             if install_prefix_:
                 if entry.installPrefix:
-                    logger.warning(
-                        f"Conflicting installPrefix definitions; Overriding config file ({entry.installPrefix}) with CLI argument ({install_prefix_})"
+                    logger.error(
+                        f"Conflicting installPrefix definitions; Check configuration file ({entry.installPrefix}) and CLI argument ({install_prefix_})"
                     )
+                    sys.exit(-1)
 
                 entry.installPrefix = install_prefix_
 
