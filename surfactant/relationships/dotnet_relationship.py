@@ -8,7 +8,220 @@ import surfactant.plugin
 from surfactant.relationships._internal.windows_utils import find_installed_software
 from surfactant.sbomtypes import SBOM, Relationship, Software
 from surfactant.utils.paths import normalize_path
+# -------------------------------------------------------------------------
+# Legacy Documentation
+# -------------------------------------------------------------------------
+# Unmanaged (.dll/.so/.dylib) resolution background
+#
+# Reference:
+#   https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/loading-unmanaged
+#
+# The .NET runtime resolves unmanaged/native libraries through a multistage
+# search process:
+#
+# 1. Check the active AssemblyLoadContext cache.
+#
+# 2. Invoke any resolver registered via SetDllImportResolver().
+#    - Example using SetDllImportResolver:
+#        https://learn.microsoft.com/en-us/dotnet/standard/native-interop/native-library-loading
+#    - Behavior:
+#        * Checks the PInvoke or Assembly-level DefaultDllImportSearchPathsAttribute,
+#          then the assembly's directory, then calls LoadLibraryEx with the
+#          LOAD_WITH_ALTERED_SEARCH_PATH flag (on Windows).
+#    - DefaultDllImportSearchPathsAttribute notes:
+#        * Has no effect on non-Windows platforms / Mono runtime.
+#        * API reference:
+#            https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.defaultdllimportsearchpathsattribute?view=net-7.0
+#        * Its "Paths" property is a bitwise combination of values from:
+#            https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=net-7.0
+#
+# 3. The active AssemblyLoadContext calls its LoadUnmanagedDll function
+#    (default behavior is effectively the same as assembly reference probing).
+#    - a. This method can be overridden to provide custom unmanaged library
+#         resolution logic.
+#         * The default implementation returns IntPtr.Zero, which tells the
+#           runtime to continue using its normal unmanaged library resolution
+#           policy.
+#    - b. API reference:
+#         https://learn.microsoft.com/en-us/dotnet/api/system.runtime.loader.assemblyloadcontext.loadunmanageddll?view=net-7.0
+#
+# 4. Run default unmanaged library probing logic by parsing *.deps.json
+#    probing properties.
+#    - a. If the json file isn't present, assume the calling assembly's
+#         directory contains the library.
+#    - b. Reference:
+#         https://learn.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing#unmanaged-native-library-probing
+#
+# 5. Platform-specific probing notes:
+#    - On Linux, if the libname ends with ".so" or contains ".so.", the
+#      runtime attempts version variations such as:
+#         libfoo.so
+#         libfoo.so.1
+#         libfoo.so.1.2.3
+#      (Legacy code references Issue #79 indicating regex-based matching for
+#       version variations was needed but not yet implemented.)
+#
+# 6. Legacy Surfactant unmanaged resolution logic:
+#    - Construct a list of candidate filenames following the rules outlined
+#      earlier in SetDllImportResolver behavior.
+#    - Candidate list includes:
+#         refName
+#         refName.dll
+#         refName.exe
+#         refName.so
+#         refName.dylib
+#         lib<refName>.so
+#         lib<refName>.dylib
+#         lib<refName>
+#    - This list corresponds to the combinations described in (2.a).
+#      (Legacy comments reference Issue #80, noting the need to verify that
+#       these candidate combinations behave correctly across platforms.)
+#    - Versioned ".so" variations were NOT evaluated.
+#      (Related to Issue #79 — regex matching needed for versioned .so names.)
+#    - Determine probing directories by taking the parent directory of each
+#      entry in software.installPath.
+#    - Search for all candidate filenames using find_installed_software().
+#
+# 7. Absolute-path unmanaged imports:
+#    - If the DllImport / PInvoke name is an absolute Windows path:
+#         * Convert to PureWindowsPath.
+#         * Compare this absolute path against every installPath entry of every
+#           software node in the SBOM.
+#         * A relationship is created only if an exact match is found.
+#    - When an absolute path is used, no probing or filename variants are
+#      attempted.
+# -------------------------------------------------------------------------
 
+# -------------------------------------------------------------------------
+# Managed (.dll/.exe) assembly resolution background
+#
+# Reference:
+#   https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies
+#
+# The .NET runtime locates managed assemblies using the following steps:
+#
+# 1. Determine the correct assembly version using configuration files
+#    (binding redirects, code location, culture, version, etc.).
+#
+# 2. Check whether the assembly name has already been bound; if so, the runtime
+#    uses the previously loaded assembly instead of probing.
+#
+# 3. Check the Global Assembly Cache (GAC)
+#    - %WINDIR%\Microsoft.NET\assembly   (used by .NET Framework 4 and later)
+#    - %WINDIR%\assembly                 (used by earlier .NET Framework versions)
+#
+# 4. Probe for assembly:
+#
+#    a. Check for a <codeBase> element in the app configuration file.
+#       - If <codeBase href="..."> is present, the runtime checks the specified
+#         location for the assembly.
+#       - If the assembly is found, probing stops entirely.
+#       - If the assembly is not found, the runtime fails without performing
+#         any further probing.
+#       - The href may be:
+#           * http:// or https://
+#           * file://
+#           * a relative path (interpreted as relative to the application's
+#             base directory, i.e., the parent of installPath).
+#
+#    b. If there is no <codeBase> element, begin standard probing:
+#       - Search application base + culture + assembly name directories.
+#       - Search privatePath directories from a <probing> element, combined
+#         with culture / application base / assembly name.
+#         (privatePath directories are evaluated before standard probing
+#          locations.)
+#       - The location of the calling assembly may be used as a hint for where
+#         to find the referenced assembly.
+#
+# 5. Standard probing when no <codeBase> element is present:
+#
+#    Application-base probing:
+#        [appBase] / <assemblyName>.dll
+#        [appBase] / <assemblyName> / <assemblyName>.dll
+#
+#    Culture-specific probing:
+#        [appBase] / <culture> / <assemblyName>.dll
+#        [appBase] / <culture> / <assemblyName> / <assemblyName>.dll
+#
+#    Probing via <probing privatePath="bin;lib;...">:
+#        - privatePath values are split on ";" (Windows convention).
+#        - For each privatePath:
+#            * [appBase] / <privatePath> / <assemblyName>.dll
+#            * [appBase] / <privatePath> / <assemblyName> / <assemblyName>.dll
+#
+#    Calling-assembly influence:
+#        - The location of the calling assembly may be used as a hint for
+#          where to find the referenced assembly.
+#        - The legacy implementation approximated this by probing the
+#          parent directory of each installPath entry.
+#
+# 6. Missing assemblies:
+#        - The legacy implementation intentionally did not log assemblies that
+#          were not found, because such messages would overwhelmingly consist of
+#          unresolved system/core .NET assemblies and produce excessive noise.
+# -------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# Probing directory construction rules (legacy logic)
+#
+# For each software.installPath entry:
+#     install_basepath = dirname(installPath)
+#
+# For each referenced assembly:
+#
+#   If Culture is None or empty ("neutral"):
+#       Add directories corresponding to:
+#           [application base] / [assembly name].dll
+#           [application base] / [assembly name] / [assembly name].dll
+#
+#       If dnProbingPaths (from <probing privatePath="...">) exists:
+#           For each binPath in dnProbingPaths:
+#               [application base] / [binpath] / [assembly name].dll
+#               [application base] / [binpath] / [assembly name] / [assembly name].dll
+#
+#   If Culture is specified:
+#       Add directories corresponding to:
+#           [application base] / [culture] / [assembly name].dll
+#           [application base] / [culture] / [assembly name] / [assembly name].dll
+#
+#       If dnProbingPaths exists:
+#           For each binPath in dnProbingPaths:
+#               [application base] / [binpath] / [culture] / [assembly name].dll
+#               [application base] / [binpath] / [culture] / [assembly name] / [assembly name].dll
+#
+# Notes:
+#   * dnProbingPaths is derived from:
+#       appConfigFile.runtime.assemblyBinding.probing.privatePath
+#     and is split on ";" (Windows convention).
+#   * These directory patterns mirror the .NET Framework probing rules
+#     documented in:
+#       https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-the-runtime-locates-assemblies
+# -------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# Absolute-path unmanaged imports behavior (legacy)
+#
+#   def is_absolute_path(fname: str) -> bool:
+#       return PureWindowsPath(fname).is_absolute()
+#
+# Example:
+#     <DllImport("C:\\path\\to\\foo.dll")>
+#
+# Legacy logic:
+#   - If the import Name is an absolute path:
+#       * Convert to PureWindowsPath.
+#       * For each software entry in the SBOM:
+#             For each installPath of that entry:
+#                 If the absolute path exactly matches installPath:
+#                     → Create a Relationship(dependent_uuid, match.UUID, "Uses")
+#
+#   - If absolute, no probing or variant-name construction occurs.
+#
+#   - If not absolute:
+#       → Apply unmanaged probing behavior:
+#            * Candidate filename list (dll/so/dylib/lib variants)
+#            * Search installer directories via find_installed_software()
+# -------------------------------------------------------------------------
 
 def has_required_fields(metadata) -> bool:
     """
@@ -16,6 +229,9 @@ def has_required_fields(metadata) -> bool:
     """
     return "dotnetAssemblyRef" in metadata
 
+def is_absolute_path(fname: str) -> bool:
+    givenpath = pathlib.PureWindowsPath(fname)
+    return givenpath.is_absolute()
 
 @surfactant.plugin.hookimpl
 def establish_relationships(
@@ -56,13 +272,47 @@ def establish_relationships(
             if not ref:
                 continue
 
-            # Build candidate filenames for unmanaged imports
+            # Absolute path fast path (restores legacy behavior, but fs_tree-aware)
+            #
+            # Legacy did:
+            #   - If Name is an absolute Windows path, compare that absolute path
+            #     directly against all Software.installPath entries.
+            #   - If it matches, emit Uses and skip probing entirely.
+            #
+            # New behavior:
+            #   - Normalize the absolute path to POSIX style.
+            #   - Use sbom.get_software_by_path(norm) so we benefit from fs_tree,
+            #     directory symlinks, and hash-equivalence edges.
+            #   - Skip self (dependent_uuid) to avoid self-loops.
+            if is_absolute_path(ref):
+                norm = normalize_path(ref)
+                match = sbom.get_software_by_path(norm)
+                if match and match.UUID != dependent_uuid:
+                    logger.debug(
+                        f"[.NET][unmanaged][abs] {ref} (norm={norm}) → UUID={match.UUID}"
+                    )
+                    relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
+                else:
+                    logger.debug(
+                        f"[.NET][unmanaged][abs] {ref} (norm={norm}) → no match"
+                    )
+                # When an absolute path is used, legacy did *not* attempt any
+                # probing or name variants. Preserve that behavior and continue.
+                continue
+
+            # Build candidate filenames for unmanaged imports (legacy behavior)
             logger.debug(f"[.NET][unmanaged] resolving import: {ref}")
             combinations = [ref]
             if not (ref.endswith(".dll") or ref.endswith(".exe")):
                 combinations.append(f"{ref}.dll")
             combinations.extend(
-                [f"{ref}.so", f"lib{ref}.so", f"{ref}.dylib", f"lib{ref}.dylib", f"lib{ref}"]
+                [
+                    f"{ref}.so",
+                    f"lib{ref}.so",
+                    f"{ref}.dylib",
+                    f"lib{ref}.dylib",
+                    f"lib{ref}",
+                ]
             )
             logger.debug(f"[.NET][unmanaged] candidates for {ref}: {combinations}")
 
