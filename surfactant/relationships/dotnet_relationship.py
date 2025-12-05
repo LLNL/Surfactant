@@ -8,6 +8,7 @@ import surfactant.plugin
 from surfactant.relationships._internal.windows_utils import find_installed_software
 from surfactant.sbomtypes import SBOM, Relationship, Software
 from surfactant.utils.paths import normalize_path
+
 # -------------------------------------------------------------------------
 # Legacy Documentation
 # -------------------------------------------------------------------------
@@ -223,15 +224,18 @@ from surfactant.utils.paths import normalize_path
 #            * Search installer directories via find_installed_software()
 # -------------------------------------------------------------------------
 
+
 def has_required_fields(metadata) -> bool:
     """
     Check whether the metadata includes .NET assembly references.
     """
     return "dotnetAssemblyRef" in metadata
 
+
 def is_absolute_path(fname: str) -> bool:
     givenpath = pathlib.PureWindowsPath(fname)
     return givenpath.is_absolute()
+
 
 @surfactant.plugin.hookimpl
 def establish_relationships(
@@ -288,14 +292,10 @@ def establish_relationships(
                 norm = normalize_path(ref)
                 match = sbom.get_software_by_path(norm)
                 if match and match.UUID != dependent_uuid:
-                    logger.debug(
-                        f"[.NET][unmanaged][abs] {ref} (norm={norm}) → UUID={match.UUID}"
-                    )
+                    logger.debug(f"[.NET][unmanaged][abs] {ref} (norm={norm}) → UUID={match.UUID}")
                     relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
                 else:
-                    logger.debug(
-                        f"[.NET][unmanaged][abs] {ref} (norm={norm}) → no match"
-                    )
+                    logger.debug(f"[.NET][unmanaged][abs] {ref} (norm={norm}) → no match")
                 # When an absolute path is used, legacy did *not* attempt any
                 # probing or name variants. Preserve that behavior and continue.
                 continue
