@@ -264,14 +264,24 @@ def establish_relationships(
     SurfActant plugin: Establish 'Uses' relationships for .NET assembly dependencies.
 
     Implements a 3-phase resolution strategy:
+
       1. Primary: Exact path match using sbom.get_software_by_path() (fs_tree)
-      2. Secondary: Legacy match using installPath + fileName
-      3. Tertiary: Heuristic fallback using fileName and shared parent directories
+         - Uses legacy .NET probing directory patterns (get_dotnet_probedirs)
+           combined with fs_tree’s symlink and hash-equivalence resolution.
+
+      2. Secondary: Legacy-style match using installPath + fileName
+         - Matches assemblies whose installPath basename aligns with the
+           referenced assembly's filename variants (e.g., Foo, Foo.dll).
+
+      3. Tertiary: Optional full legacy fallback (O(n^2))
+         - When enabled via FULL_DOTNET_LEGACY_PROBE, performs the original
+           Surfactant behavior using find_installed_software over all probedirs.
 
     Also supports:
     - Resolving unmanaged native libraries via dotnetImplMap
-    - Honor .NET app.config probing and codeBase href paths
-    - Filter matches using version and culture info
+      (absolute-path fast path, legacy filename variants, directory-based probing)
+    - Honor .NET app.config probing and <codeBase> href paths
+    - Filter matches using version and culture metadata when present
 
     Args:
         sbom (SBOM): The current SBOM graph.
@@ -279,8 +289,9 @@ def establish_relationships(
         metadata (dict): Parsed metadata for .NET imports.
 
     Returns:
-        Optional[List[Relationship]]: A list of relationships (or None).
+        Optional[List[Relationship]]: A list of 'Uses' relationships or None.
     """
+
     if not has_required_fields(metadata):
         logger.debug(f"[.NET] Skipping: No usable .NET metadata for {software.UUID}")
         return None
@@ -430,18 +441,38 @@ def establish_relationships(
         used_method = {}
 
         def is_valid_match(sw: Software, refVersion=refVersion, refCulture=refCulture) -> bool:
+            """
+            Apply identity-based filters to ensure that a candidate assembly
+            truly corresponds to the referenced assembly.
+
+            A match is rejected when:
+              • The candidate is the dependent software itself (avoid self-loops).
+              • Version metadata exists on both sides and the versions differ.
+              • Culture metadata exists on both sides and the cultures differ.
+
+            Only explicit mismatches are filtered out; if metadata is absent on
+            either side, the function allows the match to proceed so that other
+            phases may evaluate it.
+            """
+            # Do not match the importing software to itself
             if sw.UUID == dependent_uuid:
                 return False
+            
+            # Check version and culture metadata when present
             for md in sw.metadata or []:
                 asm = md.get("dotnetAssembly")
                 if asm:
                     sw_version = asm.get("Version")
                     sw_culture = asm.get("Culture")
+
+                    # Version mismatch
                     if refVersion and sw_version and sw_version != refVersion:
                         logger.debug(
                             f"[.NET][filter] skipping {sw.UUID}: version {sw_version} ≠ {refVersion}"
                         )
                         return False
+                    
+                    # Culture mismatch
                     if refCulture and sw_culture and sw_culture != refCulture:
                         logger.debug(
                             f"[.NET][filter] skipping {sw.UUID}: culture {sw_culture} ≠ {refCulture}"
@@ -450,6 +481,19 @@ def establish_relationships(
             return True
 
         # Phase 1: fs_tree lookup
+        #
+        # Construct fully qualified candidate paths by combining each probing
+        # directory with each allowed filename variant. Each constructed path
+        # is resolved through sbom.get_software_by_path(), which uses the
+        # filesystem graph (fs_tree) to account for symlinks, directory links,
+        # and hash-equivalent nodes.
+        #
+        # A match is accepted only when:
+        #   • A software entry exists at the resolved path, and
+        #   • It satisfies version and culture filters (is_valid_match).
+        #
+        # This phase provides the most precise form of resolution because it
+        # operates on concrete filesystem paths derived from .NET probing rules.
         for probe_dir in sorted(set(probedirs)):
             for fname in fname_variants:
                 path = normalize_path(probe_dir, fname)
@@ -462,48 +506,49 @@ def establish_relationships(
                     matched_uuids.add(match.UUID)
                     used_method[match.UUID] = "fs_tree"
 
-        # Phase 2: Legacy installPath + fileName
+        # Phase 2: installPath + fileName match
+        #
+        # This phase identifies assemblies by:
+        #
+        #   1. Checking whether the candidate software entry’s fileName list
+        #      includes one of the expected filename variants (e.g., "Foo",
+        #      "Foo.dll").
+        #
+        #   2. Requiring that at least one installPath ends with one of those
+        #      variants. This enforces a strict basename match and prevents
+        #      false positives from files whose names merely contain the
+        #      reference as a substring.
+        #
+        # The combination of filename and installPath checks ensures that only
+        # assemblies with an exact matching basename are selected.
+        #
+        # Phase 2: Legacy installPath + fileName (only reached if Phase 1 found nothing)
         if not matched_uuids:
             for sw in sbom.software:
+                # Skip entries that fail version/culture filtering or that match self
                 if not is_valid_match(sw):
                     continue
 
+                # The software must advertise at least one matching fileName
                 has_ref_name = isinstance(sw.fileName, Iterable) and any(
                     fn in (sw.fileName or []) for fn in fname_variants
                 )
                 if not has_ref_name or not isinstance(sw.installPath, Iterable):
                     continue
 
+                # Require an exact filename match via the installPath basename
                 for ip in sw.installPath:
                     if any(ip.endswith(fn) for fn in fname_variants):
                         logger.debug(f"[.NET][legacy] {refName} in {ip} → UUID={sw.UUID}")
                         matched_uuids.add(sw.UUID)
                         used_method[sw.UUID] = "legacy_installPath"
 
-        # Phase 3: Heuristic matching by shared directory
-        if not matched_uuids:
-            for sw in sbom.software:
-                if not is_valid_match(sw):
-                    continue
-
-                has_ref_name = isinstance(sw.fileName, Iterable) and any(
-                    fn in (sw.fileName or []) for fn in fname_variants
-                )
-                if not has_ref_name or not isinstance(sw.installPath, Iterable):
-                    continue
-
-                for sw_path in sw.installPath:
-                    sw_dir = pathlib.PurePath(sw_path).parent
-                    for refdir in probedirs:
-                        if sw_dir == pathlib.PurePath(refdir):
-                            logger.debug(
-                                f"[.NET][heuristic] {refName} via {sw_path} → UUID={sw.UUID}"
-                            )
-                            matched_uuids.add(sw.UUID)
-                            used_method[sw.UUID] = "heuristic"
-
-        # Phase 3b: Optional full legacy probe (O(n^2), feature-flagged)
-        if not matched_uuids and FULL_DOTNET_LEGACY_PROBE and get_dotnet_probedirs is not None:
+        # Phase 3: Optional full legacy probe (O(n^2), feature-flagged)
+        if (
+            not matched_uuids
+            and FULL_DOTNET_LEGACY_PROBE
+            and get_dotnet_probedirs is not None
+        ):
             legacy_probedirs = get_dotnet_probedirs(
                 software=software,
                 refCulture=refCulture,
