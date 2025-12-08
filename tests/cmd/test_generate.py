@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from surfactant.cmd.generate import sbom
 from tests.cmd import common
 
@@ -90,3 +92,22 @@ def test_generate_with_skip_install_path(tmp_path):
         assert software["installPath"] == []
 
     assert len(generated_sbom["relationships"]) == 0
+
+
+def test_generate_with_conflicting_install_prefixs(tmp_path):
+    extract_path = Path(testing_data, "Windows_dll_test_no1").as_posix()
+    config_data = f'[{{"extractPaths": ["{extract_path}"], "installPrefix": "config_prefix/"}}]'
+    config_path = str(Path(tmp_path, "config.json"))
+    output_path = str(Path(tmp_path, "out.json"))
+
+    with open(config_path, "w") as f:
+        f.write(config_data)
+
+    with pytest.raises(SystemExit) as exec_info:
+        # pylint: disable=no-value-for-parameter
+        sbom(
+            [config_path, output_path, "--install_prefix", "cmdline_prefix/"], standalone_mode=False
+        )
+        # pylint: enable
+
+    assert isinstance(exec_info.value.code, int) and exec_info.value.code < 0
