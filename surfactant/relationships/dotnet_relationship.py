@@ -429,7 +429,6 @@ def establish_relationships(
         matched_uuids = set()
         used_method = {}
 
-
         def is_valid_match(sw: Software, refVersion=refVersion, refCulture=refCulture) -> bool:
             if sw.UUID == dependent_uuid:
                 return False
@@ -504,11 +503,7 @@ def establish_relationships(
                             used_method[sw.UUID] = "heuristic"
 
         # Phase 3b: Optional full legacy probe (O(n^2), feature-flagged)
-        if (
-            not matched_uuids
-            and FULL_DOTNET_LEGACY_PROBE
-            and get_dotnet_probedirs is not None
-        ):
+        if not matched_uuids and FULL_DOTNET_LEGACY_PROBE and get_dotnet_probedirs is not None:
             legacy_probedirs = get_dotnet_probedirs(
                 software=software,
                 refCulture=refCulture,
@@ -533,7 +528,6 @@ def establish_relationships(
                     )
                     matched_uuids.add(sw.UUID)
                     used_method[sw.UUID] = "legacy_full_scan"
-
 
         # Phase 4: Finalize relationships
         for uuid in matched_uuids:
