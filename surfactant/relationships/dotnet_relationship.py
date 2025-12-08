@@ -9,6 +9,25 @@ from surfactant.relationships._internal.windows_utils import find_installed_soft
 from surfactant.sbomtypes import SBOM, Relationship, Software
 from surfactant.utils.paths import normalize_path
 
+# Optional legacy helper that encodes .NET probing directory patterns
+# (culture-specific subdirs, assembly-name subdirs, privatePath combinations, etc.).
+# We treat it as optional so this module can still import even if the legacy file
+# is not available in a particular build.
+try:
+    from surfactant.relationships.dotnet_relationship_legacy import get_dotnet_probedirs
+except ImportError:  # pragma: no cover - optional dependency
+    get_dotnet_probedirs = None
+
+# Feature flag: enable full legacy probe (O(n^2) fallback) when explicitly requested.
+# This is used later as the "no compromises"
+# TODO: Make this a CLI flag or config option instead of env var
+# FULL_DOTNET_LEGACY_PROBE = os.getenv("SURFACTANT_DOTNET_FULL_PROBE", "").lower() in (
+#     "1",
+#     "true",
+#     "yes",
+#     "on",
+# )
+FULL_DOTNET_LEGACY_PROBE = 0
 # -------------------------------------------------------------------------
 # Legacy Documentation
 # -------------------------------------------------------------------------
@@ -301,6 +320,8 @@ def establish_relationships(
                 continue
 
             # Build candidate filenames for unmanaged imports (legacy behavior)
+            # Construct a list of combinations specified in (2)
+            # Refer to Issue #80 - Need to verify that this conforms with cross-platform behavior
             logger.debug(f"[.NET][unmanaged] resolving import: {ref}")
             combinations = [ref]
             if not (ref.endswith(".dll") or ref.endswith(".exe")):
@@ -378,17 +399,36 @@ def establish_relationships(
                     elif not match:
                         logger.debug(f"[.NET][codeBase] {href} → no match")
 
-        # --- Build probing dirs (installPath + privatePath) ---
-        probedirs = []
-        if isinstance(software.installPath, Iterable):
-            for ip in software.installPath:
-                base = pathlib.PurePath(ip).parent
-                probedirs.append(base.as_posix())
-                probedirs.extend([normalize_path(base, p) for p in probing_paths])
+        # --- Build probing dirs (legacy patterns + fs_tree) ---
+        # Prefer the legacy helper if available; it encodes:
+        #   - base dir
+        #   - base/refName
+        #   - culture subdirs
+        #   - privatePath combinations
+        # This reproduces legacy layout coverage, but we will still resolve
+        # through the fs_tree via sbom.get_software_by_path().
+        probedirs: list[str] = []
+        if get_dotnet_probedirs is not None:
+            probedirs = get_dotnet_probedirs(
+                software=software,
+                refCulture=refCulture,
+                refName=refName,
+                dnProbingPaths=probing_paths or None,
+            )
+        else:
+            # Fallback: simpler base + privatePath behavior if the legacy helper
+            # is not available in this build.
+            if isinstance(software.installPath, Iterable):
+                for ip in software.installPath or []:
+                    base = pathlib.PurePath(ip).parent
+                    probedirs.append(base.as_posix())
+                    probedirs.extend([normalize_path(base, p) for p in probing_paths])
+
         logger.debug(f"[.NET][import] probing dirs for {refName}: {probedirs}")
 
         matched_uuids = set()
         used_method = {}
+
 
         def is_valid_match(sw: Software, refVersion=refVersion, refCulture=refCulture) -> bool:
             if sw.UUID == dependent_uuid:
@@ -411,7 +451,7 @@ def establish_relationships(
             return True
 
         # Phase 1: fs_tree lookup
-        for probe_dir in probedirs:
+        for probe_dir in sorted(set(probedirs)):
             for fname in fname_variants:
                 path = normalize_path(probe_dir, fname)
                 match = sbom.get_software_by_path(path)
@@ -462,6 +502,38 @@ def establish_relationships(
                             )
                             matched_uuids.add(sw.UUID)
                             used_method[sw.UUID] = "heuristic"
+
+        # Phase 3b: Optional full legacy probe (O(n^2), feature-flagged)
+        if (
+            not matched_uuids
+            and FULL_DOTNET_LEGACY_PROBE
+            and get_dotnet_probedirs is not None
+        ):
+            legacy_probedirs = get_dotnet_probedirs(
+                software=software,
+                refCulture=refCulture,
+                refName=refName,
+                dnProbingPaths=probing_paths or None,
+            )
+            if legacy_probedirs:
+                logger.debug(
+                    f"[.NET][legacy_fallback] probing {len(legacy_probedirs)} dirs for {refName}"
+                )
+                legacy_matches = find_installed_software(
+                    sbom=sbom,
+                    probedirs=legacy_probedirs,
+                    filename=fname_variants,
+                )
+                for sw in legacy_matches:
+                    if not is_valid_match(sw):
+                        continue
+                    logger.debug(
+                        f"[.NET][legacy_fallback] {refName} → {sw.UUID} "
+                        f"(installPath match via find_installed_software)"
+                    )
+                    matched_uuids.add(sw.UUID)
+                    used_method[sw.UUID] = "legacy_full_scan"
+
 
         # Phase 4: Finalize relationships
         for uuid in matched_uuids:
