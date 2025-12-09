@@ -457,7 +457,7 @@ def establish_relationships(
             # Do not match the importing software to itself
             if sw.UUID == dependent_uuid:
                 return False
-            
+
             # Check version and culture metadata when present
             for md in sw.metadata or []:
                 asm = md.get("dotnetAssembly")
@@ -471,7 +471,7 @@ def establish_relationships(
                             f"[.NET][filter] skipping {sw.UUID}: version {sw_version} ≠ {refVersion}"
                         )
                         return False
-                    
+
                     # Culture mismatch
                     if refCulture and sw_culture and sw_culture != refCulture:
                         logger.debug(
@@ -544,11 +544,7 @@ def establish_relationships(
                         used_method[sw.UUID] = "legacy_installPath"
 
         # Phase 3: Optional full legacy probe (O(n^2), feature-flagged)
-        if (
-            not matched_uuids
-            and FULL_DOTNET_LEGACY_PROBE
-            and get_dotnet_probedirs is not None
-        ):
+        if not matched_uuids and FULL_DOTNET_LEGACY_PROBE and get_dotnet_probedirs is not None:
             legacy_probedirs = get_dotnet_probedirs(
                 software=software,
                 refCulture=refCulture,
