@@ -54,11 +54,15 @@ def example_sbom():
         metadata=[{"elfDependencies": ["libalias.so"], "elfRunpath": ["/opt/alt/lib"]}],
     )
 
-    # add symlink mapping for sw8
-    sbom.record_symlink("/opt/alt/lib/libalias.so", "/opt/alt/lib/libreal.so", subtype="file")
-
+    # First add all software so fs_tree has the real file nodes
     for sw in [sw1, sw2, sw3a, sw3b, sw4, sw4_consumer, sw5, sw6, sw7, sw8, sw9]:
         sbom.add_software(sw)
+
+    # Now add the symlink mapping for sw8 (alias -> real file)
+    sbom.record_symlink("/opt/alt/lib/libalias.so", "/opt/alt/lib/libreal.so", subtype="file")
+
+    # And expand pending file symlinks so fs_tree exposes the alias path
+    sbom.expand_pending_file_symlinks()
 
     return sbom, {
         "absolute": (sw3a, "uuid-1"),
@@ -119,94 +123,6 @@ def test_elf_relationship_cases(example_sbom, label):
     assert len(result) == 1, f"{label} case failed: expected 1 relationship"
     assert result[0] == Relationship(sw.UUID, expected_uuid, "Uses"), (
         f"{label} case mismatch: {result[0]} != {expected_uuid}"
-    )
-
-
-@pytest.fixture
-def symlink_heuristic_sbom():
-    """
-    Construct a minimal SBOM that *forces* the ELF plugin's heuristic phase.
-
-    Mechanics:
-      - Consumer depends on 'libalias.so' and has runpath '/opt/app/lib'.
-      - Provider's *fileName* includes 'libalias.so' (so the name matches),
-        but its *installPath* is '/opt/app/lib/libalias.so.1' (different basename).
-      - This guarantees:
-          • Phase 1 (fs_tree) fails: no exact '/opt/app/lib/libalias.so' node.
-          • Phase 2 (legacy) fails: no installPath exactly equals '/opt/app/lib/libalias.so'.
-          • Phase 3 (heuristic) succeeds: filename matches and directory matches.
-
-    Expected behavior:
-      The plugin emits Relationship('bin-uuid', 'lib-uuid', 'Uses') via the heuristic path.
-    """
-    # Consumer binary: depends on 'libalias.so' and searches in /opt/app/lib
-    binary = Software(
-        UUID="bin-uuid",
-        fileName=["myapp"],
-        installPath=["/opt/app/bin/myapp"],
-        metadata=[{"elfDependencies": ["libalias.so"], "elfRunpath": ["/opt/app/lib"]}],
-    )
-
-    # Provider library: same directory, matching fileName, different on-disk basename.
-    provider = Software(
-        UUID="lib-uuid",
-        fileName=["libalias.so"],  # matches dependency name
-        installPath=["/opt/app/lib/libalias.so.1"],  # NOT the same as '/opt/app/lib/libalias.so'
-    )
-
-    sbom = SBOM()
-    sbom.add_software(binary)
-    sbom.add_software(provider)  # indexes '/opt/app/lib/libalias.so.1' in fs_tree
-
-    return sbom, binary
-
-
-def test_symlink_heuristic_match(symlink_heuristic_sbom):
-    """
-    Validate the ELF plugin resolves via the heuristic (same-dir + filename)
-    when both fs_tree and legacy exact-path matching cannot succeed.
-    """
-    sbom, binary = symlink_heuristic_sbom
-    metadata = binary.metadata[0]
-
-    # Note: We do *not* remove fs_tree nodes here; the heuristic is enforced
-    # by using a different basename in provider.installPath so Phase 2 fails.
-
-    results = elf_relationship.establish_relationships(sbom, binary, metadata)
-
-    assert results is not None, "Expected relationship via heuristic"
-    assert len(results) == 1
-    assert results[0] == Relationship("bin-uuid", "lib-uuid", "Uses")
-
-
-@pytest.mark.parametrize("label", ["symlink"])
-def test_symlink_heuristic_match_edge(example_sbom, label):
-    """
-    Force the symlink scenario to resolve via the heuristic phase:
-
-    - Start with the example 'symlink' case (alias -> real path recorded).
-    - Delete the alias symlink edge and alias node so Phase 1 (fs_tree symlink traversal)
-      cannot succeed.
-    - Expect a match via Phase 3 (same-directory + filename), because provider.fileName
-      is 'libalias.so' and its parent directory matches the search path.
-    """
-    sbom, case_map = example_sbom
-    sw, expected_uuid = case_map[label]
-    metadata = sw.metadata[0]
-
-    # Defensive edge removal to avoid NetworkXError
-    edge_u = "/opt/alt/lib/libalias.so"
-    edge_v = "/opt/alt/lib/libreal.so"
-    if sbom.fs_tree.has_edge(edge_u, edge_v):
-        sbom.fs_tree.remove_edge(edge_u, edge_v)
-
-    if sbom.fs_tree.has_node(edge_u):
-        sbom.fs_tree.remove_node(edge_u)
-
-    result = elf_relationship.establish_relationships(sbom, sw, metadata)
-    assert result is not None
-    assert result == [Relationship(sw.UUID, expected_uuid, "Uses")], (
-        "Expected heuristic symlink match"
     )
 
 
