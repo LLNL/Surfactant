@@ -56,20 +56,30 @@ def establish_relationships(
 
 def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Relationship]:
     """
-    Resolve dynamically loaded PE (Windows) DLL dependencies and generate 'Uses' relationships.
+    Resolve dynamically loaded PE (Windows) DLL dependencies and generate ``Uses`` relationships.
 
-    This function attempts dependency resolution in three phases:
-      1. Primary: Exact path match using sbom.fs_tree via get_software_by_path()
-      2. Secondary: Legacy string-based matching using installPath and fileName
-      3. Tertiary: Heuristic match based on fileName and shared parent directory (symlink-aware)
+    This function attempts dependency resolution in **two phases**, combining modern
+    SBOM graph/fs_tree capabilities with legacy fallbacks:
 
-    Background and References:
-    --------------------------
+      1. **Primary: Direct path resolution via ``sbom.fs_tree``**
+         Uses ``get_software_by_path()`` to match DLL names to concrete file locations,
+         following injected symlink metadata, directory symlink expansions, and
+         hash-equivalence links. This provides accurate resolution when symlinks,
+         hard-link–like content copies, or alias paths are present.
+
+      2. **Secondary: Legacy string-based resolution**
+         Falls back to matching the DLL name against ``fileName`` and then verifying
+         whether any of the candidate software’s ``installPath`` entries share a parent
+         directory with the importing software. This preserves the historical behavior
+         used before the fs_tree / symlink / hash-equivalence integration.
+
+    Background and References
+    -------------------------
     This function models how Windows determines which DLLs a process loads when calling
-    `LoadLibrary`, `LoadLibraryEx`, or related APIs. It partially reconstructs the DLL
-    search order used by the Windows loader, focusing on statically analyzable aspects.
+    ``LoadLibrary``, ``LoadLibraryEx``, or related APIs. It reconstructs the *searchable*
+    subset of the Windows loader's DLL search order using static information.
 
-    See also:
+    Relevant documentation:
         - Dynamic-link library search order:
           https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order
         - DLL redirection:
@@ -77,99 +87,60 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
         - API sets overview:
           https://learn.microsoft.com/en-us/windows/win32/apiindex/windows-apisets
 
-    DLL Search Order (Desktop Applications):
+    DLL Search Order (Desktop Applications)
     ---------------------------------------
-    The Windows loader uses multiple strategies to locate DLLs, depending on how
-    they are loaded, manifest configuration, SafeDllSearchMode, and other factors.
-    The typical order is:
+    Windows uses a multi-stage search strategy influenced by directory context,
+    SafeDllSearchMode, manifests, KnownDLLs, LOAD_LIBRARY_SEARCH flags, PATH, and other
+    runtime settings. This implementation approximates only those behaviors that can be
+    resolved statically from the SBOM:
 
-      1. **Explicit path, redirection, or manifest-based loading**
-         - A full path is specified in `LoadLibrary` or `LoadLibraryEx`.
-         - DLL redirection: presence of a `.local` file (e.g., `myapp.exe.local`)
-           causes the loader to check the application directory first, regardless
-           of the full path specified. The `.local` file’s contents are ignored.
-         - Manifests can disable `.local` redirection behavior.
-           (Note: enabling DLL redirection may require setting the `DevOverrideEnable`
-           registry key.)
+      - **Explicit or redirected paths** (e.g., LoadLibrary full paths, .local redirection)
+      - **Application directory search**
+      - **Directories implied by the importing file’s ``installPath``**
+      - **Name-based matching when directory information is limited**
 
-      2. **In-memory or KnownDLLs**
-         - If a DLL with the same module name is already loaded in memory, no search occurs.
-         - If the DLL name is found in the `KnownDLLs` registry key, the system copy is used.
+    Features not modeled statically include:
+      - In-memory module reuse
+      - KnownDLLs registry lookup
+      - API set resolution (these DLLs are not files on disk)
+      - Manifest configuration, SxS isolation, and SafeDllSearchMode state
+      - ``PATH`` environment variable lookup
 
-      3. **LOAD_LIBRARY_SEARCH flags (for LoadLibraryEx)**
-         - The loader searches directories in the following order when flags are set:
-             - `LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR`
-             - `LOAD_LIBRARY_SEARCH_APPLICATION_DIR`
-             - Paths added via `AddDllDirectory()` or `SetDllDirectory()`
-               (if multiple directories are added, search order is unspecified)
-             - System directory (`LOAD_LIBRARY_SEARCH_SYSTEM32`)
-             - Paths added via `AddDllDirectory()` (`LOAD_LIBRARY_SEARCH_USER_DIRS`) or `SetDllDirectory()`
+    API Sets
+    --------
+    Windows 10/11 API set DLLs (e.g., ``api-ms-win-core-file-l1-1-0.dll``) are logical
+    contract names, not real files. They are always resolved internally by the Windows
+    loader and cannot be matched using filesystem-based analysis.
 
-      4. **Application directory**
-         - The directory from which the application was loaded.
-           If `LoadLibraryEx` is called with `LOAD_WITH_ALTERED_SEARCH_PATH`,
-           the directory containing the specified absolute path (`lpFileName`) is used instead.
+    Scope and Static Analysis Limitations
+    -------------------------------------
+    Because this analysis cannot observe runtime information such as registry state,
+    loader flags, search path modifications, or process environment, resolution is
+    conservatively limited to:
 
-      5. **SetDllDirectory paths**
-         - The directory explicitly added using `SetDllDirectory()`.
+      - The directory/paths associated with the importing software (``installPath``)
+      - Alias/symlink/hash-equivalent paths injected during SBOM generation
+      - Legacy name/directory matching when no direct fs_tree match exists
 
-      6. **Current directory**
-         - Only checked if SafeDllSearchMode is disabled.
-
-      7. **System directory**
-         - Retrieved via `GetSystemDirectory()`.
-
-      8. **16-bit system directory**
-         - Typically `%windir%\\SYSTEM` on 32-bit systems.
-           There is no dedicated API to retrieve this directory.
-           (Not supported or relevant on 64-bit Windows.)
-
-      9. **Windows directory**
-         - Retrieved via `GetWindowsDirectory()`.
-
-     10. **Current directory (SafeDllSearchMode enabled)**
-         - When SafeDllSearchMode is on (default behavior), this check occurs later in the sequence.
-
-     11. **PATH environment variable**
-         - Each directory in the PATH environment variable is searched.
-           The per-application “App Paths” registry entries are *not* used for DLL lookup
-           (they only apply to executable search resolution).
-
-    Additional Windows Features:
-    ----------------------------
-    Windows 10 and Windows 11 introduced **API sets**, a redirection mechanism that maps
-    logical DLL names (e.g., `api-ms-win-core-file-l1-1-0.dll`) to actual implementation
-    DLLs. These API set DLLs are not physical files on disk — they are resolved internally
-    by the Windows loader and cannot be statically traced via file presence.
-
-    Implementation Scope in Static Analysis:
-    ----------------------------------------
-    Because this static analysis lacks access to runtime information such as manifests,
-    registry settings, environment variables, and system search modes, we only approximate
-    the search behavior by checking a *subset* of possible locations.
-
-    Practically, this function performs:
-      - **Step 4**: Searches the directory the importing executable or shared object
-        was loaded from (derived from `installPath`).
-      - Optionally extends this to a few heuristic matching phases (see below).
-
-    Notes and Implementation Details:
-    ---------------------------------
-    - If `installPath` is missing, the file is likely a temporary artifact or installer
-      and cannot be resolved safely.
-    - Future improvement (TODO): attempt resolution using relative locations within
-      `containerPath`, for cases where files originate from the same container UUID.
-    - While logging missing DLLs could be informative, it would be excessively noisy,
-      as most unresolved DLLs are standard Windows system libraries.
+    Notes & Implementation Details
+    ------------------------------
+    - If ``installPath`` is missing for the importing software, resolution is skipped.
+      Such files are often extracted intermediates or installer artifacts.
+    - TODO: add support for resolving DLLs using relative positions inside a
+      ``containerPath`` when multiple files derive from the same container UUID.
+    - Missing DLL logs are suppressed by default because they overwhelmingly correspond
+      to Windows system libraries that are intentionally not bundled with applications.
 
     Args:
-        sbom (SBOM): The software bill of materials object with fs_tree and software entries.
-        sw (Software): The importing software that declares PE DLL dependencies.
-        peImports (list[str]): List of imported DLL base names (e.g., ['KERNEL32.dll']).
+        sbom (SBOM): The SBOM containing software entries and the populated fs_tree.
+        sw (Software): The importing software item declaring DLL dependencies.
+        peImports (list[str]): Base names of imported DLLs (e.g., ``['KERNEL32.dll']``).
 
     Returns:
-        List[Relationship]: A list of Relationship(xUUID=sw.UUID, yUUID=match.UUID, relationship="Uses").
+        List[Relationship]: ``Uses`` relationships of the form
+            ``Relationship(xUUID=sw.UUID, yUUID=dep.UUID, relationship="Uses")``.
     """
+
     relationships: List[Relationship] = []
 
     # No installPath is probably temporary files/installer
@@ -195,6 +166,7 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
         probedirs = []
         if isinstance(sw.installPath, Iterable):
             for ipath in sw.installPath or []:
+                # Extract the parent directory in normalized POSIX form
                 parent_dir = pathlib.PureWindowsPath(ipath).parent.as_posix()
                 probedirs.append(parent_dir)
         logger.debug(f"[PE][import] probedirs for '{fname}': {probedirs}")
@@ -229,25 +201,6 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
                                 logger.debug(f"[PE][legacy] {fname} in {ipath} → UUID={item.UUID}")
                                 matched_uuids.add(item.UUID)
                                 used_method[item.UUID] = "legacy_installPath"
-
-        # ---------------------------------------------------------
-        # Phase 3: Symlink-aware heuristic (same fileName + folder)
-        # ---------------------------------------------------------
-        if not matched_uuids:
-            for item in sbom.software:
-                has_name = isinstance(item.fileName, Iterable) and fname in (item.fileName or [])
-                if not has_name or not isinstance(item.installPath, Iterable):
-                    continue
-                for ipath in item.installPath or []:
-                    ip_dir = pathlib.PurePosixPath(ipath).parent
-                    for refdir in probedirs:
-                        if ip_dir == pathlib.PurePosixPath(refdir):
-                            if item.UUID != dependent_uuid:
-                                logger.debug(
-                                    f"[PE][heuristic] {fname} via {ipath} → UUID={item.UUID}"
-                                )
-                                matched_uuids.add(item.UUID)
-                                used_method[item.UUID] = "heuristic"
 
         # ----------------------------------------
         # Emit final relationships (if any found)
