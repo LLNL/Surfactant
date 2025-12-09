@@ -220,7 +220,6 @@ def test_dotnet_no_match_without_exact_basename():
     assert results == []
 
 
-
 def test_dotnet_private_path():
     """
     Test: DLL resolved from app.config probing.privatePath directories.
