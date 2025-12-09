@@ -69,14 +69,14 @@ def establish_relationships(
     attempting to match them against software entries in the SBOM. Resolution
     proceeds in two stages:
 
-        1. **fs_tree-based lookup**  
+        1. **fs_tree-based lookup**
            Fully-qualified dependency paths (absolute or constructed from
            runpaths, RPATH, RUNPATH, and $ORIGIN substitutions) are checked
            against the SBOM filesystem graph. This lookup is symlink-aware and
            can resolve through both real and synthetic alias relationships
            captured during SBOM generation.
 
-        2. **Legacy installPath fallback**  
+        2. **Legacy installPath fallback**
            If no fs_tree match is found, the function falls back to a strict
            legacy rule: a candidate software entry must advertise the same
            filename *and* must contain an exact installPath equal to one of the
@@ -101,8 +101,8 @@ def establish_relationships(
 
     Notes:
         - Dependency paths may originate from:
-            • absolute paths in metadata  
-            • relative paths joined against each installPath  
+            • absolute paths in metadata
+            • relative paths joined against each installPath
             • computed runpaths (RPATH/RUNPATH) and default library paths
         - Duplicate relationships are suppressed.
         - Self-dependencies are not emitted.
@@ -119,7 +119,6 @@ def establish_relationships(
     dependent_uuid = software.UUID
     default_search_paths = generate_search_paths(software, metadata)
     logger.debug(f"[ELF][search] default paths: {[p.as_posix() for p in default_search_paths]}")
-
 
     # Each entry in metadata["elfDependencies"] is a DT_NEEDED-style string
     # extracted from the ELF dynamic section. These can be:
