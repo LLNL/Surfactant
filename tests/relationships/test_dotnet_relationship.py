@@ -181,33 +181,31 @@ def test_dotnet_culture_subdir():
     assert results == [Relationship("app", "lib3", "Uses")]
 
 
-def test_dotnet_heuristic_match():
+def test_dotnet_no_match_without_exact_basename():
     """
-    Test: heuristic (same-directory + filename) resolution.
+    Test: a DLL in the same directory is NOT matched when its basename does
+    not align with the referenced assembly name.
 
-    We deliberately prevent Phases 1 and 2 from succeeding:
+    Scenario:
+      - Consumer imports 'heur' (filename variants: 'heur', 'heur.dll').
+      - Provider lives in the same directory but is installed as
+        '/app/bin/heur.dll.bak'.
 
-      • Phase 1 (fs_tree): The consumer probes '/app/bin' for 'heur' and 'heur.dll'.
-        The provider is installed as '/app/bin/heur.dll.bak' — so there is no exact
-        path '/app/bin/heur.dll' in fs_tree.
-
-      • Phase 2 (legacy installPath + fileName): The provider's installPath does not
-        end with 'heur.dll' (it ends with 'heur.dll.bak'), so ip.endswith(fn) fails.
-
-      • Phase 3 (heuristic): The provider's fileName includes 'heur.dll' and its
-        parent directory matches a probedir ('/app/bin'), so a relationship should
-        be established via the heuristic fallback.
+    Expected behavior:
+      - Phase 1 (fs_tree): no exact path '/app/bin/heur' or '/app/bin/heur.dll'.
+      - Phase 2 (installPath + fileName): installPath does not end with
+        'heur' or 'heur.dll', so no match is accepted.
+      - No heuristic "same-directory" fallback is applied, so no relationship
+        is created.
     """
     sbom = SBOM()
 
-    # Provider: same directory as the consumer, but installPath doesn't end with 'heur.dll'
     supplier = Software(
         UUID="lib-heur",
         fileName=["heur.dll"],
         installPath=["/app/bin/heur.dll.bak"],
     )
 
-    # Consumer: imports 'heur' (will try 'heur' and 'heur.dll'); probes '/app/bin'
     consumer = Software(
         UUID="app-heur",
         installPath=["/app/bin/app.exe"],
@@ -219,7 +217,8 @@ def test_dotnet_heuristic_match():
 
     results = dotnet_relationship.establish_relationships(sbom, consumer, consumer.metadata[0])
 
-    assert results == [Relationship("app-heur", "lib-heur", "Uses")]
+    assert results == []
+
 
 
 def test_dotnet_private_path():
