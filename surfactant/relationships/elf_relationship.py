@@ -61,41 +61,56 @@ def establish_relationships(
     sbom: SBOM, software: Software, metadata
 ) -> Optional[List[Relationship]]:
     """
-    Establish relationships between a software item and its dependencies.
+    Establish `Uses` relationships between a software item and its ELF-declared
+    dependencies.
 
-    This function processes metadata to identify software dependencies and their
-    corresponding relationships. It examines `metadata` for ELF dependencies,
-    determines possible file paths for the dependencies, and searches the SBOM
-    (Software Bill of Materials) for entries that match these dependencies.
+    This function resolves dependencies listed in `metadata["elfDependencies"]`
+    by computing the set of possible runtime file paths for each dependency and
+    attempting to match them against software entries in the SBOM. Resolution
+    proceeds in two stages:
+
+        1. **fs_tree-based lookup**  
+           Fully-qualified dependency paths (absolute or constructed from
+           runpaths, RPATH, RUNPATH, and $ORIGIN substitutions) are checked
+           against the SBOM filesystem graph. This lookup is symlink-aware and
+           can resolve through both real and synthetic alias relationships
+           captured during SBOM generation.
+
+        2. **Legacy installPath fallback**  
+           If no fs_tree match is found, the function falls back to a strict
+           legacy rule: a candidate software entry must advertise the same
+           filename *and* must contain an exact installPath equal to one of the
+           computed dependency paths.
+
+    No heuristic directory-level inference is performed. Dependencies are only
+    matched when the SBOM contains a resolvable path or an exact legacy
+    installPath entry.
 
     Args:
-        sbom (SBOM): The software bill of materials, containing data about the available software.
-        software (Software): The software entity for which relationships are being established.
-        metadata: Metadata providing details about the software dependencies. Must contain
-            the "elfDependencies" field to describe ELF-based dependencies.
+        sbom (SBOM): The software bill of materials containing all discovered
+            software entries and the filesystem graph.
+        software (Software): The software entry whose dependencies are being
+            resolved.
+        metadata: Metadata extracted from the ELF file. Must contain the
+            `"elfDependencies"` field to participate in relationship inference.
 
     Returns:
-        Optional[List[Relationship]]: A list of `Relationship` objects representing dependencies
-        between the specified software and other software items in the SBOM. If the required
-        fields in `metadata` are missing, `None` is returned.
-
-    Raises:
-        None
+        Optional[List[Relationship]]:
+            A list of `Relationship(dependent, dependency, "Uses")` entries.
+            Returns `None` if the metadata does not contain `elfDependencies`.
 
     Notes:
-        - The function uses `metadata["elfDependencies"]` to locate dependencies described
-          as ELF paths or filenames.
-        - Relative paths in metadata are normalized and matched against installation paths
-          of the candidate software entries.
-        - Dependency file paths are cross-referenced with `sbom.software` entries to establish
-          their relationships.
-        - Returned `Relationship` objects are unique: no duplicates are added to the result list.
+        - Dependency paths may originate from:
+            • absolute paths in metadata  
+            • relative paths joined against each installPath  
+            • computed runpaths (RPATH/RUNPATH) and default library paths
+        - Duplicate relationships are suppressed.
+        - Self-dependencies are not emitted.
 
     Example:
         relationships = establish_relationships(sbom, software, metadata)
-        if relationships:
-            for relationship in relationships:
-                print(f"{relationship.dependent_uuid} uses {relationship.dependency_uuid}")
+        for rel in relationships or []:
+            print(f"{rel.xUUID} uses {rel.yUUID}")
     """
     if not has_required_fields(metadata):
         return None
@@ -105,10 +120,52 @@ def establish_relationships(
     default_search_paths = generate_search_paths(software, metadata)
     logger.debug(f"[ELF][search] default paths: {[p.as_posix() for p in default_search_paths]}")
 
+
+    # Each entry in metadata["elfDependencies"] is a DT_NEEDED-style string
+    # extracted from the ELF dynamic section. These can be:
+    #   • Bare filenames, e.g. "libc.so.6"
+    #   • Relative paths, e.g. "subdir/libfoo.so"
+    #   • Absolute paths, e.g. "/opt/lib/libbar.so"
+    #
+    # The dynamic loader interprets these differently, and the resolution logic
+    # below mirrors that behavior. We normalize each dependency into candidate
+    # full paths ("fpaths") that represent where the loader *could* reasonably
+    # locate the referenced library within the captured filesystem snapshot.
+    #
+    # Notes:
+    #   - posix_normpath() removes "..", ".", and duplicate separators to keep
+    #     path comparisons consistent with fs_tree key normalization.
+    #   - No directory inference or fuzzy matching occurs: all candidate paths
+    #     must be derived strictly from ELF semantics (slashes vs. bare names)
+    #     and from the calling software’s installPath or runpath metadata.
     for dep in metadata["elfDependencies"]:
         fpaths = []
         dep_path = posix_normpath(dep)
         fname = dep_path.name  # e.g., 'libfoo.so'
+
+        # Determine all candidate filesystem paths where this dependency *might*
+        # reside. ELF dependency strings come in two forms:
+        #
+        #   Case 1: The string contains a slash (e.g., "somedir/libfoo.so")
+        #           → The dynamic loader interprets this as a literal path.
+        #             - If absolute, the path is used directly.
+        #             - If relative, it is resolved relative to each installPath
+        #               of the referencing software. This mirrors runtime behavior
+        #               where a DT_NEEDED entry containing "subdir/libX.so" is
+        #               interpreted relative to the binary's directory.
+        #
+        #   Case 2: Bare filename (e.g., "libfoo.so")
+        #           → The loader searches a sequence of directories:
+        #             runpaths, rpaths, LD_LIBRARY_PATH, cache entries,
+        #             and system defaults. Here we approximate that search by
+        #             joining the filename onto the generated search paths
+        #             (generate_search_paths), which already expands RPATH,
+        #             RUNPATH, $ORIGIN, and default library paths unless disabled.
+        #
+        # Together, these two branches generate the list `fpaths`, representing
+        # all plausible full paths that could correspond to this dependency.
+        # Later phases attempt to match these paths against the SBOM via fs_tree
+        # or exact installPath equality.
 
         # Case 1: Dependency has slash — treat as direct path
         if "/" in dep:
@@ -126,6 +183,24 @@ def establish_relationships(
             fpaths = [p.joinpath(fname).as_posix() for p in default_search_paths]
 
         # Phase 1: fs_tree lookup
+        #
+        # Attempt to resolve each dependency path directly against the SBOM's
+        # filesystem graph. This is the most accurate resolution method and
+        # mirrors how the file would be found at runtime:
+        #
+        #   - Paths are normalized and checked for a software UUID attached to
+        #     the corresponding fs_tree node.
+        #   - If the exact node is not a software installPath, the resolver
+        #     follows recorded filesystem symlinks (file- and directory-level)
+        #     using BFS until a software entry is reached.
+        #   - Hash-equivalent copies of files (created during extraction or
+        #     symlink flattening) are also captured by fs_tree and can lead to
+        #     a successful match.
+        #
+        # This phase yields only concrete, evidence-based matches—no inference.
+        # A match is accepted only if:
+        #   - The target resolves through the fs_tree to a software entry, AND
+        #   - The dependency is not self-referential.
         matched_uuids = set()
         used_method = {}
 
@@ -138,37 +213,35 @@ def establish_relationships(
                 used_method[match.UUID] = "fs_tree"
 
         # Phase 2: Legacy installPath fallback
+        #
+        # This stage preserves the historical (pre-fs_tree) resolution behavior:
+        # a dependency is considered matched only if:
+        #   - the candidate software entry advertises the same fileName, AND
+        #   - one of its installPath entries exactly matches one of the fully
+        #     constructed dependency paths in `fpaths`.
+        #
+        # Unlike the fs_tree lookup, this method does NOT resolve symlinks,
+        # hashes, directory aliases, or synthetic paths. It requires a literal,
+        # explicit installPath match. This ensures:
+        #   - No directory-level inference (removed with Phase 3),
+        #   - No fallback guesses when the SBOM lacks a concrete path,
+        #   - Behavior consistent with the older relationship engine.
+        #
+        # This phase only runs if fs_tree matching failed.
         if not matched_uuids:
             for item in sbom.software:
+                # Quick filter: candidate must advertise the same filename
                 has_name = isinstance(item.fileName, Iterable) and fname in (item.fileName or [])
                 if not has_name:
                     continue
+
+                # Check for exact installPath equivalence with any computed dep path
                 for fp in fpaths:
                     if isinstance(item.installPath, Iterable) and fp in (item.installPath or []):
                         if item.UUID != software.UUID:
                             logger.debug(f"[ELF][legacy] {fname} in {fp} → UUID={item.UUID}")
                             matched_uuids.add(item.UUID)
                             used_method[item.UUID] = "legacy_installPath"
-
-        # Phase 3: Symlink-aware heuristic
-        # If path-based and legacy matching failed, fall back to checking:
-        # - Same fileName as dependency
-        # - Located in the same directory as any search path
-        if not matched_uuids and fname:
-            for item in sbom.software:
-                has_name = isinstance(item.fileName, Iterable) and fname in (item.fileName or [])
-                if not has_name or not isinstance(item.installPath, Iterable):
-                    continue
-                for ipath in item.installPath or []:
-                    ip_dir = pathlib.PurePosixPath(ipath).parent
-                    for fp in fpaths:
-                        if pathlib.PurePosixPath(fp).parent == ip_dir:
-                            if item.UUID != software.UUID:
-                                logger.debug(
-                                    f"[ELF][heuristic] {fname} via {ipath} ~ {fp} → UUID={item.UUID}"
-                                )
-                                matched_uuids.add(item.UUID)
-                                used_method[item.UUID] = "heuristic"
 
         # Emit final relationships
         if matched_uuids:
