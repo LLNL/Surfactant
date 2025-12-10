@@ -64,14 +64,12 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
       1. **Primary: Direct path resolution via ``sbom.fs_tree``**
          Uses ``get_software_by_path()`` to match DLL names to concrete file locations,
          following injected symlink metadata, directory symlink expansions, and
-         hash-equivalence links. This provides accurate resolution when symlinks,
-         hard-link–like content copies, or alias paths are present.
+         hash-equivalence links, using Windows-style case-insensitive matching for PE paths.
 
       2. **Secondary: Legacy string-based resolution**
-         Falls back to matching the DLL name against ``fileName`` and then verifying
-         whether any of the candidate software’s ``installPath`` entries share a parent
-         directory with the importing software. This preserves the historical behavior
-         used before the fs_tree / symlink / hash-equivalence integration.
+         Falls back to case-insensitive matching of the DLL name against ``fileName`` and
+         then confirming that at least one ``installPath`` entry lies under a probed
+         parent directory *and* has a basename equal to the DLL name.
 
     Background and References
     -------------------------
@@ -173,7 +171,9 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
 
         for directory in probedirs:
             full_path = normalize_path(directory, fname)
-            match = sbom.get_software_by_path(full_path)
+            match = sbom.get_software_by_path(full_path,
+                                              case_insensitive=True, # Windows DLL resolution should be case-insensitive
+                                              )
             ok = bool(match and match.UUID != dependent_uuid)
             logger.debug(
                 f"[PE][fs_tree] {full_path} → {'UUID=' + match.UUID if ok else 'no match'}"
@@ -184,23 +184,40 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
 
         # ----------------------------------------
         # Phase 2: Legacy installPath + fileName
+        # This only runs if Phase 1 (fs_tree / symlinks) finds no matches.
         # ----------------------------------------
         if not matched_uuids:
+            fname_ci = fname.casefold() # normalize DLL name for case-insensitive matching
+
             for item in sbom.software:
-                # Need a name match first
-                has_name = isinstance(item.fileName, Iterable) and fname in (item.fileName or [])
-                if not has_name:
+                # 1) Name match (case-insensitive) on fileName[]
+                if not isinstance(item.fileName, Iterable):
                     continue
 
-                # Then ensure any of the item's install paths share a probedir dir
+                names_ci = {
+                    n.casefold()
+                    for n in (item.fileName or [])
+                    if isinstance(n, str)
+                } # normalize declared file names for case-insensitive comparison
+
+                if fname_ci not in names_ci:
+                    continue # skip: software does not claim this DLL name
+
+                # 2) Directory + basename match (case-insensitive) on installPath entries
                 if isinstance(item.installPath, Iterable):
                     for ipath in item.installPath or []:
-                        ip_dir = pathlib.PurePosixPath(ipath).parent.as_posix()
-                        if ip_dir in probedirs:
+                        win_path = pathlib.PureWindowsPath(ipath)
+                        ip_dir = win_path.parent.as_posix()
+                        ip_name_ci = win_path.name.casefold()
+
+                        if ip_dir in probedirs and ip_name_ci == fname_ci:
                             if item.UUID != dependent_uuid:
-                                logger.debug(f"[PE][legacy] {fname} in {ipath} → UUID={item.UUID}")
+                                logger.debug(
+                                    f"[PE][legacy] {fname} in {ipath} → UUID={item.UUID}"
+                                )
                                 matched_uuids.add(item.UUID)
                                 used_method[item.UUID] = "legacy_installPath"
+                                break  # Stop checking more install paths for this item
 
         # ----------------------------------------
         # Emit final relationships (if any found)

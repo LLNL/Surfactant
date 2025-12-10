@@ -216,33 +216,77 @@ class SBOM:
                 except Exception as e:  # pylint: disable=broad-exception-caught
                     logger.warning(f"[fs_tree] Failed to attach hash edge for {norm_path}: {e}")
 
-    def get_software_by_path(self, path: str) -> Optional[Software]:
+    def get_software_by_path(self, path: str, *, case_insensitive: bool = False,) -> Optional[Software]:
         """
-        Retrieve a Software entry by normalized install path, using the fs_tree (with symlink traversal).
+        Retrieve a Software entry by normalized install path, using the fs_tree (with optional
+        case-insensitive fallback and symlink traversal).
 
-        This function first normalizes the provided path to POSIX format and attempts a direct lookup
-        in the fs_tree. If no node is found or the node lacks a software UUID, the function will
-        traverse outgoing symlink edges to locate a valid software reference.
+        This function normalizes the provided path into POSIX format and first attempts an exact,
+        case-sensitive lookup in the filesystem graph (`fs_tree`). If the lookup succeeds and the
+        node contains a ``software_uuid``, the corresponding Software entry is returned.
+
+        If the exact match fails and ``case_insensitive`` is enabled, a Windows-style
+        case-insensitive resolution is attempted: the function identifies the parent directory
+        of the requested path and scans its child nodes for a basename match using
+        case-folding. This preserves strict behavior for Unix/ELF callers while allowing PE
+        relationship resolvers to emulate Windows filesystem case-insensitivity.
+
+        If neither the exact lookup nor the optional case-insensitive fallback finds a match,
+        the function performs a breadth-first traversal along outgoing symlink edges
+        (``type="symlink"``) beginning at the normalized path. The traversal continues until a
+        node containing a ``software_uuid`` is encountered or a depth limit is reached.
 
         Args:
-            path (str): Raw input path (can be Windows or POSIX format).
+            path (str):
+                Raw input path (Windows or POSIX). Path separators are normalized but casing is
+                preserved.
+            case_insensitive (bool):
+                Enable Windows-style case-insensitive fallback matching when the exact lookup
+                fails. Defaults to ``False`` so that ELF/Unix resolution remains strictly
+                case-sensitive.
 
         Returns:
-            Optional[Software]: The matching software object if found, otherwise None.
+            Optional[Software]:
+                The resolved Software entry if any resolution method succeeds, otherwise ``None``.
 
-        Behavior:
-            - Follows symlink edges (type="symlink") in fs_tree if no direct match exists.
-            - Traverses breadth-first with cycle prevention.
-            - Applies a depth cap to avoid pathological long chains.
-            - Returns the first resolved node containing a software UUID.
+        Behavior Summary:
+            - Normalizes path separators to POSIX style (case preserved).
+            - Performs an exact, case-sensitive fs_tree lookup.
+            - Optionally performs case-insensitive basename matching within the parent directory
+            (Windows-specific behavior; opt-in only).
+            - Traverses outgoing symlink edges breadth-first, with cycle prevention.
+            - Applies a conservative depth cap to avoid pathological traversal.
+            - Returns the first reachable node containing ``software_uuid``.
         """
         # Normalize the input path to POSIX format to match internal fs_tree representation
         norm_path = normalize_path(path)
 
-        # Attempt direct node lookup
+        # Attempt direct node lookup (case-sensitive, fast path)
         node = self.fs_tree.nodes.get(norm_path)
         if node and "software_uuid" in node:
             return self._find_software_entry(uuid=node["software_uuid"])
+        
+        # Optional Windows-style, case-insensitive fallback
+        # Only for callers that explicitly opt-in, to avoid changing ELF/Unix semantics.
+        if case_insensitive:
+            target = pathlib.PurePosixPath(norm_path)
+            parent = target.parent.as_posix()
+            basename_ci = target.name.casefold()
+
+            if self.fs_tree.has_node(parent):
+                for _src, child, _data in self.fs_tree.out_edges(parent, data=True):
+                    child_name_ci = pathlib.PurePosixPath(child).name.casefold()
+                    if child_name_ci == basename_ci:
+                        candidate = self.fs_tree.nodes.get(child)
+                        if candidate and "software_uuid" in candidate:
+                            logger.debug(
+                                "[fs_tree] case-insensitive match: %s → %s",
+                                norm_path,
+                                child,
+                            )
+                            return self._find_software_entry(
+                                uuid=candidate["software_uuid"]
+                            )
 
         # Attempt to resolve via symlink traversal (BFS) with a depth cap
         visited = set()
