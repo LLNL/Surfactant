@@ -171,9 +171,10 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
 
         for directory in probedirs:
             full_path = normalize_path(directory, fname)
-            match = sbom.get_software_by_path(full_path,
-                                              case_insensitive=True, # Windows DLL resolution should be case-insensitive
-                                              )
+            match = sbom.get_software_by_path(
+                full_path,
+                case_insensitive=True,  # Windows DLL resolution should be case-insensitive
+            )
             ok = bool(match and match.UUID != dependent_uuid)
             logger.debug(
                 f"[PE][fs_tree] {full_path} → {'UUID=' + match.UUID if ok else 'no match'}"
@@ -187,7 +188,7 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
         # This only runs if Phase 1 (fs_tree / symlinks) finds no matches.
         # ----------------------------------------
         if not matched_uuids:
-            fname_ci = fname.casefold() # normalize DLL name for case-insensitive matching
+            fname_ci = fname.casefold()  # normalize DLL name for case-insensitive matching
 
             for item in sbom.software:
                 # 1) Name match (case-insensitive) on fileName[]
@@ -195,13 +196,11 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
                     continue
 
                 names_ci = {
-                    n.casefold()
-                    for n in (item.fileName or [])
-                    if isinstance(n, str)
-                } # normalize declared file names for case-insensitive comparison
+                    n.casefold() for n in (item.fileName or []) if isinstance(n, str)
+                }  # normalize declared file names for case-insensitive comparison
 
                 if fname_ci not in names_ci:
-                    continue # skip: software does not claim this DLL name
+                    continue  # skip: software does not claim this DLL name
 
                 # 2) Directory + basename match (case-insensitive) on installPath entries
                 if isinstance(item.installPath, Iterable):
@@ -212,9 +211,7 @@ def get_windows_pe_dependencies(sbom: SBOM, sw: Software, peImports) -> List[Rel
 
                         if ip_dir in probedirs and ip_name_ci == fname_ci:
                             if item.UUID != dependent_uuid:
-                                logger.debug(
-                                    f"[PE][legacy] {fname} in {ipath} → UUID={item.UUID}"
-                                )
+                                logger.debug(f"[PE][legacy] {fname} in {ipath} → UUID={item.UUID}")
                                 matched_uuids.add(item.UUID)
                                 used_method[item.UUID] = "legacy_installPath"
                                 break  # Stop checking more install paths for this item

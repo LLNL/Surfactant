@@ -216,7 +216,12 @@ class SBOM:
                 except Exception as e:  # pylint: disable=broad-exception-caught
                     logger.warning(f"[fs_tree] Failed to attach hash edge for {norm_path}: {e}")
 
-    def get_software_by_path(self, path: str, *, case_insensitive: bool = False,) -> Optional[Software]:
+    def get_software_by_path(
+        self,
+        path: str,
+        *,
+        case_insensitive: bool = False,
+    ) -> Optional[Software]:
         """
         Retrieve a Software entry by normalized install path, using the fs_tree (with optional
         case-insensitive fallback and symlink traversal).
@@ -265,7 +270,7 @@ class SBOM:
         node = self.fs_tree.nodes.get(norm_path)
         if node and "software_uuid" in node:
             return self._find_software_entry(uuid=node["software_uuid"])
-        
+
         # Optional Windows-style, case-insensitive fallback
         # Only for callers that explicitly opt-in, to avoid changing ELF/Unix semantics.
         if case_insensitive:
@@ -284,9 +289,7 @@ class SBOM:
                                 norm_path,
                                 child,
                             )
-                            return self._find_software_entry(
-                                uuid=candidate["software_uuid"]
-                            )
+                            return self._find_software_entry(uuid=candidate["software_uuid"])
 
         # Attempt to resolve via symlink traversal (BFS) with a depth cap
         visited = set()
