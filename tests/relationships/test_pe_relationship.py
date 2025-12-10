@@ -152,3 +152,71 @@ def test_pe_has_required_fields():
     assert pe_relationship.has_required_fields({"peBoundImport": ["bar.dll"]})
     assert pe_relationship.has_required_fields({"peDelayImport": ["baz.dll"]})
     assert not pe_relationship.has_required_fields({"unrelated": []})
+
+
+def test_pe_no_false_positive_mismatched_basename():
+    """
+    Ensure the resolver does not incorrectly match a DLL name to an installPath
+    whose filename does not equal the imported DLL name, even if the directory
+    matches and fileName[] contains the imported name.
+    """
+    sbom = SBOM()
+
+    # Software entry claims multiple DLL names
+    dll = Software(
+        UUID="uuid-dll",
+        fileName=["afile.dll", "bfile.dll"],
+        installPath=[
+            "C:/somedir/afile.dll",       # in probedir, but wrong basename
+            "C:/anotherdir/bfile.dll",    # correct basename, wrong directory
+        ],
+    )
+
+    binary = Software(
+        UUID="uuid-bin",
+        installPath=["C:/somedir/app.exe"],
+        metadata=[{"peImport": ["bfile.dll"]}],
+    )
+
+    sbom.add_software(dll)
+    sbom.add_software(binary)
+
+    results = pe_relationship.establish_relationships(sbom, binary, binary.metadata[0])
+
+    # No relationship should be created because no installPath satisfies:
+    #   dir == probedir AND basename == imported name
+    assert results == []
+
+
+def test_pe_case_insensitive_matching():
+    """
+    Verify that PE dependency resolution is case-insensitive, as required for
+    Windows DLL lookup semantics. The imported DLL name (`foo.dll`) differs in
+    case from the installed file's basename (`Foo.DLL`), but the resolver should
+    still match them.
+    """
+    sbom = SBOM()
+
+    dll = Software(
+        UUID="uuid-dll",
+        fileName=["Foo.DLL"],              # DLL declared with uppercase letters
+        installPath=["C:/bin/Foo.DLL"],    # actual installed path (Windows-style)
+    )
+
+    binary = Software(
+        UUID="uuid-bin",
+        installPath=["C:/bin/app.exe"],
+        metadata=[{"peImport": ["foo.dll"]}],  # import uses lowercase
+    )
+
+    # Add components to the SBOM
+    sbom.add_software(dll)
+    sbom.add_software(binary)
+
+    # Resolve PE imports
+    results = pe_relationship.establish_relationships(sbom, binary, binary.metadata[0])
+
+    # The resolver should treat basenames case-insensitively and produce a match
+    assert results == [Relationship("uuid-bin", "uuid-dll", "Uses")]
+
+

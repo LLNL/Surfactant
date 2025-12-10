@@ -84,25 +84,6 @@ def establish_relationships(
                             matched_uuids.add(sw.UUID)
                             used_method[sw.UUID] = "legacy_installPath"
 
-        # ---------------------------------------------------
-        # Phase 3: Heuristic fallback (same dir + file name)
-        # ---------------------------------------------------
-        if not matched_uuids:
-            for sw in sbom.software:
-                if sw.UUID == dependent_uuid:
-                    continue
-                if isinstance(sw.fileName, Iterable) and fname in sw.fileName:
-                    for ip in sw.installPath or []:
-                        ip_dir = pathlib.PurePosixPath(ip).parent.as_posix()
-                        for sip in software.installPath or []:
-                            search_dir = pathlib.PurePosixPath(sip).parent.as_posix()
-                            if ip_dir == search_dir:
-                                logger.debug(
-                                    f"[Java][heuristic] {fname} in shared dir {ip_dir} → UUID={sw.UUID}"
-                                )
-                                matched_uuids.add(sw.UUID)
-                                used_method[sw.UUID] = "heuristic"
-
         # -----------------------------
         # Emit 'Uses' relationships
         # -----------------------------
