@@ -167,8 +167,8 @@ def test_pe_no_false_positive_mismatched_basename():
         UUID="uuid-dll",
         fileName=["afile.dll", "bfile.dll"],
         installPath=[
-            "C:/somedir/afile.dll",       # in probedir, but wrong basename
-            "C:/anotherdir/bfile.dll",    # correct basename, wrong directory
+            "C:/somedir/afile.dll",  # in probedir, but wrong basename
+            "C:/anotherdir/bfile.dll",  # correct basename, wrong directory
         ],
     )
 
@@ -199,8 +199,8 @@ def test_pe_case_insensitive_matching():
 
     dll = Software(
         UUID="uuid-dll",
-        fileName=["Foo.DLL"],              # DLL declared with uppercase letters
-        installPath=["C:/bin/Foo.DLL"],    # actual installed path (Windows-style)
+        fileName=["Foo.DLL"],  # DLL declared with uppercase letters
+        installPath=["C:/bin/Foo.DLL"],  # actual installed path (Windows-style)
     )
 
     binary = Software(
@@ -218,5 +218,3 @@ def test_pe_case_insensitive_matching():
 
     # The resolver should treat basenames case-insensitively and produce a match
     assert results == [Relationship("uuid-bin", "uuid-dll", "Uses")]
-
-
