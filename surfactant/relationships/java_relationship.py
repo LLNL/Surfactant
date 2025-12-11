@@ -83,7 +83,6 @@ def establish_relationships(
 
     for import_class in imports:
         class_path = class_to_path(import_class)
-        fname = class_path.rsplit("/", maxsplit=1)[-1]
         matched_uuids = set()
         used_method = {}
 
@@ -93,18 +92,18 @@ def establish_relationships(
         # Phase 1: fs_tree / path-based resolution
         # ------------------------------------------------------------------
         # For each software entry, try to resolve the imported class path
-        for ipath in software.installPath or []:
-            # Normalize to a path and append the class_path
-            base_dir = pathlib.PurePath(ipath).parent.as_posix()
-            full_path = f"{base_dir}/{class_path}"
-            match = sbom.get_software_by_path(full_path)
-            ok = bool(match and match.UUID != dependent_uuid)
-            logger.debug(
-                f"[Java][fs_tree] {full_path} → {'UUID=' + match.UUID if ok else 'no match'}"
-            )
-            if ok:
-                matched_uuids.add(match.UUID)
-                used_method[match.UUID] = "fs_tree"
+        # for ipath in software.installPath or []:
+        #     # Normalize to a path and append the class_path
+        #     base_dir = pathlib.PurePath(ipath).parent.as_posix()
+        #     full_path = f"{base_dir}/{class_path}"
+        #     match = sbom.get_software_by_path(full_path)
+        #     ok = bool(match and match.UUID != dependent_uuid)
+        #     logger.debug(
+        #         f"[Java][fs_tree] {full_path} → {'UUID=' + match.UUID if ok else 'no match'}"
+        #     )
+        #     if ok:
+        #         matched_uuids.add(match.UUID)
+        #         used_method[match.UUID] = "fs_tree"
 
         # ------------------------------------------------------------------
         # Phase 2 (backup): legacy export-dict behavior
