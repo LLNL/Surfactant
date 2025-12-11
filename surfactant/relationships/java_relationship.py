@@ -1,6 +1,5 @@
 import pathlib
-from collections.abc import Iterable
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 from loguru import logger
 
@@ -13,6 +12,7 @@ def has_required_fields(metadata) -> bool:
     Check whether the metadata includes Java class information.
     """
     return "javaClasses" in metadata
+
 
 class _ExportDict:
     created = False
@@ -45,6 +45,7 @@ class _ExportDict:
     @classmethod
     def get_supplier(cls, export: str) -> Optional[str]:
         return cls.supplied_by.get(export)
+
 
 @surfactant.plugin.hookimpl
 def establish_relationships(
