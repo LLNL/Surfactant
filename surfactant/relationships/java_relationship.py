@@ -1,6 +1,6 @@
 import pathlib
 from collections.abc import Iterable
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from loguru import logger
 
@@ -14,6 +14,37 @@ def has_required_fields(metadata) -> bool:
     """
     return "javaClasses" in metadata
 
+class _ExportDict:
+    created = False
+    supplied_by: Dict[str, str] = {}
+
+    @classmethod
+    def create_export_dict(cls, sbom: SBOM):
+        """
+        Build a map from exported class name → supplier UUID.
+
+        This mirrors the behavior of java_relationship_legacy._ExportDict.
+        """
+        if cls.created:
+            return
+        cls.supplied_by = {}
+        for software_entry in sbom.software:
+            if not software_entry.metadata:
+                continue
+            for metadata in software_entry.metadata:
+                if not isinstance(metadata, dict):
+                    continue
+                java_classes = metadata.get("javaClasses")
+                if not java_classes:
+                    continue
+                for class_info in java_classes.values():
+                    for export in class_info.get("javaExports", []):
+                        cls.supplied_by[export] = software_entry.UUID
+        cls.created = True
+
+    @classmethod
+    def get_supplier(cls, export: str) -> Optional[str]:
+        return cls.supplied_by.get(export)
 
 @surfactant.plugin.hookimpl
 def establish_relationships(
@@ -25,7 +56,6 @@ def establish_relationships(
     Resolution phases:
       1. [fs_tree] Exact path match using fs_tree.
       2. [legacy] installPath + fileName match.
-      3. [heuristic] fileName match + same directory.
 
     Args:
         sbom (SBOM): The SBOM object containing all software entries and path graphs.
@@ -38,6 +68,9 @@ def establish_relationships(
     if not has_required_fields(metadata):
         logger.debug(f"[Java][skip] No javaClasses metadata for UUID={software.UUID}")
         return None
+
+    # Build legacy export dict once per process (no-op if already built)
+    _ExportDict.create_export_dict(sbom)
 
     relationships: List[Relationship] = []
     dependent_uuid = software.UUID
@@ -55,10 +88,12 @@ def establish_relationships(
 
         logger.debug(f"[Java][import] resolving {import_class} → {class_path}")
 
-        # ----------------------
-        # Phase 1: fs_tree lookup
-        # ----------------------
+        # ------------------------------------------------------------------
+        # Phase 1: fs_tree / path-based resolution
+        # ------------------------------------------------------------------
+        # For each software entry, try to resolve the imported class path
         for ipath in software.installPath or []:
+            # Normalize to a path and append the class_path
             base_dir = pathlib.PurePath(ipath).parent.as_posix()
             full_path = f"{base_dir}/{class_path}"
             match = sbom.get_software_by_path(full_path)
@@ -70,19 +105,14 @@ def establish_relationships(
                 matched_uuids.add(match.UUID)
                 used_method[match.UUID] = "fs_tree"
 
-        # -----------------------------------------
-        # Phase 2: Legacy installPath + fileName
-        # -----------------------------------------
+        # ------------------------------------------------------------------
+        # Phase 2 (backup): legacy export-dict behavior
+        # ------------------------------------------------------------------
         if not matched_uuids:
-            for sw in sbom.software:
-                if sw.UUID == dependent_uuid:
-                    continue
-                if isinstance(sw.fileName, Iterable) and fname in sw.fileName:
-                    for ip in sw.installPath or []:
-                        if ip.endswith(class_path):
-                            logger.debug(f"[Java][legacy] {fname} at {ip} → UUID={sw.UUID}")
-                            matched_uuids.add(sw.UUID)
-                            used_method[sw.UUID] = "legacy_installPath"
+            supplier_uuid = _ExportDict.get_supplier(import_class)
+            if supplier_uuid and supplier_uuid != dependent_uuid:
+                matched_uuids.add(supplier_uuid)
+                used_method[supplier_uuid] = "legacy_exports"
 
         # -----------------------------
         # Emit 'Uses' relationships
