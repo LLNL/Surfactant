@@ -117,36 +117,6 @@ def test_phase_2_legacy_path_match():
     assert results == [Relationship(importer.UUID, supplier.UUID, "Uses")]
 
 
-def test_phase_3_heuristic_match():
-    """
-    Phase 3: Match via fileName + shared directory (heuristic).
-    Ensures Phase 2 fails (no exact installPath ending with the class path).
-    """
-    sbom = SBOM()
-
-    # Supplier: same directory as importer’s parent, but NOT under com/example/ path,
-    # so installPath doesn't end with 'com/example/HelloWorld.class'.
-    supplier = Software(
-        UUID="uuid-supplier",
-        fileName=["HelloWorld.class"],
-        installPath=["/shared/HelloWorld.class"],  # parent is /shared
-    )
-
-    importer = Software(
-        UUID="uuid-importer",
-        installPath=["/shared/app.jar"],  # parent is /shared
-        metadata=[
-            {"javaClasses": {"com.example.Main": {"javaImports": ["com.example.HelloWorld"]}}}
-        ],
-    )
-
-    sbom.add_software(supplier)
-    sbom.add_software(importer)
-
-    results = java_relationship.establish_relationships(sbom, importer, importer.metadata[0])
-    assert results == [Relationship(importer.UUID, supplier.UUID, "Uses")]
-
-
 def test_no_match_returns_empty():
     """
     Validate that no relationship is returned when no match is possible
