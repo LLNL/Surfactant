@@ -14,7 +14,6 @@ def has_required_fields(metadata) -> bool:
 
 
 class _ExportDict:
-    created = False
     supplied_by: Dict[str, str] = {}
 
     @classmethod
@@ -22,10 +21,9 @@ class _ExportDict:
         """
         Build a map from exported class name → supplier UUID.
 
-        This mirrors the behavior of java_relationship_legacy._ExportDict.
+        This mirrors the behavior of java_relationship_legacy._ExportDict,
+        but is rebuilt per-SBOM to avoid leaking state across calls/tests.
         """
-        if cls.created:
-            return
         cls.supplied_by = {}
         for software_entry in sbom.software:
             if not software_entry.metadata:
@@ -39,7 +37,6 @@ class _ExportDict:
                 for class_info in java_classes.values():
                     for export in class_info.get("javaExports", []):
                         cls.supplied_by[export] = software_entry.UUID
-        cls.created = True
 
     @classmethod
     def get_supplier(cls, export: str) -> Optional[str]:
