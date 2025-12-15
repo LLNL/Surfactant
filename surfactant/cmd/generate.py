@@ -267,7 +267,7 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
 )
 @click.option(
     "--install_prefix",
-    "install_prefix_",
+    "install_prefix_arg",
     is_flag=False,
     default=None,
     help="SBOM install prefix",
@@ -286,7 +286,7 @@ def sbom(
     output_format: str,
     input_format: str,
     omit_unrecognized_types: bool,
-    install_prefix_: str,
+    install_prefix_arg: str,
 ):
     """Generate a sbom based on SPECIMEN_CONTEXT and output to SBOM_OUTPUT.
 
@@ -359,14 +359,14 @@ def sbom(
                 parent_uuid = None
 
             # Replace entry install prefix with user specified value if given by cli args
-            if install_prefix_:
+            if install_prefix_arg:
                 if entry.installPrefix:
                     logger.error(
-                        f"Conflicting installPrefix definitions; Check configuration file ({entry.installPrefix}) and CLI argument ({install_prefix_})"
+                        f"Conflicting installPrefix definitions; Check configuration file ({entry.installPrefix}) and CLI argument ({install_prefix_arg})"
                     )
                     sys.exit(-1)
 
-                entry.installPrefix = install_prefix_
+                entry.installPrefix = install_prefix_arg
 
             # If an installPrefix was given, clean it up some
             if entry.installPrefix:
