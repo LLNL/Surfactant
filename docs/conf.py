@@ -45,7 +45,7 @@ html_theme = "furo"
 html_theme_options = {
     "source_repository": "https://github.com/llnl/Surfactant",
     "source_branch": "main",
-    "source_directory": "docs/"
+    "source_directory": "docs/",
 }
 
 # -- Extension configuration -------------------------------------------------
