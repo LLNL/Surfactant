@@ -2,7 +2,7 @@
 
 ## System Prerequisites
 
-Surfactant requires Python 3.9 or newer. Tests are regularly run on Linux, macOS,
+Surfactant requires Python 3.10 or newer. Tests are regularly run on Linux, macOS,
 and Windows, though it should also work on other operating systems such as FreeBSD.
 
 ## Installation
@@ -11,7 +11,7 @@ and Windows, though it should also work on other operating systems such as FreeB
 
 For ease of use, we recommend using [pipx](https://github.com/pypa/pipx) since it transparently handles creating and using Python virtual environments, which helps avoid dependency conflicts with other installed Python apps. Install `pipx` by following [their installation instructions](https://github.com/pypa/pipx#install-pipx).
 
-1. Install Surfactant using `pipx install` (with python >= 3.9)
+1. Install Surfactant using `pipx install` (with python >= 3.10)
 
 ```bash
 pipx install surfactant

@@ -7,8 +7,14 @@
 #
 # SPDX-License-Identifier: MIT
 import os
-import re
 from typing import Any, Dict, List, Optional, Set, Union
+
+# regex adds features that built-in re module is missing
+# e.g. variable width look-behind
+try:
+    import regex as re
+except ImportError:
+    import re
 
 from loguru import logger
 
@@ -269,8 +275,8 @@ def match_by_attribute(
 
 
 @surfactant.plugin.hookimpl
-def update_db() -> str:
-    return native_lib_manager.download_and_update_database()
+def update_db(force: bool = False) -> str:
+    return native_lib_manager.download_and_update_database(force=force)
 
 
 @surfactant.plugin.hookimpl

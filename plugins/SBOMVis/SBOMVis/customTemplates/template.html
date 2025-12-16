@@ -162,6 +162,10 @@
             {% include 'src/sidebar.js' %}
         </script>
 
+        <script type="inline-module" id="mouseEventHandlersModule">
+            {% include 'src/mouseEventHandlers.js' %}
+        </script>
+
         <script src="https://unpkg.com/inline-module/index.js"></script> <!-- Inline modules aren't supported in ES, this is a workaround that makes integrating embedded code from Jinja cleaner & easier -->
 
         <script type="module">
@@ -170,7 +174,7 @@
     </head>
 
     <body>
-        <div class="card" style="position: relative; width: 100%; height: 100%; border: none; background-color: var(--backgroundColor);">
+        <div  style="position: relative; width: 100%; height: 100%; border: none; background-color: var(--backgroundColor);">
             <div id="sidebar"></div>
 
             <div id="sidebarButtons">
@@ -189,6 +193,9 @@
                 <h6 id="tooltip-header">Placeholder</h6>
                 <div id="tooltip-body">
                 </div>
+            </div>
+
+            <div id="contextMenu" style="visibility: hidden;">
             </div>
 
             <div id="logo">

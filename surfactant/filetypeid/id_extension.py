@@ -54,6 +54,10 @@ def identify_file_type(filepath: str, context: Optional[ContextEntry] = None) ->
     except FileNotFoundError:
         logger.warning(f"File not found: {filepath}")
         return None
+    except PermissionError:
+        logger.warning(f"Failed to open file {filepath}: Permission Denied")
+        return None
+
     suffix = pathlib.Path(filepath).suffix.lower()
     if suffix in _filetype_extensions:
         return [_filetype_extensions[suffix]]
