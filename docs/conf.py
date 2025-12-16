@@ -33,7 +33,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.githubpages",
-    'sphinx_copybutton'
+    "sphinx_copybutton",
 ]
 
 templates_path = ["_templates"]
@@ -63,13 +63,13 @@ html_favicon = html_logo
 html_sidebars = {"**": ["globaltoc.html", "relations.html", "searchbox.html"]}
 html_static_path = ["_static"]
 
-# -- Extension - CopyButton - Configuration ---------------------------------- 
+# -- Extension - CopyButton - Configuration ----------------------------------
 
 # https://sphinx-copybutton.readthedocs.io/en/latest/use.html#using-regexp-prompt-identifiers
 copybutton_prompt_text = r">>> |\.\.\. |\$ |\$\w|In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
 copybutton_prompt_is_regexp = True
 # https://sphinx-copybutton.readthedocs.io/en/latest/use.html#honor-here-document-syntax-when-copying-multiline-snippets
-copybutton_here_doc_delimiter = "EOT" 
+copybutton_here_doc_delimiter = "EOT"
 
 
 # -- Fetch image references --------------------------------------------------
