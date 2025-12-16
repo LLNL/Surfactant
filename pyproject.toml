@@ -86,7 +86,11 @@ Documentation = "https://surfactant.readthedocs.io/en/latest/"
 [dependency-groups]
 test = ["pytest"]
 dev = ["build", "pre-commit"]
-docs = ["sphinx", "myst-parser"]
+docs = [
+    "sphinx",
+    "myst-parser",
+    "sphinx-copybutton>=0.5.2",
+]
 
 [tool.setuptools.packages.find]
 include = ["surfactant", "surfactant.*"]
