@@ -42,15 +42,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "images.toml"]
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "alabaster"
+html_theme = "furo"
 html_theme_options = {
-    "description": "Surfactant",
-    "github_user": "LLNL",
-    "github_repo": "Surfactant",
-    "github_button": "true",
-    "github_banner": "true",
-    "badge_branch": "main",
-    "fixed_sidebar": "false",
+    "source_repository": "https://github.com/llnl/Surfactant",
+    "source_branch": "main",
+    "source_directory": "docs/",
 }
 
 # -- Extension configuration -------------------------------------------------
@@ -60,7 +56,6 @@ napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 html_logo = "./logos/surfactant-logo-light.png"
 html_favicon = html_logo
-html_sidebars = {"**": ["globaltoc.html", "relations.html", "searchbox.html"]}
 html_static_path = ["_static"]
 
 # -- Extension - CopyButton - Configuration ----------------------------------

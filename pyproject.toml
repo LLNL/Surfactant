@@ -63,15 +63,20 @@ dependencies = [
     "python-msi==0.0.0a3",
     # Pinned to specific version for potential breaking changes
     "rpmfile==2.1.0",
-  ]
+]
 dynamic = ["version"]
+
+[dependency-groups]
+test = ["pytest"]
+dev = ["build", "pre-commit"]
+docs = ["sphinx", "myst-parser", "furo>=2025.9.25", "sphinx-copybutton>=0.5.2"]
 
 [project.optional-dependencies]
 macho = ["lief==0.17.1"]
 java = ["javatools>=1.6,==1.*"]
 test = ["pytest", "pytest-asyncio"]
 dev = ["build", "pre-commit"]
-docs = ["sphinx", "myst-parser"]
+docs = ["sphinx", "myst-parser", "furo>=2025.9.25", "sphinx-copybutton>=0.5.2"]
 
 [project.scripts]
 surfactant = "surfactant.__main__:main"
@@ -82,15 +87,6 @@ Discussions = "https://github.com/LLNL/Surfactant/discussions"
 Documentation = "https://surfactant.readthedocs.io/en/latest/"
 "Issue Tracker" = "https://github.com/LLNL/Surfactant/issues"
 "Source Code" = "https://github.com/LLNL/Surfactant"
-
-[dependency-groups]
-test = ["pytest"]
-dev = ["build", "pre-commit"]
-docs = [
-    "sphinx",
-    "myst-parser",
-    "sphinx-copybutton>=0.5.2",
-]
 
 [tool.setuptools.packages.find]
 include = ["surfactant", "surfactant.*"]
