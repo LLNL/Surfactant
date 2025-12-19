@@ -37,7 +37,7 @@ class EnvInfo:
     env_type: EnvType
     path: Path
     details: dict[str, str | Path | None]
-    binaries: list[Path] = field(default_factory=list)
+    manager_binaries: dict[str, Path | None] = field(default_factory=dict)
 
     def __str__(self) -> str:
         lines = [f"Environment Type: {self.env_type.name}"]
@@ -46,12 +46,11 @@ class EnvInfo:
             lines.append("Details:")
             for key, value in self.details.items():
                 lines.append(f"  {key}: {value}")
-        if self.binaries:
-            lines.append(f"Binaries found: {len(self.binaries)}")
-            for binary in self.binaries[:10]:  # Show first 10
-                lines.append(f"  - {binary.name}")
-            if len(self.binaries) > 10:
-                lines.append(f"  ... and {len(self.binaries) - 10} more")
+        if self.manager_binaries:
+            lines.append("Package Managers:")
+            for manager, binary_path in self.manager_binaries.items():
+                status = str(binary_path) if binary_path else "not found"
+                lines.append(f"  {manager}: {status}")
         return "\n".join(lines)
 
 
@@ -72,12 +71,12 @@ class EnvironmentDetector:
         """
         # Check for virtual environment first
         if not self._is_venv():
-            binaries = self._find_binaries()
+            manager_binaries = self._find_manager_binaries()
             return EnvInfo(
                 env_type=EnvType.SYSTEM,
                 path=self.prefix,
                 details={"executable": self.executable},
-                binaries=binaries
+                manager_binaries=manager_binaries
             )
 
         # Now check what type of venv/tool it is
@@ -93,31 +92,55 @@ class EnvironmentDetector:
         if env_info := self._check_standard_venv():
             return env_info
 
-        binaries = self._find_binaries()
+        manager_binaries = self._find_manager_binaries()
         return EnvInfo(
             env_type=EnvType.UNKNOWN,
             path=self.prefix,
             details={"executable": self.executable},
-            binaries=binaries
+            manager_binaries=manager_binaries
         )
 
     def _is_venv(self) -> bool:
         """Check if running in any virtual environment."""
         return self.prefix != self.base_prefix
 
-    def _find_binaries(self) -> list[Path]:
-        """Find all executable binaries in the environment's bin/Scripts directory."""
-        binaries = []
+    def _find_manager_binaries(self) -> dict[str, Path | None]:
+        """
+        Find package manager binaries that manage this environment.
         
-        # Check both Unix (bin) and Windows (Scripts) directories
-        for bin_dir_name in ("bin", "Scripts"):
-            bin_dir = self.prefix / bin_dir_name
-            if bin_dir.exists() and bin_dir.is_dir():
-                for item in bin_dir.iterdir():
-                    if item.is_file() and self._is_executable(item):
-                        binaries.append(item)
+        Returns:
+            Dictionary mapping manager names to their full paths (or None if not found)
+        """
+        managers = {
+            "uv": None,
+            "pip": None,
+            "pipx": None,
+            "python": None,
+        }
         
-        return sorted(binaries, key=lambda p: p.name.lower())
+        # Try to find each manager using 'which' (Unix) or 'where' (Windows)
+        import platform
+        
+        which_cmd = "where" if platform.system() == "Windows" else "which"
+        
+        for manager in managers.keys():
+            try:
+                result = subprocess.run(
+                    [which_cmd, manager],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                if result.returncode == 0:
+                    # Get first line (in case multiple results)
+                    binary_path = result.stdout.strip().split('\n')[0]
+                    if binary_path:
+                        managers[manager] = Path(binary_path)
+            except (subprocess.SubprocessError, FileNotFoundError, OSError):
+                # Manager not found or command failed
+                pass
+        
+        return managers
 
     @staticmethod
     def _is_executable(path: Path) -> bool:
@@ -141,37 +164,37 @@ class EnvironmentDetector:
         - Windows: %LOCALAPPDATA%/uv/tools/<package>/
         """
         parts = self.prefix.parts
-        
+
+        if not ("uv" in parts and "tools" in parts):
+            return None
         # Check if path contains uv/tools pattern
-        if "uv" in parts and "tools" in parts:
-            try:
-                tools_idx = parts.index("tools")
-                uv_idx = parts.index("uv")
-                
-                # Verify uv comes before tools in the path
-                if uv_idx < tools_idx and tools_idx + 1 < len(parts):
-                    tool_name = parts[tools_idx + 1]
-                    
-                    # Check for uv.toml or .uv marker
-                    uv_toml = self.prefix / "uv.toml"
-                    uv_marker = self.prefix / ".uv"
-                    
-                    binaries = self._find_binaries()
-                    
-                    return EnvInfo(
-                        env_type=EnvType.UV_TOOL,
-                        path=self.prefix,
-                        details={
-                            "tool_name": tool_name,
-                            "has_uv_toml": uv_toml.exists(),
-                            "has_uv_marker": uv_marker.exists(),
-                        },
-                        binaries=binaries
-                    )
-            except (ValueError, IndexError):
-                pass
         
-        return None
+        try:
+            tools_idx = parts.index("tools")
+            uv_idx = parts.index("uv")
+            
+            # Verify uv comes before tools in the path
+            if uv_idx < tools_idx and tools_idx + 1 < len(parts):
+                tool_name = parts[tools_idx + 1]
+                
+                # Check for uv-receipt.toml or .uv marker
+                uv_receipt = self.prefix / "uv-receipt.toml"
+                uv_marker = self.prefix / ".uv"
+                
+                manager_binaries = self._find_manager_binaries()
+                
+                return EnvInfo(
+                    env_type=EnvType.UV_TOOL,
+                    path=self.prefix,
+                    details={
+                        "tool_name": tool_name,
+                        "has_uv_receipt": uv_receipt.exists(),
+                        "has_uv_marker": uv_marker.exists(),
+                    },
+                    manager_binaries=manager_binaries
+                )
+        except (ValueError, IndexError):
+            return None
 
     def _check_pipx(self) -> EnvInfo | None:
         """
@@ -196,7 +219,7 @@ class EnvironmentDetector:
                     # Check for pipx metadata
                     pipx_metadata = self.prefix / "pipx_metadata.json"
                     
-                    binaries = self._find_binaries()
+                    manager_binaries = self._find_manager_binaries()
                     
                     return EnvInfo(
                         env_type=EnvType.PIPX,
@@ -205,7 +228,7 @@ class EnvironmentDetector:
                             "package_name": package_name,
                             "has_metadata": pipx_metadata.exists(),
                         },
-                        binaries=binaries
+                        manager_binaries=manager_binaries
                     )
             except (ValueError, IndexError):
                 pass
@@ -221,7 +244,7 @@ class EnvironmentDetector:
         # Check for .uv marker (uv 0.4+)
         uv_marker = self.prefix / ".uv"
         if uv_marker.exists():
-            binaries = self._find_binaries()
+            manager_binaries = self._find_manager_binaries()
             return EnvInfo(
                 env_type=EnvType.UV_VENV,
                 path=self.prefix,
@@ -229,7 +252,7 @@ class EnvironmentDetector:
                     "marker_file": uv_marker,
                     "created_by": "uv",
                 },
-                binaries=binaries
+                manager_binaries=manager_binaries
             )
         
         # Check pyvenv.cfg for uv signatures
@@ -238,7 +261,7 @@ class EnvironmentDetector:
             try:
                 content = pyvenv_cfg.read_text()
                 if "uv" in content.lower():
-                    binaries = self._find_binaries()
+                    manager_binaries = self._find_manager_binaries()
                     return EnvInfo(
                         env_type=EnvType.UV_VENV,
                         path=self.prefix,
@@ -246,7 +269,7 @@ class EnvironmentDetector:
                             "pyvenv_cfg": pyvenv_cfg,
                             "created_by": "uv (detected in pyvenv.cfg)",
                         },
-                        binaries=binaries
+                        manager_binaries=manager_binaries
                     )
             except (OSError, UnicodeDecodeError):
                 pass
@@ -258,7 +281,7 @@ class EnvironmentDetector:
         pyvenv_cfg = self.prefix / "pyvenv.cfg"
         
         if pyvenv_cfg.exists():
-            binaries = self._find_binaries()
+            manager_binaries = self._find_manager_binaries()
             return EnvInfo(
                 env_type=EnvType.STANDARD_VENV,
                 path=self.prefix,
@@ -266,7 +289,7 @@ class EnvironmentDetector:
                     "pyvenv_cfg": pyvenv_cfg,
                     "created_by": "venv or virtualenv",
                 },
-                binaries=binaries
+                manager_binaries=manager_binaries
             )
         
         return None
@@ -508,9 +531,9 @@ def main() -> None:
         help="Show what would be done without doing it",
     )
     parser.add_argument(
-        "--list-binaries",
+        "--list-managers",
         action="store_true",
-        help="List all binaries in the environment",
+        help="List package manager binaries found in PATH",
     )
 
     args = parser.parse_args()
@@ -522,11 +545,12 @@ def main() -> None:
     print(env_info)
     print()
 
-    # List binaries if requested
-    if args.list_binaries and env_info.binaries:
-        print("All binaries:")
-        for binary in env_info.binaries:
-            print(f"  {binary}")
+    # List package managers if requested
+    if args.list_managers and env_info.manager_binaries:
+        print("Package Manager Binaries in PATH:")
+        for manager, path in env_info.manager_binaries.items():
+            status = f"✓ {path}" if path else "✗ not found"
+            print(f"  {manager:8s}: {status}")
         print()
 
     # Inject packages if requested
