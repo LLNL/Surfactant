@@ -331,7 +331,7 @@ def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
         for rp in rp_to_use  # iterate through all possible runpath entries
         for p in rp.split(":")  # iterate through all components (paths) in each runpath entry
         if p != ""  # if the path entry is not empty
-        for sp in substitute_all_dst(sw, md, p) # substitute DSTs in the path
+        for sp in substitute_all_dst(sw, md, p)  # substitute DSTs in the path
     ]
 
     logger.debug(f"[ELF][runpath] expanded: {results}")
@@ -402,7 +402,7 @@ def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
             of possible platform values (from glibc or musl sources), which is nontrivial
             and rarely used — similar to hardware capability (hwcaps) subfolder searching.
             For now, such paths are discarded if unresolved.
-    
+
     Returns a list of expanded paths; if no supported tokens are present, returns an empty list.
 
     Parameters:
@@ -426,7 +426,7 @@ def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
         # No way to resolve this reliably (varies by CPU/platform).
         # Returning empty disables unresolved PLATFORM paths.
         return []
-    
+
     # No tokens → keep path as-is
     if not (has_origin or has_lib):
         return [posix_normpath(path)]
