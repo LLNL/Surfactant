@@ -6,7 +6,8 @@ import os
 import pathlib
 import queue
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+import sys
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import click
 from loguru import logger
@@ -265,6 +266,14 @@ def get_default_from_config(option: str, fallback: Optional[Any] = None) -> Any:
     required=False,
     help="Omit files with unrecognized types from the generated SBOM.",
 )
+@click.option(
+    "--install_prefix",
+    "install_prefix_arg",
+    is_flag=False,
+    default=None,
+    help="SBOM install prefix",
+)
+
 # Disable positional argument linter check -- could make keyword-only, but then defaults need to be set
 # pylint: disable-next=too-many-positional-arguments
 def sbom(
@@ -278,6 +287,7 @@ def sbom(
     output_format: str,
     input_format: str,
     omit_unrecognized_types: bool,
+    install_prefix_arg: str,
 ):
     """Generate a sbom based on SPECIMEN_CONTEXT and output to SBOM_OUTPUT.
 
@@ -349,13 +359,21 @@ def sbom(
                 parent_entry = None
                 parent_uuid = None
 
+            # Replace entry install prefix with user specified value if given by cli args
+            if install_prefix_arg:
+                if entry.installPrefix:
+                    logger.error(
+                        f"Conflicting installPrefix definitions; Check configuration file ({entry.installPrefix}) and CLI argument ({install_prefix_arg})"
+                    )
+                    sys.exit(-1)
+
+                entry.installPrefix = install_prefix_arg
+
             # If an installPrefix was given, clean it up some
             if entry.installPrefix:
                 if not entry.installPrefix.endswith(("/", "\\")):
                     # Make sure the installPrefix given ends with a "/" (or Windows backslash path, but users should avoid those)
-                    logger.warning(
-                        "Fixing installPrefix in config file entry (include the trailing /)"
-                    )
+                    logger.warning("Fixing installPrefix (include the trailing /)")
                     entry.installPrefix += "/"
                 if "\\" in entry.installPrefix:
                     # Using an install prefix with backslashes can result in a gradual reduction of the number of backslashes... and weirdness

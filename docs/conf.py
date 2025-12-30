@@ -33,6 +33,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.githubpages",
+    "sphinx_copybutton",
 ]
 
 templates_path = ["_templates"]
@@ -41,15 +42,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "images.toml"]
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "alabaster"
+html_theme = "furo"
 html_theme_options = {
-    "description": "Surfactant",
-    "github_user": "LLNL",
-    "github_repo": "Surfactant",
-    "github_button": "true",
-    "github_banner": "true",
-    "badge_branch": "main",
-    "fixed_sidebar": "false",
+    "source_repository": "https://github.com/llnl/Surfactant",
+    "source_branch": "main",
+    "source_directory": "docs/",
 }
 
 # -- Extension configuration -------------------------------------------------
@@ -59,8 +56,15 @@ napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 html_logo = "./logos/surfactant-logo-light.png"
 html_favicon = html_logo
-html_sidebars = {"**": ["globaltoc.html", "relations.html", "searchbox.html"]}
 html_static_path = ["_static"]
+
+# -- Extension - CopyButton - Configuration ----------------------------------
+
+# https://sphinx-copybutton.readthedocs.io/en/latest/use.html#using-regexp-prompt-identifiers
+copybutton_prompt_text = r">>> |\.\.\. |\$ |\$\w|In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
+# https://sphinx-copybutton.readthedocs.io/en/latest/use.html#honor-here-document-syntax-when-copying-multiline-snippets
+copybutton_here_doc_delimiter = "EOT"
 
 
 # -- Fetch image references --------------------------------------------------
