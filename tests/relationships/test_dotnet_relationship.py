@@ -18,21 +18,13 @@ def sbom_fixture():
         UUID="uuid-supplier",
         fileName=["SomeLibrary.dll"],
         installPath=["/app/bin/SomeLibrary.dll"],
-        metadata=[
-            {"dotnetAssembly": {"Name": "SomeLibrary", "Version": "1.0.0.0"}}
-        ],
+        metadata=[{"dotnetAssembly": {"Name": "SomeLibrary", "Version": "1.0.0.0"}}],
     )
 
     consumer = Software(
         UUID="uuid-consumer",
         installPath=["/app/bin/App.exe"],
-        metadata=[
-            {
-                "dotnetAssemblyRef": [
-                    {"Name": "SomeLibrary", "Version": "1.0.0.0"}
-                ]
-            }
-        ],
+        metadata=[{"dotnetAssemblyRef": [{"Name": "SomeLibrary", "Version": "1.0.0.0"}]}],
     )
 
     sbom.add_software(supplier)
