@@ -72,9 +72,7 @@ def establish_relationships(
         1. **fs_tree-based lookup**
            Fully-qualified dependency paths (absolute or constructed from
            runpaths, RPATH, RUNPATH, and $ORIGIN substitutions) are checked
-           against the SBOM filesystem graph. This lookup is symlink-aware and
-           can resolve through both real and synthetic alias relationships
-           captured during SBOM generation.
+           against the SBOM filesystem graph. This lookup is symlink-aware.
 
         2. **Legacy installPath fallback**
            If no fs_tree match is found, the function falls back to a strict
@@ -138,9 +136,10 @@ def establish_relationships(
     #     must be derived strictly from ELF semantics (slashes vs. bare names)
     #     and from the calling software’s installPath or runpath metadata.
     for dep in metadata["elfDependencies"]:
+        dep_str = dep
         fpaths = []
-        dep_path = posix_normpath(dep)
-        fname = dep_path.name  # e.g., 'libfoo.so'
+        dep = posix_normpath(dep_str)
+        fname = dep.name  # e.g., 'libfoo.so'
 
         # Determine all candidate filesystem paths where this dependency *might*
         # reside. ELF dependency strings come in two forms:
@@ -167,15 +166,15 @@ def establish_relationships(
         # or exact installPath equality.
 
         # Case 1: Dependency has slash — treat as direct path
-        if "/" in dep:
-            if dep_path.is_absolute():
-                fpaths = [dep_path.as_posix()]
+        if "/" in dep_str:
+            if dep.is_absolute():
+                fpaths = [dep.as_posix()]
             else:
                 if isinstance(software.installPath, Iterable):
                     for ipath in software.installPath:
                         ipath_posix = posix_normpath(ipath)
-                        combined = ipath_posix.parent.joinpath(dep_path)
-                        fpaths.append(combined.as_posix())
+                        combined = posix_normpath(str(ipath_posix.parent.joinpath(dep))).as_posix()
+                        fpaths.append(combined)
 
         # Case 2: Bare filename — use runpaths and fallback paths
         else:
@@ -192,9 +191,6 @@ def establish_relationships(
         #   - If the exact node is not a software installPath, the resolver
         #     follows recorded filesystem symlinks (file- and directory-level)
         #     using BFS until a software entry is reached.
-        #   - Hash-equivalent copies of files (created during extraction or
-        #     symlink flattening) are also captured by fs_tree and can lead to
-        #     a successful match.
         #
         # This phase yields only concrete, evidence-based matches—no inference.
         # A match is accepted only if:
@@ -220,27 +216,28 @@ def establish_relationships(
         #     constructed dependency paths in `fpaths`.
         #
         # Unlike the fs_tree lookup, this method does NOT resolve symlinks,
-        # hashes, directory aliases, or synthetic paths. It requires a literal,
-        # explicit installPath match. This ensures:
+        # It requires a literal, explicit installPath match. This ensures:
         #   - No directory-level inference (removed with Phase 3),
         #   - No fallback guesses when the SBOM lacks a concrete path,
         #   - Behavior consistent with the older relationship engine.
         #
         # This phase only runs if fs_tree matching failed.
         if not matched_uuids:
+            # Look for a software entry with a file name and install path that matches the dependency that would be loaded
             for item in sbom.software:
-                # Quick filter: candidate must advertise the same filename
-                has_name = isinstance(item.fileName, Iterable) and fname in (item.fileName or [])
-                if not has_name:
+                # Check if the software entry has a name matching the dependency first as a quick check to rule out non-matches
+                if isinstance(item.fileName, Iterable) and fname not in item.fileName:
                     continue
 
                 # Check for exact installPath equivalence with any computed dep path
                 for fp in fpaths:
                     if isinstance(item.installPath, Iterable) and fp in (item.installPath or []):
+                        # software matching requirements to be the loaded dependency was found
                         if item.UUID != software.UUID:
+                            dependency_uuid = item.UUID
                             logger.debug(f"[ELF][legacy] {fname} in {fp} → UUID={item.UUID}")
-                            matched_uuids.add(item.UUID)
-                            used_method[item.UUID] = "legacy_installPath"
+                            matched_uuids.add(dependency_uuid)
+                            used_method[dependency_uuid] = "legacy_installPath"
 
         # Emit final relationships
         if matched_uuids:
@@ -313,57 +310,6 @@ def generate_search_paths(sw: Software, md) -> List[pathlib.PurePosixPath]:
 
 
 def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
-    """
-    Generate a list of resolved runpaths based on the metadata from
-    an ELF file and the provided software object.
-
-    This function determines the appropriate runpath entries by analyzing
-    DT_RPATH and DT_RUNPATH from ELF metadata (`md`) and substitutes
-    dynamic string tokens (DSTs) to produce formatted paths.
-
-    The logic follows these rules:
-    1. If `elfRpath` is present in the metadata and `elfRunpath` is not,
-       the function uses `elfRpath` as the source of runpaths. Note that
-       the use of DT_RPATH is deprecated.
-    2. If `elfRunpath` exists, it takes precedence and the function uses
-       `elfRunpath` as the source of runpath.
-    3. Paths are split using `:` as a separator, and empty path components
-       are ignored.
-    4. All paths perform DST substitution using the
-       `substitute_all_dst()` function.
-
-    Args:
-        sw (Software): An object containing dependency and installation information, where
-           the software path can be iterated on through all runpath entries.
-        md: ELF metadata containing key-values such as `elfRpath`
-            and `elfRunpath`.
-
-    Returns:
-        List[pathlib.PurePosixPath]: A list of finalized runpaths where
-        all dynamic string tokens are resolved. Each path is represented
-        as a `pathlib.PurePosixPath` object.
-
-    Example:
-        Suppose `md` contains ELF metadata with the following entries:
-        ```
-       >>>md = {
-       >>>"elfRpath": ["/lib:/usr/lib"],
-       >>>"elfRunpath": None,
-        }
-        [
-            PurePosixPath('/lib'),
-            PurePosixPath('/usr/lib')
-        ]
-        ```
-        And `sw` enables substitution tokens such as `$LIB`.
-        The function will return resolved paths by splitting `"/lib:/usr/lib"`
-        and applying substitutions where `$LIB` is located.
-
-    Notes:
-        - If the ELF file specifies both `DT_RPATH` and `DT_RUNPATH`,
-          `DT_RUNPATH` is given precedence.
-    """
-
     # rpath and runpath are lists of strings (just in case an ELF file has several, though that is probably an invalid ELF file)
     rp_to_use = []
     rpath = None
@@ -373,34 +319,23 @@ def generate_runpaths(sw: Software, md) -> List[pathlib.PurePosixPath]:
     if "elfRunpath" in md and md["elfRunpath"]:
         runpath = md["elfRunpath"]
 
-    # According to the ELF specification:
-    # - If DT_RUNPATH is present, it takes precedence—even if empty.
-    # - If DT_RUNPATH is missing or empty (no usable entries), fall back to DT_RPATH.
-    # - Each entry may contain DST tokens ($ORIGIN, $LIB, etc.) that must be expanded.
+    # 1. Search using directories in DT_RPATH if present and no DT_RUNPATH exists (use of DT_RPATH is deprecated)
+    # 3. Search using directories in DT_RUNPATH if present
+    if rpath and not runpath:
+        rp_to_use = rpath
+    elif runpath:
+        rp_to_use = runpath
 
-    runpaths = []
-
-    rpath = md.get("elfRpath") or []
-    runpath = md.get("elfRunpath") if "elfRunpath" in md else None
-
-    # According to ELF spec, presence of DT_RUNPATH disables DT_RPATH
-    if runpath is not None:
-        # RUNPATH exists: use it only if it contains usable entries
-        if any(p.strip() for p in runpath):
-            runpaths = runpath
-        else:
-            runpaths = []  # DT_RUNPATH exists but is empty: skip RPATH
-    else:
-        runpaths = rpath  # DT_RUNPATH missing entirely, fallback to RPATH
-
-    results = []
-    for rp in runpaths:
-        for p in rp.split(":"):
-            if p.strip():
-                results.extend(substitute_all_dst(sw, md, p))
+    results = [
+        sp  # append path with DSTs replaced to the list
+        for rp in rp_to_use  # iterate through all possible runpath entries
+        for p in rp.split(":")  # iterate through all components (paths) in each runpath entry
+        if p != ""  # if the path entry is not empty
+        for sp in substitute_all_dst(sw, md, p) # substitute DSTs in the path
+    ]
 
     logger.debug(f"[ELF][runpath] expanded: {results}")
-    return [pathlib.PurePosixPath(r) for r in results]
+    return results
 
 
 def replace_dst(origstr, dvar, newval) -> str:
@@ -467,8 +402,8 @@ def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
             of possible platform values (from glibc or musl sources), which is nontrivial
             and rarely used — similar to hardware capability (hwcaps) subfolder searching.
             For now, such paths are discarded if unresolved.
-
-    If no DSTs are present, the original path is returned unchanged.
+    
+    Returns a list of expanded paths; if no supported tokens are present, returns an empty list.
 
     Parameters:
         sw (Software): The software object (used for $ORIGIN resolution).
@@ -485,6 +420,18 @@ def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
     has_platform = "$PLATFORM" in path or "${PLATFORM}" in path
 
     # ----------------------
+    # PLATFORM not supported
+    # ----------------------
+    if has_platform:
+        # No way to resolve this reliably (varies by CPU/platform).
+        # Returning empty disables unresolved PLATFORM paths.
+        return []
+    
+    # No tokens → keep path as-is
+    if not (has_origin or has_lib):
+        return [posix_normpath(path)]
+
+    # ----------------------
     # ORIGIN token expansion
     # ----------------------
     if has_origin and isinstance(sw.installPath, Iterable):
@@ -497,30 +444,18 @@ def substitute_all_dst(sw: Software, md, path) -> List[pathlib.PurePosixPath]:
     # ------------------
     if has_lib:
         if not pathlist:
-            # No ORIGIN was expanded; use original path
-            pathlist.append(pathlib.PurePosixPath(path))
-        pathlist = [
-            newp
-            for p in pathlist
-            for newp in (
-                pathlib.PurePosixPath(replace_dst(p, "LIB", "lib")),
-                pathlib.PurePosixPath(replace_dst(p, "LIB", "lib64")),
-            )
-        ]
-
-    # ----------------------
-    # PLATFORM not supported
-    # ----------------------
-    if has_platform:
-        # No way to resolve this reliably (varies by CPU/platform).
-        # Returning empty disables unresolved PLATFORM paths.
-        return []
-
-    # -------------------------
-    # No DSTs? Use original path
-    # -------------------------
-    if not (has_origin or has_lib or has_platform) and not pathlist:
-        pathlist.append(pathlib.PurePosixPath(path))
+            # nothing in the original pathlist, use the original path passed in
+            pathlist.append(pathlib.PurePosixPath(replace_dst(path, "LIB", "lib")))
+            pathlist.append(pathlib.PurePosixPath(replace_dst(path, "LIB", "lib64")))
+        else:
+            pathlist = [
+                newp
+                for p in pathlist
+                for newp in (
+                    pathlib.PurePosixPath(replace_dst(p.as_posix(), "LIB", "lib")),
+                    pathlib.PurePosixPath(replace_dst(p.as_posix(), "LIB", "lib64")),
+                )
+            ]
 
     # -------------------------
     # Normalize all paths
