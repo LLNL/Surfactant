@@ -7,7 +7,7 @@ import pathlib
 import queue
 import re
 import sys
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import click
 from loguru import logger

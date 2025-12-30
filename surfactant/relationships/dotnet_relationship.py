@@ -5,7 +5,10 @@ from typing import List, Optional
 from loguru import logger
 
 import surfactant.plugin
-from surfactant.relationships._internal.windows_utils import find_installed_software, get_dotnet_probedirs
+from surfactant.relationships._internal.windows_utils import (
+    find_installed_software,
+    get_dotnet_probedirs,
+)
 from surfactant.sbomtypes import SBOM, Relationship, Software
 from surfactant.utils.paths import normalize_path
 
@@ -310,7 +313,7 @@ def establish_relationships(
     dnDependentAssemblies = None
 
     windowsAppConfig = None
-    windowsManifest = None # This variable was declared in legacy but never used and is kept for potential future use
+    windowsManifest = None  # This variable was declared in legacy but never used and is kept for potential future use
     if "manifestFile" in metadata:
         windowsManifest = metadata["manifestFile"]
     if "appConfigFile" in metadata:
@@ -350,13 +353,15 @@ def establish_relationships(
             #   - Normalize the absolute path to POSIX style.
             #   - Use sbom.get_software_by_path(norm) so we benefit from fs_tree
             #   - Skip self (dependent_uuid) to avoid self-loops.
-            
+
             if is_absolute_path(refName):
                 norm = normalize_path(refName)
                 # 1) Graph-first: fs_tree + symlink edges
                 match = sbom.get_software_by_path(norm, case_insensitive=True)
                 if match and match.UUID != dependent_uuid:
-                    logger.debug(f"[.NET][unmanaged][abs] {refName} (norm={norm}) → UUID={match.UUID}")
+                    logger.debug(
+                        f"[.NET][unmanaged][abs] {refName} (norm={norm}) → UUID={match.UUID}"
+                    )
                     relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
                     continue
 
@@ -366,10 +371,14 @@ def establish_relationships(
                 for e in sbom.software:
                     if e.installPath is None or e.UUID == dependent_uuid:
                         continue
-                    if isinstance(e.installPath, Iterable) and not isinstance(e.installPath, (str, bytes)):
+                    if isinstance(e.installPath, Iterable) and not isinstance(
+                        e.installPath, (str, bytes)
+                    ):
                         for ifile in e.installPath:
                             if ref_abspath == pathlib.PureWindowsPath(ifile):
-                                logger.debug(f"[.NET][unmanaged][abs] {refName} → UUID={e.UUID} [legacy_fallback]")
+                                logger.debug(
+                                    f"[.NET][unmanaged][abs] {refName} → UUID={e.UUID} [legacy_fallback]"
+                                )
                                 relationships.append(Relationship(dependent_uuid, e.UUID, "Uses"))
                                 legacy_found = True
 
@@ -417,12 +426,13 @@ def establish_relationships(
             if not found:
                 logger.debug(f"[.NET][unmanaged] {refName} → no match")
 
-
     if "dotnetAssemblyRef" in metadata:
-        logger.debug(f"[.NET][import] {software.UUID} importing {len(metadata["dotnetAssemblyRef"])} assemblies")
+        logger.debug(
+            f"[.NET][import] {software.UUID} importing {len(metadata['dotnetAssemblyRef'])} assemblies"
+        )
         for asmRef in metadata["dotnetAssemblyRef"]:
             refName = None
-            refVersion = None # This variable was declared in legacy but never used and is kept for potential future use
+            refVersion = None  # This variable was declared in legacy but never used and is kept for potential future use
             refCulture = None
             if "Name" in asmRef:
                 refName = asmRef["Name"]
@@ -458,13 +468,23 @@ def establish_relationships(
                                 # most likely a private assembly, so path must be relative to application's directory
                                 if isinstance(software.installPath, Iterable):
                                     for install_filepath in software.installPath:
-                                        install_basepath = pathlib.PureWindowsPath(install_filepath).parent.as_posix()
-                                        cb_fullpath = normalize_path(install_basepath, codebase_href)
+                                        install_basepath = pathlib.PureWindowsPath(
+                                            install_filepath
+                                        ).parent.as_posix()
+                                        cb_fullpath = normalize_path(
+                                            install_basepath, codebase_href
+                                        )
                                         # 1) Graph-first: resolve via fs_tree
-                                        match = sbom.get_software_by_path(cb_fullpath, case_insensitive=True)
+                                        match = sbom.get_software_by_path(
+                                            cb_fullpath, case_insensitive=True
+                                        )
                                         if match and match.UUID != dependent_uuid:
-                                            logger.debug(f"[.NET][codeBase] {codebase_href} → UUID={match.UUID} [graph]")
-                                            relationships.append(Relationship(dependent_uuid, match.UUID, "Uses"))
+                                            logger.debug(
+                                                f"[.NET][codeBase] {codebase_href} → UUID={match.UUID} [graph]"
+                                            )
+                                            relationships.append(
+                                                Relationship(dependent_uuid, match.UUID, "Uses")
+                                            )
                                         else:
                                             # 2) Legacy fallback: directory+filename scan (matches legacy behavior)
                                             cb_filepath = pathlib.PureWindowsPath(cb_fullpath)
@@ -472,14 +492,22 @@ def establish_relationships(
                                             cb_path = [cb_filepath.parent.as_posix()]
 
                                             legacy_found = False
-                                            for e in find_installed_software(sbom, cb_path, cb_file):
+                                            for e in find_installed_software(
+                                                sbom, cb_path, cb_file
+                                            ):
                                                 if e and e.UUID != dependent_uuid:
-                                                    logger.debug(f"[.NET][codeBase] {codebase_href} → UUID={e.UUID} [legacy_fallback]")
-                                                    relationships.append(Relationship(dependent_uuid, e.UUID, "Uses"))
+                                                    logger.debug(
+                                                        f"[.NET][codeBase] {codebase_href} → UUID={e.UUID} [legacy_fallback]"
+                                                    )
+                                                    relationships.append(
+                                                        Relationship(dependent_uuid, e.UUID, "Uses")
+                                                    )
                                                     legacy_found = True
 
                                             if not legacy_found:
-                                                logger.debug(f"[.NET][codeBase] {codebase_href} → no match")
+                                                logger.debug(
+                                                    f"[.NET][codeBase] {codebase_href} → no match"
+                                                )
 
             # --- Build probing dirs (legacy patterns + fs_tree) ---
             #   - base dir
@@ -571,7 +599,7 @@ def establish_relationships(
             # Phase 2: Legacy probe
             if not matched_uuids:
                 for e in find_installed_software(sbom, probedirs, refName + ".dll"):
-                    if e.UUID != dependent_uuid :
+                    if e.UUID != dependent_uuid:
                         logger.debug(f"[.NET][legacy_phase2] {refName} → UUID={e.UUID}")
                         matched_uuids.add(e.UUID)
                         used_method[e.UUID] = "legacy_full_scan"

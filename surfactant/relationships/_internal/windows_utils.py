@@ -38,6 +38,7 @@ def find_installed_software(
                             possible_matches.append(e)
     return possible_matches
 
+
 # construct a list of directories to probe for establishing dotnet relationships
 def get_dotnet_probedirs(software: Software, refCulture, refName, dnProbingPaths):
     probedirs = []
