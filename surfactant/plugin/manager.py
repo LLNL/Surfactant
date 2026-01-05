@@ -43,6 +43,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         elf_relationship,
         java_relationship,
         pe_relationship,
+        rpmfile_relationship,
     )
 
     internal_plugins = (
@@ -64,6 +65,7 @@ def _register_plugins(pm: pluggy.PluginManager) -> None:
         elf_relationship,
         java_relationship,
         pe_relationship,
+        rpmfile_relationship,
         csv_writer,
         cytrics_writer,
         cyclonedx_writer,
